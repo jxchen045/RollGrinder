@@ -1,5 +1,8 @@
 using System;
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Device;
@@ -33,18 +36,33 @@ public static class MachineAccessServiceCollectionExtensions
         services.AddSingleton(tagMap);
         services.AddSingleton<IMachineConfigProvider>(_ => new JsonMachineConfigProvider(options));
         services.AddSingleton(MachineCapabilityFactory.Create(machine));
-        services.AddSingleton<IMachineGateway>(_ => CreateGateway(options, machine, tagMap));
+        services.AddSingleton<IMachineGateway>(provider => CreateGateway(
+            options,
+            machine,
+            tagMap,
+            provider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance));
 
         return services;
     }
 
-    private static IMachineGateway CreateGateway(IAppOptions options, MachineDescription machine, ITagMap tagMap) =>
+    /// <summary>PKI 目录（OPC UA 客户端证书），放在 data/ 下随现场数据一起保留。</summary>
+    public const string PkiDirectoryName = "pki";
+
+    private static IMachineGateway CreateGateway(
+        IAppOptions options,
+        MachineDescription machine,
+        ITagMap tagMap,
+        ILoggerFactory loggerFactory) =>
         options.Gateway switch
         {
             GatewayKind.Stub => new StubGateway(tagMap),
             GatewayKind.Sim => new SimulationGateway(tagMap, machine, TimeProvider.System),
-            GatewayKind.File => new FileGateway(tagMap, options.DataDirectory),
-            GatewayKind.OpcUa => new OpcUaGateway(tagMap, machine.Controller),
+            GatewayKind.File => new FileGateway(tagMap, options.DataDirectory, options.ReplayFilePath, TimeProvider.System),
+            GatewayKind.OpcUa => new OpcUaGateway(
+                tagMap,
+                machine.Controller,
+                Path.Combine(options.DataDirectory, PkiDirectoryName),
+                loggerFactory),
             _ => throw new GatewayException($"Unsupported gateway kind '{options.Gateway}'."),
         };
 }

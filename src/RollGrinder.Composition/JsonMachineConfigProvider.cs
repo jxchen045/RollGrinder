@@ -133,7 +133,11 @@ public sealed class JsonMachineConfigProvider : IMachineConfigProvider
             new ControllerDescription(
                 Required(controller.Kind, path, "controller.kind"),
                 controller.ChannelNumber,
-                controller.EndpointUrl),
+                controller.EndpointUrl,
+                controller.UseSecurity ?? true,
+                controller.AutoAcceptUntrustedCertificates ?? false,
+                controller.SessionTimeoutMs ?? 60000,
+                controller.OperationTimeoutMs ?? 15000),
             axes,
             channels,
             json.Options ?? new Dictionary<string, bool>(),
@@ -160,7 +164,8 @@ public sealed class JsonMachineConfigProvider : IMachineConfigProvider
                 tag.Unit,
                 tag.Scale ?? 1.0,
                 tag.Description,
-                tag.ArrayLength ?? 1));
+                tag.ArrayLength ?? 1,
+                tag.IndexOffset ?? 0));
         }
 
         return new TagMap(tags);

@@ -28,6 +28,7 @@ public enum TagAccess
 /// <param name="Scale">物理值 = 原始值 * Scale。</param>
 /// <param name="Description">说明，可为空。</param>
 /// <param name="ArrayLength">数组长度；大于 1 表示这是一组变量，地址里用 {index} 占位。</param>
+/// <param name="IndexOffset">下标偏置：地址里的 {index} 渲染成 IndexOffset + 下标，例如 R 参数从 R[130] 起。</param>
 public sealed record TagDescriptor(
     string Key,
     string Address,
@@ -36,7 +37,8 @@ public sealed record TagDescriptor(
     string? Unit = null,
     double Scale = 1.0,
     string? Description = null,
-    int ArrayLength = 1)
+    int ArrayLength = 1,
+    int IndexOffset = 0)
 {
     /// <summary>地址中的下标占位符。</summary>
     public const string IndexPlaceholder = "{index}";
@@ -62,7 +64,7 @@ public sealed record TagDescriptor(
             Key = TagKeySyntax.Indexed(Key, index),
             Address = Address.Replace(
                 IndexPlaceholder,
-                index.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                (IndexOffset + index).ToString(System.Globalization.CultureInfo.InvariantCulture),
                 System.StringComparison.Ordinal),
             ArrayLength = 1,
         };

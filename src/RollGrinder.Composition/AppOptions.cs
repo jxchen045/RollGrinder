@@ -14,17 +14,19 @@ namespace RollGrinder.Composition;
 ///   --gateway &lt;kind&gt;  opcua | stub | sim | file
 ///   --config &lt;dir&gt;    配置目录
 ///   --data &lt;dir&gt;      数据目录
+///   --replay &lt;file&gt;   回放指定的 .jsonl 录制文件（隐含 --gateway file）
 /// </summary>
 public sealed class AppOptions : IAppOptions
 {
     public const string MachineConfigFileName = "machine.json";
     public const string TagMapFileName = "tagmap.json";
 
-    private AppOptions(string configDirectory, string dataDirectory, GatewayKind gateway)
+    private AppOptions(string configDirectory, string dataDirectory, GatewayKind gateway, string? replayFilePath)
     {
         ConfigDirectory = configDirectory;
         DataDirectory = dataDirectory;
         Gateway = gateway;
+        ReplayFilePath = replayFilePath;
     }
 
     public string ConfigDirectory { get; }
@@ -41,6 +43,9 @@ public sealed class AppOptions : IAppOptions
 
     public bool UseStub => Gateway == GatewayKind.Stub;
 
+    /// <summary>回放文件路径（--replay）；为空时取 data/replay 下最新的 .jsonl。</summary>
+    public string? ReplayFilePath { get; }
+
     /// <summary>
     /// 解析命令行。<paramref name="baseDirectory"/> 一般传程序目录（AppContext.BaseDirectory）。
     /// </summary>
@@ -53,6 +58,7 @@ public sealed class AppOptions : IAppOptions
         string configDirectory = Path.Combine(baseDirectory, "config");
         string dataDirectory = Path.Combine(baseDirectory, "data");
         GatewayKind gateway = GatewayKind.OpcUa;
+        string? replayFilePath = null;
 
         for (int i = 0; i < args.Count; i++)
         {
@@ -75,13 +81,18 @@ public sealed class AppOptions : IAppOptions
                     dataDirectory = Path.GetFullPath(RequireValue(args, ref i, arg), baseDirectory);
                     break;
 
+                case "--replay":
+                    replayFilePath = Path.GetFullPath(RequireValue(args, ref i, arg), baseDirectory);
+                    gateway = GatewayKind.File;
+                    break;
+
                 default:
                     // 未知参数留给宿主处理（例如 WPF 自身的参数），此处不报错。
                     break;
             }
         }
 
-        return new AppOptions(configDirectory, dataDirectory, gateway);
+        return new AppOptions(configDirectory, dataDirectory, gateway, replayFilePath);
     }
 
     private static string RequireValue(IReadOnlyList<string> args, ref int index, string optionName)

@@ -27,4 +27,7 @@ public interface IAppOptions
 
     /// <summary>是否以打桩模式运行（命令行 --stub）。</summary>
     bool UseStub { get; }
+
+    /// <summary>回放文件路径（命令行 --replay）；为空时由文件网关取最新一份录制。</summary>
+    string? ReplayFilePath { get; }
 }

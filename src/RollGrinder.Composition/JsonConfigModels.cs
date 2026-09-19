@@ -35,6 +35,14 @@ internal sealed class ControllerJson
     public int ChannelNumber { get; set; }
 
     public string? EndpointUrl { get; set; }
+
+    public bool? UseSecurity { get; set; }
+
+    public bool? AutoAcceptUntrustedCertificates { get; set; }
+
+    public int? SessionTimeoutMs { get; set; }
+
+    public int? OperationTimeoutMs { get; set; }
 }
 
 internal sealed class AxisJson
@@ -104,4 +112,6 @@ internal sealed class TagJson
     public string? Description { get; set; }
 
     public int? ArrayLength { get; set; }
+
+    public int? IndexOffset { get; set; }
 }

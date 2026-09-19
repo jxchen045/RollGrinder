@@ -46,9 +46,25 @@ RollGrinder.App.exe --config D:\cfg --data D:\data
 
 日志滚动写入 `data/logs/rollgrinder-<日期>.log`，保留 31 天。
 
-`--gateway sim` 会按下发的参数模拟走刀与去除量，适合无机床联调；`--stub` 只回放写入的值。
-`OpcUaGateway` 与 `FileGateway` 目前仍是空桩，调用即抛 `GatewayException`——接 OPC UA
-客户端库需要引入第三方包，待确认后再做。
+四种网关都可用：
+
+| 取值 | 用途 |
+|---|---|
+| `opcua`（默认） | 经 OPC UA 连 SINUMERIK ONE。客户端证书自签在 `data\pki\own`，端点、安全策略与超时来自 `machine.json` 的 `controller` |
+| `sim` | 按下发的参数模拟走刀与去除量，无机床联调 |
+| `stub` | 只回放写进去的值，跑通界面与流程 |
+| `file` | 回放一段 `.jsonl` 录制，离线复盘；`--replay <file>` 直接指定文件 |
+
+录制文件是 JSON Lines，一行一帧、按 `offsetMs` 升序，每帧只写变化的量，未出现的量沿用上一帧
+（样例见 `deploy/replay-sample.jsonl`）：
+
+```jsonl
+{"offsetMs":0,"values":{"machine.channelState":0,"axis.Z.actualPositionMm":0.0}}
+{"offsetMs":1000,"values":{"machine.channelState":2,"machine.programName":"RG01_WR.MPF"}}
+```
+
+回放是只读的事实记录，所以下发的写入不回灌进回放流：写入值另存一层 overlay（读得到），
+同时追加到同目录的 `writes-<时间>.jsonl` 便于核对。
 
 ## 配置
 
@@ -57,7 +73,7 @@ RollGrinder.App.exe --config D:\cfg --data D:\data
 | 文件 | 内容 |
 |---|---|
 | `machine.json` | 本台机床：轴（有无/行程/闭环/进给与转速上限）、测量通道、选件、阈值、辊件界限、工序类型对应的 NC 代码 |
-| `tagmap.json` | 逻辑变量名 → 物理地址、类型、读写权限、单位、数组长度（地址里用 `{index}` 占位） |
+| `tagmap.json` | 逻辑变量名 → 物理地址（OPC UA NodeId）、类型、读写权限、单位、缩放、数组长度与下标偏置（地址里用 `{index}` 占位，渲染成 `indexOffset + 下标`） |
 | `hmi.json` | 上位机自身：轮询周期、界面刷新频率（5–10 Hz）、辊形采样点数、补偿增益与平滑、保留天数、公差 |
 
 代码里不出现物理地址、轴名、行程与阈值；换一台机床只改这三份配置。

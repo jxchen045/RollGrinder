@@ -185,3 +185,32 @@ public sealed class NcJobTranslatorTests
             .Should().Throw<GatewayException>();
     }
 }
+
+/// <summary>数组变量的下标偏置：R[130] 起的一组参数。</summary>
+public sealed class IndexedTagTests
+{
+    [Fact]
+    public void An_index_offset_shifts_the_rendered_address()
+    {
+        var descriptor = new TagDescriptor(
+            MachineTagKeys.JobStepPassCount,
+            "ns=2;s=/Channel/Parameter/R[{index}]",
+            TagDataType.Int32,
+            TagAccess.ReadWrite,
+            ArrayLength: 8,
+            IndexOffset: 140);
+
+        descriptor.AtIndex(0).Address.Should().Be("ns=2;s=/Channel/Parameter/R[140]");
+        descriptor.AtIndex(3).Address.Should().Be("ns=2;s=/Channel/Parameter/R[143]");
+        descriptor.AtIndex(3).Key.Should().Be(TagKeySyntax.Indexed(MachineTagKeys.JobStepPassCount, 3));
+    }
+
+    [Fact]
+    public void An_index_beyond_the_array_is_refused()
+    {
+        var descriptor = new TagDescriptor(
+            "job.step.passCount", "ns=2;s=R[{index}]", TagDataType.Int32, TagAccess.ReadWrite, ArrayLength: 2);
+
+        descriptor.Invoking(d => d.AtIndex(2)).Should().Throw<GatewayException>();
+    }
+}

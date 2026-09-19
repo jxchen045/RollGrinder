@@ -1,0 +1,6 @@
+{"offsetMs":0,"values":{"machine.channelState":0,"machine.programName":"","axis.Z.actualPositionMm":0.0,"axis.X.actualPositionMm":325.3,"measure.diameterMm":650.6}}
+{"offsetMs":1000,"values":{"machine.channelState":2,"machine.programName":"RG01_WR.MPF"}}
+{"offsetMs":2000,"values":{"axis.Z.actualPositionMm":33.3,"axis.X.actualPositionMm":325.28,"measure.diameterMm":650.56}}
+{"offsetMs":3000,"values":{"axis.Z.actualPositionMm":66.6,"axis.X.actualPositionMm":325.25,"measure.diameterMm":650.50}}
+{"offsetMs":4000,"values":{"axis.Z.actualPositionMm":99.9,"axis.X.actualPositionMm":325.20,"measure.diameterMm":650.40}}
+{"offsetMs":5000,"values":{"machine.channelState":0,"machine.programName":"","axis.X.actualPositionMm":325.0,"measure.diameterMm":650.0}}

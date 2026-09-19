@@ -55,10 +55,18 @@ public sealed record MeasurementChannelDescription(
 /// <param name="Kind">系统型号标识，例如 SinumerikOne。</param>
 /// <param name="ChannelNumber">通道号。</param>
 /// <param name="EndpointUrl">通信端点（OPC UA 时为服务器地址），可为空。</param>
+/// <param name="UseSecurity">是否选择带签名加密的端点；调试期可关，投产必须开。</param>
+/// <param name="AutoAcceptUntrustedCertificates">是否自动接受未信任的服务器证书；仅调试期可开。</param>
+/// <param name="SessionTimeoutMs">会话超时（ms）。</param>
+/// <param name="OperationTimeoutMs">单次读写超时（ms）。</param>
 public sealed record ControllerDescription(
     string Kind,
     int ChannelNumber,
-    string? EndpointUrl = null);
+    string? EndpointUrl = null,
+    bool UseSecurity = true,
+    bool AutoAcceptUntrustedCertificates = false,
+    int SessionTimeoutMs = 60000,
+    int OperationTimeoutMs = 15000);
 
 /// <summary>
 /// 可加工辊件的界限。
