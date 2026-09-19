@@ -42,7 +42,7 @@ public sealed class SimulatedMachine
     private int currentPass;
     private int totalPasses = 10;
     private int strokeVersion;
-    private double wheelDiameterMm = 890.24;
+    private readonly double wheelDiameterMm = 890.24;
 
     public SimulatedMachine(MachineDescription machine)
     {
