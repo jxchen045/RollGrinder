@@ -44,9 +44,21 @@ public sealed class MachineMonitorTests
         public void EnqueueFailure(string message) =>
             this.responses.Enqueue(() => throw new GatewayException(message));
 
+        private string? connectFailure;
+
+        public void FailNextConnect(string message) => this.connectFailure = message;
+
         public Task ConnectAsync(CancellationToken cancellationToken)
         {
             ConnectCount++;
+            if (this.connectFailure is not null)
+            {
+                string message = this.connectFailure;
+                this.connectFailure = null;
+                ConnectionState = GatewayConnectionState.Faulted;
+                throw new GatewayException(message);
+            }
+
             ConnectionState = GatewayConnectionState.Connected;
             return Task.CompletedTask;
         }
@@ -146,6 +158,49 @@ public sealed class MachineMonitorTests
 
         alarms.Snapshot().Should().Contain(entry =>
             entry.MessageResourceKey == MachineMonitor.ConnectionRestoredResourceKey);
+    }
+
+    [Fact]
+    public async Task A_failed_poll_is_followed_by_a_reconnect_attempt()
+    {
+        (MachineMonitor monitor, ScriptedGateway gateway, _) = Create();
+        gateway.EnqueueFailure("session closed");
+        gateway.EnqueueSnapshot(2.0);
+
+        await monitor.PollOnceAsync(CancellationToken.None);
+        int connectsAfterFailure = gateway.ConnectCount;
+        await monitor.PollOnceAsync(CancellationToken.None);
+
+        gateway.ConnectCount.Should().Be(connectsAfterFailure + 1, "断链后必须自己重连，不能等人重启上位机");
+        monitor.Current.GetNumberOrNull(MachineTagKeys.ChannelState).Should().Be(2.0);
+    }
+
+    [Fact]
+    public async Task A_healthy_poll_does_not_reconnect_every_tick()
+    {
+        (MachineMonitor monitor, ScriptedGateway gateway, _) = Create();
+        gateway.EnqueueSnapshot(2.0);
+        gateway.EnqueueSnapshot(2.0);
+
+        await monitor.PollOnceAsync(CancellationToken.None);
+        await monitor.PollOnceAsync(CancellationToken.None);
+
+        gateway.ConnectCount.Should().Be(0, "没断就不该反复重连");
+    }
+
+    [Fact]
+    public async Task A_reconnect_that_also_fails_stays_an_alarm_rather_than_an_exception()
+    {
+        (MachineMonitor monitor, ScriptedGateway gateway, AlarmLog alarms) = Create();
+        gateway.EnqueueFailure("down");
+        gateway.FailNextConnect("still down");
+        gateway.EnqueueFailure("down again");
+
+        await monitor.PollOnceAsync(CancellationToken.None);
+        await monitor.Invoking(m => m.PollOnceAsync(CancellationToken.None)).Should().NotThrowAsync();
+
+        monitor.Current.ConnectionState.Should().Be(GatewayConnectionState.Faulted);
+        alarms.Snapshot().Should().NotBeEmpty();
     }
 
     [Fact]

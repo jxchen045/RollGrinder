@@ -55,6 +55,14 @@ internal sealed class OpcUaGateway : IMachineGateway
                 return;
             }
 
+            // 会话还在但已经断了：先丢掉旧的，否则重连会把它连同订阅一起漏掉。
+            if (this.session is not null)
+            {
+                this.session.KeepAlive -= OnKeepAlive;
+                this.session.Dispose();
+                this.session = null;
+            }
+
             ConnectionState = GatewayConnectionState.Connecting;
 
             string endpointUrl = this.controller.EndpointUrl

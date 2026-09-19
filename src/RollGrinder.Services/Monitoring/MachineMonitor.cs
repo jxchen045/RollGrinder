@@ -106,11 +106,19 @@ public sealed class MachineMonitor : IMachineMonitor, IAsyncDisposable
         }
     }
 
-    /// <summary>取一次数并发布快照。后台循环用它，测试也可直接调用。</summary>
+    /// <summary>
+    /// 取一次数并发布快照。后台循环用它，测试也可直接调用。
+    /// 上一拍失败过就先尝试重连——会话断了不能一直等人重启上位机。
+    /// </summary>
     public async Task PollOnceAsync(CancellationToken cancellationToken)
     {
         try
         {
+            if (this.lastPollFailed)
+            {
+                await this.gateway.ConnectAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             MachineStateSnapshot snapshot = await this.gateway
                 .ReadStateAsync(this.monitoredKeys, cancellationToken)
                 .ConfigureAwait(false);
