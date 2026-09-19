@@ -9,6 +9,7 @@ using RollGrinder.Nc;
 using RollGrinder.Services.Jobs;
 using RollGrinder.Services.Measurement;
 using RollGrinder.Services.Monitoring;
+using RollGrinder.Services.Records;
 
 namespace RollGrinder.Services;
 
@@ -44,8 +45,10 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<IJobDownloadService, JobDownloadService>();
         services.AddSingleton<IMeasurementService, MeasurementService>();
         services.AddSingleton<ICompensationService, CompensationService>();
+        services.AddSingleton<IRecordService, RecordService>();
 
         services.AddHostedService<MachineMonitorHostedService>();
+        services.AddHostedService<AlarmArchiveHostedService>();
 
         return services;
     }
