@@ -31,12 +31,29 @@ public sealed class TagMap : ITagMap
 
     public IReadOnlyList<TagDescriptor> Tags { get; }
 
-    public bool TryResolve(string logicalName, out TagDescriptor? descriptor) =>
-        this.byKey.TryGetValue(logicalName, out descriptor);
+    public bool TryResolve(string logicalName, out TagDescriptor? descriptor)
+    {
+        if (this.byKey.TryGetValue(logicalName, out descriptor))
+        {
+            return true;
+        }
+
+        if (TagKeySyntax.TrySplit(logicalName, out string baseKey, out int index)
+            && this.byKey.TryGetValue(baseKey, out TagDescriptor? arrayDescriptor)
+            && arrayDescriptor.IsArray
+            && index < arrayDescriptor.ArrayLength)
+        {
+            descriptor = arrayDescriptor.AtIndex(index);
+            return true;
+        }
+
+        descriptor = null;
+        return false;
+    }
 
     public TagDescriptor Resolve(string logicalName)
     {
-        if (!this.byKey.TryGetValue(logicalName, out TagDescriptor? descriptor))
+        if (!TryResolve(logicalName, out TagDescriptor? descriptor) || descriptor is null)
         {
             throw new GatewayException($"Tag '{logicalName}' is not present in the tag map.");
         }

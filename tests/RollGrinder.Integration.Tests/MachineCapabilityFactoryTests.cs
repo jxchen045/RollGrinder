@@ -47,7 +47,8 @@ public sealed class MachineCapabilityFactoryTests
             System.Array.Empty<MeasurementChannelDescription>(),
             new Dictionary<string, bool>(),
             new Dictionary<string, double>(),
-            new WorkpieceLimits(100.0, 200.0, 100.0, 200.0, 1000.0));
+            new WorkpieceLimits(100.0, 200.0, 100.0, 200.0, 1000.0),
+            new Dictionary<string, int>());
 
         FluentActions.Invoking(() => MachineCapabilityFactory.Create(machine))
             .Should().Throw<GatewayException>();
@@ -69,7 +70,8 @@ public sealed class MachineCapabilityFactoryTests
             System.Array.Empty<MeasurementChannelDescription>(),
             new Dictionary<string, bool>(),
             new Dictionary<string, double> { ["maxInfeedPerPassRadiusMm"] = 0.05 },
-            new WorkpieceLimits(100.0, 200.0, 100.0, 200.0, 1000.0));
+            new WorkpieceLimits(100.0, 200.0, 100.0, 200.0, 1000.0),
+            new Dictionary<string, int>());
 
         MachineCapability capability = MachineCapabilityFactory.Create(machine);
 

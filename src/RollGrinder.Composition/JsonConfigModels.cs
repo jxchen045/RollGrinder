@@ -24,6 +24,8 @@ internal sealed class MachineJson
     public Dictionary<string, double>? Thresholds { get; set; }
 
     public WorkpieceJson? Workpiece { get; set; }
+
+    public Dictionary<string, int>? StepTypeCodes { get; set; }
 }
 
 internal sealed class ControllerJson
@@ -100,4 +102,6 @@ internal sealed class TagJson
     public double? Scale { get; set; }
 
     public string? Description { get; set; }
+
+    public int? ArrayLength { get; set; }
 }

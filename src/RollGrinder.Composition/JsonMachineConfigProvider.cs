@@ -143,7 +143,8 @@ public sealed class JsonMachineConfigProvider : IMachineConfigProvider
                 workpiece.MaxBodyLengthMm,
                 workpiece.MinDiameterMm,
                 workpiece.MaxDiameterMm,
-                workpiece.MaxWeightKg));
+                workpiece.MaxWeightKg),
+            json.StepTypeCodes ?? new Dictionary<string, int>());
     }
 
     private static ITagMap MapTagMap(TagMapJson json, string path)
@@ -158,7 +159,8 @@ public sealed class JsonMachineConfigProvider : IMachineConfigProvider
                 ParseEnum<TagAccess>(tag.Access, path, "tags[].access"),
                 tag.Unit,
                 tag.Scale ?? 1.0,
-                tag.Description));
+                tag.Description,
+                tag.ArrayLength ?? 1));
         }
 
         return new TagMap(tags);

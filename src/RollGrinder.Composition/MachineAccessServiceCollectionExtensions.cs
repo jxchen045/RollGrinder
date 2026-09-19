@@ -32,6 +32,7 @@ public static class MachineAccessServiceCollectionExtensions
         services.AddSingleton(machine);
         services.AddSingleton(tagMap);
         services.AddSingleton<IMachineConfigProvider>(_ => new JsonMachineConfigProvider(options));
+        services.AddSingleton(MachineCapabilityFactory.Create(machine));
         services.AddSingleton<IMachineGateway>(_ => CreateGateway(options, machine, tagMap));
 
         return services;

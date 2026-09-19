@@ -81,5 +81,11 @@
     "minDiameterMm": 150.0,
     "maxDiameterMm": 1300.0,
     "maxWeightKg": 42000.0
+  },
+  "stepTypeCodes": {
+    "Rough": 1,
+    "Finish": 2,
+    "SparkOut": 3,
+    "Measure": 4
   }
 }

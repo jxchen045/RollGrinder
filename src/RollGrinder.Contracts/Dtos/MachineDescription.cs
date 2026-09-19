@@ -88,6 +88,7 @@ public sealed record WorkpieceLimits(
 /// <param name="Options">选件开关，键由现场约定。</param>
 /// <param name="Thresholds">阈值，键由现场约定，单位写在键名里。</param>
 /// <param name="Workpiece">辊件界限。</param>
+/// <param name="StepTypeCodes">工序类型键到 NC 侧数字代码的映射；新增一类工序只加一条配置。</param>
 public sealed record MachineDescription(
     int SchemaVersion,
     string MachineId,
@@ -97,4 +98,5 @@ public sealed record MachineDescription(
     IReadOnlyList<MeasurementChannelDescription> MeasurementChannels,
     IReadOnlyDictionary<string, bool> Options,
     IReadOnlyDictionary<string, double> Thresholds,
-    WorkpieceLimits Workpiece);
+    WorkpieceLimits Workpiece,
+    IReadOnlyDictionary<string, int> StepTypeCodes);

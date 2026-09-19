@@ -81,12 +81,98 @@
       "description": "Set by the HMI once a complete parameter set has been transferred"
     },
     {
+      "key": "job.profile.bodyPositionMm",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}+300]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "arrayLength": 101,
+      "description": "辊形辊身坐标数组"
+    },
+    {
+      "key": "job.profile.pointCount",
+      "address": "ns=2;s=/Channel/Parameter/R[200]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "辊形点数"
+    },
+    {
+      "key": "job.profile.radiusOffsetMm",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}+500]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "arrayLength": 101,
+      "description": "辊形半径偏差数组"
+    },
+    {
       "key": "job.rollRadiusMm",
       "address": "ns=2;s=/Channel/Parameter/R[100]",
       "dataType": "Double",
       "access": "ReadWrite",
       "unit": "mm",
       "description": "Nominal roll radius handed over to the NC program"
+    },
+    {
+      "key": "job.step.feedMmPerMin",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}+160]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm/min",
+      "arrayLength": 8
+    },
+    {
+      "key": "job.step.infeedPerPassRadiusMm",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}+150]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "arrayLength": 8
+    },
+    {
+      "key": "job.step.passCount",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}+140]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "arrayLength": 8
+    },
+    {
+      "key": "job.step.sparkOutPassCount",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}+190]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "arrayLength": 8
+    },
+    {
+      "key": "job.step.typeCode",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}+130]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "arrayLength": 8,
+      "description": "工序类型代码数组"
+    },
+    {
+      "key": "job.step.wheelSpeedRpm",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}+180]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "rpm",
+      "arrayLength": 8
+    },
+    {
+      "key": "job.step.workpieceSpeedRpm",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}+170]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "rpm",
+      "arrayLength": 8
+    },
+    {
+      "key": "job.stepCount",
+      "address": "ns=2;s=/Channel/Parameter/R[120]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "工序数"
     },
     {
       "key": "machine.channelState",

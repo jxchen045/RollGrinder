@@ -22,7 +22,8 @@ public sealed class MachineMonitorTests
         Array.Empty<MeasurementChannelDescription>(),
         new Dictionary<string, bool>(),
         new Dictionary<string, double>(),
-        new WorkpieceLimits(100.0, 5000.0, 100.0, 1000.0, 1000.0));
+        new WorkpieceLimits(100.0, 5000.0, 100.0, 1000.0, 1000.0),
+            new Dictionary<string, int>());
 
     private static readonly HmiSettings Settings = new(1, "zh-CN", 100, 8, 101, 300, 365, 500);
 

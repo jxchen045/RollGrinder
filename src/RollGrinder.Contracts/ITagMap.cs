@@ -12,7 +12,10 @@ public interface ITagMap
     /// <summary>映射表中的全部变量描述。</summary>
     IReadOnlyList<TagDescriptor> Tags { get; }
 
-    /// <summary>按逻辑名查找，未找到返回 false。</summary>
+    /// <summary>
+    /// 按逻辑名查找，未找到返回 false。
+    /// 支持 base[index] 写法：数组变量的地址在 tagmap.json 里用 {index} 占位。
+    /// </summary>
     bool TryResolve(string logicalName, out TagDescriptor? descriptor);
 
     /// <summary>按逻辑名查找，未找到抛出 <see cref="GatewayException"/>。</summary>

@@ -29,7 +29,7 @@ public sealed class NcArchitectureTests
         "OPCFoundation",
     };
 
-    private static Assembly NcAssembly => typeof(NcAssemblyMarker).Assembly;
+    private static Assembly NcAssembly => typeof(NcJobTranslator).Assembly;
 
     [Fact]
     public void Nc_only_references_core_and_contracts_among_project_assemblies()

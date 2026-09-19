@@ -27,6 +27,7 @@ public enum TagAccess
 /// <param name="Unit">工程单位，仅用于显示与校验，可为空。</param>
 /// <param name="Scale">物理值 = 原始值 * Scale。</param>
 /// <param name="Description">说明，可为空。</param>
+/// <param name="ArrayLength">数组长度；大于 1 表示这是一组变量，地址里用 {index} 占位。</param>
 public sealed record TagDescriptor(
     string Key,
     string Address,
@@ -34,4 +35,36 @@ public sealed record TagDescriptor(
     TagAccess Access,
     string? Unit = null,
     double Scale = 1.0,
-    string? Description = null);
+    string? Description = null,
+    int ArrayLength = 1)
+{
+    /// <summary>地址中的下标占位符。</summary>
+    public const string IndexPlaceholder = "{index}";
+
+    /// <summary>是否为数组变量。</summary>
+    public bool IsArray => ArrayLength > 1 || Address.Contains(IndexPlaceholder, System.StringComparison.Ordinal);
+
+    /// <summary>取数组中第 index 项的描述；下标从 0 开始。</summary>
+    public TagDescriptor AtIndex(int index)
+    {
+        if (!IsArray)
+        {
+            throw new GatewayException($"Tag '{Key}' is not an array.");
+        }
+
+        if (index < 0 || index >= ArrayLength)
+        {
+            throw new GatewayException($"Tag '{Key}' has {ArrayLength} entries; index {index} is out of range.");
+        }
+
+        return this with
+        {
+            Key = TagKeySyntax.Indexed(Key, index),
+            Address = Address.Replace(
+                IndexPlaceholder,
+                index.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                System.StringComparison.Ordinal),
+            ArrayLength = 1,
+        };
+    }
+}

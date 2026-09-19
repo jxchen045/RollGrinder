@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\RollGrinder.Nc\RollGrinder.Nc.csproj" />
+    <ProjectReference Include="..\..\src\RollGrinder.Core\RollGrinder.Core.csproj" />
+    <ProjectReference Include="..\..\src\RollGrinder.Contracts\RollGrinder.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

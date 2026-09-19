@@ -3,6 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Core.Profiles;
+using RollGrinder.Core.Steps;
+using RollGrinder.Nc;
+using RollGrinder.Services.Jobs;
 using RollGrinder.Services.Monitoring;
 
 namespace RollGrinder.Services;
@@ -30,6 +34,13 @@ public static class ServicesServiceCollectionExtensions
             settings,
             provider.GetRequiredService<IAlarmSink>(),
             provider.GetRequiredService<TimeProvider>()));
+
+        services.AddSingleton(provider => new NcJobTranslator(
+            provider.GetRequiredService<RollProfileTypeRegistry>(),
+            provider.GetRequiredService<GrindingStepTypeRegistry>(),
+            provider.GetRequiredService<ITagMap>(),
+            provider.GetRequiredService<MachineDescription>()));
+        services.AddSingleton<IJobDownloadService, JobDownloadService>();
 
         services.AddHostedService<MachineMonitorHostedService>();
 
