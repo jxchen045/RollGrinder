@@ -74,7 +74,20 @@ public static class JsonHmiSettingsProvider
     {
         if (!condition)
         {
-            throw new GatewayException($"Configuration file '{path}' has an out-of-range value for '{field}'.");
+            throw new GatewayException(
+                $"Configuration file '{path}' has a missing or out-of-range value for '{field}'. "
+                + StaleConfigHint(path));
         }
+    }
+
+    /// <summary>
+    /// 旧版本生成的配置缺新字段时最常见。与其让人去猜该填什么，
+    /// 不如直接说清楚"删掉它、重启会从模板重新生成"。
+    /// </summary>
+    internal static string StaleConfigHint(string path)
+    {
+        string sample = Path.GetFileNameWithoutExtension(path) + ConfigBootstrapper.SampleSuffix;
+        return $"If this file was created by an older version, delete it and restart: "
+            + $"it will be recreated from '{sample}'. Site-specific edits must then be re-applied.";
     }
 }

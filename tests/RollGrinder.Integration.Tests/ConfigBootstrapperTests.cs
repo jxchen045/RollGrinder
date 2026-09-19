@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -54,5 +55,58 @@ public sealed class ConfigBootstrapperTests
 
         createdOnSecondStart.Should().BeEmpty("升级或再次启动都不得覆盖现场配置");
         (await File.ReadAllTextAsync(options.MachineConfigFilePath)).Should().Contain("siteEdited");
+    }
+}
+
+/// <summary>
+/// 升级后最常见的现场问题：配置是旧版本生成的，缺了新字段。
+/// 报错必须说清楚是哪份文件、缺哪一项、怎么办。
+/// </summary>
+public sealed class StaleConfigurationTests
+{
+    [Fact]
+    public async Task A_config_from_an_older_version_says_which_file_and_what_to_do()
+    {
+        using var workspace = new TempWorkspace();
+        AppOptions options = AppOptions.Parse(new[] { "--stub" }, workspace.Root);
+        Directory.CreateDirectory(options.ConfigDirectory);
+
+        // 旧版本的 hmi.json：没有补偿增益这些后加的字段。
+        await File.WriteAllTextAsync(
+            Path.Combine(options.ConfigDirectory, "hmi.json"),
+            """
+            {
+              "schemaVersion": 1,
+              "culture": "zh-CN",
+              "pollIntervalMs": 100,
+              "uiRefreshHz": 8,
+              "profileSampleCount": 101,
+              "chartHistorySeconds": 300,
+              "recordRetentionDays": 730,
+              "alarmHistoryLimit": 500
+            }
+            """);
+
+        Func<Task> load = () => JsonHmiSettingsProvider.LoadAsync(options, CancellationToken.None);
+
+        (await load.Should().ThrowAsync<RollGrinder.Contracts.GatewayException>())
+            .WithMessage("*hmi.json*")
+            .WithMessage("*CompensationGain*")
+            .WithMessage("*hmi.sample.json*");
+    }
+
+    [Fact]
+    public async Task A_machine_config_missing_a_field_points_at_its_template_too()
+    {
+        using var workspace = new TempWorkspace();
+        AppOptions options = AppOptions.Parse(new[] { "--stub" }, workspace.Root);
+        Directory.CreateDirectory(options.ConfigDirectory);
+
+        await File.WriteAllTextAsync(options.MachineConfigFilePath, """{ "schemaVersion": 1 }""");
+
+        Func<Task> load = () => new JsonMachineConfigProvider(options).GetMachineAsync(CancellationToken.None);
+
+        (await load.Should().ThrowAsync<RollGrinder.Contracts.GatewayException>())
+            .WithMessage("*machine.sample.json*");
     }
 }

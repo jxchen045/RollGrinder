@@ -191,5 +191,6 @@ public sealed class JsonMachineConfigProvider : IMachineConfigProvider
             : value;
 
     private static GatewayException Missing(string path, string field) =>
-        new($"Configuration file '{path}' is missing required field '{field}'.");
+        new($"Configuration file '{path}' is missing required field '{field}'. "
+            + JsonHmiSettingsProvider.StaleConfigHint(path));
 }
