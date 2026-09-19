@@ -55,6 +55,15 @@ public static class JsonHmiSettingsProvider
         Require(settings.RecordRetentionDays is >= 1 and <= 36500, path, nameof(settings.RecordRetentionDays));
         Require(settings.AlarmHistoryLimit is >= 10 and <= 10000, path, nameof(settings.AlarmHistoryLimit));
         Require(!string.IsNullOrWhiteSpace(settings.Culture), path, nameof(settings.Culture));
+        Require(settings.CompensationGain is > 0.0 and <= 1.0, path, nameof(settings.CompensationGain));
+        Require(
+            settings.CompensationSmoothingPoints >= 1 && settings.CompensationSmoothingPoints % 2 == 1,
+            path,
+            nameof(settings.CompensationSmoothingPoints));
+        Require(
+            settings.ProfileToleranceDiameterMicrometer is > 0.0 and <= 1000.0,
+            path,
+            nameof(settings.ProfileToleranceDiameterMicrometer));
     }
 
     private static void Require(bool condition, string path, string field)

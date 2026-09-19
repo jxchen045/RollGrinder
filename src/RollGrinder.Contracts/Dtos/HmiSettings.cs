@@ -11,6 +11,9 @@ namespace RollGrinder.Contracts.Dtos;
 /// <param name="ChartHistorySeconds">趋势图保留的时长（s）。</param>
 /// <param name="RecordRetentionDays">磨削记录保留天数。</param>
 /// <param name="AlarmHistoryLimit">报警条目上限。</param>
+/// <param name="CompensationGain">补偿增益（0–1）：一次吸收多少比例的偏差。</param>
+/// <param name="CompensationSmoothingPoints">补偿平滑窗口点数（奇数）。</param>
+/// <param name="ProfileToleranceDiameterMicrometer">辊形验收公差（直径量 µm）。</param>
 public sealed record HmiSettings(
     int SchemaVersion,
     string Culture,
@@ -19,4 +22,7 @@ public sealed record HmiSettings(
     int ProfileSampleCount,
     int ChartHistorySeconds,
     int RecordRetentionDays,
-    int AlarmHistoryLimit);
+    int AlarmHistoryLimit,
+    double CompensationGain,
+    int CompensationSmoothingPoints,
+    double ProfileToleranceDiameterMicrometer);

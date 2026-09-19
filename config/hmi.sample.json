@@ -6,5 +6,8 @@
   "profileSampleCount": 101,
   "chartHistorySeconds": 300,
   "recordRetentionDays": 730,
-  "alarmHistoryLimit": 500
+  "alarmHistoryLimit": 500,
+  "compensationGain": 0.7,
+  "compensationSmoothingPoints": 5,
+  "profileToleranceDiameterMicrometer": 5.0
 }

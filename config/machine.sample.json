@@ -73,7 +73,8 @@
     "maxInfeedPerPassRadiusMm": 0.05,
     "maxProfileDeviationMicrometer": 5.0,
     "maxRoundnessMicrometer": 3.0,
-    "wheelWearWarningRadiusMm": 15.0
+    "wheelWearWarningRadiusMm": 15.0,
+    "maxCompensationRadiusMm": 0.02
   },
   "workpiece": {
     "minBodyLengthMm": 300.0,
