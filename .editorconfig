@@ -26,6 +26,16 @@ csharp_style_var_for_built_in_types = false:silent
 csharp_style_var_when_type_is_apparent = true:silent
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
 dotnet_style_readonly_field = true:warning
+# 只在初始化或构造函数里赋过值的私有字段必须是 readonly。
+# 提到 warning 是为了让 VS 和 CI 得出同一个结论，而不是只在某一边冒出来。
+dotnet_diagnostic.IDE0044.severity = warning
+
+# 集合表达式（[...] 代替 new[] {...}）：不强制。
+# 现有写法读起来没有问题，为统一风格全仓改一遍只会制造噪音提交。
+dotnet_diagnostic.IDE0300.severity = none
+dotnet_diagnostic.IDE0301.severity = none
+dotnet_diagnostic.IDE0302.severity = none
+dotnet_diagnostic.IDE0305.severity = none
 dotnet_sort_system_directives_first = true
 
 # 命名：接口以 I 开头

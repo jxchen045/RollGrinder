@@ -57,8 +57,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     private readonly MachineDescription machine;
     private readonly HmiSettings settings;
 
+    private readonly RollGeometry geometry;
+
     private CompositeRollProfile composite;
-    private RollGeometry geometry;
 
     public ProfileViewModel(
         RollProfileTypeRegistry profileTypes,

@@ -24,8 +24,14 @@ public sealed class SimulatedMachine
     /// <summary>测量值的模拟波动幅度（半径量 mm）。</summary>
     public const double MeasurementNoiseRadiusMm = 0.0005;
 
+    /// <summary>没有下发作业时每道工序假定的走刀次数。</summary>
+    public const int FallbackPassCount = 10;
+
     private readonly MachineDescription machine;
     private readonly Dictionary<string, TagValue> writtenValues = new(StringComparer.Ordinal);
+
+    /// <summary>下发进来的每道工序走刀次数，按工序下标（从 0 起）。</summary>
+    private readonly Dictionary<int, int> stepPassCounts = new();
     private readonly string? carriageAxisName;
     private readonly string? infeedAxisName;
     private readonly string? workpieceSpindleName;
@@ -40,7 +46,7 @@ public sealed class SimulatedMachine
     private double elapsedSeconds;
     private int currentStepOrder = 1;
     private int currentPass;
-    private int totalPasses = 10;
+    private int stepCount;
     private int strokeVersion;
     private readonly double wheelDiameterMm = 890.24;
 
@@ -79,6 +85,19 @@ public sealed class SimulatedMachine
 
         this.writtenValues[logicalName] = value;
 
+        // 工序走刀次数是数组变量，下发时一条一条写进来：记下来，仿真才知道每道磨几刀。
+        if (TagKeySyntax.TrySplit(logicalName, out string baseKey, out int index)
+            && string.Equals(baseKey, MachineTagKeys.JobStepPassCount, StringComparison.Ordinal))
+        {
+            int? passCount = (int?)ToDouble(value.Raw);
+            if (passCount is > 0)
+            {
+                this.stepPassCounts[index] = passCount.Value;
+            }
+
+            return;
+        }
+
         switch (logicalName)
         {
             case MachineTagKeys.JobRollRadiusMm:
@@ -91,6 +110,10 @@ public sealed class SimulatedMachine
 
             case MachineTagKeys.JobFeedMmPerMin:
                 this.feedMmPerMin = ToDouble(value.Raw) ?? this.feedMmPerMin;
+                break;
+
+            case MachineTagKeys.JobStepCount:
+                this.stepCount = (int)(ToDouble(value.Raw) ?? 0.0);
                 break;
 
             case MachineTagKeys.JobParametersValid when value.Raw is bool valid:
@@ -212,7 +235,7 @@ public sealed class SimulatedMachine
 
         if (logicalName == MachineTagKeys.JobTotalPasses)
         {
-            return this.totalPasses;
+            return CurrentStepTotalPasses;
         }
 
         if (logicalName == MachineTagKeys.CompensationFeedForwardA)
@@ -258,15 +281,33 @@ public sealed class SimulatedMachine
         return this.writtenValues.TryGetValue(logicalName, out TagValue? written) ? written.Raw : null;
     }
 
+    /// <summary>
+    /// 当前工序要走几刀。下发过就用下发的值，没下发过按 <see cref="FallbackPassCount"/> 走，
+    /// 免得仿真在没有作业时原地不动。
+    /// </summary>
+    private int CurrentStepTotalPasses =>
+        this.stepPassCounts.TryGetValue(this.currentStepOrder - 1, out int passCount) && passCount > 0
+            ? passCount
+            : FallbackPassCount;
+
     private void CompleteStroke()
     {
         // 一个来回算一道；走完本工序的道次就推进到下一道工序。
         this.currentPass++;
         this.strokeVersion++;
-        if (this.currentPass >= this.totalPasses)
+        if (this.currentPass < CurrentStepTotalPasses)
         {
-            this.currentPass = 0;
-            this.currentStepOrder++;
+            return;
+        }
+
+        this.currentPass = 0;
+        this.currentStepOrder++;
+
+        // 最后一道工序走完，程序结束——和真机一样，上位机不需要参与。
+        if (this.stepCount > 0 && this.currentStepOrder > this.stepCount)
+        {
+            ChannelState = NcChannelState.Reset;
+            ProgramName = string.Empty;
         }
     }
 
