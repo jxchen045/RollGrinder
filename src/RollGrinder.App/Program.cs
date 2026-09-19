@@ -14,6 +14,7 @@ using RollGrinder.App.Views;
 using RollGrinder.Composition;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
+using RollGrinder.Data;
 using RollGrinder.Services;
 using Serilog;
 
@@ -66,6 +67,10 @@ public static class Program
             ITagMap tagMap = configProvider.GetTagMapAsync(CancellationToken.None).GetAwaiter().GetResult();
             HmiSettings hmiSettings = JsonHmiSettingsProvider.LoadAsync(options, CancellationToken.None).GetAwaiter().GetResult();
             ApplyCulture(hmiSettings);
+
+            var database = new SqliteDatabase(Path.Combine(options.DataDirectory, SqliteDatabase.FileName));
+            int schemaVersion = database.MigrateAsync(CancellationToken.None).GetAwaiter().GetResult();
+            Log.Information("Database {DatabaseFile} is at schema version {SchemaVersion}", database.DatabaseFilePath, schemaVersion);
 
             using IHost host = BuildHost(options, machine, tagMap, hmiSettings, localizer);
             host.Start();
@@ -131,6 +136,7 @@ public static class Program
 
         builder.Services.AddMachineAccess(options, machine, tagMap);
         builder.Services.AddDomainRegistries();
+        builder.Services.AddDataStore(options);
         builder.Services.AddApplicationServices(hmiSettings);
         builder.Services.AddSingleton(localizer);
         builder.Services.AddSingleton<MainViewModel>();
