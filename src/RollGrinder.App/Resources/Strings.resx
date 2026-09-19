@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="App_Title" xml:space="preserve">
+    <value>轧辊磨床上位机</value>
+  </data>
+  <data name="Main_Header" xml:space="preserve">
+    <value>系统状态</value>
+  </data>
+  <data name="Main_MachineLabel" xml:space="preserve">
+    <value>机床</value>
+  </data>
+  <data name="Main_GatewayLabel" xml:space="preserve">
+    <value>网关</value>
+  </data>
+  <data name="Main_ConnectionLabel" xml:space="preserve">
+    <value>连接状态</value>
+  </data>
+  <data name="Main_ConfigDirectoryLabel" xml:space="preserve">
+    <value>配置目录</value>
+  </data>
+  <data name="Main_DataDirectoryLabel" xml:space="preserve">
+    <value>数据目录</value>
+  </data>
+  <data name="Main_LogDirectoryLabel" xml:space="preserve">
+    <value>日志目录</value>
+  </data>
+  <data name="Main_TagCountLabel" xml:space="preserve">
+    <value>变量映射条目</value>
+  </data>
+  <data name="Main_SkeletonNotice" xml:space="preserve">
+    <value>T-01 骨架：参数编辑、磨削监控与记录界面由后续任务实现。</value>
+  </data>
+  <data name="Startup_FailedCaption" xml:space="preserve">
+    <value>启动失败</value>
+  </data>
+  <data name="Startup_FailedMessage" xml:space="preserve">
+    <value>上位机启动失败：{0}</value>
+  </data>
+</root>

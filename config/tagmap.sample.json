@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "tags": [
+    {
+      "key": "machine.channelState",
+      "address": "ns=2;s=/Channel/State/chanStatus",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "NC channel status"
+    },
+    {
+      "key": "machine.programName",
+      "address": "ns=2;s=/Channel/ProgramInfo/progName",
+      "dataType": "String",
+      "access": "Read"
+    },
+    {
+      "key": "axis.X.actualPositionMm",
+      "address": "ns=2;s=/Channel/MachineAxis/actToolBasePos[u1,1]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "mm",
+      "scale": 1.0
+    },
+    {
+      "key": "axis.Z.actualPositionMm",
+      "address": "ns=2;s=/Channel/MachineAxis/actToolBasePos[u1,2]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "mm",
+      "scale": 1.0
+    },
+    {
+      "key": "axis.C.actualSpeedRpm",
+      "address": "ns=2;s=/Channel/MachineAxis/actSpeedRpm[u1,3]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "rpm"
+    },
+    {
+      "key": "axis.S.actualSpeedRpm",
+      "address": "ns=2;s=/Channel/MachineAxis/actSpeedRpm[u1,4]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "rpm"
+    },
+    {
+      "key": "job.rollRadiusMm",
+      "address": "ns=2;s=/Channel/Parameter/R[100]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "description": "Nominal roll radius handed over to the NC program"
+    },
+    {
+      "key": "job.bodyLengthMm",
+      "address": "ns=2;s=/Channel/Parameter/R[101]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm"
+    },
+    {
+      "key": "job.feedMmPerMin",
+      "address": "ns=2;s=/Channel/Parameter/R[102]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm/min"
+    },
+    {
+      "key": "job.parametersValid",
+      "address": "ns=2;s=/Channel/Parameter/R[110]",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "Set by the HMI once a complete parameter set has been transferred"
+    },
+    {
+      "key": "measure.diameterMm",
+      "address": "ns=2;s=/Plc/DB100.DBD0",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "mm"
+    }
+  ]
+}

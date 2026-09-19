@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore RollGrinder.sln
+
+      # WPF 工程目标框架为 net8.0-windows，靠 EnableWindowsTargeting 在 Linux 上编译。
+      - name: Build
+        run: dotnet build RollGrinder.sln --no-restore -c Release
+
+      # 架构测试（Core 不引用 WPF / OPC UA / 其他项目）在这一步生效。
+      - name: Test
+        run: dotnet test RollGrinder.sln --no-build -c Release --logger "console;verbosity=normal"

@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+*.user
+artifacts/
+data/
+config/machine.json
+config/tagmap.json

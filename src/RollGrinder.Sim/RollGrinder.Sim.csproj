@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>RollGrinder.Sim</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RollGrinder.Contracts\RollGrinder.Contracts.csproj" />
+    <ProjectReference Include="..\RollGrinder.Core\RollGrinder.Core.csproj" />
+  </ItemGroup>
+
+</Project>
