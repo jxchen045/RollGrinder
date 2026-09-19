@@ -1,0 +1,24 @@
+# 默认：仓库里一律 LF，检出时也用 LF。
+# Windows 与 Linux 混合开发时，这样能避免"整文件都变了"的假 diff。
+* text=auto eol=lf
+
+# 只在 Windows 上跑的脚本用 CRLF，免得个别工具挑剔。
+*.ps1  text eol=crlf
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+# 解决方案文件历来是 CRLF，VS 会重写它。
+*.sln  text eol=crlf
+
+# 二进制：不做换行转换，也不做 diff。
+*.png  binary
+*.jpg  binary
+*.ico  binary
+*.pdf  binary
+*.db   binary
+*.pfx  binary
+*.snk  binary
+
+# 这些文件冲突时基本靠重新生成，标出来省得手工合并。
+*.resx    text eol=lf
+*.jsonl   text eol=lf

@@ -21,6 +21,31 @@
 App 用不到 Device 与 Sim 的类型：两者的实现类是 `internal`，只对 `RollGrinder.Composition`
 可见；`tests/RollGrinder.Integration.Tests` 另有架构测试断言 App 程序集不引用这两个程序集。
 
+## 在 VS2022 里连 GitHub 并拉取更新
+
+仓库只有一个分支 `claude/roll-grinder-hmi-software-rzc6gp`，它同时是默认分支：
+克隆下来就是最新代码，不必切分支、也不必合并。
+
+**首次克隆**：VS2022 → `Git` 菜单 → `克隆存储库`，URL 填
+`https://github.com/jxchen045/RollGrinder.git`，本地路径自选 → `克隆`。
+首次会弹浏览器让你登录 GitHub 账号授权，登录一次以后就记住了。
+打开后 VS 会提示缺少组件（`.vsconfig` 声明的），点`安装`即可。
+
+**日常拉取更新**：`Git` 菜单 → `拉取`，或右下角 `Git 更改`窗口的 ↓ 箭头。
+VS 默认每几分钟自动**抓取**一次，有新提交时分支名旁会出现 `↓N` 角标——
+但它只抓取不合并，代码进入工作区仍需你点一次`拉取`。这是有意的：
+自动合并会在你本地有改动时打断你。
+
+想让"有更新"更显眼：`工具` → `选项` → `源代码管理` → `Git 全局设置`，
+确认`自动提取远程分支` = `True`（默认开）。
+
+**拉取不会动你的现场文件**：`.gitignore` 里排除了 `bin/`、`obj/`、`data/`
+以及 `config/machine.json`、`config/tagmap.json`——你本地调过的配置和数据库
+不会被更新覆盖。跟着更新走的只有 `config/*.sample.json` 模板。
+
+**你自己改了代码要交上来**：`Git 更改`窗口写提交说明 → `提交全部` → 点 ↑ `推送`。
+如果推送被拒（说远程有新提交），先`拉取`再推送。
+
 ## 环境要求
 
 | 用途 | 要求 |
