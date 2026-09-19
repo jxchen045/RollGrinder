@@ -21,6 +21,18 @@
 App 用不到 Device 与 Sim 的类型：两者的实现类是 `internal`，只对 `RollGrinder.Composition`
 可见；`tests/RollGrinder.Integration.Tests` 另有架构测试断言 App 程序集不引用这两个程序集。
 
+## 环境要求
+
+| 用途 | 要求 |
+|---|---|
+| 开发 | Visual Studio 2022 17.8 或更高（要装"**.NET 桌面开发**"工作负载），或任意 .NET 8 及以上的 SDK |
+| 运行 | 机床工控机装 **.NET 8 Desktop Runtime**（框架依赖式发布） |
+
+`global.json` 把 SDK 下限钉在 8.0.100、`rollForward` 设为 `latestMajor`，
+所以装了 .NET 9 / 10 的 SDK 也能直接编译，不必再单独装 8.0.1xx。
+目标框架仍是 `net8.0` / `net8.0-windows`，换 SDK 不改变产物。
+若报"找不到 global.json 指定的 SDK 版本"，说明本机连 8.0 以上的 SDK 都没有，装一个即可。
+
 ## 构建与测试
 
 ```bash
