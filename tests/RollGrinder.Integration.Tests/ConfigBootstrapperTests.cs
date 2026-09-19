@@ -28,13 +28,15 @@ public sealed class ConfigBootstrapperTests
     {
         using var workspace = new TempWorkspace();
         AppOptions options = AppOptions.Parse(new[] { "--stub" }, workspace.Root);
+        string samples = workspace.CreateSampleDirectory();
 
         IReadOnlyList<string> created = await ConfigBootstrapper.EnsureConfigurationAsync(
-            options, workspace.CreateSampleDirectory(), CancellationToken.None);
+            options, samples, CancellationToken.None);
 
-        created.Should().HaveCount(2);
+        created.Should().HaveCount(Directory.GetFiles(workspace.SampleDirectory, "*.sample.json").Length);
         File.Exists(options.MachineConfigFilePath).Should().BeTrue();
         File.Exists(options.TagMapFilePath).Should().BeTrue();
+        File.Exists(Path.Combine(options.ConfigDirectory, "hmi.json")).Should().BeTrue();
     }
 
     [Fact]

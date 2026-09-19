@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RollGrinder.Contracts;
@@ -30,13 +31,16 @@ internal sealed class OpcUaGateway : IMachineGateway
 
     public Task DisconnectAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    public Task<MachineStateSnapshot> ReadStateAsync(CancellationToken cancellationToken) =>
+    public Task<MachineStateSnapshot> ReadStateAsync(IReadOnlyList<string> logicalNames, CancellationToken cancellationToken) =>
         throw new GatewayException(NotImplementedMessage);
 
     public Task<TagValue> ReadTagAsync(string logicalName, CancellationToken cancellationToken) =>
         throw new GatewayException(NotImplementedMessage);
 
     public Task WriteTagAsync(string logicalName, TagValue value, CancellationToken cancellationToken) =>
+        throw new GatewayException(NotImplementedMessage);
+
+    public Task WriteTagsAsync(IReadOnlyList<TagWrite> writes, CancellationToken cancellationToken) =>
         throw new GatewayException(NotImplementedMessage);
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;

@@ -28,6 +28,7 @@
     <ProjectReference Include="..\RollGrinder.Nc\RollGrinder.Nc.csproj" />
     <ProjectReference Include="..\RollGrinder.Data\RollGrinder.Data.csproj" />
     <ProjectReference Include="..\RollGrinder.Composition\RollGrinder.Composition.csproj" />
+    <ProjectReference Include="..\RollGrinder.Services\RollGrinder.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

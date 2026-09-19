@@ -2,17 +2,32 @@
   "schemaVersion": 1,
   "tags": [
     {
-      "key": "machine.channelState",
-      "address": "ns=2;s=/Channel/State/chanStatus",
-      "dataType": "Int32",
+      "key": "axis.C.actualPositionMm",
+      "address": "ns=2;s=/Channel/MachineAxis/actToolBasePos[u1,3]",
+      "dataType": "Double",
       "access": "Read",
-      "description": "NC channel status"
+      "unit": "mm"
     },
     {
-      "key": "machine.programName",
-      "address": "ns=2;s=/Channel/ProgramInfo/progName",
-      "dataType": "String",
-      "access": "Read"
+      "key": "axis.C.actualSpeedRpm",
+      "address": "ns=2;s=/Channel/MachineAxis/actSpeedRpm[u1,3]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "rpm"
+    },
+    {
+      "key": "axis.S.actualPositionMm",
+      "address": "ns=2;s=/Channel/MachineAxis/actToolBasePos[u1,4]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "mm"
+    },
+    {
+      "key": "axis.S.actualSpeedRpm",
+      "address": "ns=2;s=/Channel/MachineAxis/actSpeedRpm[u1,4]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "rpm"
     },
     {
       "key": "axis.X.actualPositionMm",
@@ -23,6 +38,13 @@
       "scale": 1.0
     },
     {
+      "key": "axis.X.actualSpeedRpm",
+      "address": "ns=2;s=/Channel/MachineAxis/actSpeedRpm[u1,1]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "rpm"
+    },
+    {
       "key": "axis.Z.actualPositionMm",
       "address": "ns=2;s=/Channel/MachineAxis/actToolBasePos[u1,2]",
       "dataType": "Double",
@@ -31,26 +53,11 @@
       "scale": 1.0
     },
     {
-      "key": "axis.C.actualSpeedRpm",
-      "address": "ns=2;s=/Channel/MachineAxis/actSpeedRpm[u1,3]",
+      "key": "axis.Z.actualSpeedRpm",
+      "address": "ns=2;s=/Channel/MachineAxis/actSpeedRpm[u1,2]",
       "dataType": "Double",
       "access": "Read",
       "unit": "rpm"
-    },
-    {
-      "key": "axis.S.actualSpeedRpm",
-      "address": "ns=2;s=/Channel/MachineAxis/actSpeedRpm[u1,4]",
-      "dataType": "Double",
-      "access": "Read",
-      "unit": "rpm"
-    },
-    {
-      "key": "job.rollRadiusMm",
-      "address": "ns=2;s=/Channel/Parameter/R[100]",
-      "dataType": "Double",
-      "access": "ReadWrite",
-      "unit": "mm",
-      "description": "Nominal roll radius handed over to the NC program"
     },
     {
       "key": "job.bodyLengthMm",
@@ -72,6 +79,27 @@
       "dataType": "Boolean",
       "access": "ReadWrite",
       "description": "Set by the HMI once a complete parameter set has been transferred"
+    },
+    {
+      "key": "job.rollRadiusMm",
+      "address": "ns=2;s=/Channel/Parameter/R[100]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "description": "Nominal roll radius handed over to the NC program"
+    },
+    {
+      "key": "machine.channelState",
+      "address": "ns=2;s=/Channel/State/chanStatus",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "NC channel status"
+    },
+    {
+      "key": "machine.programName",
+      "address": "ns=2;s=/Channel/ProgramInfo/progName",
+      "dataType": "String",
+      "access": "Read"
     },
     {
       "key": "measure.diameterMm",

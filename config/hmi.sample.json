@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "culture": "zh-CN",
+  "pollIntervalMs": 100,
+  "uiRefreshHz": 8,
+  "profileSampleCount": 101,
+  "chartHistorySeconds": 300,
+  "recordRetentionDays": 730,
+  "alarmHistoryLimit": 500
+}

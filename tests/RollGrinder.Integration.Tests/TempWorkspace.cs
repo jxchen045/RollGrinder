@@ -16,10 +16,18 @@ internal sealed class TempWorkspace : IDisposable
 
     public string Root { get; }
 
+    /// <summary>随程序发布的样例目录。</summary>
+    public string SampleDirectory => Path.Combine(Root, "program-config");
+
     /// <summary>把仓库里的 config/*.sample.json 拷进来，模拟随程序发布的样例。</summary>
     public string CreateSampleDirectory()
     {
-        string samples = Path.Combine(Root, "program-config");
+        string samples = SampleDirectory;
+        if (Directory.Exists(samples))
+        {
+            return samples;
+        }
+
         Directory.CreateDirectory(samples);
         foreach (string file in Directory.EnumerateFiles(RepositoryLayout.ConfigSampleDirectory, "*.sample.json"))
         {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core.Steps;
 using RollGrinder.Core.Units;
@@ -16,15 +17,6 @@ public static class MachineCapabilityFactory
     /// <summary>单刀最大切深阈值在 machine.json 中的键。</summary>
     public const string MaxInfeedPerPassRadiusMmKey = "maxInfeedPerPassRadiusMm";
 
-    /// <summary>进给轴的用途标识（machine.json 的 axes[].role）。</summary>
-    public const string CarriageRole = "Carriage";
-
-    /// <summary>工件主轴的用途标识。</summary>
-    public const string WorkpieceSpindleRole = "WorkpieceSpindle";
-
-    /// <summary>砂轮主轴的用途标识。</summary>
-    public const string WheelSpindleRole = "WheelSpindle";
-
     public static MachineCapability Create(MachineDescription machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -33,9 +25,9 @@ public static class MachineCapabilityFactory
 
         return new MachineCapability(
             MaxInfeedPerPassRadiusMm: Threshold(machine, MaxInfeedPerPassRadiusMmKey),
-            MaxFeedMmPerMin: AxisLimit(axes, CarriageRole, axis => axis.MaxFeedMmPerMin),
-            MaxWorkpieceSpeedRpm: AxisLimit(axes, WorkpieceSpindleRole, axis => axis.MaxSpeedRpm),
-            MaxWheelSpeedRpm: AxisLimit(axes, WheelSpindleRole, axis => axis.MaxSpeedRpm),
+            MaxFeedMmPerMin: AxisLimit(axes, MachineAxisRoles.Carriage, axis => axis.MaxFeedMmPerMin),
+            MaxWorkpieceSpeedRpm: AxisLimit(axes, MachineAxisRoles.WorkpieceSpindle, axis => axis.MaxSpeedRpm),
+            MaxWheelSpeedRpm: AxisLimit(axes, MachineAxisRoles.WheelSpindle, axis => axis.MaxSpeedRpm),
             MinBodyLengthMm: machine.Workpiece.MinBodyLengthMm,
             MaxBodyLengthMm: machine.Workpiece.MaxBodyLengthMm,
             MinRadiusMm: UnitConversion.DiameterMmToRadiusMm(machine.Workpiece.MinDiameterMm),
@@ -45,7 +37,7 @@ public static class MachineCapabilityFactory
     private static double Threshold(MachineDescription machine, string key) =>
         machine.Thresholds.TryGetValue(key, out double value)
             ? value
-            : throw new Contracts.GatewayException(
+            : throw new GatewayException(
                 $"machine.json is missing threshold '{key}'; the HMI will not guess a machine limit.");
 
     private static double AxisLimit(
@@ -63,7 +55,7 @@ public static class MachineCapabilityFactory
         }
 
         return selector(axis)
-            ?? throw new Contracts.GatewayException(
+            ?? throw new GatewayException(
                 $"machine.json axis '{axis.Name}' (role {role}) is missing its speed/feed limit.");
     }
 }

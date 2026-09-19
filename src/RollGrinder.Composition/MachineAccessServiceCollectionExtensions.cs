@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Device;
+using RollGrinder.Sim;
 
 namespace RollGrinder.Composition;
 
@@ -40,6 +41,7 @@ public static class MachineAccessServiceCollectionExtensions
         options.Gateway switch
         {
             GatewayKind.Stub => new StubGateway(tagMap),
+            GatewayKind.Sim => new SimulationGateway(tagMap, machine, TimeProvider.System),
             GatewayKind.File => new FileGateway(tagMap, options.DataDirectory),
             GatewayKind.OpcUa => new OpcUaGateway(tagMap, machine.Controller),
             _ => throw new GatewayException($"Unsupported gateway kind '{options.Gateway}'."),

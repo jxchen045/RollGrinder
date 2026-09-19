@@ -14,6 +14,7 @@ using RollGrinder.App.Views;
 using RollGrinder.Composition;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
+using RollGrinder.Services;
 using Serilog;
 
 namespace RollGrinder.App;
@@ -63,8 +64,10 @@ public static class Program
             var configProvider = new JsonMachineConfigProvider(options);
             MachineDescription machine = configProvider.GetMachineAsync(CancellationToken.None).GetAwaiter().GetResult();
             ITagMap tagMap = configProvider.GetTagMapAsync(CancellationToken.None).GetAwaiter().GetResult();
+            HmiSettings hmiSettings = JsonHmiSettingsProvider.LoadAsync(options, CancellationToken.None).GetAwaiter().GetResult();
+            ApplyCulture(hmiSettings);
 
-            using IHost host = BuildHost(options, machine, tagMap, localizer);
+            using IHost host = BuildHost(options, machine, tagMap, hmiSettings, localizer);
             host.Start();
 
             var application = new App(host);
@@ -106,10 +109,20 @@ public static class Program
             .CreateLogger();
     }
 
+    private static void ApplyCulture(HmiSettings settings)
+    {
+        var culture = CultureInfo.GetCultureInfo(settings.Culture);
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
+    }
+
     private static IHost BuildHost(
         AppOptions options,
         MachineDescription machine,
         ITagMap tagMap,
+        HmiSettings hmiSettings,
         IStringLocalizer localizer)
     {
         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
@@ -117,6 +130,8 @@ public static class Program
         builder.Services.AddSerilog();
 
         builder.Services.AddMachineAccess(options, machine, tagMap);
+        builder.Services.AddDomainRegistries();
+        builder.Services.AddApplicationServices(hmiSettings);
         builder.Services.AddSingleton(localizer);
         builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddSingleton<MainWindow>();

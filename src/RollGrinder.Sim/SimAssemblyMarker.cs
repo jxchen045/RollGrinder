@@ -1,8 +1,6 @@
 namespace RollGrinder.Sim;
 
-/// <summary>
-/// 占位类型：T-01 只建立工程与引用方向，磨削过程仿真由后续任务实现。
-/// </summary>
+/// <summary>架构测试用它定位本程序集。</summary>
 internal static class SimAssemblyMarker
 {
 }

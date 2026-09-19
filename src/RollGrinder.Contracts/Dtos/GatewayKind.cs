@@ -11,4 +11,7 @@ public enum GatewayKind
 
     /// <summary>文件实现，用于离线回放与现场取证。</summary>
     File = 2,
+
+    /// <summary>仿真实现：会按下发参数模拟走刀与去除量，用于无机床联调。</summary>
+    Sim = 3,
 }

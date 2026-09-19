@@ -9,7 +9,7 @@ namespace RollGrinder.Device;
 
 /// <summary>
 /// 打桩网关：不连接任何机床，把写入的值记在内存里，读取时回放。
-/// 用于无机床环境下跑通界面与流程。T-01 只保证契约可用，不模拟磨削过程。
+/// 用于无机床环境下跑通界面与流程；需要会"动"的数据请用仿真网关。
 /// </summary>
 internal sealed class StubGateway : IMachineGateway
 {
@@ -38,13 +38,21 @@ internal sealed class StubGateway : IMachineGateway
         return Task.CompletedTask;
     }
 
-    public Task<MachineStateSnapshot> ReadStateAsync(CancellationToken cancellationToken)
+    public Task<MachineStateSnapshot> ReadStateAsync(IReadOnlyList<string> logicalNames, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(logicalNames);
         cancellationToken.ThrowIfCancellationRequested();
-        List<TagValue> snapshot;
-        lock (this.gate)
+
+        var snapshot = new List<TagValue>(logicalNames.Count);
+        foreach (string logicalName in logicalNames)
         {
-            snapshot = new List<TagValue>(this.values.Values);
+            // tagmap 里没有的变量说明本台机床没有这一项，跳过而不是报错。
+            if (!this.tagMap.TryResolve(logicalName, out TagDescriptor? descriptor) || descriptor is null)
+            {
+                continue;
+            }
+
+            snapshot.Add(Read(descriptor));
         }
 
         return Task.FromResult(new MachineStateSnapshot(DateTimeOffset.UtcNow, ConnectionState, snapshot));
@@ -53,21 +61,50 @@ internal sealed class StubGateway : IMachineGateway
     public Task<TagValue> ReadTagAsync(string logicalName, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        TagDescriptor descriptor = this.tagMap.Resolve(logicalName);
-        lock (this.gate)
-        {
-            if (this.values.TryGetValue(logicalName, out TagValue? stored))
-            {
-                return Task.FromResult(stored);
-            }
-        }
-
-        return Task.FromResult(new TagValue(descriptor.Key, descriptor.DataType, DefaultOf(descriptor.DataType), DateTimeOffset.UtcNow));
+        return Task.FromResult(Read(this.tagMap.Resolve(logicalName)));
     }
 
     public Task WriteTagAsync(string logicalName, TagValue value, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(value);
         cancellationToken.ThrowIfCancellationRequested();
+        Write(logicalName, value);
+        return Task.CompletedTask;
+    }
+
+    public Task WriteTagsAsync(IReadOnlyList<TagWrite> writes, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(writes);
+        foreach (TagWrite write in writes)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Write(write.LogicalName, write.Value);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        ConnectionState = GatewayConnectionState.Disconnected;
+        return ValueTask.CompletedTask;
+    }
+
+    private TagValue Read(TagDescriptor descriptor)
+    {
+        lock (this.gate)
+        {
+            if (this.values.TryGetValue(descriptor.Key, out TagValue? stored))
+            {
+                return stored;
+            }
+        }
+
+        return new TagValue(descriptor.Key, descriptor.DataType, DefaultOf(descriptor.DataType), DateTimeOffset.UtcNow);
+    }
+
+    private void Write(string logicalName, TagValue value)
+    {
         TagDescriptor descriptor = this.tagMap.Resolve(logicalName);
         if (descriptor.Access == TagAccess.Read)
         {
@@ -78,14 +115,6 @@ internal sealed class StubGateway : IMachineGateway
         {
             this.values[logicalName] = value;
         }
-
-        return Task.CompletedTask;
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        ConnectionState = GatewayConnectionState.Disconnected;
-        return ValueTask.CompletedTask;
     }
 
     private static object? DefaultOf(TagDataType dataType) => dataType switch
