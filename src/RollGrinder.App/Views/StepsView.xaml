@@ -1,0 +1,230 @@
+<UserControl x:Class="RollGrinder.App.Views.StepsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:RollGrinder.App.Localization"
+             xmlns:views="clr-namespace:RollGrinder.App.Views">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="360" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                    <TextBlock Text="{loc:Loc Steps_SequenceHeader}" Style="{StaticResource Text.CardTitle}" />
+                </Border>
+
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
+                    <ComboBox ItemsSource="{Binding StepTypeKeys}" SelectedItem="{Binding SelectedStepTypeKey}"
+                              Width="150" Height="46" FontSize="17" Margin="0,0,8,0" />
+                    <Button Content="{loc:Loc Steps_AddStep}" Command="{Binding AddStepCommand}"
+                            Style="{StaticResource SecondaryButton}" Height="46" Width="80" Margin="0,0,8,0" />
+                    <Button Content="{loc:Loc Steps_NewJob}" Command="{Binding NewJobCommand}"
+                            Style="{StaticResource SecondaryButton}" Height="46" Width="90" />
+                </StackPanel>
+
+                <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
+                        BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14">
+                    <DockPanel>
+                        <TextBlock Text="{loc:Loc Steps_TotalTime}" FontSize="17" />
+                        <TextBlock Text="{Binding TotalDurationText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
+                                   FontWeight="Medium" HorizontalAlignment="Right" />
+                    </DockPanel>
+                </Border>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8,0,8,8">
+                    <ItemsControl ItemsSource="{Binding Steps}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Height="48" Padding="12,0" Margin="0,0,0,4" Background="{StaticResource Brush.StepIdle}">
+                                    <DockPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Order}" Width="24" FontFamily="{StaticResource Font.Mono}"
+                                                   FontSize="15" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                        <Button Content="{loc:Loc Steps_RemoveStep}" DockPanel.Dock="Right"
+                                                Command="{Binding DataContext.RemoveStepCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource SecondaryButton}" FontSize="15" Padding="10,2" Height="32" />
+                                        <TextBlock Text="{Binding DurationText}" DockPanel.Dock="Right" FontSize="14"
+                                                   Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center"
+                                                   Margin="0,0,12,0" />
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" />
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                            <DockPanel>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{loc:Loc Steps_RollHeader}" Style="{StaticResource Text.CardTitle}" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.CardTitle}"
+                                           HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
+                            </DockPanel>
+                        </Border>
+                        <ItemsControl Background="{StaticResource Brush.GridLine}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="5" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <Border Style="{StaticResource ParameterCell}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Job_JobIdLabel}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding JobId, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ParameterCell}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Job_RollIdLabel}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding RollId, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ParameterCell}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Job_BodyLengthLabel}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ParameterCell}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Job_DiameterLabel}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding NominalDiameterMmText, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ParameterCell}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Job_ProfileTypeLabel}" Style="{StaticResource Text.Label}" />
+                                    <ComboBox ItemsSource="{Binding ProfileTypeKeys}" SelectedItem="{Binding SelectedProfileTypeKey}"
+                                              Height="46" FontSize="18" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                            <TextBlock Text="{loc:Loc Job_ProfileParametersHeader}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding ProfileParameters}" Background="{StaticResource Brush.GridLine}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource ParameterCell}">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" />
+                                                <TextBlock Text="{Binding UnitText}" Style="{StaticResource Text.Label}" Margin="6,0,0,0" />
+                                            </StackPanel>
+                                            <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Steps}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                                <DockPanel>
+                                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Order}" FontFamily="{StaticResource Font.Mono}"
+                                                       Style="{StaticResource Text.CardTitle}" />
+                                            <TextBlock Text="{Binding DisplayName}" Style="{StaticResource Text.CardTitle}"
+                                                       Margin="12,0,0,0" Foreground="{StaticResource Brush.TextPrimary}" />
+                                        </StackPanel>
+                                    </Border>
+                                    <ItemsControl ItemsSource="{Binding Parameters}" Background="{StaticResource Brush.GridLine}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="5" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource ParameterCell}">
+                                                    <StackPanel>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" />
+                                                            <TextBlock Text="{Binding UnitText}" Style="{StaticResource Text.Label}" Margin="6,0,0,0" />
+                                                        </StackPanel>
+                                                        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Style="{StaticResource ValueTextBox}" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                            <TextBlock Text="{loc:Loc Steps_CompensationHeader}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding CompensationSettings}" Background="{StaticResource Brush.GridLine}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="5" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource ParameterCell}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" />
+                                            <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Parameter}" FontSize="26" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Violations}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="4,0,0,6">
+                                <TextBlock Text="{Binding ParameterText}" Width="260" FontSize="17"
+                                           Foreground="{StaticResource Brush.CurrentStep}" />
+                                <TextBlock Text="{Binding ReasonText}" FontSize="17"
+                                           Foreground="{StaticResource Brush.CurrentStep}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

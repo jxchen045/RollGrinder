@@ -17,6 +17,7 @@ using RollGrinder.Core.Steps;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Services;
+using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Jobs;
 using RollGrinder.Services.Measurement;
 using RollGrinder.Services.Records;
@@ -157,7 +158,7 @@ public sealed class RecordServiceTests : IDisposable
             new GrindingRecord("G-old", "J-1", DateTimeOffset.UtcNow.AddYears(-50), null, JobState.Completed, null),
             CancellationToken.None);
         await services.GetRequiredService<IAlarmRepository>().AddAsync(
-            DateTimeOffset.UtcNow.AddYears(-50), 2, "Alarm_GatewayFailure", null, CancellationToken.None);
+            DateTimeOffset.UtcNow.AddYears(-50), 2, "Alarm_GatewayFailure", null, AlarmCodes.GatewayFailure, CancellationToken.None);
 
         int purged = await services.GetRequiredService<IRecordService>().PurgeExpiredAsync(CancellationToken.None);
 

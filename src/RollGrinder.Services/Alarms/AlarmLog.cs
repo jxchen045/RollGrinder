@@ -40,7 +40,7 @@ public sealed class AlarmLog : IAlarmLog
 
     public event EventHandler? Changed;
 
-    public void Raise(AlarmSeverity severity, string messageResourceKey, string? detail = null)
+    public void Raise(AlarmSeverity severity, string messageResourceKey, string? detail = null, int code = AlarmCodes.Unspecified)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(messageResourceKey);
 
@@ -51,7 +51,8 @@ public sealed class AlarmLog : IAlarmLog
                 this.timeProvider.GetUtcNow(),
                 severity,
                 messageResourceKey,
-                detail));
+                detail,
+                code));
 
             while (this.entries.Count > this.limit)
             {
@@ -66,14 +67,14 @@ public sealed class AlarmLog : IAlarmLog
     {
         ArgumentNullException.ThrowIfNull(exception);
 
-        string resourceKey = exception switch
+        (string resourceKey, int code) = exception switch
         {
-            GatewayException => GatewayFailureResourceKey,
-            DomainException => DomainFailureResourceKey,
-            _ => UnexpectedFailureResourceKey,
+            GatewayException => (GatewayFailureResourceKey, AlarmCodes.GatewayFailure),
+            DomainException => (DomainFailureResourceKey, AlarmCodes.DomainFailure),
+            _ => (UnexpectedFailureResourceKey, AlarmCodes.UnexpectedFailure),
         };
 
-        Raise(AlarmSeverity.Error, resourceKey, exception.Message);
+        Raise(AlarmSeverity.Error, resourceKey, exception.Message, code);
     }
 
     public IReadOnlyList<AlarmEntry> Snapshot()

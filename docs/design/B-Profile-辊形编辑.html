@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>辊形编辑 方案B</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;background:#e9ecf0}
+a{color:#15507f}a:hover{color:#0d3a5e}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; background: #e9ecf0; color: #16191e; display: flex; flex-direction: column;">
+
+  <div style="height: 76px; flex-shrink: 0; background: #15507f; color: #ffffff; display: flex; align-items: center; padding: 0 20px; gap: 24px;">
+    <div style="font-size: 26px; font-weight: 700; letter-spacing: 2px;">RGX</div>
+    <div style="font-size: 22px;">辊形编辑</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 20px; color: #cfe2f2;">CVC-3</div>
+    <div style="font-size: 15px; background: #b3241c; padding: 4px 12px;">已修改</div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 16px;">
+      <span style="font-size: 16px; color: #b9d4ea;">权限</span>
+      <span style="font-size: 17px; padding: 5px 14px; background: #0f4370;">管理员</span>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 22px;">14:31:52</div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; gap: 12px; padding: 12px; box-sizing: border-box; min-height: 0;">
+
+    <div style="width: 340px; flex-shrink: 0; background: #ffffff; border: 1px solid #c5cad2; display: flex; flex-direction: column;">
+      <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">曲线段（可叠加）</div>
+      <div style="padding: 8px; display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 12px; background: #e3edf6; border-left: 5px solid #15507f;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: #4a5461; width: 20px;">1</span>
+          <div><div style="font-size: 18px; font-weight: 500;">Polynom</div><div style="font-size: 14px; color: #4a5461;">0 – 2000 mm · 主辊形</div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 12px; background: #f3f5f8;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: #4a5461; width: 20px;">2</span>
+          <div><div style="font-size: 18px;">Taper</div><div style="font-size: 14px; color: #4a5461;">0 – 150 mm · 头架端锥</div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 12px; background: #f3f5f8;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: #4a5461; width: 20px;">3</span>
+          <div><div style="font-size: 18px;">Taper</div><div style="font-size: 14px; color: #4a5461;">1850 – 2000 mm · 尾架端锥</div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 12px; background: #f3f5f8;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: #4a5461; width: 20px;">4</span>
+          <div><div style="font-size: 18px;">Radius</div><div style="font-size: 14px; color: #4a5461;">倒角 R1000</div></div>
+        </div>
+      </div>
+      <div style="padding: 8px; display: flex; gap: 8px;">
+        <button type="button" style="flex-grow: 1; height: 46px; font-family: inherit; font-size: 17px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">插入</button>
+        <button type="button" style="flex-grow: 1; height: 46px; font-family: inherit; font-size: 17px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">删除</button>
+        <button type="button" style="flex-grow: 1; height: 46px; font-family: inherit; font-size: 17px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">上移</button>
+      </div>
+      <div style="margin-top: auto; border-top: 1px solid #c5cad2; padding: 14px;">
+        <div style="font-size: 15px; color: #4a5461; margin-bottom: 10px;">校验</div>
+        <div style="display: flex; justify-content: space-between; font-size: 16px; padding: 5px 0;"><span>最大弦高误差</span><span style="font-family: 'IBM Plex Mono', monospace; color: #1f7a4d;">0.03 µm</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 16px; padding: 5px 0;"><span>分段数 / 段长</span><span style="font-family: 'IBM Plex Mono', monospace;">400 / 5.0 mm</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 16px; padding: 5px 0;"><span>锥度起点对齐</span><span style="font-family: 'IBM Plex Mono', monospace; color: #1f7a4d;">已对齐</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 16px; padding: 5px 0;"><span>补偿执行轴</span><span style="font-family: 'IBM Plex Mono', monospace;">U（中高）</span></div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+      <div style="flex-grow: 1; background: #ffffff; border: 1px solid #c5cad2; display: flex; flex-direction: column; min-height: 0;">
+        <div style="height: 52px; display: flex; align-items: center; gap: 16px; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8;">
+          <span style="font-size: 17px; color: #4a5461; letter-spacing: 1px;">辊形预览（直径量）</span>
+          <span style="display: flex; align-items: center; gap: 7px; font-size: 15px;"><span style="width: 22px; height: 3px; background: #15507f; display: inline-block;"></span>合成辊形</span>
+          <span style="display: flex; align-items: center; gap: 7px; font-size: 15px;"><span style="width: 22px; height: 3px; background: #8d97a3; display: inline-block;"></span>主辊形</span>
+          <span style="display: flex; align-items: center; gap: 7px; font-size: 15px;"><span style="width: 22px; height: 3px; background: #b3241c; display: inline-block;"></span>端部锥度</span>
+          <span style="margin-left: auto; font-size: 15px; color: #4a5461;">镜像 否 · 参考点 辊身中点</span>
+        </div>
+        <div style="flex-grow: 1; padding: 14px; min-height: 0;">
+          <svg viewBox="0 0 1150 420" style="width: 100%; height: 100%; display: block;" role="img" aria-label="CVC 辊形曲线预览，含主辊形与两端锥度">
+            <rect x="80" y="20" width="1050" height="340" fill="#fbfcfd"></rect>
+            <line x1="80" y1="105" x2="1130" y2="105" stroke="#e4e8ed" stroke-width="1"></line>
+            <line x1="80" y1="190" x2="1130" y2="190" stroke="#b6bcc6" stroke-width="1"></line>
+            <line x1="80" y1="275" x2="1130" y2="275" stroke="#e4e8ed" stroke-width="1"></line>
+            <line x1="342" y1="20" x2="342" y2="360" stroke="#eef1f4" stroke-width="1"></line>
+            <line x1="605" y1="20" x2="605" y2="360" stroke="#eef1f4" stroke-width="1"></line>
+            <line x1="868" y1="20" x2="868" y2="360" stroke="#eef1f4" stroke-width="1"></line>
+            <path d="M80 268 C 300 232, 380 150, 605 128 C 830 106, 930 96, 1130 78" fill="none" stroke="#8d97a3" stroke-width="2" stroke-dasharray="7 5"></path>
+            <path d="M80 300 L 158 272 C 300 234, 380 150, 605 128 C 830 106, 930 96, 1052 82 L 1130 112" fill="none" stroke="#15507f" stroke-width="3"></path>
+            <path d="M80 300 L 158 272" fill="none" stroke="#b3241c" stroke-width="3.5"></path>
+            <path d="M1052 82 L 1130 112" fill="none" stroke="#b3241c" stroke-width="3.5"></path>
+            <circle cx="158" cy="272" r="5" fill="#b3241c"></circle>
+            <circle cx="1052" cy="82" r="5" fill="#b3241c"></circle>
+            <text x="68" y="110" text-anchor="end" fill="#4a5461" font-family="IBM Plex Mono, monospace" font-size="16">+0.20</text>
+            <text x="68" y="195" text-anchor="end" fill="#4a5461" font-family="IBM Plex Mono, monospace" font-size="16">0</text>
+            <text x="68" y="280" text-anchor="end" fill="#4a5461" font-family="IBM Plex Mono, monospace" font-size="16">−0.20</text>
+            <text x="80" y="388" fill="#4a5461" font-family="IBM Plex Mono, monospace" font-size="16">0</text>
+            <text x="605" y="388" text-anchor="middle" fill="#4a5461" font-family="IBM Plex Mono, monospace" font-size="16">1000</text>
+            <text x="1130" y="388" text-anchor="end" fill="#4a5461" font-family="IBM Plex Mono, monospace" font-size="16">2000 mm</text>
+            <text x="20" y="32" fill="#4a5461" font-size="15">mm</text>
+            <text x="168" y="255" fill="#b3241c" font-size="15">锥度起点 150</text>
+            <text x="1042" y="66" text-anchor="end" fill="#b3241c" font-size="15">锥度起点 1850</text>
+          </svg>
+        </div>
+      </div>
+
+      <div style="height: 250px; flex-shrink: 0; background: #ffffff; border: 1px solid #c5cad2; display: flex; flex-direction: column;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; gap: 14px;">
+          <span style="font-size: 17px; color: #4a5461; letter-spacing: 1px;">参数 · Polynom</span>
+          <span style="font-size: 15px; color: #6b7581;">字段与校验范围由曲线类型定义自动生成，新增类型无需改界面</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: #d8dde4; flex-grow: 1;">
+          <div style="background: #ffffff; padding: 14px 16px;"><label for="q-z0" style="font-size: 15px; color: #4a5461; display: block;">Z 轴起点 mm</label><input id="q-z0" type="text" value="0.000" style="margin-top: 8px; width: 100%; box-sizing: border-box; height: 46px; background: #ffffff; border: 1px solid #b6bcc6; color: #16191e; font-family: 'IBM Plex Mono', monospace; font-size: 24px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 14px 16px;"><label for="q-z1" style="font-size: 15px; color: #4a5461; display: block;">Z 轴终点 mm</label><input id="q-z1" type="text" value="2000.000" style="margin-top: 8px; width: 100%; box-sizing: border-box; height: 46px; background: #ffffff; border: 1px solid #b6bcc6; color: #16191e; font-family: 'IBM Plex Mono', monospace; font-size: 24px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 14px 16px;"><label for="q-c" style="font-size: 15px; color: #4a5461; display: block;">凸度 mm（直径）</label><input id="q-c" type="text" value="0.500" style="margin-top: 8px; width: 100%; box-sizing: border-box; height: 46px; background: #ffffff; border: 2px solid #15507f; color: #16191e; font-family: 'IBM Plex Mono', monospace; font-size: 24px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 14px 16px;"><label for="q-len" style="font-size: 15px; color: #4a5461; display: block;">辊形参考长度 mm</label><input id="q-len" type="text" value="3000.000" style="margin-top: 8px; width: 100%; box-sizing: border-box; height: 46px; background: #ffffff; border: 1px solid #b6bcc6; color: #16191e; font-family: 'IBM Plex Mono', monospace; font-size: 24px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 14px 16px;"><label for="q-a1" style="font-size: 15px; color: #4a5461; display: block;">系数 a1</label><input id="q-a1" type="text" value="-1.2400e-05" style="margin-top: 8px; width: 100%; box-sizing: border-box; height: 46px; background: #ffffff; border: 1px solid #b6bcc6; color: #16191e; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 14px 16px;"><label for="q-a2" style="font-size: 15px; color: #4a5461; display: block;">系数 a2</label><input id="q-a2" type="text" value="3.1000e-08" style="margin-top: 8px; width: 100%; box-sizing: border-box; height: 46px; background: #ffffff; border: 1px solid #b6bcc6; color: #16191e; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 14px 16px;"><label for="q-a3" style="font-size: 15px; color: #4a5461; display: block;">系数 a3</label><input id="q-a3" type="text" value="-9.6000e-12" style="margin-top: 8px; width: 100%; box-sizing: border-box; height: 46px; background: #ffffff; border: 1px solid #b6bcc6; color: #16191e; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 14px 16px;"><span style="font-size: 15px; color: #4a5461; display: block;">是否镜像</span><div style="margin-top: 8px; display: flex; gap: 8px;"><button type="button" style="flex-grow: 1; height: 46px; font-family: inherit; font-size: 18px; color: #ffffff; background: #15507f; border: none;">否</button><button type="button" style="flex-grow: 1; height: 46px; font-family: inherit; font-size: 18px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">是</button></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 86px; flex-shrink: 0; background: #dde2e8; border-top: 2px solid #c5cad2; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; padding: 12px 14px; box-sizing: border-box;">
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #ffffff; background: #15507f; border: none;">保存</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">另存为</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">新建曲线段</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">点表导入</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">生成点列</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">校验</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">辊形库</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">返回</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

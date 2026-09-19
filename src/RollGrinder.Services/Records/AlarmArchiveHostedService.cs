@@ -62,6 +62,7 @@ public sealed class AlarmArchiveHostedService : IHostedService, IDisposable
                     (int)entry.Severity,
                     entry.MessageResourceKey,
                     entry.Detail,
+                    entry.Code,
                     CancellationToken.None).ConfigureAwait(false);
                 Volatile.Write(ref this.lastArchivedId, entry.Id);
             }

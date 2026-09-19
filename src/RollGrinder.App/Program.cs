@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RollGrinder.App.Localization;
+using RollGrinder.App.Navigation;
 using RollGrinder.App.ViewModels;
 using RollGrinder.App.Views;
 using RollGrinder.Composition;
@@ -139,10 +140,17 @@ public static class Program
         builder.Services.AddDataStore(options);
         builder.Services.AddApplicationServices(hmiSettings);
         builder.Services.AddSingleton(localizer);
-        builder.Services.AddSingleton<MonitorViewModel>();
-        builder.Services.AddSingleton<JobEditorViewModel>();
-        builder.Services.AddSingleton<MeasurementViewModel>();
-        builder.Services.AddSingleton<RecordsViewModel>();
+        builder.Services.AddSingleton<Navigator>();
+        builder.Services.AddSingleton<INavigator>(provider => provider.GetRequiredService<Navigator>());
+
+        // 六个主界面。顺序不重要，外壳按 PageKey 索引。
+        builder.Services.AddSingleton<PageViewModelBase, AutoGrindingViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, ProfileViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, StepsViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, RecordsViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, ManualViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, DiagnosticsViewModel>();
+
         builder.Services.AddSingleton<ShellViewModel>();
         builder.Services.AddSingleton<ShellWindow>();
 

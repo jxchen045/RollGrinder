@@ -7,7 +7,7 @@ namespace RollGrinder.Services.Alarms;
 public interface IAlarmSink
 {
     /// <summary>登记一条报警。</summary>
-    void Raise(AlarmSeverity severity, string messageResourceKey, string? detail = null);
+    void Raise(AlarmSeverity severity, string messageResourceKey, string? detail = null, int code = AlarmCodes.Unspecified);
 
     /// <summary>把异常转成报警：领域异常与网关异常分别对应不同资源键。</summary>
     void RaiseException(Exception exception);

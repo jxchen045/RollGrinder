@@ -21,6 +21,11 @@ public sealed class AlarmRowViewModel
 
     public long Id => this.entry.Id;
 
+    /// <summary>报警号；未登记号时显示 "--"。</summary>
+    public string CodeText => this.entry.Code == Services.Alarms.AlarmCodes.Unspecified
+        ? "--"
+        : this.entry.Code.ToString(CultureInfo.InvariantCulture);
+
     public string TimeText => this.entry.RaisedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.CurrentCulture);
 
     public string SeverityText { get; }

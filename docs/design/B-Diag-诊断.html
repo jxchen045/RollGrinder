@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>诊断 方案B</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;background:#e9ecf0}
+a{color:#15507f}a:hover{color:#0d3a5e}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; background: #e9ecf0; color: #16191e; display: flex; flex-direction: column;">
+
+  <div style="height: 76px; flex-shrink: 0; background: #15507f; color: #ffffff; display: flex; align-items: center; padding: 0 20px; gap: 24px;">
+    <div style="font-size: 26px; font-weight: 700; letter-spacing: 2px;">RGX</div>
+    <div style="font-size: 22px;">诊断</div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 16px;">
+      <span style="font-size: 17px; padding: 5px 14px; background: #0f4370;">制造商</span>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 22px;">10:15:44</div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; gap: 12px; padding: 12px; box-sizing: border-box; min-height: 0;">
+
+    <div style="width: 620px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+
+      <div style="background: #ffffff; border: 1px solid #c5cad2;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">连接与版本</div>
+        <div style="padding: 6px 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceff3;"><span style="font-size: 17px;">OPC UA 连接</span><span style="font-size: 16px; padding: 3px 12px; background: #e2f2e9; color: #1f7a4d;">已连接 · 延时 18 ms</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceff3;"><span style="font-size: 17px;">状态快照年龄</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px;">0.14 s</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceff3;"><span style="font-size: 17px;">软件版本</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px;">1.4.2</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceff3;"><span style="font-size: 17px;">机床配置 machine.json</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px;">MK84160 · v3</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceff3;"><span style="font-size: 17px;">接口契约 tagmap.json</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px;">v1.0 · 校验通过</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;"><span style="font-size: 17px;">机床序列号</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px;">84160-2609-007</span></div>
+        </div>
+      </div>
+
+      <div style="background: #ffffff; border: 1px solid #c5cad2;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">补偿链路</div>
+        <div style="padding: 6px 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceff3;"><span style="font-size: 17px;">测量通道</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px;">NC 编码器 · SMC20</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceff3;"><span style="font-size: 17px;">补偿执行轴</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px; color: #15507f;">U（中高）</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceff3;"><span style="font-size: 17px;">同步动作 IDS=1</span><span style="font-size: 16px; padding: 3px 12px; background: #e2f2e9; color: #1f7a4d;">已激活</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceff3;"><span style="font-size: 17px;">PLC 使能位</span><span style="font-size: 16px; padding: 3px 12px; background: #e2f2e9; color: #1f7a4d;">1 · 允许</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eceff3;"><span style="font-size: 17px;">数据序号</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px;">184 372 · 更新中</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;"><span style="font-size: 17px;">当前 $AA_OFF</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px;">+0.0031 mm</span></div>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; background: #ffffff; border: 1px solid #c5cad2;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">双重限幅一致性</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 16px;">
+          <tr style="background: #f3f5f8;">
+            <th style="text-align: left; padding: 10px 14px; border-bottom: 1px solid #d8dde4; font-weight: 500;">限制项</th>
+            <th style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #d8dde4; font-weight: 500;">NC 侧</th>
+            <th style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #d8dde4; font-weight: 500;">PLC 侧</th>
+            <th style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #d8dde4; font-weight: 500;">一致</th>
+          </tr>
+          <tr><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3;">补偿总量上限 µm</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">20.0</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">20.0</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #eceff3; color: #1f7a4d;">是</td></tr>
+          <tr><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3;">每周期变化率 µm/s</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">2.0</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">2.0</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #eceff3; color: #1f7a4d;">是</td></tr>
+          <tr><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3;">单次修正限幅 µm</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">3.0</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">3.0</td><td style="text-align: right; padding: 10px 14px; border-bottom: 1px solid #eceff3; color: #1f7a4d;">是</td></tr>
+          <tr><td style="padding: 10px 14px;">序号超时 ms</td><td style="text-align: right; padding: 10px 14px; font-family: 'IBM Plex Mono', monospace;">500</td><td style="text-align: right; padding: 10px 14px; font-family: 'IBM Plex Mono', monospace;">500</td><td style="text-align: right; padding: 10px 14px; color: #1f7a4d;">是</td></tr>
+        </table>
+        <div style="padding: 12px 14px; font-size: 15px; color: #4a5461;">阈值来自机床配置，由上位机下发；两侧不一致时报警并禁止补偿投入。</div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+
+      <div style="background: #ffffff; border: 1px solid #c5cad2;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">降级级别</div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 14px;">
+          <button type="button" style="height: 92px; font-family: inherit; font-size: 18px; color: #ffffff; background: #15507f; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;"><span style="font-weight: 500;">全功能</span><span style="font-size: 14px;">前馈 + 迭代 + 实时</span></button>
+          <button type="button" style="height: 92px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;"><span>降一级</span><span style="font-size: 14px; color: #4a5461;">前馈 + 迭代</span></button>
+          <button type="button" style="height: 92px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;"><span>降二级</span><span style="font-size: 14px; color: #4a5461;">仅前馈</span></button>
+        </div>
+      </div>
+
+      <div style="background: #ffffff; border: 1px solid #c5cad2; flex-grow: 1; display: flex; flex-direction: column; min-height: 0;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">报警与事件</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 16px;">
+          <tr style="background: #f3f5f8;">
+            <th style="text-align: left; padding: 10px 14px; border-bottom: 1px solid #d8dde4; font-weight: 500; width: 130px;">时间</th>
+            <th style="text-align: left; padding: 10px 14px; border-bottom: 1px solid #d8dde4; font-weight: 500; width: 110px;">报警号</th>
+            <th style="text-align: left; padding: 10px 14px; border-bottom: 1px solid #d8dde4; font-weight: 500;">内容</th>
+            <th style="text-align: left; padding: 10px 14px; border-bottom: 1px solid #d8dde4; font-weight: 500; width: 110px;">级别</th>
+          </tr>
+          <tr style="background: #fdf0ef;"><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">10:02:31</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">700034</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3;">B 测头压缩达到极限</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3; color: #b3241c;">严重</td></tr>
+          <tr><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">10:02:31</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">720104</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3;">补偿已冻结，保持当前补偿量</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3;">提示</td></tr>
+          <tr><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">09:47:05</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">720011</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3;">行程间误差 RMS 连续 3 程未下降</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3; color: #8a5a00;">一般</td></tr>
+          <tr><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">09:41:26</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3; font-family: 'IBM Plex Mono', monospace;">700056</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3;">偏心套已退到后位</td><td style="padding: 10px 14px; border-bottom: 1px solid #eceff3;">提示</td></tr>
+          <tr><td style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace;">08:03:12</td><td style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace;">720001</td><td style="padding: 10px 14px;">轴线前馈已加载 a=−0.006 b=2.1e−6</td><td style="padding: 10px 14px;">提示</td></tr>
+        </table>
+        <div style="margin-top: auto; padding: 12px 14px; border-top: 1px solid #eceff3; font-size: 15px; color: #4a5461;">本系统报警号段 720000–720999，避开机床既有号段；严重故障封锁自动循环启动。</div>
+      </div>
+
+      <div style="background: #ffffff; border: 1px solid #c5cad2;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">机床能力（按配置）</div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: #d8dde4;">
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">C 测头</div><div style="font-size: 20px; margin-top: 4px;">未配置</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">U1 托瓦调平</div><div style="font-size: 20px; margin-top: 4px; color: #1f7a4d;">已配置</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">涡流探伤</div><div style="font-size: 20px; margin-top: 4px;">未配置</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">砂轮动平衡</div><div style="font-size: 20px; margin-top: 4px; color: #1f7a4d;">已配置</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 86px; flex-shrink: 0; background: #dde2e8; border-top: 2px solid #c5cad2; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; padding: 12px 14px; box-sizing: border-box;">
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #ffffff; background: #15507f; border: none;">导出故障快照</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">运行日志</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">变量监视</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">机床配置</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">标签映射</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">审计日志</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">备份与恢复</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">返回</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

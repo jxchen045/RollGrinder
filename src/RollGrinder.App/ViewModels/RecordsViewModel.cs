@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Localization;
+using RollGrinder.App.Navigation;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Records;
@@ -51,22 +52,48 @@ public sealed class RecordRowViewModel
 }
 
 /// <summary>磨削记录的查询、收尾与导出。</summary>
-public sealed partial class RecordsViewModel : ViewModelBase
+public sealed partial class RecordsViewModel : PageViewModelBase
 {
     private readonly IRecordService recordService;
-    private readonly IStringLocalizer localizer;
 
-    public RecordsViewModel(IRecordService recordService, IStringLocalizer localizer, IAlarmSink alarms)
-        : base(alarms)
+    public RecordsViewModel(
+        IRecordService recordService,
+        IStringLocalizer localizer,
+        IAlarmSink alarms,
+        INavigator navigator)
+        : base(alarms, localizer, navigator)
     {
         this.recordService = recordService ?? throw new ArgumentNullException(nameof(recordService));
-        this.localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
 
         this.toDate = DateTime.Today;
         this.fromDate = DateTime.Today.AddDays(-7);
+
+        SetFunctionKeys(new[]
+        {
+            new FunctionKeyViewModel("Fn_OpenRecord", QueryCommand, localizer, FunctionKeyKind.Primary),
+            FunctionKeyViewModel.Placeholder("Fn_Latest", localizer, () => NotImplementedYet("Fn_Latest")),
+            FunctionKeyViewModel.Placeholder("Fn_DailyReport", localizer, () => NotImplementedYet("Fn_DailyReport")),
+            FunctionKeyViewModel.Placeholder("Fn_MonthlyReport", localizer, () => NotImplementedYet("Fn_MonthlyReport")),
+            FunctionKeyViewModel.Placeholder("Fn_ExportExcel", localizer, () => NotImplementedYet("Fn_ExportExcel")),
+            FunctionKeyViewModel.Placeholder("Fn_Print", localizer, () => NotImplementedYet("Fn_Print")),
+            FunctionKeyViewModel.Placeholder("Fn_RollLedger", localizer, () => NotImplementedYet("Fn_RollLedger")),
+        });
     }
 
+    public override PageKey Key => PageKey.Records;
+
+    public override string TitleResourceKey => "Page_Records";
+
+    public override void OnActivated() => _ = QueryAsync(CancellationToken.None);
+
     public ObservableCollection<RecordRowViewModel> Records { get; } = new();
+
+    /// <summary>选中记录的结果指标。目前记录了这些量，其余（磨前直径、圆度、同轴度等）
+    /// 需要机床侧的测量通道先接进来。</summary>
+    public ObservableCollection<LabelValueViewModel> Metrics { get; } = new();
+
+    [ObservableProperty]
+    private string summaryText = string.Empty;
 
     [ObservableProperty]
     private DateTime fromDate;
@@ -83,9 +110,25 @@ public sealed partial class RecordsViewModel : ViewModelBase
     [ObservableProperty]
     private string statusResourceKey = string.Empty;
 
-    public string StatusText => string.IsNullOrEmpty(StatusResourceKey) ? string.Empty : this.localizer[StatusResourceKey];
+    public string StatusText => string.IsNullOrEmpty(StatusResourceKey) ? string.Empty : Localizer[StatusResourceKey];
 
     partial void OnStatusResourceKeyChanged(string value) => OnPropertyChanged(nameof(StatusText));
+
+    partial void OnSelectedRecordChanged(RecordRowViewModel? value)
+    {
+        Metrics.Clear();
+        if (value is null)
+        {
+            return;
+        }
+
+        Metrics.Add(new LabelValueViewModel("Metric_RollCode", value.RollCode, Localizer));
+        Metrics.Add(new LabelValueViewModel("Metric_Profile", value.ProfileTypeText, Localizer));
+        Metrics.Add(new LabelValueViewModel("Metric_State", value.StateText, Localizer));
+        Metrics.Add(new LabelValueViewModel("Metric_Started", value.StartedText, Localizer));
+        Metrics.Add(new LabelValueViewModel("Metric_Duration", value.DurationText, Localizer));
+        Metrics.Add(new LabelValueViewModel("Metric_WorstDeviation", value.WorstDeviationText, Localizer));
+    }
 
     [RelayCommand]
     public Task QueryAsync(CancellationToken cancellationToken) =>
@@ -98,10 +141,12 @@ public sealed partial class RecordsViewModel : ViewModelBase
             foreach (GrindingRecordView view in await this.recordService
                 .QueryAsync(fromUtc, toUtc, 500, token).ConfigureAwait(true))
             {
-                Records.Add(new RecordRowViewModel(view, this.localizer));
+                Records.Add(new RecordRowViewModel(view, Localizer));
             }
 
             StatusResourceKey = Records.Count == 0 ? "Records_Empty" : "Records_Loaded";
+            SummaryText = Localizer.Format("Records_SummaryFormat", Records.Count);
+            SelectedRecord = Records.FirstOrDefault();
         }, cancellationToken);
 
     [RelayCommand]

@@ -1,0 +1,132 @@
+using System;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Data;
+using System.Windows.Media;
+using RollGrinder.App.ViewModels;
+
+namespace RollGrinder.App.Converters;
+
+/// <summary>工序行的底色：当前工序红、下一道黄、其余浅灰。</summary>
+public sealed class StepStateToBackgroundConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        string key = value is StepRowState state
+            ? state switch
+            {
+                StepRowState.Current => "Brush.CurrentStep",
+                StepRowState.Next => "Brush.NextStep",
+                _ => "Brush.StepIdle",
+            }
+            : "Brush.StepIdle";
+
+        return Application.Current.Resources[key];
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>工序行的字色：跟着底色走，保证对比度。</summary>
+public sealed class StepStateToForegroundConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        string key = value is StepRowState state
+            ? state switch
+            {
+                StepRowState.Current => "Brush.OnCurrentStep",
+                StepRowState.Next => "Brush.OnNextStep",
+                StepRowState.Done => "Brush.TextMuted",
+                _ => "Brush.TextSecondary",
+            }
+            : "Brush.TextSecondary";
+
+        return Application.Current.Resources[key];
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>枚举相等比较：用于分段按钮的选中态。</summary>
+public sealed class EnumEqualsConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is not null && parameter is not null
+        && string.Equals(value.ToString(), parameter.ToString(), StringComparison.Ordinal);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>报警级别 → 顶栏状态条底色。</summary>
+public sealed class SeverityToBrushConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        string key = value is Services.Alarms.AlarmSeverity severity
+            ? severity switch
+            {
+                Services.Alarms.AlarmSeverity.Error => "Brush.CurrentStep",
+                Services.Alarms.AlarmSeverity.Warning => "Brush.WarningFill",
+                _ => "Brush.AccentDark",
+            }
+            : "Brush.AccentDark";
+
+        return Application.Current.Resources[key];
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>功能键种类 → 按钮样式。</summary>
+public sealed class FunctionKeyStyleConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        string key = value is FunctionKeyKind kind
+            ? kind switch
+            {
+                FunctionKeyKind.Primary => "PrimaryButton",
+                FunctionKeyKind.Start => "StartButton",
+                FunctionKeyKind.Danger => "DangerButton",
+                _ => "SecondaryButton",
+            }
+            : "SecondaryButton";
+
+        return Application.Current.Resources[key];
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>资源键 → 本地化文案。顶栏的上下文标签用它。</summary>
+public sealed class LocalizeConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is string key ? Localization.LocalizationScope.Current[key] : string.Empty;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>比例 → 像素宽度。进度条用。</summary>
+public sealed class FractionToWidthConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        double fraction = value is double number ? Math.Clamp(number, 0.0, 1.0) : 0.0;
+        double total = parameter is string text && double.TryParse(text, NumberStyles.Float, culture, out double parsed)
+            ? parsed
+            : 100.0;
+
+        return fraction * total;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

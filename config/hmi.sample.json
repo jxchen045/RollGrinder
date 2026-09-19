@@ -9,5 +9,6 @@
   "alarmHistoryLimit": 500,
   "compensationGain": 0.7,
   "compensationSmoothingPoints": 5,
-  "profileToleranceDiameterMicrometer": 5.0
+  "profileToleranceDiameterMicrometer": 5.0,
+  "defaultRole": "Operator"
 }

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>工序编程 方案B</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;background:#e9ecf0}
+a{color:#15507f}a:hover{color:#0d3a5e}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; background: #e9ecf0; color: #16191e; display: flex; flex-direction: column;">
+
+  <div style="height: 76px; flex-shrink: 0; background: #15507f; color: #ffffff; display: flex; align-items: center; padding: 0 20px; gap: 24px;">
+    <div style="font-size: 26px; font-weight: 700; letter-spacing: 2px;">RGX</div>
+    <div style="font-size: 22px;">工序编程</div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 20px; color: #cfe2f2;">HR-FIN-02</div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 16px;">
+      <span style="font-size: 17px; padding: 5px 14px; background: #0f4370;">管理员</span>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 22px;">14:12:30</div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; gap: 12px; padding: 12px; box-sizing: border-box; min-height: 0;">
+
+    <div style="width: 360px; flex-shrink: 0; background: #ffffff; border: 1px solid #c5cad2; display: flex; flex-direction: column;">
+      <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">工序序列（可任意组合与调序）</div>
+      <div style="padding: 8px; display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: #f3f5f8;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; width: 22px; color: #4a5461;">01</span><span style="font-size: 18px;">开始</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: #f3f5f8;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; width: 22px; color: #4a5461;">02</span><span style="font-size: 18px;">短行程</span><span style="margin-left: auto; font-size: 14px; color: #4a5461;">约 21 min</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: #f3f5f8;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; width: 22px; color: #4a5461;">03</span><span style="font-size: 18px;">粗磨</span><span style="margin-left: auto; font-size: 14px; color: #4a5461;">约 211 min</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: #f3f5f8;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; width: 22px; color: #4a5461;">04</span><span style="font-size: 18px;">砂轮修整</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: #e3edf6; border-left: 5px solid #15507f;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; width: 22px; color: #4a5461;">05</span><span style="font-size: 18px; font-weight: 500;">半精磨</span><span style="margin-left: auto; font-size: 14px; color: #4a5461;">约 120 min</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: #f3f5f8;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; width: 22px; color: #4a5461;">06</span><span style="font-size: 18px;">精磨</span><span style="margin-left: auto; font-size: 14px; color: #4a5461;">约 550 min</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: #f3f5f8;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; width: 22px; color: #4a5461;">07</span><span style="font-size: 18px;">辊形测量</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: #f3f5f8;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; width: 22px; color: #4a5461;">08</span><span style="font-size: 18px;">抛光</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: #f3f5f8;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; width: 22px; color: #4a5461;">09</span><span style="font-size: 18px;">倒角</span></div>
+        <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px; background: #f3f5f8;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; width: 22px; color: #4a5461;">10</span><span style="font-size: 18px;">结束</span></div>
+      </div>
+      <div style="padding: 8px; display: flex; gap: 8px;">
+        <button type="button" style="flex-grow: 1; height: 46px; font-family: inherit; font-size: 17px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">插入</button>
+        <button type="button" style="flex-grow: 1; height: 46px; font-family: inherit; font-size: 17px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">删除</button>
+        <button type="button" style="flex-grow: 1; height: 46px; font-family: inherit; font-size: 17px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">上移</button>
+        <button type="button" style="flex-grow: 1; height: 46px; font-family: inherit; font-size: 17px; color: #16191e; background: #ffffff; border: 1px solid #b6bcc6;">下移</button>
+      </div>
+      <div style="margin-top: auto; border-top: 1px solid #c5cad2; padding: 14px; background: #f3f5f8;">
+        <div style="display: flex; justify-content: space-between; font-size: 17px;"><span>预计总磨削时间</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 500;">902 min</span></div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+
+      <div style="background: #ffffff; border: 1px solid #c5cad2; display: flex; flex-direction: column;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; gap: 14px;">
+          <span style="font-size: 17px; color: #4a5461; letter-spacing: 1px;">工艺参数 · 半精磨</span>
+          <span style="font-size: 15px; color: #6b7581;">参数项由工序类型定义生成</span>
+          <button type="button" style="margin-left: auto; height: 34px; padding: 0 20px; font-size: 16px; font-family: inherit; color: #ffffff; background: #15507f; border: none;">保存工艺</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: #d8dde4;">
+          <div style="background: #ffffff; padding: 12px 16px;"><label for="w1" style="font-size: 15px; color: #4a5461; display: block;">砂轮线速度 m/s</label><input id="w1" type="text" value="30.0" style="margin-top: 6px; width: 100%; box-sizing: border-box; height: 44px; border: 1px solid #b6bcc6; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><label for="w2" style="font-size: 15px; color: #4a5461; display: block;">头架转速 r/min</label><input id="w2" type="text" value="25.6" style="margin-top: 6px; width: 100%; box-sizing: border-box; height: 44px; border: 1px solid #b6bcc6; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><label for="w3" style="font-size: 15px; color: #4a5461; display: block;">拖板速度 mm/min</label><input id="w3" type="text" value="1200" style="margin-top: 6px; width: 100%; box-sizing: border-box; height: 44px; border: 1px solid #b6bcc6; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><label for="w4" style="font-size: 15px; color: #4a5461; display: block;">连续进给 mm/min</label><input id="w4" type="text" value="0.005" style="margin-top: 6px; width: 100%; box-sizing: border-box; height: 44px; border: 1px solid #b6bcc6; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><label for="w5" style="font-size: 15px; color: #4a5461; display: block;">周期进给 mm</label><input id="w5" type="text" value="0.010" style="margin-top: 6px; width: 100%; box-sizing: border-box; height: 44px; border: 1px solid #b6bcc6; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><label for="w6" style="font-size: 15px; color: #4a5461; display: block;">磨削道次</label><input id="w6" type="text" value="10" style="margin-top: 6px; width: 100%; box-sizing: border-box; height: 44px; border: 1px solid #b6bcc6; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><label for="w7" style="font-size: 15px; color: #4a5461; display: block;">磨削量 mm</label><input id="w7" type="text" value="0.100" style="margin-top: 6px; width: 100%; box-sizing: border-box; height: 44px; border: 1px solid #b6bcc6; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><label for="w8" style="font-size: 15px; color: #4a5461; display: block;">折返时间 s</label><input id="w8" type="text" value="1" style="margin-top: 6px; width: 100%; box-sizing: border-box; height: 44px; border: 1px solid #b6bcc6; font-family: 'IBM Plex Mono', monospace; font-size: 22px; padding: 0 10px;"></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><span style="font-size: 15px; color: #4a5461; display: block;">在线测量</span><div style="margin-top: 6px; display: flex; gap: 6px;"><button type="button" style="flex-grow: 1; height: 44px; font-family: inherit; font-size: 16px; color: #ffffff; background: #15507f; border: none;">开</button><button type="button" style="flex-grow: 1; height: 44px; font-family: inherit; font-size: 16px; background: #ffffff; border: 1px solid #b6bcc6;">关</button></div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><span style="font-size: 15px; color: #4a5461; display: block;">变速模式</span><div style="margin-top: 6px; display: flex; gap: 6px;"><button type="button" style="flex-grow: 1; height: 44px; font-family: inherit; font-size: 15px; color: #ffffff; background: #15507f; border: none;">轧辊</button><button type="button" style="flex-grow: 1; height: 44px; font-family: inherit; font-size: 15px; background: #ffffff; border: 1px solid #b6bcc6;">砂轮</button><button type="button" style="flex-grow: 1; height: 44px; font-family: inherit; font-size: 15px; background: #ffffff; border: 1px solid #b6bcc6;">两者</button></div></div>
+        </div>
+      </div>
+
+      <div style="background: #ffffff; border: 1px solid #c5cad2; display: flex; flex-direction: column;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">补偿设置 · 本工序（制造商权限）</div>
+        <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: #d8dde4;">
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 15px; color: #4a5461;">行程间增益 g</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; margin-top: 6px;">0.60</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 15px; color: #4a5461;">空间滤波窗口</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; margin-top: 6px;">2.0 × B</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 15px; color: #4a5461;">单次修正限幅 µm</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; margin-top: 6px;">3.0</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 15px; color: #4a5461;">总补偿限幅 µm</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; margin-top: 6px;">20.0</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 15px; color: #4a5461;">实时补偿</div><div style="font-size: 22px; margin-top: 8px; color: #1f7a4d;">开 · 低增益</div></div>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; background: #ffffff; border: 1px solid #c5cad2; display: flex; flex-direction: column; min-height: 0;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">程序步骤（自动磨削前取舍）</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; padding: 12px 18px;">
+          <label style="display: flex; align-items: center; gap: 12px; height: 42px; font-size: 18px;"><input type="checkbox" checked="" style="width: 22px; height: 22px;"> 轧辊磨前测量</label>
+          <label style="display: flex; align-items: center; gap: 12px; height: 42px; font-size: 18px;"><input type="checkbox" checked="" style="width: 22px; height: 22px;"> 测量安装误差</label>
+          <label style="display: flex; align-items: center; gap: 12px; height: 42px; font-size: 18px;"><input type="checkbox" checked="" style="width: 22px; height: 22px;"> 轴线前馈补偿</label>
+          <label style="display: flex; align-items: center; gap: 12px; height: 42px; font-size: 18px;"><input type="checkbox" style="width: 22px; height: 22px;"> U1 轴自动调平</label>
+          <label style="display: flex; align-items: center; gap: 12px; height: 42px; font-size: 18px;"><input type="checkbox" checked="" style="width: 22px; height: 22px;"> 砂轮自动趋近</label>
+          <label style="display: flex; align-items: center; gap: 12px; height: 42px; font-size: 18px;"><input type="checkbox" checked="" style="width: 22px; height: 22px;"> 允许在线测量</label>
+          <label style="display: flex; align-items: center; gap: 12px; height: 42px; font-size: 18px;"><input type="checkbox" checked="" style="width: 22px; height: 22px;"> 轧辊磨后测量</label>
+          <label style="display: flex; align-items: center; gap: 12px; height: 42px; font-size: 18px;"><input type="checkbox" style="width: 22px; height: 22px;"> 涡流探伤</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 86px; flex-shrink: 0; background: #dde2e8; border-top: 2px solid #c5cad2; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; padding: 12px 14px; box-sizing: border-box;">
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #ffffff; background: #15507f; border: none;">保存程序</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">另存为</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">选择辊形</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">轧辊数据</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">下发 NC</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">程序库</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #ffffff; background: #1f7a4d; border: none;">进入自动磨削</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">返回</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

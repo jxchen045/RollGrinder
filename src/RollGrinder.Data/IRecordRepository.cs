@@ -51,7 +51,13 @@ public interface ICompensationRepository
 /// <summary>报警归档。</summary>
 public interface IAlarmRepository
 {
-    Task AddAsync(DateTimeOffset raisedAtUtc, int severity, string messageResourceKey, string? detail, CancellationToken cancellationToken);
+    Task AddAsync(
+        DateTimeOffset raisedAtUtc,
+        int severity,
+        string messageResourceKey,
+        string? detail,
+        int code,
+        CancellationToken cancellationToken);
 
     Task<IReadOnlyList<AlarmRecord>> ListAsync(int limit, CancellationToken cancellationToken);
 

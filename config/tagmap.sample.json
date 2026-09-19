@@ -60,11 +60,66 @@
       "unit": "rpm"
     },
     {
+      "key": "compensation.degradationLevel",
+      "address": "ns=2;s=/Channel/Parameter/R[213]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "0 全功能 / 1 前馈+迭代 / 2 仅前馈"
+    },
+    {
+      "key": "compensation.feedForwardA",
+      "address": "ns=2;s=/Channel/Parameter/R[210]",
+      "dataType": "Double",
+      "access": "Read",
+      "description": "轴线前馈一次项"
+    },
+    {
+      "key": "compensation.feedForwardB",
+      "address": "ns=2;s=/Channel/Parameter/R[211]",
+      "dataType": "Double",
+      "access": "Read",
+      "description": "轴线前馈二次项"
+    },
+    {
+      "key": "compensation.realtimeOffsetMm",
+      "address": "ns=2;s=/Channel/GeometricAxis/aaOff[u1,1]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "mm",
+      "description": "$AA_OFF"
+    },
+    {
+      "key": "compensation.strokeVersion",
+      "address": "ns=2;s=/Channel/Parameter/R[212]",
+      "dataType": "Int32",
+      "access": "Read"
+    },
+    {
+      "key": "grinding.currentA",
+      "address": "ns=2;s=/Plc/DB100.DBD20",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "A"
+    },
+    {
       "key": "job.bodyLengthMm",
       "address": "ns=2;s=/Channel/Parameter/R[101]",
       "dataType": "Double",
       "access": "ReadWrite",
       "unit": "mm"
+    },
+    {
+      "key": "job.currentPass",
+      "address": "ns=2;s=/Channel/Parameter/R[122]",
+      "dataType": "Int32",
+      "access": "Read"
+    },
+    {
+      "key": "job.currentStepOrder",
+      "address": "ns=2;s=/Channel/Parameter/R[121]",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "NC 正在执行第几道工序"
     },
     {
       "key": "job.feedMmPerMin",
@@ -184,6 +239,12 @@
       "description": "工序数"
     },
     {
+      "key": "job.totalPasses",
+      "address": "ns=2;s=/Channel/Parameter/R[123]",
+      "dataType": "Int32",
+      "access": "Read"
+    },
+    {
       "key": "machine.channelState",
       "address": "ns=2;s=/Channel/State/chanStatus",
       "dataType": "Int32",
@@ -202,6 +263,36 @@
       "dataType": "Double",
       "access": "Read",
       "unit": "mm"
+    },
+    {
+      "key": "measure.probeAMm",
+      "address": "ns=2;s=/Plc/DB100.DBD4",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "mm",
+      "description": "A 测头"
+    },
+    {
+      "key": "measure.probeBMm",
+      "address": "ns=2;s=/Plc/DB100.DBD8",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "mm",
+      "description": "B 测头"
+    },
+    {
+      "key": "wheel.diameterMm",
+      "address": "ns=2;s=/Plc/DB100.DBD12",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "mm"
+    },
+    {
+      "key": "wheel.speedRpm",
+      "address": "ns=2;s=/Plc/DB100.DBD16",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "rpm"
     }
   ]
 }

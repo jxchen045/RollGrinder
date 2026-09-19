@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using RollGrinder.Contracts;
@@ -17,6 +18,8 @@ public static class JsonHmiSettingsProvider
     {
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
+        // 权限在配置里写成名字（Operator / Administrator / Manufacturer），比数字可读。
+        Converters = { new JsonStringEnumConverter(allowIntegerValues: false) },
     };
 
     public static async Task<HmiSettings> LoadAsync(IAppOptions options, CancellationToken cancellationToken)
@@ -55,6 +58,7 @@ public static class JsonHmiSettingsProvider
         Require(settings.RecordRetentionDays is >= 1 and <= 36500, path, nameof(settings.RecordRetentionDays));
         Require(settings.AlarmHistoryLimit is >= 10 and <= 10000, path, nameof(settings.AlarmHistoryLimit));
         Require(!string.IsNullOrWhiteSpace(settings.Culture), path, nameof(settings.Culture));
+        Require(Enum.IsDefined(settings.DefaultRole), path, nameof(settings.DefaultRole));
         Require(settings.CompensationGain is > 0.0 and <= 1.0, path, nameof(settings.CompensationGain));
         Require(
             settings.CompensationSmoothingPoints >= 1 && settings.CompensationSmoothingPoints % 2 == 1,

@@ -38,6 +38,11 @@ public sealed class SimulatedMachine
     private double carriagePositionMm;
     private int carriageDirection = 1;
     private double elapsedSeconds;
+    private int currentStepOrder = 1;
+    private int currentPass;
+    private int totalPasses = 10;
+    private int strokeVersion;
+    private double wheelDiameterMm = 890.24;
 
     public SimulatedMachine(MachineDescription machine)
     {
@@ -128,11 +133,13 @@ public sealed class SimulatedMachine
         {
             this.carriagePositionMm = this.bodyLengthMm;
             this.carriageDirection = -1;
+            CompleteStroke();
         }
         else if (this.carriagePositionMm <= 0.0)
         {
             this.carriagePositionMm = 0.0;
             this.carriageDirection = 1;
+            CompleteStroke();
         }
 
         // 去除量按恒定速率逼近目标半径。
@@ -164,6 +171,70 @@ public sealed class SimulatedMachine
             return UnitConversion.RadiusMmToDiameterMm(this.currentRadiusMm + Noise());
         }
 
+        // 双测头：A、B 读数围绕实际半径偏差摆动，(A−B)/2 即对中偏差。
+        if (logicalName == MachineTagKeys.MeasureProbeAMm)
+        {
+            return Noise() + (MeasurementNoiseRadiusMm * 0.6);
+        }
+
+        if (logicalName == MachineTagKeys.MeasureProbeBMm)
+        {
+            return Noise() - (MeasurementNoiseRadiusMm * 0.6);
+        }
+
+        if (logicalName == MachineTagKeys.WheelDiameterMm)
+        {
+            return this.wheelDiameterMm;
+        }
+
+        if (logicalName == MachineTagKeys.WheelSpeedRpm)
+        {
+            return ChannelState == NcChannelState.Running ? 590.0 : 0.0;
+        }
+
+        if (logicalName == MachineTagKeys.GrindingCurrentA)
+        {
+            // 空载约 6 A，磨削时随余量上升。
+            return ChannelState == NcChannelState.Running
+                ? 6.0 + (RemainingStockRadiusMm / InitialStockRadiusMm * 36.0)
+                : 0.0;
+        }
+
+        if (logicalName == MachineTagKeys.JobCurrentStepOrder)
+        {
+            return this.currentStepOrder;
+        }
+
+        if (logicalName == MachineTagKeys.JobCurrentPass)
+        {
+            return this.currentPass;
+        }
+
+        if (logicalName == MachineTagKeys.JobTotalPasses)
+        {
+            return this.totalPasses;
+        }
+
+        if (logicalName == MachineTagKeys.CompensationFeedForwardA)
+        {
+            return -0.006;
+        }
+
+        if (logicalName == MachineTagKeys.CompensationFeedForwardB)
+        {
+            return 2.1e-6;
+        }
+
+        if (logicalName == MachineTagKeys.CompensationStrokeVersion)
+        {
+            return this.strokeVersion;
+        }
+
+        if (logicalName == MachineTagKeys.CompensationRealtimeOffsetMm)
+        {
+            return ChannelState == NcChannelState.Running ? Noise() * 6.0 : 0.0;
+        }
+
         if (this.carriageAxisName is not null && logicalName == MachineTagKeys.AxisActualPositionMm(this.carriageAxisName))
         {
             return this.carriagePositionMm;
@@ -187,11 +258,26 @@ public sealed class SimulatedMachine
         return this.writtenValues.TryGetValue(logicalName, out TagValue? written) ? written.Raw : null;
     }
 
+    private void CompleteStroke()
+    {
+        // 一个来回算一道；走完本工序的道次就推进到下一道工序。
+        this.currentPass++;
+        this.strokeVersion++;
+        if (this.currentPass >= this.totalPasses)
+        {
+            this.currentPass = 0;
+            this.currentStepOrder++;
+        }
+    }
+
     private void StartProgram()
     {
         this.currentRadiusMm = this.targetRadiusMm + InitialStockRadiusMm;
         this.carriagePositionMm = 0.0;
         this.carriageDirection = 1;
+        this.currentStepOrder = 1;
+        this.currentPass = 0;
+        this.strokeVersion = 0;
         ChannelState = NcChannelState.Running;
         ProgramName = string.Create(
             CultureInfo.InvariantCulture,

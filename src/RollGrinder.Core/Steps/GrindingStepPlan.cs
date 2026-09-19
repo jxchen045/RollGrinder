@@ -1,3 +1,5 @@
+using System;
+using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Units;
 
 namespace RollGrinder.Core.Steps;
@@ -30,4 +32,21 @@ public sealed record GrindingStepPlan(
     /// <summary>本工序的总去除量（直径量 µm），界面显示用。</summary>
     public double TotalStockDiameterMicrometer =>
         UnitConversion.RadiusMmToDiameterMicrometer(TotalInfeedRadiusMm);
+
+    /// <summary>
+    /// 估算本工序耗时：每道一个往复，按辊身长度与轴向进给算，光磨道次一并计入。
+    /// 这是排产用的估算，不是承诺——实际还受修整、测量与暂停影响。
+    /// </summary>
+    public TimeSpan EstimateDuration(RollGeometry geometry)
+    {
+        ArgumentNullException.ThrowIfNull(geometry);
+        if (FeedMmPerMin <= 0.0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        double singleStrokeMinutes = geometry.BodyLengthMm / FeedMmPerMin;
+        int strokeCount = (PassCount + SparkOutPassCount) * 2;
+        return TimeSpan.FromMinutes(strokeCount * singleStrokeMinutes);
+    }
 }

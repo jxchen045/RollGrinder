@@ -1,0 +1,63 @@
+<!--
+  字号规范见 docs/design/配色与字号规范.png：
+  主测量值 54 / 参数值 30 / 数据行 24 / 正文与按钮 19 / 标签 15。
+  中文 Noto Sans SC、数字 IBM Plex Mono；工控机上回退到自带的
+  Microsoft YaHei UI 与 Consolas（同样满足中文可读 + 数字等宽）。
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+  <FontFamily x:Key="Font.Sans">Noto Sans SC, Microsoft YaHei UI, Microsoft YaHei</FontFamily>
+  <FontFamily x:Key="Font.Mono">IBM Plex Mono, Consolas, Cascadia Mono</FontFamily>
+
+  <sys:Double x:Key="Size.Measurement">54</sys:Double>
+  <sys:Double x:Key="Size.Parameter">30</sys:Double>
+  <sys:Double x:Key="Size.DataRow">24</sys:Double>
+  <sys:Double x:Key="Size.Body">19</sys:Double>
+  <sys:Double x:Key="Size.Label">15</sys:Double>
+  <sys:Double x:Key="Size.CardTitle">17</sys:Double>
+  <sys:Double x:Key="Size.PageTitle">22</sys:Double>
+  <sys:Double x:Key="Size.Brand">26</sys:Double>
+
+  <!-- 主测量值：实测直径这类"一眼要看到"的数 -->
+  <Style x:Key="Text.Measurement" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Mono}" />
+    <Setter Property="FontSize" Value="{StaticResource Size.Measurement}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.Accent}" />
+  </Style>
+
+  <Style x:Key="Text.Parameter" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Mono}" />
+    <Setter Property="FontSize" Value="{StaticResource Size.Parameter}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+  </Style>
+
+  <Style x:Key="Text.DataRow" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Mono}" />
+    <Setter Property="FontSize" Value="{StaticResource Size.DataRow}" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+  </Style>
+
+  <Style x:Key="Text.Body" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Sans}" />
+    <Setter Property="FontSize" Value="{StaticResource Size.Body}" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+  </Style>
+
+  <Style x:Key="Text.Label" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Sans}" />
+    <Setter Property="FontSize" Value="{StaticResource Size.Label}" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+  </Style>
+
+  <Style x:Key="Text.CardTitle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Sans}" />
+    <Setter Property="FontSize" Value="{StaticResource Size.CardTitle}" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+</ResourceDictionary>

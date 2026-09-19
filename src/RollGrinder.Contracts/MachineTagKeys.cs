@@ -63,6 +63,45 @@ public static class MachineTagKeys
     /// <summary>辊形曲线的半径偏差数组（mm）。</summary>
     public const string JobProfileRadiusOffsetMm = "job.profile.radiusOffsetMm";
 
+    /// <summary>NC 正在执行第几道工序（从 1 开始）。</summary>
+    public const string JobCurrentStepOrder = "job.currentStepOrder";
+
+    /// <summary>当前工序的第几次走刀。</summary>
+    public const string JobCurrentPass = "job.currentPass";
+
+    /// <summary>当前工序的总走刀次数。</summary>
+    public const string JobTotalPasses = "job.totalPasses";
+
+    /// <summary>A 测头读数（mm）。</summary>
+    public const string MeasureProbeAMm = "measure.probeAMm";
+
+    /// <summary>B 测头读数（mm）。</summary>
+    public const string MeasureProbeBMm = "measure.probeBMm";
+
+    /// <summary>砂轮直径（mm）。</summary>
+    public const string WheelDiameterMm = "wheel.diameterMm";
+
+    /// <summary>砂轮转速（r/min）。</summary>
+    public const string WheelSpeedRpm = "wheel.speedRpm";
+
+    /// <summary>磨削电流（A）。</summary>
+    public const string GrindingCurrentA = "grinding.currentA";
+
+    /// <summary>轴线前馈一次项 a。</summary>
+    public const string CompensationFeedForwardA = "compensation.feedForwardA";
+
+    /// <summary>轴线前馈二次项 b。</summary>
+    public const string CompensationFeedForwardB = "compensation.feedForwardB";
+
+    /// <summary>行程间补偿的版本号（每迭代一次加一）。</summary>
+    public const string CompensationStrokeVersion = "compensation.strokeVersion";
+
+    /// <summary>实时补偿量 $AA_OFF（mm）。</summary>
+    public const string CompensationRealtimeOffsetMm = "compensation.realtimeOffsetMm";
+
+    /// <summary>补偿降级级别：0 全功能（前馈+迭代+实时），1 前馈+迭代，2 仅前馈。</summary>
+    public const string CompensationDegradationLevel = "compensation.degradationLevel";
+
     /// <summary>某根轴的实际位置（mm）。</summary>
     public static string AxisActualPositionMm(string axisName) =>
         Compose("axis", axisName, "actualPositionMm");
@@ -87,6 +126,19 @@ public static class MachineTagKeys
             ProgramName,
             JobParametersValid,
             MeasuredDiameterMm,
+            JobCurrentStepOrder,
+            JobCurrentPass,
+            JobTotalPasses,
+            MeasureProbeAMm,
+            MeasureProbeBMm,
+            WheelDiameterMm,
+            WheelSpeedRpm,
+            GrindingCurrentA,
+            CompensationFeedForwardA,
+            CompensationFeedForwardB,
+            CompensationStrokeVersion,
+            CompensationRealtimeOffsetMm,
+            CompensationDegradationLevel,
         };
 
         foreach (AxisDescription axis in machine.Axes)

@@ -2,39 +2,109 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization">
-    <DockPanel Margin="16">
-        <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Records_Header}" FontSize="20" Margin="0,0,0,12" />
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="420" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
-            <TextBlock Text="{loc:Loc Records_FromLabel}" VerticalAlignment="Center" />
-            <DatePicker SelectedDate="{Binding FromDate}" Margin="8,0,16,0" />
-            <TextBlock Text="{loc:Loc Records_ToLabel}" VerticalAlignment="Center" />
-            <DatePicker SelectedDate="{Binding ToDate}" Margin="8,0,16,0" />
-            <Button Content="{loc:Loc Records_QueryButton}" Command="{Binding QueryCommand}" Padding="16,6" />
-            <Button x:Name="ExportButton" Content="{loc:Loc Records_ExportButton}" Click="OnExportClick" Margin="8,0,0,0" Padding="16,6" />
-            <TextBlock Text="{Binding StatusText}" Margin="16,0,0,0" VerticalAlignment="Center" Opacity="0.8" />
-        </StackPanel>
+        <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{loc:Loc Records_FromLabel}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <DatePicker SelectedDate="{Binding FromDate}" Width="120" Height="38" Margin="8,0" FontSize="15" />
+                        <TextBlock Text="{loc:Loc Records_ToLabel}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <DatePicker SelectedDate="{Binding ToDate}" Width="120" Height="38" Margin="8,0" FontSize="15" />
+                        <Button Content="{loc:Loc Records_QueryButton}" Command="{Binding QueryCommand}"
+                                Style="{StaticResource PrimaryButton}" Height="38" Padding="16,0" />
+                    </StackPanel>
+                </Border>
 
-        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,12,0,0">
-            <TextBlock Text="{loc:Loc Records_NoteLabel}" VerticalAlignment="Center" />
-            <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" Width="320" Margin="8,0,0,0" />
-            <Button Content="{loc:Loc Records_FinishButton}" Command="{Binding FinishSelectedCommand}" Margin="8,0,0,0" Padding="16,6" />
-        </StackPanel>
+                <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
+                        BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,12">
+                    <DockPanel>
+                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.Label}" FontSize="16" />
+                        <TextBlock Text="{Binding SummaryText}" Style="{StaticResource Text.Label}" FontSize="16"
+                                   HorizontalAlignment="Right" />
+                    </DockPanel>
+                </Border>
 
-        <DataGrid ItemsSource="{Binding Records}"
-                  SelectedItem="{Binding SelectedRecord}"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="True"
-                  HeadersVisibility="Column">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="{loc:Loc Records_StartedColumn}" Binding="{Binding StartedText}" Width="160" />
-                <DataGridTextColumn Header="{loc:Loc Records_RollColumn}" Binding="{Binding RollCode}" Width="140" />
-                <DataGridTextColumn Header="{loc:Loc Records_ProfileColumn}" Binding="{Binding ProfileTypeText}" Width="140" />
-                <DataGridTextColumn Header="{loc:Loc Records_StateColumn}" Binding="{Binding StateText}" Width="120" />
-                <DataGridTextColumn Header="{loc:Loc Records_DurationColumn}" Binding="{Binding DurationText}" Width="120" />
-                <DataGridTextColumn Header="{loc:Loc Records_DeviationColumn}" Binding="{Binding WorstDeviationText}" Width="140" />
-                <DataGridTextColumn Header="{loc:Loc Records_RecordIdColumn}" Binding="{Binding RecordId}" Width="*" />
-            </DataGrid.Columns>
-        </DataGrid>
-    </DockPanel>
+                <ListBox ItemsSource="{Binding Records}" SelectedItem="{Binding SelectedRecord}"
+                         BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="14,12" BorderBrush="{StaticResource Brush.PlotGridMinor}" BorderThickness="0,0,0,1">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                        <TextBlock Text="{Binding StartedText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                                   HorizontalAlignment="Right" />
+                                        <TextBlock Text="{Binding StateText}" FontSize="14" HorizontalAlignment="Right"
+                                                   Foreground="{StaticResource Brush.Normal}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding RollCode}" FontFamily="{StaticResource Font.Mono}" FontSize="19" />
+                                        <TextBlock Text="{Binding ProfileTypeText}" Style="{StaticResource Text.Label}" FontSize="14" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding SelectedRecord.RollCode}" Style="{StaticResource Text.CardTitle}"
+                                       Foreground="{StaticResource Brush.TextPrimary}" />
+                            <TextBlock Text="{loc:Loc Records_ResultHeader}" Style="{StaticResource Text.CardTitle}" Margin="10,0,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding Metrics}" Background="{StaticResource Brush.GridLine}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="6" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource ParameterCell}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="14" />
+                                        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.DataRow}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="1" Style="{StaticResource Card}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Records_NoteLabel}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <StackPanel Margin="16,14">
+                        <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource ValueTextBox}" Width="420" HorizontalAlignment="Left" />
+                        <Button Content="{loc:Loc Records_FinishButton}" Command="{Binding FinishSelectedCommand}"
+                                Style="{StaticResource SecondaryButton}" Height="46" Width="160"
+                                HorizontalAlignment="Left" Margin="0,12,0,0" />
+                        <TextBlock Text="{loc:Loc Records_CurveNote}" Style="{StaticResource Text.Label}"
+                                   TextWrapping="Wrap" Margin="0,20,0,0" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
 </UserControl>

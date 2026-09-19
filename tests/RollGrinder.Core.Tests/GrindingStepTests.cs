@@ -192,3 +192,46 @@ public sealed class GrindingJobValidatorTests
             System.Array.Empty<GrindingJobStep>())).Should().Throw<DomainException>();
     }
 }
+
+public sealed class StepDurationTests
+{
+    private static readonly RollGeometry Geometry = RollGeometry.FromDiameter(2000.0, 650.0);
+
+    [Fact]
+    public void A_pass_is_one_return_stroke_along_the_body()
+    {
+        var stepType = new RoughGrindingStepType();
+        ParameterSet parameters = stepType.Schema.CreateDefaults()
+            .With(StepParameterKeys.StockDiameterMicrometer, ParameterValue.FromNumber(120.0))
+            .With(StepParameterKeys.InfeedPerPassDiameterMicrometer, ParameterValue.FromNumber(60.0))
+            .With(StepParameterKeys.FeedMmPerMin, ParameterValue.FromNumber(2000.0))
+            .With(StepParameterKeys.SparkOutPassCount, ParameterValue.FromNumber(0.0));
+
+        GrindingStepPlan plan = stepType.CreatePlan(Geometry, parameters);
+
+        // 2 道 × 往复（2 × 2000 mm）÷ 2000 mm/min = 4 min
+        plan.PassCount.Should().Be(2);
+        plan.EstimateDuration(Geometry).TotalMinutes.Should().BeApproximately(4.0, 1e-9);
+    }
+
+    [Fact]
+    public void Spark_out_passes_count_towards_the_estimate()
+    {
+        var stepType = new SparkOutStepType();
+        ParameterSet parameters = stepType.Schema.CreateDefaults()
+            .With(StepParameterKeys.PassCount, ParameterValue.FromNumber(3.0))
+            .With(StepParameterKeys.FeedMmPerMin, ParameterValue.FromNumber(1000.0));
+
+        GrindingStepPlan plan = stepType.CreatePlan(Geometry, parameters);
+
+        plan.EstimateDuration(Geometry).TotalMinutes.Should().BeApproximately(12.0, 1e-9);
+    }
+
+    [Fact]
+    public void A_step_without_feed_takes_no_estimated_time()
+    {
+        var plan = new GrindingStepPlan("X", 1, 0.0, 0.0, 0.0, 0.0, 0, false);
+
+        plan.EstimateDuration(Geometry).Should().Be(System.TimeSpan.Zero);
+    }
+}

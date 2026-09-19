@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>手动与辅助操作 方案B</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;background:#e9ecf0}
+a{color:#15507f}a:hover{color:#0d3a5e}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; background: #e9ecf0; color: #16191e; display: flex; flex-direction: column;">
+
+  <div style="height: 76px; flex-shrink: 0; background: #15507f; color: #ffffff; display: flex; align-items: center; padding: 0 20px; gap: 24px;">
+    <div style="font-size: 26px; font-weight: 700; letter-spacing: 2px;">RGX</div>
+    <div style="font-size: 22px;">手动与辅助操作</div>
+    <div style="flex-grow: 1; display: flex; align-items: center; gap: 10px; background: #8a5a00; height: 46px; padding: 0 16px; border-left: 4px solid #f6d24a;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px;">700056</span>
+      <span style="font-size: 18px;">偏心套（断电保护装置）已退到后位</span>
+    </div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 22px;">09:41:26</div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; gap: 12px; padding: 12px; box-sizing: border-box; min-height: 0;">
+
+    <div style="width: 560px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+      <div style="background: #ffffff; border: 1px solid #c5cad2;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">轴位置</div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: #d8dde4;">
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">X 磨架</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px;">80.0000</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">Z 拖板</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px;">7800.000</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">X1 测量架</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px;">929.177</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">U 中高</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; color: #15507f;">0.0000</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">U1 托瓦</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px;">0.0000</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">当前轴 / 倍率</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px;">X · ×10</div></div>
+        </div>
+      </div>
+
+      <div style="background: #ffffff; border: 1px solid #c5cad2;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">主轴</div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: #d8dde4;">
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">砂轮转速 r/min</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 24px;">590.0</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">砂轮直径 mm</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 24px;">890.24</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">砂轮电流 A</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 24px;">6.1</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">头架转速 r/min</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 24px;">25.6</div></div>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; background: #ffffff; border: 1px solid #c5cad2; display: flex; flex-direction: column;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">测量与对中</div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: #d8dde4;">
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">A 测头</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px;">+0.0110</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">B 测头</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px;">−0.0823</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">轧辊直径 mm</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; color: #15507f;">671.213</div></div>
+          <div style="background: #ffffff; padding: 12px 16px;"><div style="font-size: 14px; color: #4a5461;">(A−B)/2 安装误差</div><div style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; color: #b3241c;">+0.0467</div></div>
+        </div>
+        <div style="padding: 12px 16px; border-top: 1px solid #eceff3;">
+          <div style="font-size: 15px; color: #4a5461; margin-bottom: 8px;">两端比对（用于中心架找正）</div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 16px;">
+            <tr style="background: #f3f5f8;"><th style="text-align: left; padding: 8px 10px; border: 1px solid #d8dde4; font-weight: 500;">位置</th><th style="text-align: right; padding: 8px 10px; border: 1px solid #d8dde4; font-weight: 500;">A</th><th style="text-align: right; padding: 8px 10px; border: 1px solid #d8dde4; font-weight: 500;">B</th><th style="text-align: right; padding: 8px 10px; border: 1px solid #d8dde4; font-weight: 500;">(A−B)/2</th></tr>
+            <tr><td style="padding: 8px 10px; border: 1px solid #d8dde4;">头架侧</td><td style="text-align: right; padding: 8px 10px; border: 1px solid #d8dde4; font-family: 'IBM Plex Mono', monospace;">+0.0110</td><td style="text-align: right; padding: 8px 10px; border: 1px solid #d8dde4; font-family: 'IBM Plex Mono', monospace;">−0.0823</td><td style="text-align: right; padding: 8px 10px; border: 1px solid #d8dde4; font-family: 'IBM Plex Mono', monospace;">+0.0467</td></tr>
+            <tr><td style="padding: 8px 10px; border: 1px solid #d8dde4;">尾架侧</td><td style="text-align: right; padding: 8px 10px; border: 1px solid #d8dde4; font-family: 'IBM Plex Mono', monospace;">+0.0092</td><td style="text-align: right; padding: 8px 10px; border: 1px solid #d8dde4; font-family: 'IBM Plex Mono', monospace;">−0.0601</td><td style="text-align: right; padding: 8px 10px; border: 1px solid #d8dde4; font-family: 'IBM Plex Mono', monospace;">+0.0347</td></tr>
+          </table>
+          <div style="margin-top: 10px; font-size: 16px; color: #b3241c;">两端差 0.012 mm，折合锥度 0.024 mm，超出允许范围，建议向内调整头架侧中心架</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+      <div style="background: #ffffff; border: 1px solid #c5cad2;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">测量臂</div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 14px;">
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">A 放下</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">A 收起</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">B 放下</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">B 收起</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; color: #ffffff; background: #15507f; border: none;">AB 到轧辊</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">AB 归位</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">校测量臂</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">测量采样</button>
+        </div>
+      </div>
+
+      <div style="background: #ffffff; border: 1px solid #c5cad2;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">尾架与套筒</div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 14px;">
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">套筒伸出</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">套筒缩回</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">尾架向前</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">尾架向后</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">尾架夹紧</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">尾架放松</button>
+          <div style="height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #f3f5f8; border: 1px solid #d8dde4;"><span style="font-size: 15px; color: #4a5461;">套筒顶力</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 22px;">619.0</span></div>
+          <div style="height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #f3f5f8; border: 1px solid #d8dde4;"><span style="font-size: 15px; color: #4a5461;">尾架位置</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 22px;">到位</span></div>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; background: #ffffff; border: 1px solid #c5cad2;">
+        <div style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #c5cad2; background: #f3f5f8; font-size: 17px; color: #4a5461; letter-spacing: 1px;">头架、中心架与其他（按机床配置显示）</div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 14px;">
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">头架启动</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">头架 +</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">头架 −</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">拨盘伸出</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">拨盘收回</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">U1 轴归零</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">软着陆升</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">软着陆降</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">冷却水</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">砂轮启动</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">测砂轮直径</button>
+          <button type="button" style="height: 64px; font-family: inherit; font-size: 18px; background: #ffffff; border: 1px solid #b6bcc6;">各轴归位</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 86px; flex-shrink: 0; background: #dde2e8; border-top: 2px solid #c5cad2; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; padding: 12px 14px; box-sizing: border-box;">
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #ffffff; background: #15507f; border: none;">手动磨削</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">校验基准</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">砂轮修整</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">轧辊找正</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">回参考点</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">诊断</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; color: #ffffff; background: #b3241c; border: none;">HMI 复位</button>
+    <button type="button" style="font-family: inherit; font-size: 19px; background: #ffffff; border: 1px solid #b6bcc6;">返回</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@ using RollGrinder.Services.Jobs;
 using RollGrinder.Services.Measurement;
 using RollGrinder.Services.Monitoring;
 using RollGrinder.Services.Records;
+using RollGrinder.Services.Session;
 
 namespace RollGrinder.Services;
 
@@ -23,6 +24,7 @@ public static class ServicesServiceCollectionExtensions
 
         services.AddSingleton(settings);
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<IUserSession>(new UserSession(settings.DefaultRole));
 
         services.AddSingleton<AlarmLog>(provider => new AlarmLog(
             settings.AlarmHistoryLimit,

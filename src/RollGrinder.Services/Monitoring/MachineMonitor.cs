@@ -130,7 +130,7 @@ public sealed class MachineMonitor : IMachineMonitor, IAsyncDisposable
             if (this.lastPollFailed)
             {
                 this.lastPollFailed = false;
-                this.alarms.Raise(AlarmSeverity.Information, ConnectionRestoredResourceKey);
+                this.alarms.Raise(AlarmSeverity.Information, ConnectionRestoredResourceKey, code: AlarmCodes.ConnectionRestored);
             }
 
             SnapshotUpdated?.Invoke(this, snapshot);
@@ -149,7 +149,7 @@ public sealed class MachineMonitor : IMachineMonitor, IAsyncDisposable
             if (!this.lastPollFailed)
             {
                 this.lastPollFailed = true;
-                this.alarms.Raise(AlarmSeverity.Error, ConnectionLostResourceKey, ex.Message);
+                this.alarms.Raise(AlarmSeverity.Error, ConnectionLostResourceKey, ex.Message, AlarmCodes.ConnectionLost);
             }
         }
     }

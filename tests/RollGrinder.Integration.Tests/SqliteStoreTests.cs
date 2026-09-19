@@ -12,6 +12,7 @@ using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
+using RollGrinder.Services.Alarms;
 using Xunit;
 
 namespace RollGrinder.Integration.Tests;
@@ -279,12 +280,14 @@ public sealed class SqliteStoreTests : IDisposable
         await MigratedAsync();
         var alarms = new SqliteAlarmRepository(this.database);
 
-        await alarms.AddAsync(DateTimeOffset.UnixEpoch, 2, "Alarm_GatewayFailure", "boom", CancellationToken.None);
-        await alarms.AddAsync(DateTimeOffset.UnixEpoch.AddYears(10), 1, "Alarm_ConnectionLost", null, CancellationToken.None);
+        await alarms.AddAsync(DateTimeOffset.UnixEpoch, 2, "Alarm_GatewayFailure", "boom", AlarmCodes.GatewayFailure, CancellationToken.None);
+        await alarms.AddAsync(DateTimeOffset.UnixEpoch.AddYears(10), 1, "Alarm_ConnectionLost", null, AlarmCodes.ConnectionLost, CancellationToken.None);
 
         IReadOnlyList<AlarmRecord> listed = await alarms.ListAsync(10, CancellationToken.None);
         listed.Should().HaveCount(2);
         listed[0].MessageResourceKey.Should().Be("Alarm_ConnectionLost");
+        listed[0].Code.Should().Be(AlarmCodes.ConnectionLost);
+        AlarmCodes.IsHmiCode(listed[0].Code).Should().BeTrue("上位机报警必须落在 720000–720999 号段");
 
         (await alarms.PurgeOlderThanAsync(DateTimeOffset.UnixEpoch.AddYears(1), CancellationToken.None)).Should().Be(1);
     }

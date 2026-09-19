@@ -81,9 +81,11 @@ public sealed record CompensationRecord(
 /// <param name="Severity">级别（与服务层 AlarmSeverity 数值一致）。</param>
 /// <param name="MessageResourceKey">资源键。</param>
 /// <param name="Detail">技术细节。</param>
+/// <param name="Code">报警号。</param>
 public sealed record AlarmRecord(
     long AlarmId,
     DateTimeOffset RaisedAtUtc,
     int Severity,
     string MessageResourceKey,
-    string? Detail);
+    string? Detail,
+    int Code);

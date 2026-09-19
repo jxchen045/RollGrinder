@@ -123,11 +123,11 @@ public sealed class JobDownloadService : IJobDownloadService
         catch (Exception ex) when (ex is DataStoreException or Microsoft.Data.Sqlite.SqliteException)
         {
             // 参数已经在 NC 手里，这支辊照磨；只是记录没落库，必须让人看见。
-            this.alarms.Raise(AlarmSeverity.Error, HandoverNotArchivedResourceKey, ex.Message);
+            this.alarms.Raise(AlarmSeverity.Error, HandoverNotArchivedResourceKey, ex.Message, AlarmCodes.HandoverNotArchived);
             return new JobDownloadResult(true, Array.Empty<ParameterViolation>(), Array.Empty<string>(), null, download.Writes.Count);
         }
 
-        this.alarms.Raise(AlarmSeverity.Information, HandoverCompletedResourceKey, job.JobId);
+        this.alarms.Raise(AlarmSeverity.Information, HandoverCompletedResourceKey, job.JobId, AlarmCodes.HandoverCompleted);
         return new JobDownloadResult(true, Array.Empty<ParameterViolation>(), Array.Empty<string>(), recordId, download.Writes.Count);
     }
 

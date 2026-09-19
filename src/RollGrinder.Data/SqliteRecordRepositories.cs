@@ -360,6 +360,7 @@ public sealed class SqliteAlarmRepository : IAlarmRepository
         int severity,
         string messageResourceKey,
         string? detail,
+        int code,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(messageResourceKey);
@@ -368,13 +369,14 @@ public sealed class SqliteAlarmRepository : IAlarmRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            INSERT INTO alarm (raised_at_utc, severity, message_key, detail)
-            VALUES ($raised, $severity, $key, $detail);
+            INSERT INTO alarm (raised_at_utc, severity, message_key, detail, code)
+            VALUES ($raised, $severity, $key, $detail, $code);
             """;
         SqlMapping.AddParameter(command, "$raised", SqlMapping.ToText(raisedAtUtc));
         SqlMapping.AddParameter(command, "$severity", severity);
         SqlMapping.AddParameter(command, "$key", messageResourceKey);
         SqlMapping.AddParameter(command, "$detail", detail);
+        SqlMapping.AddParameter(command, "$code", code);
 
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -385,7 +387,7 @@ public sealed class SqliteAlarmRepository : IAlarmRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT alarm_id, raised_at_utc, severity, message_key, detail
+            SELECT alarm_id, raised_at_utc, severity, message_key, detail, code
             FROM alarm ORDER BY alarm_id DESC LIMIT $limit;
             """;
         SqlMapping.AddParameter(command, "$limit", limit);
@@ -399,7 +401,8 @@ public sealed class SqliteAlarmRepository : IAlarmRepository
                 SqlMapping.ToTimestamp(reader.GetString(1)),
                 reader.GetInt32(2),
                 reader.GetString(3),
-                reader.IsDBNull(4) ? null : reader.GetString(4)));
+                reader.IsDBNull(4) ? null : reader.GetString(4),
+                reader.GetInt32(5)));
         }
 
         return alarms;

@@ -107,6 +107,12 @@ public sealed class SqliteDatabase
         CREATE INDEX ix_measurement_job ON measurement(job_id);
         CREATE INDEX ix_alarm_raised ON alarm(raised_at_utc);
         """,
+
+        // 2：报警号。上位机自己的报警占 720000–720999 号段，现场按号查。
+        """
+        ALTER TABLE alarm ADD COLUMN code INTEGER NOT NULL DEFAULT 0;
+        CREATE INDEX ix_alarm_code ON alarm(code);
+        """,
     };
 
     private readonly string connectionString;
