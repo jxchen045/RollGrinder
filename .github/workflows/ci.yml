@@ -25,3 +25,16 @@ jobs:
       # 架构测试（Core 不引用 WPF / OPC UA / 其他项目）在这一步生效。
       - name: Test
         run: dotnet test RollGrinder.sln --no-build -c Release --logger "console;verbosity=normal"
+
+      # 发布产物能否成型，也在 CI 里验一次：升级脚本依赖这一步的输出。
+      - name: Publish
+        run: dotnet publish src/RollGrinder.App -c Release -r win-x64 --self-contained false -o artifacts/publish
+
+      - name: Check deployment payload
+        run: |
+          test -f artifacts/publish/RollGrinder.App.exe
+          test -f artifacts/publish/config/machine.sample.json
+          test -f artifacts/publish/config/tagmap.sample.json
+          test -f artifacts/publish/config/hmi.sample.json
+          test -d artifacts/publish/en-US
+          test ! -d artifacts/publish/data

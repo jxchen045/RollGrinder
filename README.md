@@ -14,8 +14,9 @@
 | `src/RollGrinder.Device` | net8.0 | Contracts | `OpcUaGateway` / `StubGateway` / `FileGateway`，类型为 internal |
 | `src/RollGrinder.Data` | net8.0 | Contracts、Core | SQLite 存储 |
 | `src/RollGrinder.Sim` | net8.0 | Contracts、Core | 磨削过程仿真，类型为 internal |
-| `src/RollGrinder.Composition` | net8.0 | Contracts、Device、Sim | 组合根：命令行解析、配置载入、按配置装配网关 |
-| `src/RollGrinder.App` | net8.0-windows | Contracts、Core、Nc、Data、Composition | WPF 界面与 Generic Host |
+| `src/RollGrinder.Composition` | net8.0 | Contracts、Core、Device、Sim | 组合根：命令行解析、配置载入、按配置装配网关与领域注册表 |
+| `src/RollGrinder.Services` | net8.0 | Contracts、Core、Nc、Data | 应用服务：监视、报警、下发、测量补偿、记录 |
+| `src/RollGrinder.App` | net8.0-windows | Contracts、Core、Nc、Data、Composition、Services | WPF 界面与 Generic Host |
 
 App 用不到 Device 与 Sim 的类型：两者的实现类是 `internal`，只对 `RollGrinder.Composition`
 可见；`tests/RollGrinder.Integration.Tests` 另有架构测试断言 App 程序集不引用这两个程序集。
@@ -45,5 +46,35 @@ RollGrinder.App.exe --config D:\cfg --data D:\data
 
 日志滚动写入 `data/logs/rollgrinder-<日期>.log`，保留 31 天。
 
-T-01 只搭骨架：`OpcUaGateway` 与 `FileGateway` 是空桩，调用即抛 `GatewayException`，
-现阶段请用 `--stub` 启动。
+`--gateway sim` 会按下发的参数模拟走刀与去除量，适合无机床联调；`--stub` 只回放写入的值。
+`OpcUaGateway` 与 `FileGateway` 目前仍是空桩，调用即抛 `GatewayException`——接 OPC UA
+客户端库需要引入第三方包，待确认后再做。
+
+## 配置
+
+程序目录下的 `config/` 有三份配置，各有对应的 `*.sample.json` 模板：
+
+| 文件 | 内容 |
+|---|---|
+| `machine.json` | 本台机床：轴（有无/行程/闭环/进给与转速上限）、测量通道、选件、阈值、辊件界限、工序类型对应的 NC 代码 |
+| `tagmap.json` | 逻辑变量名 → 物理地址、类型、读写权限、单位、数组长度（地址里用 `{index}` 占位） |
+| `hmi.json` | 上位机自身：轮询周期、界面刷新频率（5–10 Hz）、辊形采样点数、补偿增益与平滑、保留天数、公差 |
+
+代码里不出现物理地址、轴名、行程与阈值；换一台机床只改这三份配置。
+
+## 部署与升级
+
+```powershell
+deploy\publish.ps1
+deploy\upgrade.ps1 -SourceDirectory artifacts\publish -TargetDirectory D:\RollGrinder
+```
+
+升级只替换程序文件与 `config\*.sample.json`；现场的 `config\*.json` 与 `data\`（数据库、日志）
+原样保留，升级前还会自动备份一份配置。工控机需要 .NET 8 Desktop Runtime
+（框架依赖式发布，约 23 MB）。
+
+## 数据库
+
+`data/rollgrinder.db`，结构版本记在 `PRAGMA user_version`，启动时自动迁移；
+数据库版本比程序新时拒绝启动，不拿旧代码去动新结构。
+辊形与工序参数按键值存，新增一类不改表。

@@ -65,3 +65,66 @@ public sealed class AppAssemblyArchitectureTests
             .ToList();
     }
 }
+
+/// <summary>
+/// 分层守卫：界面以外的工程不得沾 WPF；应用服务不得直连设备实现。
+/// </summary>
+public sealed class LayeringArchitectureTests
+{
+    private static readonly string[] WpfAssemblies =
+    {
+        "PresentationFramework",
+        "PresentationCore",
+        "WindowsBase",
+        "System.Xaml",
+    };
+
+    public static TheoryData<string> NonUiAssemblies() => new()
+    {
+        "RollGrinder.Core",
+        "RollGrinder.Contracts",
+        "RollGrinder.Nc",
+        "RollGrinder.Data",
+        "RollGrinder.Services",
+        "RollGrinder.Composition",
+        "RollGrinder.Device",
+        "RollGrinder.Sim",
+    };
+
+    [Theory]
+    [MemberData(nameof(NonUiAssemblies))]
+    public void Non_ui_assemblies_do_not_reference_wpf(string assemblyName)
+    {
+        System.Reflection.Assembly assembly = System.Reflection.Assembly.Load(assemblyName);
+
+        assembly.GetReferencedAssemblies()
+            .Select(reference => reference.Name ?? string.Empty)
+            .Intersect(WpfAssemblies, StringComparer.Ordinal)
+            .Should().BeEmpty($"{assemblyName} 是非界面工程，不得引用 WPF");
+    }
+
+    [Fact]
+    public void Application_services_do_not_reference_device_or_simulation_implementations()
+    {
+        System.Reflection.Assembly services = System.Reflection.Assembly.Load("RollGrinder.Services");
+
+        services.GetReferencedAssemblies()
+            .Select(reference => reference.Name ?? string.Empty)
+            .Intersect(new[] { "RollGrinder.Device", "RollGrinder.Sim" }, StringComparer.Ordinal)
+            .Should().BeEmpty("服务层只经 IMachineGateway 访问机床");
+    }
+
+    [Fact]
+    public void The_domain_stays_free_of_infrastructure()
+    {
+        System.Reflection.Assembly core = System.Reflection.Assembly.Load("RollGrinder.Core");
+
+        core.GetReferencedAssemblies()
+            .Select(reference => reference.Name ?? string.Empty)
+            .Where(name => name.StartsWith("RollGrinder", StringComparison.Ordinal)
+                           || name.StartsWith("Microsoft.Data", StringComparison.Ordinal)
+                           || name.StartsWith("Serilog", StringComparison.Ordinal)
+                           || name.StartsWith("ScottPlot", StringComparison.Ordinal))
+            .Should().BeEmpty("Core 不引用任何其他项目与第三方库");
+    }
+}
