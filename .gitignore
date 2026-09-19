@@ -6,3 +6,7 @@ artifacts/
 data/
 config/machine.json
 config/tagmap.json
+
+# 发给现场的离线包（git bundle / 源码 zip）是产物，不进版本库。
+*.bundle
+RollGrinder-source.zip
