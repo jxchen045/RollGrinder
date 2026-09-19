@@ -1,0 +1,21 @@
+{
+  "profiles": {
+    "仿真机床 (推荐)": {
+      "commandName": "Project",
+      "commandLineArgs": "--gateway sim",
+      "nativeDebugging": false
+    },
+    "打桩 (无机床、不动)": {
+      "commandName": "Project",
+      "commandLineArgs": "--stub"
+    },
+    "回放录制文件": {
+      "commandName": "Project",
+      "commandLineArgs": "--replay ..\\..\\..\\..\\..\\deploy\\replay-sample.jsonl"
+    },
+    "OPC UA (连真机床)": {
+      "commandName": "Project",
+      "commandLineArgs": ""
+    }
+  }
+}

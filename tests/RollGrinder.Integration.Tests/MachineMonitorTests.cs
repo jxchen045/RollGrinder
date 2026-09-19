@@ -45,12 +45,22 @@ public sealed class MachineMonitorTests
             this.responses.Enqueue(() => throw new GatewayException(message));
 
         private string? connectFailure;
+        private TimeSpan connectDelay;
 
         public void FailNextConnect(string message) => this.connectFailure = message;
 
-        public Task ConnectAsync(CancellationToken cancellationToken)
+        public void BlockNextConnect(TimeSpan delay) => this.connectDelay = delay;
+
+        public async Task ConnectAsync(CancellationToken cancellationToken)
         {
             ConnectCount++;
+            if (this.connectDelay > TimeSpan.Zero)
+            {
+                TimeSpan delay = this.connectDelay;
+                this.connectDelay = TimeSpan.Zero;
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+            }
+
             if (this.connectFailure is not null)
             {
                 string message = this.connectFailure;
@@ -60,7 +70,6 @@ public sealed class MachineMonitorTests
             }
 
             ConnectionState = GatewayConnectionState.Connected;
-            return Task.CompletedTask;
         }
 
         public Task DisconnectAsync(CancellationToken cancellationToken)
@@ -185,7 +194,7 @@ public sealed class MachineMonitorTests
         await monitor.PollOnceAsync(CancellationToken.None);
         await monitor.PollOnceAsync(CancellationToken.None);
 
-        gateway.ConnectCount.Should().Be(0, "没断就不该反复重连");
+        gateway.ConnectCount.Should().Be(1, "首拍连一次，之后没断就不该反复重连");
     }
 
     [Fact]
@@ -204,12 +213,27 @@ public sealed class MachineMonitorTests
     }
 
     [Fact]
-    public async Task Start_connects_once_and_stop_disconnects()
+    public async Task Start_does_not_wait_for_the_machine_to_answer()
+    {
+        // 机床不可达时一次握手可能十几秒：界面不能等它。
+        (MachineMonitor monitor, ScriptedGateway gateway, _) = Create();
+        gateway.BlockNextConnect(TimeSpan.FromSeconds(30));
+
+        Task start = monitor.StartAsync(CancellationToken.None);
+
+        (await Task.WhenAny(start, Task.Delay(TimeSpan.FromSeconds(2)))).Should().BeSameAs(start,
+            "启动不得等在连接上");
+        await monitor.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task The_first_poll_connects_and_stop_disconnects()
     {
         (MachineMonitor monitor, ScriptedGateway gateway, _) = Create();
+        gateway.EnqueueSnapshot(2.0);
 
         await monitor.StartAsync(CancellationToken.None);
-        await monitor.StartAsync(CancellationToken.None);
+        await monitor.PollOnceAsync(CancellationToken.None);
         await monitor.StopAsync(CancellationToken.None);
 
         gateway.ConnectCount.Should().Be(1);

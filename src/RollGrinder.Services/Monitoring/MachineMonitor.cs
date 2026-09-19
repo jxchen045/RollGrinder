@@ -30,6 +30,7 @@ public sealed class MachineMonitor : IMachineMonitor, IAsyncDisposable
     private CancellationTokenSource? loopCancellation;
     private Task? loopTask;
     private MachineStateSnapshot current;
+    private bool mustConnect = true;
     private bool lastPollFailed;
 
     public MachineMonitor(
@@ -64,7 +65,8 @@ public sealed class MachineMonitor : IMachineMonitor, IAsyncDisposable
                 return;
             }
 
-            await this.gateway.ConnectAsync(cancellationToken).ConfigureAwait(false);
+            // 不在这里等连接：机床不可达时一次握手可能要十几秒甚至更久，
+            // 界面必须先起来，把"连不上"作为报警显示给人看。
             this.loopCancellation = new CancellationTokenSource();
             this.loopTask = Task.Run(() => PollLoopAsync(this.loopCancellation.Token), CancellationToken.None);
         }
@@ -108,15 +110,16 @@ public sealed class MachineMonitor : IMachineMonitor, IAsyncDisposable
 
     /// <summary>
     /// 取一次数并发布快照。后台循环用它，测试也可直接调用。
-    /// 上一拍失败过就先尝试重连——会话断了不能一直等人重启上位机。
+    /// 尚未连接或上一拍失败过，就先尝试（重）连——会话断了不能一直等人重启上位机。
     /// </summary>
     public async Task PollOnceAsync(CancellationToken cancellationToken)
     {
         try
         {
-            if (this.lastPollFailed)
+            if (this.mustConnect)
             {
                 await this.gateway.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                this.mustConnect = false;
             }
 
             MachineStateSnapshot snapshot = await this.gateway
@@ -134,6 +137,8 @@ public sealed class MachineMonitor : IMachineMonitor, IAsyncDisposable
         }
         catch (GatewayException ex)
         {
+            // 连接与读取都走这条路：下一拍先重连再取数。
+            this.mustConnect = true;
             Volatile.Write(
                 ref this.current,
                 new MachineStateSnapshot(
