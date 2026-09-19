@@ -1,0 +1,30 @@
+using RollGrinder.Core.Units;
+
+namespace RollGrinder.Core.Steps;
+
+/// <summary>
+/// 领域层看到的机床能力，全部是半径量与 mm/min、r/min。
+/// 取值来自 machine.json，由上层映射进来——领域层不认识配置文件，也不内置任何阈值。
+/// </summary>
+/// <param name="MaxInfeedPerPassRadiusMm">单刀最大切深（半径量 mm）。</param>
+/// <param name="MaxFeedMmPerMin">最大轴向进给（mm/min）。</param>
+/// <param name="MaxWorkpieceSpeedRpm">工件最大转速（r/min）。</param>
+/// <param name="MaxWheelSpeedRpm">砂轮最大转速（r/min）。</param>
+/// <param name="MinBodyLengthMm">最小辊身长度（mm）。</param>
+/// <param name="MaxBodyLengthMm">最大辊身长度（mm）。</param>
+/// <param name="MinRadiusMm">最小半径（mm）。</param>
+/// <param name="MaxRadiusMm">最大半径（mm）。</param>
+public sealed record MachineCapability(
+    double MaxInfeedPerPassRadiusMm,
+    double MaxFeedMmPerMin,
+    double MaxWorkpieceSpeedRpm,
+    double MaxWheelSpeedRpm,
+    double MinBodyLengthMm,
+    double MaxBodyLengthMm,
+    double MinRadiusMm,
+    double MaxRadiusMm)
+{
+    /// <summary>单刀最大切深的直径量微米表示，供界面提示用。</summary>
+    public double MaxInfeedPerPassDiameterMicrometer =>
+        UnitConversion.RadiusMmToDiameterMicrometer(MaxInfeedPerPassRadiusMm);
+}

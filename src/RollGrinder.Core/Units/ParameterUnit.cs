@@ -1,0 +1,28 @@
+namespace RollGrinder.Core.Units;
+
+/// <summary>
+/// 参数的工程单位。界面按此决定显示格式与输入校验，代码里不再解析单位字符串。
+/// </summary>
+public enum ParameterUnit
+{
+    /// <summary>无量纲（次数、比值、开关）。</summary>
+    None = 0,
+
+    /// <summary>毫米（长度，辊身坐标）。</summary>
+    Millimeter = 1,
+
+    /// <summary>微米（直径量偏差，界面单位）。</summary>
+    Micrometer = 2,
+
+    /// <summary>毫米每分钟（进给）。</summary>
+    MillimeterPerMinute = 3,
+
+    /// <summary>转每分钟（转速）。</summary>
+    RevolutionsPerMinute = 4,
+
+    /// <summary>次（走刀/光磨次数）。</summary>
+    Count = 5,
+
+    /// <summary>度（角度）。</summary>
+    Degree = 6,
+}

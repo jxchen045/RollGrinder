@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RollGrinder.Contracts\RollGrinder.Contracts.csproj" />
+    <ProjectReference Include="..\RollGrinder.Core\RollGrinder.Core.csproj" />
     <ProjectReference Include="..\RollGrinder.Device\RollGrinder.Device.csproj" />
     <ProjectReference Include="..\RollGrinder.Sim\RollGrinder.Sim.csproj" />
   </ItemGroup>
