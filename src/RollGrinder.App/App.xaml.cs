@@ -21,7 +21,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        MainWindow window = this.host.Services.GetRequiredService<MainWindow>();
+        ShellWindow window = this.host.Services.GetRequiredService<ShellWindow>();
         MainWindow = window;
         window.Show();
     }

@@ -61,17 +61,35 @@
   <data name="App_Title" xml:space="preserve">
     <value>轧辊磨床上位机</value>
   </data>
-  <data name="Main_Header" xml:space="preserve">
-    <value>系统状态</value>
+  <data name="Shell_Subtitle" xml:space="preserve">
+    <value>参数下发后由 NC 执行，上位机只做编辑、显示与记录</value>
   </data>
-  <data name="Main_MachineLabel" xml:space="preserve">
-    <value>机床</value>
+  <data name="Shell_ClearAlarmsButton" xml:space="preserve">
+    <value>清空报警</value>
+  </data>
+  <data name="Tab_Monitor" xml:space="preserve">
+    <value>磨削监控</value>
+  </data>
+  <data name="Tab_Job" xml:space="preserve">
+    <value>工艺编排</value>
+  </data>
+  <data name="Tab_Measurement" xml:space="preserve">
+    <value>测量与补偿</value>
+  </data>
+  <data name="Tab_Records" xml:space="preserve">
+    <value>磨削记录</value>
+  </data>
+  <data name="Tab_Alarms" xml:space="preserve">
+    <value>报警</value>
+  </data>
+  <data name="Main_ConnectionLabel" xml:space="preserve">
+    <value>连接状态</value>
   </data>
   <data name="Main_GatewayLabel" xml:space="preserve">
     <value>网关</value>
   </data>
-  <data name="Main_ConnectionLabel" xml:space="preserve">
-    <value>连接状态</value>
+  <data name="Main_MachineLabel" xml:space="preserve">
+    <value>机床</value>
   </data>
   <data name="Main_ConfigDirectoryLabel" xml:space="preserve">
     <value>配置目录</value>
@@ -85,8 +103,428 @@
   <data name="Main_TagCountLabel" xml:space="preserve">
     <value>变量映射条目</value>
   </data>
+  <data name="Main_Header" xml:space="preserve">
+    <value>系统状态</value>
+  </data>
   <data name="Main_SkeletonNotice" xml:space="preserve">
-    <value>T-01 骨架：参数编辑、磨削监控与记录界面由后续任务实现。</value>
+    <value></value>
+  </data>
+  <data name="Monitor_Header" xml:space="preserve">
+    <value>机床状态</value>
+  </data>
+  <data name="Monitor_ChannelStateLabel" xml:space="preserve">
+    <value>通道状态</value>
+  </data>
+  <data name="Monitor_ProgramLabel" xml:space="preserve">
+    <value>当前程序</value>
+  </data>
+  <data name="Monitor_MeasuredDiameterLabel" xml:space="preserve">
+    <value>实测直径 (mm)</value>
+  </data>
+  <data name="Monitor_SnapshotAgeLabel" xml:space="preserve">
+    <value>快照时延 (s)</value>
+  </data>
+  <data name="Monitor_AxesHeader" xml:space="preserve">
+    <value>轴</value>
+  </data>
+  <data name="Monitor_AxisNameColumn" xml:space="preserve">
+    <value>轴名</value>
+  </data>
+  <data name="Monitor_AxisRoleColumn" xml:space="preserve">
+    <value>用途</value>
+  </data>
+  <data name="Monitor_AxisPositionColumn" xml:space="preserve">
+    <value>位置 (mm)</value>
+  </data>
+  <data name="Monitor_AxisSpeedColumn" xml:space="preserve">
+    <value>转速 (r/min)</value>
+  </data>
+  <data name="Monitor_TrendHeader" xml:space="preserve">
+    <value>实测直径趋势</value>
+  </data>
+  <data name="Job_Header" xml:space="preserve">
+    <value>工艺编排</value>
+  </data>
+  <data name="Job_JobIdLabel" xml:space="preserve">
+    <value>作业号</value>
+  </data>
+  <data name="Job_RollIdLabel" xml:space="preserve">
+    <value>辊件号</value>
+  </data>
+  <data name="Job_BodyLengthLabel" xml:space="preserve">
+    <value>辊身长度 (mm)</value>
+  </data>
+  <data name="Job_DiameterLabel" xml:space="preserve">
+    <value>公称直径 (mm)</value>
+  </data>
+  <data name="Job_ProfileTypeLabel" xml:space="preserve">
+    <value>辊形类型</value>
+  </data>
+  <data name="Job_ProfileParametersHeader" xml:space="preserve">
+    <value>辊形参数</value>
+  </data>
+  <data name="Job_StepsHeader" xml:space="preserve">
+    <value>工序</value>
+  </data>
+  <data name="Job_AddStepButton" xml:space="preserve">
+    <value>添加工序</value>
+  </data>
+  <data name="Job_RemoveStepButton" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="Job_NewJobButton" xml:space="preserve">
+    <value>新建作业</value>
+  </data>
+  <data name="Job_ValidateButton" xml:space="preserve">
+    <value>校验</value>
+  </data>
+  <data name="Job_DownloadButton" xml:space="preserve">
+    <value>下发参数</value>
+  </data>
+  <data name="Job_ReadyToHandOver" xml:space="preserve">
+    <value>参数可用，可以下发</value>
+  </data>
+  <data name="Job_HandedOver" xml:space="preserve">
+    <value>已下发；磨削由 NC 执行</value>
+  </data>
+  <data name="Job_ValidationFailed" xml:space="preserve">
+    <value>校验未通过，未写入任何参数</value>
+  </data>
+  <data name="Job_TagMapIncomplete" xml:space="preserve">
+    <value>tagmap.json 缺少必需变量，未写入任何参数</value>
+  </data>
+  <data name="Job_GeometryInvalid" xml:space="preserve">
+    <value>辊身长度或直径填写有误</value>
+  </data>
+  <data name="Job_ParametersInvalid" xml:space="preserve">
+    <value>参数填写有误</value>
+  </data>
+  <data name="Job_IdentifiersMissing" xml:space="preserve">
+    <value>作业号与辊件号不能为空</value>
+  </data>
+  <data name="Job_NoSteps" xml:space="preserve">
+    <value>至少需要一道工序</value>
+  </data>
+  <data name="Measurement_Header" xml:space="preserve">
+    <value>测量与补偿</value>
+  </data>
+  <data name="Measurement_CaptureButton" xml:space="preserve">
+    <value>采集测点</value>
+  </data>
+  <data name="Measurement_ClearButton" xml:space="preserve">
+    <value>清空测点</value>
+  </data>
+  <data name="Measurement_SaveButton" xml:space="preserve">
+    <value>归档测量</value>
+  </data>
+  <data name="Measurement_ComputeButton" xml:space="preserve">
+    <value>计算补偿</value>
+  </data>
+  <data name="Measurement_PositionColumn" xml:space="preserve">
+    <value>辊身坐标 (mm)</value>
+  </data>
+  <data name="Measurement_DiameterColumn" xml:space="preserve">
+    <value>实测直径 (mm)</value>
+  </data>
+  <data name="Measurement_WorstDeviationLabel" xml:space="preserve">
+    <value>最大偏差 (µm 直径量)</value>
+  </data>
+  <data name="Measurement_PeakToValleyLabel" xml:space="preserve">
+    <value>峰谷值 (µm 直径量)</value>
+  </data>
+  <data name="Measurement_ToleranceLabel" xml:space="preserve">
+    <value>公差 (µm 直径量)</value>
+  </data>
+  <data name="Measurement_VerdictLabel" xml:space="preserve">
+    <value>判定</value>
+  </data>
+  <data name="Measurement_WithinTolerance" xml:space="preserve">
+    <value>合格</value>
+  </data>
+  <data name="Measurement_OutOfTolerance" xml:space="preserve">
+    <value>超差</value>
+  </data>
+  <data name="Measurement_ChartHeader" xml:space="preserve">
+    <value>偏差与补偿曲线（直径量 µm）</value>
+  </data>
+  <data name="Measurement_PointCaptured" xml:space="preserve">
+    <value>已采集一个测点</value>
+  </data>
+  <data name="Measurement_Saved" xml:space="preserve">
+    <value>测量已归档</value>
+  </data>
+  <data name="Measurement_NotEnoughPoints" xml:space="preserve">
+    <value>至少需要两个测点，且要填作业号</value>
+  </data>
+  <data name="Measurement_JobIdMissing" xml:space="preserve">
+    <value>请先填写作业号</value>
+  </data>
+  <data name="Measurement_CompensationStored" xml:space="preserve">
+    <value>补偿已生成，下次下发时生效</value>
+  </data>
+  <data name="Records_Header" xml:space="preserve">
+    <value>磨削记录</value>
+  </data>
+  <data name="Records_FromLabel" xml:space="preserve">
+    <value>起</value>
+  </data>
+  <data name="Records_ToLabel" xml:space="preserve">
+    <value>止</value>
+  </data>
+  <data name="Records_QueryButton" xml:space="preserve">
+    <value>查询</value>
+  </data>
+  <data name="Records_ExportButton" xml:space="preserve">
+    <value>导出 CSV</value>
+  </data>
+  <data name="Records_FinishButton" xml:space="preserve">
+    <value>标记完成</value>
+  </data>
+  <data name="Records_NoteLabel" xml:space="preserve">
+    <value>备注</value>
+  </data>
+  <data name="Records_StartedColumn" xml:space="preserve">
+    <value>开始时间</value>
+  </data>
+  <data name="Records_RollColumn" xml:space="preserve">
+    <value>辊号</value>
+  </data>
+  <data name="Records_ProfileColumn" xml:space="preserve">
+    <value>辊形</value>
+  </data>
+  <data name="Records_StateColumn" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="Records_DurationColumn" xml:space="preserve">
+    <value>时长 (min)</value>
+  </data>
+  <data name="Records_DeviationColumn" xml:space="preserve">
+    <value>最大偏差 (µm)</value>
+  </data>
+  <data name="Records_RecordIdColumn" xml:space="preserve">
+    <value>记录号</value>
+  </data>
+  <data name="Records_Loaded" xml:space="preserve">
+    <value>查询完成</value>
+  </data>
+  <data name="Records_Empty" xml:space="preserve">
+    <value>该时间段没有记录</value>
+  </data>
+  <data name="Records_NoSelection" xml:space="preserve">
+    <value>请先选中一条记录</value>
+  </data>
+  <data name="Records_Finished" xml:space="preserve">
+    <value>已标记完成</value>
+  </data>
+  <data name="Records_Exported" xml:space="preserve">
+    <value>已导出</value>
+  </data>
+  <data name="Alarm_TimeColumn" xml:space="preserve">
+    <value>时间</value>
+  </data>
+  <data name="Alarm_SeverityColumn" xml:space="preserve">
+    <value>级别</value>
+  </data>
+  <data name="Alarm_MessageColumn" xml:space="preserve">
+    <value>内容</value>
+  </data>
+  <data name="Alarm_DetailColumn" xml:space="preserve">
+    <value>细节</value>
+  </data>
+  <data name="Alarm_GatewayFailure" xml:space="preserve">
+    <value>机床通信失败</value>
+  </data>
+  <data name="Alarm_DomainFailure" xml:space="preserve">
+    <value>工艺数据不合法</value>
+  </data>
+  <data name="Alarm_UnexpectedFailure" xml:space="preserve">
+    <value>未预期的错误</value>
+  </data>
+  <data name="Alarm_ConnectionLost" xml:space="preserve">
+    <value>与机床的连接中断</value>
+  </data>
+  <data name="Alarm_ConnectionRestored" xml:space="preserve">
+    <value>与机床的连接已恢复</value>
+  </data>
+  <data name="Alarm_HandoverCompleted" xml:space="preserve">
+    <value>参数已下发</value>
+  </data>
+  <data name="Alarm_HandoverNotArchived" xml:space="preserve">
+    <value>参数已下发，但记录未能入库</value>
+  </data>
+  <data name="Alarm_TagMissing" xml:space="preserve">
+    <value>tagmap.json 缺少必需变量</value>
+  </data>
+  <data name="Severity_Information" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="Severity_Warning" xml:space="preserve">
+    <value>警告</value>
+  </data>
+  <data name="Severity_Error" xml:space="preserve">
+    <value>故障</value>
+  </data>
+  <data name="ConnectionState_Disconnected" xml:space="preserve">
+    <value>未连接</value>
+  </data>
+  <data name="ConnectionState_Connecting" xml:space="preserve">
+    <value>连接中</value>
+  </data>
+  <data name="ConnectionState_Connected" xml:space="preserve">
+    <value>已连接</value>
+  </data>
+  <data name="ConnectionState_Faulted" xml:space="preserve">
+    <value>通信故障</value>
+  </data>
+  <data name="ChannelState_Reset" xml:space="preserve">
+    <value>复位</value>
+  </data>
+  <data name="ChannelState_Interrupted" xml:space="preserve">
+    <value>中断</value>
+  </data>
+  <data name="ChannelState_Running" xml:space="preserve">
+    <value>运行中</value>
+  </data>
+  <data name="JobState_Draft" xml:space="preserve">
+    <value>草稿</value>
+  </data>
+  <data name="JobState_Handed" xml:space="preserve">
+    <value>已下发</value>
+  </data>
+  <data name="JobState_Completed" xml:space="preserve">
+    <value>已完成</value>
+  </data>
+  <data name="JobState_Abandoned" xml:space="preserve">
+    <value>已放弃</value>
+  </data>
+  <data name="ProfileType_Cylindrical" xml:space="preserve">
+    <value>圆柱</value>
+  </data>
+  <data name="ProfileType_Taper" xml:space="preserve">
+    <value>锥度</value>
+  </data>
+  <data name="ProfileType_Crown" xml:space="preserve">
+    <value>凸度</value>
+  </data>
+  <data name="ProfileType_Cvc" xml:space="preserve">
+    <value>CVC</value>
+  </data>
+  <data name="StepType_Rough" xml:space="preserve">
+    <value>粗磨</value>
+  </data>
+  <data name="StepType_Finish" xml:space="preserve">
+    <value>精磨</value>
+  </data>
+  <data name="StepType_SparkOut" xml:space="preserve">
+    <value>光磨</value>
+  </data>
+  <data name="StepType_Measure" xml:space="preserve">
+    <value>测量</value>
+  </data>
+  <data name="Violation_Missing" xml:space="preserve">
+    <value>缺少必填参数</value>
+  </data>
+  <data name="Violation_KindMismatch" xml:space="preserve">
+    <value>取值类型不符</value>
+  </data>
+  <data name="Violation_BelowMinimum" xml:space="preserve">
+    <value>小于下限</value>
+  </data>
+  <data name="Violation_AboveMaximum" xml:space="preserve">
+    <value>大于上限</value>
+  </data>
+  <data name="Violation_Unknown" xml:space="preserve">
+    <value>未知参数</value>
+  </data>
+  <data name="Violation_ExceedsMachineLimit" xml:space="preserve">
+    <value>超出本台机床能力</value>
+  </data>
+  <data name="Violation_Missing_WithLimit" xml:space="preserve">
+    <value>缺少必填参数（{0}）</value>
+  </data>
+  <data name="Violation_KindMismatch_WithLimit" xml:space="preserve">
+    <value>取值类型不符（{0}）</value>
+  </data>
+  <data name="Violation_BelowMinimum_WithLimit" xml:space="preserve">
+    <value>小于下限 {0}</value>
+  </data>
+  <data name="Violation_AboveMaximum_WithLimit" xml:space="preserve">
+    <value>大于上限 {0}</value>
+  </data>
+  <data name="Violation_Unknown_WithLimit" xml:space="preserve">
+    <value>未知参数（{0}）</value>
+  </data>
+  <data name="Violation_ExceedsMachineLimit_WithLimit" xml:space="preserve">
+    <value>超出机床能力，限值 {0}</value>
+  </data>
+  <data name="Unit_Millimeter" xml:space="preserve">
+    <value>mm</value>
+  </data>
+  <data name="Unit_Micrometer" xml:space="preserve">
+    <value>µm</value>
+  </data>
+  <data name="Unit_MillimeterPerMinute" xml:space="preserve">
+    <value>mm/min</value>
+  </data>
+  <data name="Unit_RevolutionsPerMinute" xml:space="preserve">
+    <value>r/min</value>
+  </data>
+  <data name="Unit_Count" xml:space="preserve">
+    <value>次</value>
+  </data>
+  <data name="Unit_Degree" xml:space="preserve">
+    <value>°</value>
+  </data>
+  <data name="Unit_None" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Parameter_crownDiameterMicrometer" xml:space="preserve">
+    <value>凸度（直径量）</value>
+  </data>
+  <data name="Parameter_taperDiameterMicrometer" xml:space="preserve">
+    <value>锥度（直径量）</value>
+  </data>
+  <data name="Parameter_cvcA0DiameterMicrometer" xml:space="preserve">
+    <value>CVC a0</value>
+  </data>
+  <data name="Parameter_cvcA1DiameterMicrometer" xml:space="preserve">
+    <value>CVC a1</value>
+  </data>
+  <data name="Parameter_cvcA2DiameterMicrometer" xml:space="preserve">
+    <value>CVC a2</value>
+  </data>
+  <data name="Parameter_cvcA3DiameterMicrometer" xml:space="preserve">
+    <value>CVC a3</value>
+  </data>
+  <data name="Parameter_stockDiameterMicrometer" xml:space="preserve">
+    <value>去除量（直径量）</value>
+  </data>
+  <data name="Parameter_infeedPerPassDiameterMicrometer" xml:space="preserve">
+    <value>单刀切深（直径量）</value>
+  </data>
+  <data name="Parameter_feedMmPerMin" xml:space="preserve">
+    <value>轴向进给</value>
+  </data>
+  <data name="Parameter_workpieceSpeedRpm" xml:space="preserve">
+    <value>工件转速</value>
+  </data>
+  <data name="Parameter_wheelSpeedRpm" xml:space="preserve">
+    <value>砂轮转速</value>
+  </data>
+  <data name="Parameter_sparkOutPassCount" xml:space="preserve">
+    <value>光磨次数</value>
+  </data>
+  <data name="Parameter_passCount" xml:space="preserve">
+    <value>走刀次数</value>
+  </data>
+  <data name="Parameter_measurePointCount" xml:space="preserve">
+    <value>测点数</value>
+  </data>
+  <data name="Parameter_BodyLengthMm" xml:space="preserve">
+    <value>辊身长度</value>
+  </data>
+  <data name="Parameter_NominalRadiusMm" xml:space="preserve">
+    <value>公称半径</value>
   </data>
   <data name="Startup_FailedCaption" xml:space="preserve">
     <value>启动失败</value>

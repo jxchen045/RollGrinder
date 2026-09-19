@@ -61,17 +61,35 @@
   <data name="App_Title" xml:space="preserve">
     <value>Roll Grinder HMI</value>
   </data>
-  <data name="Main_Header" xml:space="preserve">
-    <value>System status</value>
+  <data name="Shell_Subtitle" xml:space="preserve">
+    <value>After handover the NC runs the job; the HMI only edits, displays and records</value>
   </data>
-  <data name="Main_MachineLabel" xml:space="preserve">
-    <value>Machine</value>
+  <data name="Shell_ClearAlarmsButton" xml:space="preserve">
+    <value>Clear alarms</value>
+  </data>
+  <data name="Tab_Monitor" xml:space="preserve">
+    <value>Monitor</value>
+  </data>
+  <data name="Tab_Job" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="Tab_Measurement" xml:space="preserve">
+    <value>Measurement</value>
+  </data>
+  <data name="Tab_Records" xml:space="preserve">
+    <value>Records</value>
+  </data>
+  <data name="Tab_Alarms" xml:space="preserve">
+    <value>Alarms</value>
+  </data>
+  <data name="Main_ConnectionLabel" xml:space="preserve">
+    <value>Connection</value>
   </data>
   <data name="Main_GatewayLabel" xml:space="preserve">
     <value>Gateway</value>
   </data>
-  <data name="Main_ConnectionLabel" xml:space="preserve">
-    <value>Connection</value>
+  <data name="Main_MachineLabel" xml:space="preserve">
+    <value>Machine</value>
   </data>
   <data name="Main_ConfigDirectoryLabel" xml:space="preserve">
     <value>Configuration directory</value>
@@ -85,8 +103,428 @@
   <data name="Main_TagCountLabel" xml:space="preserve">
     <value>Tag map entries</value>
   </data>
+  <data name="Main_Header" xml:space="preserve">
+    <value>System status</value>
+  </data>
   <data name="Main_SkeletonNotice" xml:space="preserve">
-    <value>T-01 skeleton: parameter editing, grinding monitor and records follow in later tasks.</value>
+    <value></value>
+  </data>
+  <data name="Monitor_Header" xml:space="preserve">
+    <value>Machine status</value>
+  </data>
+  <data name="Monitor_ChannelStateLabel" xml:space="preserve">
+    <value>Channel state</value>
+  </data>
+  <data name="Monitor_ProgramLabel" xml:space="preserve">
+    <value>Program</value>
+  </data>
+  <data name="Monitor_MeasuredDiameterLabel" xml:space="preserve">
+    <value>Measured diameter (mm)</value>
+  </data>
+  <data name="Monitor_SnapshotAgeLabel" xml:space="preserve">
+    <value>Snapshot age (s)</value>
+  </data>
+  <data name="Monitor_AxesHeader" xml:space="preserve">
+    <value>Axes</value>
+  </data>
+  <data name="Monitor_AxisNameColumn" xml:space="preserve">
+    <value>Axis</value>
+  </data>
+  <data name="Monitor_AxisRoleColumn" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="Monitor_AxisPositionColumn" xml:space="preserve">
+    <value>Position (mm)</value>
+  </data>
+  <data name="Monitor_AxisSpeedColumn" xml:space="preserve">
+    <value>Speed (rpm)</value>
+  </data>
+  <data name="Monitor_TrendHeader" xml:space="preserve">
+    <value>Measured diameter trend</value>
+  </data>
+  <data name="Job_Header" xml:space="preserve">
+    <value>Job editor</value>
+  </data>
+  <data name="Job_JobIdLabel" xml:space="preserve">
+    <value>Job ID</value>
+  </data>
+  <data name="Job_RollIdLabel" xml:space="preserve">
+    <value>Roll ID</value>
+  </data>
+  <data name="Job_BodyLengthLabel" xml:space="preserve">
+    <value>Body length (mm)</value>
+  </data>
+  <data name="Job_DiameterLabel" xml:space="preserve">
+    <value>Nominal diameter (mm)</value>
+  </data>
+  <data name="Job_ProfileTypeLabel" xml:space="preserve">
+    <value>Profile type</value>
+  </data>
+  <data name="Job_ProfileParametersHeader" xml:space="preserve">
+    <value>Profile parameters</value>
+  </data>
+  <data name="Job_StepsHeader" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="Job_AddStepButton" xml:space="preserve">
+    <value>Add step</value>
+  </data>
+  <data name="Job_RemoveStepButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Job_NewJobButton" xml:space="preserve">
+    <value>New job</value>
+  </data>
+  <data name="Job_ValidateButton" xml:space="preserve">
+    <value>Validate</value>
+  </data>
+  <data name="Job_DownloadButton" xml:space="preserve">
+    <value>Hand over</value>
+  </data>
+  <data name="Job_ReadyToHandOver" xml:space="preserve">
+    <value>Parameters are ready to hand over</value>
+  </data>
+  <data name="Job_HandedOver" xml:space="preserve">
+    <value>Handed over; the NC runs the job now</value>
+  </data>
+  <data name="Job_ValidationFailed" xml:space="preserve">
+    <value>Validation failed; nothing was written</value>
+  </data>
+  <data name="Job_TagMapIncomplete" xml:space="preserve">
+    <value>tagmap.json is incomplete; nothing was written</value>
+  </data>
+  <data name="Job_GeometryInvalid" xml:space="preserve">
+    <value>Body length or diameter is not a number</value>
+  </data>
+  <data name="Job_ParametersInvalid" xml:space="preserve">
+    <value>One of the parameters is not valid</value>
+  </data>
+  <data name="Job_IdentifiersMissing" xml:space="preserve">
+    <value>Job ID and roll ID are required</value>
+  </data>
+  <data name="Job_NoSteps" xml:space="preserve">
+    <value>At least one step is required</value>
+  </data>
+  <data name="Measurement_Header" xml:space="preserve">
+    <value>Measurement and compensation</value>
+  </data>
+  <data name="Measurement_CaptureButton" xml:space="preserve">
+    <value>Capture point</value>
+  </data>
+  <data name="Measurement_ClearButton" xml:space="preserve">
+    <value>Clear points</value>
+  </data>
+  <data name="Measurement_SaveButton" xml:space="preserve">
+    <value>Save measurement</value>
+  </data>
+  <data name="Measurement_ComputeButton" xml:space="preserve">
+    <value>Compute compensation</value>
+  </data>
+  <data name="Measurement_PositionColumn" xml:space="preserve">
+    <value>Body position (mm)</value>
+  </data>
+  <data name="Measurement_DiameterColumn" xml:space="preserve">
+    <value>Measured diameter (mm)</value>
+  </data>
+  <data name="Measurement_WorstDeviationLabel" xml:space="preserve">
+    <value>Worst deviation (µm diameter)</value>
+  </data>
+  <data name="Measurement_PeakToValleyLabel" xml:space="preserve">
+    <value>Peak to valley (µm diameter)</value>
+  </data>
+  <data name="Measurement_ToleranceLabel" xml:space="preserve">
+    <value>Tolerance (µm diameter)</value>
+  </data>
+  <data name="Measurement_VerdictLabel" xml:space="preserve">
+    <value>Verdict</value>
+  </data>
+  <data name="Measurement_WithinTolerance" xml:space="preserve">
+    <value>Within tolerance</value>
+  </data>
+  <data name="Measurement_OutOfTolerance" xml:space="preserve">
+    <value>Out of tolerance</value>
+  </data>
+  <data name="Measurement_ChartHeader" xml:space="preserve">
+    <value>Deviation and compensation (µm diameter)</value>
+  </data>
+  <data name="Measurement_PointCaptured" xml:space="preserve">
+    <value>Captured one point</value>
+  </data>
+  <data name="Measurement_Saved" xml:space="preserve">
+    <value>Measurement archived</value>
+  </data>
+  <data name="Measurement_NotEnoughPoints" xml:space="preserve">
+    <value>At least two points and a job ID are required</value>
+  </data>
+  <data name="Measurement_JobIdMissing" xml:space="preserve">
+    <value>Enter a job ID first</value>
+  </data>
+  <data name="Measurement_CompensationStored" xml:space="preserve">
+    <value>Compensation stored; it takes effect at the next handover</value>
+  </data>
+  <data name="Records_Header" xml:space="preserve">
+    <value>Grinding records</value>
+  </data>
+  <data name="Records_FromLabel" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="Records_ToLabel" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="Records_QueryButton" xml:space="preserve">
+    <value>Query</value>
+  </data>
+  <data name="Records_ExportButton" xml:space="preserve">
+    <value>Export CSV</value>
+  </data>
+  <data name="Records_FinishButton" xml:space="preserve">
+    <value>Mark completed</value>
+  </data>
+  <data name="Records_NoteLabel" xml:space="preserve">
+    <value>Note</value>
+  </data>
+  <data name="Records_StartedColumn" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="Records_RollColumn" xml:space="preserve">
+    <value>Roll</value>
+  </data>
+  <data name="Records_ProfileColumn" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Records_StateColumn" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="Records_DurationColumn" xml:space="preserve">
+    <value>Duration (min)</value>
+  </data>
+  <data name="Records_DeviationColumn" xml:space="preserve">
+    <value>Worst deviation (µm)</value>
+  </data>
+  <data name="Records_RecordIdColumn" xml:space="preserve">
+    <value>Record ID</value>
+  </data>
+  <data name="Records_Loaded" xml:space="preserve">
+    <value>Query complete</value>
+  </data>
+  <data name="Records_Empty" xml:space="preserve">
+    <value>No records in this period</value>
+  </data>
+  <data name="Records_NoSelection" xml:space="preserve">
+    <value>Select a record first</value>
+  </data>
+  <data name="Records_Finished" xml:space="preserve">
+    <value>Marked as completed</value>
+  </data>
+  <data name="Records_Exported" xml:space="preserve">
+    <value>Exported</value>
+  </data>
+  <data name="Alarm_TimeColumn" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="Alarm_SeverityColumn" xml:space="preserve">
+    <value>Severity</value>
+  </data>
+  <data name="Alarm_MessageColumn" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="Alarm_DetailColumn" xml:space="preserve">
+    <value>Detail</value>
+  </data>
+  <data name="Alarm_GatewayFailure" xml:space="preserve">
+    <value>Machine communication failed</value>
+  </data>
+  <data name="Alarm_DomainFailure" xml:space="preserve">
+    <value>Process data is not valid</value>
+  </data>
+  <data name="Alarm_UnexpectedFailure" xml:space="preserve">
+    <value>Unexpected error</value>
+  </data>
+  <data name="Alarm_ConnectionLost" xml:space="preserve">
+    <value>Connection to the machine was lost</value>
+  </data>
+  <data name="Alarm_ConnectionRestored" xml:space="preserve">
+    <value>Connection to the machine was restored</value>
+  </data>
+  <data name="Alarm_HandoverCompleted" xml:space="preserve">
+    <value>Parameters handed over</value>
+  </data>
+  <data name="Alarm_HandoverNotArchived" xml:space="preserve">
+    <value>Parameters were handed over but the record was not archived</value>
+  </data>
+  <data name="Alarm_TagMissing" xml:space="preserve">
+    <value>tagmap.json is missing a required tag</value>
+  </data>
+  <data name="Severity_Information" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="Severity_Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="Severity_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="ConnectionState_Disconnected" xml:space="preserve">
+    <value>Disconnected</value>
+  </data>
+  <data name="ConnectionState_Connecting" xml:space="preserve">
+    <value>Connecting</value>
+  </data>
+  <data name="ConnectionState_Connected" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="ConnectionState_Faulted" xml:space="preserve">
+    <value>Faulted</value>
+  </data>
+  <data name="ChannelState_Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="ChannelState_Interrupted" xml:space="preserve">
+    <value>Interrupted</value>
+  </data>
+  <data name="ChannelState_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="JobState_Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="JobState_Handed" xml:space="preserve">
+    <value>Handed over</value>
+  </data>
+  <data name="JobState_Completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="JobState_Abandoned" xml:space="preserve">
+    <value>Abandoned</value>
+  </data>
+  <data name="ProfileType_Cylindrical" xml:space="preserve">
+    <value>Cylindrical</value>
+  </data>
+  <data name="ProfileType_Taper" xml:space="preserve">
+    <value>Taper</value>
+  </data>
+  <data name="ProfileType_Crown" xml:space="preserve">
+    <value>Crown</value>
+  </data>
+  <data name="ProfileType_Cvc" xml:space="preserve">
+    <value>CVC</value>
+  </data>
+  <data name="StepType_Rough" xml:space="preserve">
+    <value>Rough grinding</value>
+  </data>
+  <data name="StepType_Finish" xml:space="preserve">
+    <value>Finish grinding</value>
+  </data>
+  <data name="StepType_SparkOut" xml:space="preserve">
+    <value>Spark out</value>
+  </data>
+  <data name="StepType_Measure" xml:space="preserve">
+    <value>Measure</value>
+  </data>
+  <data name="Violation_Missing" xml:space="preserve">
+    <value>Required parameter is missing</value>
+  </data>
+  <data name="Violation_KindMismatch" xml:space="preserve">
+    <value>Value has the wrong type</value>
+  </data>
+  <data name="Violation_BelowMinimum" xml:space="preserve">
+    <value>Below the minimum</value>
+  </data>
+  <data name="Violation_AboveMaximum" xml:space="preserve">
+    <value>Above the maximum</value>
+  </data>
+  <data name="Violation_Unknown" xml:space="preserve">
+    <value>Unknown parameter</value>
+  </data>
+  <data name="Violation_ExceedsMachineLimit" xml:space="preserve">
+    <value>Exceeds what this machine can do</value>
+  </data>
+  <data name="Violation_Missing_WithLimit" xml:space="preserve">
+    <value>Required parameter is missing ({0})</value>
+  </data>
+  <data name="Violation_KindMismatch_WithLimit" xml:space="preserve">
+    <value>Value has the wrong type ({0})</value>
+  </data>
+  <data name="Violation_BelowMinimum_WithLimit" xml:space="preserve">
+    <value>Below the minimum of {0}</value>
+  </data>
+  <data name="Violation_AboveMaximum_WithLimit" xml:space="preserve">
+    <value>Above the maximum of {0}</value>
+  </data>
+  <data name="Violation_Unknown_WithLimit" xml:space="preserve">
+    <value>Unknown parameter ({0})</value>
+  </data>
+  <data name="Violation_ExceedsMachineLimit_WithLimit" xml:space="preserve">
+    <value>Exceeds the machine limit of {0}</value>
+  </data>
+  <data name="Unit_Millimeter" xml:space="preserve">
+    <value>mm</value>
+  </data>
+  <data name="Unit_Micrometer" xml:space="preserve">
+    <value>µm</value>
+  </data>
+  <data name="Unit_MillimeterPerMinute" xml:space="preserve">
+    <value>mm/min</value>
+  </data>
+  <data name="Unit_RevolutionsPerMinute" xml:space="preserve">
+    <value>rpm</value>
+  </data>
+  <data name="Unit_Count" xml:space="preserve">
+    <value>×</value>
+  </data>
+  <data name="Unit_Degree" xml:space="preserve">
+    <value>°</value>
+  </data>
+  <data name="Unit_None" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Parameter_crownDiameterMicrometer" xml:space="preserve">
+    <value>Crown (diameter)</value>
+  </data>
+  <data name="Parameter_taperDiameterMicrometer" xml:space="preserve">
+    <value>Taper (diameter)</value>
+  </data>
+  <data name="Parameter_cvcA0DiameterMicrometer" xml:space="preserve">
+    <value>CVC a0</value>
+  </data>
+  <data name="Parameter_cvcA1DiameterMicrometer" xml:space="preserve">
+    <value>CVC a1</value>
+  </data>
+  <data name="Parameter_cvcA2DiameterMicrometer" xml:space="preserve">
+    <value>CVC a2</value>
+  </data>
+  <data name="Parameter_cvcA3DiameterMicrometer" xml:space="preserve">
+    <value>CVC a3</value>
+  </data>
+  <data name="Parameter_stockDiameterMicrometer" xml:space="preserve">
+    <value>Stock removal (diameter)</value>
+  </data>
+  <data name="Parameter_infeedPerPassDiameterMicrometer" xml:space="preserve">
+    <value>Infeed per pass (diameter)</value>
+  </data>
+  <data name="Parameter_feedMmPerMin" xml:space="preserve">
+    <value>Axial feed</value>
+  </data>
+  <data name="Parameter_workpieceSpeedRpm" xml:space="preserve">
+    <value>Workpiece speed</value>
+  </data>
+  <data name="Parameter_wheelSpeedRpm" xml:space="preserve">
+    <value>Wheel speed</value>
+  </data>
+  <data name="Parameter_sparkOutPassCount" xml:space="preserve">
+    <value>Spark-out passes</value>
+  </data>
+  <data name="Parameter_passCount" xml:space="preserve">
+    <value>Passes</value>
+  </data>
+  <data name="Parameter_measurePointCount" xml:space="preserve">
+    <value>Measuring points</value>
+  </data>
+  <data name="Parameter_BodyLengthMm" xml:space="preserve">
+    <value>Body length</value>
+  </data>
+  <data name="Parameter_NominalRadiusMm" xml:space="preserve">
+    <value>Nominal radius</value>
   </data>
   <data name="Startup_FailedCaption" xml:space="preserve">
     <value>Startup failed</value>

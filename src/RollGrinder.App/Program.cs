@@ -139,8 +139,12 @@ public static class Program
         builder.Services.AddDataStore(options);
         builder.Services.AddApplicationServices(hmiSettings);
         builder.Services.AddSingleton(localizer);
-        builder.Services.AddSingleton<MainViewModel>();
-        builder.Services.AddSingleton<MainWindow>();
+        builder.Services.AddSingleton<MonitorViewModel>();
+        builder.Services.AddSingleton<JobEditorViewModel>();
+        builder.Services.AddSingleton<MeasurementViewModel>();
+        builder.Services.AddSingleton<RecordsViewModel>();
+        builder.Services.AddSingleton<ShellViewModel>();
+        builder.Services.AddSingleton<ShellWindow>();
 
         return builder.Build();
     }
