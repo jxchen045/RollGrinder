@@ -155,7 +155,8 @@ public sealed class SqliteStoreTests : IDisposable
         loaded.Should().NotBeNull();
         loaded!.Value.State.Should().Be(JobState.Draft);
         loaded.Value.Job.ProfileTypeKey.Should().Be(ProfileTypeKeys.Crown);
-        loaded.Value.Job.ProfileParameters.GetNumber(CrownProfileType.CrownDiameterMicrometerKey).Should().Be(120.0);
+        loaded.Value.Job.Profile.Segments.Should().ContainSingle()
+            .Which.Parameters.GetNumber(CrownProfileType.CrownDiameterMicrometerKey).Should().Be(120.0);
         loaded.Value.Job.Steps.Select(step => step.StepTypeKey)
             .Should().Equal(StepTypeKeys.Rough, StepTypeKeys.SparkOut);
         loaded.Value.Job.Steps[0].Parameters.GetNumber(StepParameterKeys.FeedMmPerMin)
@@ -175,7 +176,7 @@ public sealed class SqliteStoreTests : IDisposable
         await jobs.SaveAsync(job, JobState.Draft, CancellationToken.None);
 
         GrindingJob shortened = GrindingJob.Create(
-            job.JobId, job.RollId, job.Geometry, job.ProfileTypeKey, job.ProfileParameters, new[] { job.Steps[0] });
+            job.JobId, job.RollId, job.Geometry, job.Profile, new[] { job.Steps[0] });
         await jobs.SaveAsync(shortened, JobState.Handed, CancellationToken.None);
 
         (GrindingJob Job, JobState State)? loaded = await jobs.GetAsync(job.JobId, CancellationToken.None);

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
+using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
 using RollGrinder.Data.Model;
 
@@ -33,21 +34,28 @@ public sealed class SqliteJobRepository : IJobRepository
             connection,
             transaction,
             """
-            INSERT INTO job (job_id, roll_id, profile_type_key, body_length_mm, nominal_radius_mm, state, created_at_utc)
-            VALUES ($job, $roll, $profile, $length, $radius, $state, $created)
+            INSERT INTO job (job_id, roll_id, profile_type_key, body_length_mm, nominal_radius_mm, state,
+                             created_at_utc, profile_id, profile_name)
+            VALUES ($job, $roll, $profile, $length, $radius, $state, $created, $profileId, $profileName)
             ON CONFLICT(job_id) DO UPDATE SET
                 roll_id = excluded.roll_id,
                 profile_type_key = excluded.profile_type_key,
                 body_length_mm = excluded.body_length_mm,
                 nominal_radius_mm = excluded.nominal_radius_mm,
-                state = excluded.state;
+                state = excluded.state,
+                profile_id = excluded.profile_id,
+                profile_name = excluded.profile_name;
             """,
             cancellationToken,
             command =>
             {
                 SqlMapping.AddParameter(command, "$job", job.JobId);
                 SqlMapping.AddParameter(command, "$roll", job.RollId);
+
+                // profile_type_key 写第一段的类型：列表显示与旧库读路径都用它。
                 SqlMapping.AddParameter(command, "$profile", job.ProfileTypeKey);
+                SqlMapping.AddParameter(command, "$profileId", job.ProfileId);
+                SqlMapping.AddParameter(command, "$profileName", job.ProfileName);
                 SqlMapping.AddParameter(command, "$length", job.Geometry.BodyLengthMm);
                 SqlMapping.AddParameter(command, "$radius", job.Geometry.NominalRadiusMm);
                 SqlMapping.AddParameter(command, "$state", (int)state);
@@ -59,8 +67,8 @@ public sealed class SqliteJobRepository : IJobRepository
         await ExecuteAsync(connection, transaction, "DELETE FROM job_parameter WHERE job_id = $job;", cancellationToken,
             command => SqlMapping.AddParameter(command, "$job", job.JobId)).ConfigureAwait(false);
 
-        await SqlMapping.WriteParametersAsync(
-            connection, transaction, job.JobId, SqlMapping.ProfileParameterStepOrder, job.ProfileParameters, cancellationToken)
+        await ProfileSegmentMapping.WriteAsync(
+            connection, transaction, ProfileSegmentTables.JobSnapshot, job.JobId, job.Profile, cancellationToken)
             .ConfigureAwait(false);
 
         await SqlMapping.WriteParametersAsync(
@@ -96,6 +104,8 @@ public sealed class SqliteJobRepository : IJobRepository
 
         string rollId;
         string profileTypeKey;
+        string? profileId;
+        string? profileName;
         RollGeometry geometry;
         JobState state;
 
@@ -103,7 +113,8 @@ public sealed class SqliteJobRepository : IJobRepository
         {
             command.CommandText =
                 """
-                SELECT roll_id, profile_type_key, body_length_mm, nominal_radius_mm, state
+                SELECT roll_id, profile_type_key, body_length_mm, nominal_radius_mm, state,
+                       profile_id, profile_name
                 FROM job WHERE job_id = $job;
                 """;
             SqlMapping.AddParameter(command, "$job", jobId);
@@ -118,7 +129,12 @@ public sealed class SqliteJobRepository : IJobRepository
             profileTypeKey = reader.GetString(1);
             geometry = RollGeometry.Create(reader.GetDouble(2), reader.GetDouble(3));
             state = (JobState)reader.GetInt32(4);
+            profileId = reader.IsDBNull(5) ? null : reader.GetString(5);
+            profileName = reader.IsDBNull(6) ? null : reader.GetString(6);
         }
+
+        CompositeRollProfile? storedProfile = await ProfileSegmentMapping
+            .ReadAsync(connection, ProfileSegmentTables.JobSnapshot, jobId, cancellationToken).ConfigureAwait(false);
 
         Dictionary<int, ParameterSet> parameters = await SqlMapping
             .ReadParametersAsync(connection, jobId, cancellationToken).ConfigureAwait(false);
@@ -140,18 +156,25 @@ public sealed class SqliteJobRepository : IJobRepository
             }
         }
 
-        ParameterSet profileParameters =
-            parameters.TryGetValue(SqlMapping.ProfileParameterStepOrder, out ParameterSet? found)
-                ? found
-                : ParameterSet.Empty;
-
         ParameterSet programOptions =
             parameters.TryGetValue(SqlMapping.ProgramOptionStepOrder, out ParameterSet? storedOptions)
                 ? storedOptions
                 : ParameterSet.Empty;
 
-        GrindingJob job = GrindingJob.Create(
-            jobId, rollId, geometry, profileTypeKey, profileParameters, steps, programOptions);
+        // 没有段记录的是迁移前存下的作业：按老表示（profile_type_key + step_order 0 的参数）读回来，
+        // 当成一段铺满全长的主辊形。旧作业照样打得开。
+        CompositeRollProfile profile = storedProfile ?? CompositeRollProfile.Single(
+            profileTypeKey,
+            geometry,
+            parameters.TryGetValue(SqlMapping.ProfileParameterStepOrder, out ParameterSet? legacy)
+                ? legacy
+                : ParameterSet.Empty);
+
+        GrindingJob job = GrindingJob.Create(jobId, rollId, geometry, profile, steps, programOptions) with
+        {
+            ProfileId = profileId,
+            ProfileName = profileName,
+        };
         return (job, state);
     }
 

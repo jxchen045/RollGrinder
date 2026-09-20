@@ -30,8 +30,7 @@ public sealed class GrindingJobValidator
 
         var violations = new List<ParameterViolation>();
 
-        IRollProfileType profileType = this.profileTypes.Get(job.ProfileTypeKey);
-        violations.AddRange(profileType.Schema.Validate(job.ProfileParameters).Violations);
+        violations.AddRange(ValidateProfile(job));
         violations.AddRange(ValidateGeometry(job, capability));
         violations.AddRange(ProgramOptionCatalog.Schema.Validate(job.ProgramOptions).Violations);
         violations.AddRange(ValidateProgramOptions(job, capability));
@@ -61,6 +60,37 @@ public sealed class GrindingJobValidator
 
         return new ParameterValidationResult(violations);
     }
+
+    /// <summary>
+    /// 辊形：每一段各自按自己那条曲线的 schema 校验，区间还得落在辊身之内。
+    ///
+    /// 逐段报，参数键前面带上段号（<c>seg2.crownDiameterMicrometer</c>）——
+    /// 叠了四段的时候，只说"凸度超限"操作员不知道该改哪一段。
+    /// </summary>
+    private IEnumerable<ParameterViolation> ValidateProfile(GrindingJob job)
+    {
+        foreach (RollProfileSegment segment in job.Profile.Segments)
+        {
+            IRollProfileType profileType = this.profileTypes.Get(segment.ProfileTypeKey);
+
+            foreach (ParameterViolation violation in profileType.Schema.Validate(segment.Parameters).Violations)
+            {
+                yield return violation with { ParameterKey = SegmentKey(segment, violation.ParameterKey) };
+            }
+
+            if (segment.ToMm > job.Geometry.BodyLengthMm)
+            {
+                yield return new ParameterViolation(
+                    SegmentKey(segment, nameof(RollProfileSegment.ToMm)),
+                    ParameterViolationKind.ExceedsMachineLimit,
+                    job.Geometry.BodyLengthMm);
+            }
+        }
+    }
+
+    /// <summary>段号前缀，让报出来的键指得到具体是哪一段。</summary>
+    private static string SegmentKey(RollProfileSegment segment, string parameterKey) =>
+        $"seg{segment.Order}.{parameterKey}";
 
     /// <summary>
     /// 程序步骤开关：开着的那些，机床得做得了。

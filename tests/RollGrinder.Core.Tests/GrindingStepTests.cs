@@ -295,7 +295,7 @@ public sealed class GrindingJobValidatorTests
                 option.Key, ParameterValue.FromBoolean(false))));
 
     private static GrindingJobValidator CreateFullValidator() => new(
-        new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType() }),
+        new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType(), new TaperProfileType() }),
         new GrindingStepTypeRegistry(new IGrindingStepType[]
         {
             new RoughGrindingStepType(), new SparkOutStepType(), new FinishGrindingStepType(),
@@ -312,7 +312,7 @@ public sealed class GrindingJobValidatorTests
         AllProgramOptionsOff);
 
     private static GrindingJobValidator CreateValidator() => new(
-        new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType() }),
+        new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType(), new TaperProfileType() }),
         new GrindingStepTypeRegistry(new IGrindingStepType[] { new RoughGrindingStepType(), new SparkOutStepType() }));
 
     private static GrindingJob CreateJob(ParameterSet? roughOverrides = null)
@@ -541,6 +541,61 @@ public sealed class GrindingJobValidatorTests
     }
 
     [Fact]
+    public void A_profile_segment_reaching_past_the_roll_body_is_reported_with_its_segment_number()
+    {
+        // 叠了四段的时候，只说"区间超了"操作员不知道该改哪一段，所以键上带段号。
+        var crown = new CrownProfileType();
+        var taper = new TaperProfileType();
+        RollGeometry geometry = RollGeometry.FromDiameter(2000.0, 650.0);
+
+        GrindingJob job = GrindingJob.Create(
+            "J-seg",
+            "R-1",
+            geometry,
+            new CompositeRollProfile(new[]
+            {
+                RollProfileSegment.Create(1, ProfileTypeKeys.Crown, 0.0, 2000.0, crown.Schema.CreateDefaults()),
+                RollProfileSegment.Create(2, ProfileTypeKeys.Taper, 1900.0, 2400.0, taper.Schema.CreateDefaults()),
+            }),
+            new[] { new GrindingJobStep(1, StepTypeKeys.Rough, new RoughGrindingStepType().Schema.CreateDefaults()) });
+
+        ParameterValidationResult result = CreateValidator().Validate(job, Capability);
+
+        result.Violations.Should().Contain(violation =>
+            violation.ParameterKey == "seg2.ToMm"
+            && violation.Kind == ParameterViolationKind.ExceedsMachineLimit);
+    }
+
+    [Fact]
+    public void A_bad_parameter_in_one_segment_names_that_segment()
+    {
+        var crown = new CrownProfileType();
+        RollGeometry geometry = RollGeometry.FromDiameter(2000.0, 650.0);
+
+        GrindingJob job = GrindingJob.Create(
+            "J-seg",
+            "R-1",
+            geometry,
+            new CompositeRollProfile(new[]
+            {
+                RollProfileSegment.Create(1, ProfileTypeKeys.Crown, 0.0, 2000.0, crown.Schema.CreateDefaults()),
+                RollProfileSegment.Create(
+                    2,
+                    ProfileTypeKeys.Crown,
+                    0.0,
+                    500.0,
+                    crown.Schema.CreateDefaults()
+                        .With(CrownProfileType.CrownDiameterMicrometerKey, ParameterValue.FromNumber(1e9))),
+            }),
+            new[] { new GrindingJobStep(1, StepTypeKeys.Rough, new RoughGrindingStepType().Schema.CreateDefaults()) });
+
+        ParameterValidationResult result = CreateValidator().Validate(job, Capability);
+
+        result.Violations.Should().Contain(violation =>
+            violation.ParameterKey == "seg2." + CrownProfileType.CrownDiameterMicrometerKey);
+    }
+
+    [Fact]
     public void An_option_that_is_not_offered_is_reported()
     {
         ParameterSet overrides = new ParameterSet(new[]
@@ -685,7 +740,7 @@ public sealed class GrindingJobValidatorTests
 
         // 不传就补默认值：少一个键不该让"这个开关开没开"变成未定义。
         GrindingJob withDefaults = GrindingJob.Create(
-            job.JobId, job.RollId, job.Geometry, job.ProfileTypeKey, job.ProfileParameters, job.Steps);
+            job.JobId, job.RollId, job.Geometry, job.Profile, job.Steps);
 
         withDefaults.ProgramOptions.Count.Should().Be(8);
         foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)

@@ -61,8 +61,8 @@ public sealed class NcJobTranslator
                 "tagmap.json does not provide at least two profile slots; the roll profile cannot be handed over.");
         }
 
-        IRollProfileType profileType = this.profileTypes.Get(job.ProfileTypeKey);
-        RollProfile targetProfile = profileType.CreateProfile(job.Geometry, job.ProfileParameters, profilePointCount);
+        // 辊形按段合成之后才下发：NC 只收到一条点列，不关心它是由几段叠出来的。
+        RollProfile targetProfile = job.Profile.Compose(job.Geometry, this.profileTypes, profilePointCount);
         if (compensation is not null)
         {
             targetProfile = targetProfile.Add(compensation);

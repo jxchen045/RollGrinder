@@ -482,11 +482,16 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         CurveChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// 参考曲线 = 把作业里各段辊形合成之后的整条目标曲线。
+    /// 端部锥度与倒角也画在里面——只画主辊形，两端就跟实测对不上。
+    /// </summary>
+    private RollProfile TargetProfile() => this.activeJob!.Profile.Compose(
+        this.activeJob.Geometry, this.profileTypes, this.settings.ProfileSampleCount);
+
     private void BuildReferenceCurve()
     {
-        IRollProfileType profileType = this.profileTypes.Get(this.activeJob!.ProfileTypeKey);
-        RollProfile target = profileType.CreateProfile(
-            this.activeJob.Geometry, this.activeJob.ProfileParameters, this.settings.ProfileSampleCount);
+        RollProfile target = TargetProfile();
 
         CurvePoints = target.Points
             .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)))
@@ -504,12 +509,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             return;
         }
 
-        IRollProfileType profileType = this.profileTypes.Get(this.activeJob.ProfileTypeKey);
-        RollProfile target = profileType.CreateProfile(
-            this.activeJob.Geometry, this.activeJob.ProfileParameters, this.settings.ProfileSampleCount);
-
         RollProfile deviation = CompensationCalculator.ComputeDeviation(
-            measurement.Profile, target, this.activeJob.Geometry);
+            measurement.Profile, TargetProfile(), this.activeJob.Geometry);
 
         CurvePoints = deviation.Points
             .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)))

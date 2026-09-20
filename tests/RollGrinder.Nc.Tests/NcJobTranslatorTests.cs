@@ -37,7 +37,7 @@ public sealed class NcJobTranslatorTests
         });
 
     private static NcJobTranslator CreateTranslator(ITagMap tagMap, MachineDescription? machine = null) => new(
-        new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType() }),
+        new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType(), new TaperProfileType() }),
         new GrindingStepTypeRegistry(new IGrindingStepType[]
         {
             new RoughGrindingStepType(), new FinishGrindingStepType(), new SparkOutStepType(), new MeasureStepType(),
@@ -120,6 +120,52 @@ public sealed class NcJobTranslatorTests
         NumberOf(download, TagKeySyntax.Indexed(MachineTagKeys.JobProfileBodyPositionMm, 20)).Should().Be(2000.0);
 
         // 中点的直径量凸度应等于设定值。
+        double midRadiusOffsetMm = NumberOf(download, TagKeySyntax.Indexed(MachineTagKeys.JobProfileRadiusOffsetMm, 10));
+        UnitConversion.RadiusMmToDiameterMicrometer(midRadiusOffsetMm).Should().BeApproximately(120.0, 1e-6);
+    }
+
+    [Fact]
+    public void Every_profile_segment_reaches_the_machine_in_the_composed_point_list()
+    {
+        // 主凸度 120 µm 铺满全长，再在尾架端 1850–2000 叠一段 −60 µm 的锥度。
+        // NC 只收到一条点列，但那条点列必须已经把两段加在一起了——
+        // 只下发主辊形的话，端部那 150 mm 就白编了。
+        var crown = new CrownProfileType();
+        var taper = new TaperProfileType();
+
+        var composite = new CompositeRollProfile(new[]
+        {
+            RollProfileSegment.Create(
+                1,
+                ProfileTypeKeys.Crown,
+                0.0,
+                Geometry.BodyLengthMm,
+                crown.Schema.CreateDefaults()
+                    .With(CrownProfileType.CrownDiameterMicrometerKey, ParameterValue.FromNumber(120.0))),
+            RollProfileSegment.Create(
+                2,
+                ProfileTypeKeys.Taper,
+                1850.0,
+                Geometry.BodyLengthMm,
+                taper.Schema.CreateDefaults()
+                    .With(TaperProfileType.TaperDiameterMicrometerKey, ParameterValue.FromNumber(-60.0))),
+        });
+
+        GrindingJob job = GrindingJob.Create(
+            "J-3",
+            "R-1",
+            Geometry,
+            composite,
+            new[] { new GrindingJobStep(1, StepTypeKeys.Rough, new RoughGrindingStepType().Schema.CreateDefaults()) });
+
+        NcDownload download = CreateTranslator(FakeTagMap.Complete()).Translate(job, null, 21, Now);
+
+        // 21 个采样点，末点就是辊身末端：主凸度在那里是 0，叠上锥度整段的 −60 µm。
+        double lastRadiusOffsetMm = NumberOf(download, TagKeySyntax.Indexed(MachineTagKeys.JobProfileRadiusOffsetMm, 20));
+        UnitConversion.RadiusMmToDiameterMicrometer(lastRadiusOffsetMm)
+            .Should().BeApproximately(-60.0, 1e-6, "端部那一段锥度必须也下发下去");
+
+        // 中点在锥度那一段之外，只有主凸度。
         double midRadiusOffsetMm = NumberOf(download, TagKeySyntax.Indexed(MachineTagKeys.JobProfileRadiusOffsetMm, 10));
         UnitConversion.RadiusMmToDiameterMicrometer(midRadiusOffsetMm).Should().BeApproximately(120.0, 1e-6);
     }

@@ -113,6 +113,70 @@ public sealed class SqliteDatabase
         ALTER TABLE alarm ADD COLUMN code INTEGER NOT NULL DEFAULT 0;
         CREATE INDEX ix_alarm_code ON alarm(code);
         """,
+
+        // 3：辊形改成可叠加的多段曲线，并建辊形库。
+        //
+        // 辊形是可复用的模板（roll_profile），作业引用它的时候复制一份快照
+        // （job_profile_segment）——库里之后改了，已经磨过的那支辊的记录不能跟着变。
+        //
+        // job.profile_type_key 保留不动：旧库里的作业还只有单曲线，靠它读回来；
+        // 新作业往这一列写第一段的类型键，列表显示仍然照旧。
+        """
+        ALTER TABLE job ADD COLUMN profile_id TEXT NULL;
+        ALTER TABLE job ADD COLUMN profile_name TEXT NULL;
+
+        CREATE TABLE roll_profile (
+            profile_id         TEXT PRIMARY KEY,
+            name               TEXT NOT NULL,
+            body_length_mm     REAL NOT NULL,
+            created_at_utc     TEXT NOT NULL,
+            modified_at_utc    TEXT NOT NULL
+        );
+
+        CREATE TABLE roll_profile_segment (
+            profile_id         TEXT NOT NULL REFERENCES roll_profile(profile_id) ON DELETE CASCADE,
+            segment_order      INTEGER NOT NULL,
+            profile_type_key   TEXT NOT NULL,
+            from_mm            REAL NOT NULL,
+            to_mm              REAL NOT NULL,
+            is_mirrored        INTEGER NOT NULL,
+            PRIMARY KEY (profile_id, segment_order)
+        );
+
+        CREATE TABLE roll_profile_segment_parameter (
+            profile_id         TEXT NOT NULL,
+            segment_order      INTEGER NOT NULL,
+            parameter_key      TEXT NOT NULL,
+            value_kind         INTEGER NOT NULL,
+            value_text         TEXT NOT NULL,
+            PRIMARY KEY (profile_id, segment_order, parameter_key),
+            FOREIGN KEY (profile_id, segment_order)
+                REFERENCES roll_profile_segment(profile_id, segment_order) ON DELETE CASCADE
+        );
+
+        CREATE TABLE job_profile_segment (
+            job_id             TEXT NOT NULL REFERENCES job(job_id) ON DELETE CASCADE,
+            segment_order      INTEGER NOT NULL,
+            profile_type_key   TEXT NOT NULL,
+            from_mm            REAL NOT NULL,
+            to_mm              REAL NOT NULL,
+            is_mirrored        INTEGER NOT NULL,
+            PRIMARY KEY (job_id, segment_order)
+        );
+
+        CREATE TABLE job_profile_segment_parameter (
+            job_id             TEXT NOT NULL,
+            segment_order      INTEGER NOT NULL,
+            parameter_key      TEXT NOT NULL,
+            value_kind         INTEGER NOT NULL,
+            value_text         TEXT NOT NULL,
+            PRIMARY KEY (job_id, segment_order, parameter_key),
+            FOREIGN KEY (job_id, segment_order)
+                REFERENCES job_profile_segment(job_id, segment_order) ON DELETE CASCADE
+        );
+
+        CREATE INDEX ix_roll_profile_modified ON roll_profile(modified_at_utc);
+        """,
     };
 
     private readonly string connectionString;

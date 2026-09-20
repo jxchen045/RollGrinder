@@ -86,8 +86,11 @@ public sealed class CompensationService : ICompensationService
         }
 
         GrindingJob job = stored.Value.Job;
-        IRollProfileType profileType = this.profileTypes.Get(job.ProfileTypeKey);
-        RollProfile target = profileType.CreateProfile(job.Geometry, job.ProfileParameters, this.settings.ProfileSampleCount);
+
+        // 补偿对着**合成后**的整条辊形算：端部锥度与倒角也是目标的一部分，
+        // 只拿主辊形去比，两端的偏差会被当成误差补进去。
+        RollProfile target = job.Profile.Compose(
+            job.Geometry, this.profileTypes, this.settings.ProfileSampleCount);
 
         RollProfile deviation = CompensationCalculator.ComputeDeviation(measurement.Profile, target, job.Geometry);
 
