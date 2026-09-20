@@ -15,7 +15,7 @@ using Xunit;
 namespace RollGrinder.Integration.Tests;
 
 /// <summary>
-/// 手动页按钮矩阵：26 个动作的命令形式、门禁与写入顺序。
+/// 手动页按钮矩阵：27 个动作的命令形式、门禁与写入顺序。
 /// 这些按钮直接动机床上的大件，所以规则要有测试守着。
 /// </summary>
 public sealed class ManualCommandTests
@@ -149,15 +149,83 @@ public sealed class ManualCommandTests
         ManualCommandCatalog.All.Single(command => string.Equals(command.Key, key, StringComparison.Ordinal));
 
     [Fact]
-    public void The_catalogue_matches_the_design_sheet()
+    public void The_catalogue_matches_the_machines_io()
     {
-        // 设计稿 B-Manual 的三组按钮：8 + 6 + 12 = 26。
+        // 按 MK84160 电气原理图核对后的三组按钮：8 + 4 + 15 = 27。
+        // 尾架那一组从 6 减到 4——图纸上只有前进/后退，没有夹紧/放松；
+        // 其他那一组从 12 加到 15——头架拆成正转/反转，软着陆拆成两侧各一对升降。
         ManualCommandCatalog.MeasuringArm.Should().HaveCount(8);
-        ManualCommandCatalog.Tailstock.Should().HaveCount(6);
-        ManualCommandCatalog.Other.Should().HaveCount(12);
-        ManualCommandCatalog.All.Should().HaveCount(26);
+        ManualCommandCatalog.Tailstock.Should().HaveCount(4);
+        ManualCommandCatalog.Other.Should().HaveCount(15);
+        ManualCommandCatalog.All.Should().HaveCount(27);
 
         ManualCommandCatalog.All.Select(command => command.Key).Should().OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public void The_catalogue_has_no_action_the_machine_cannot_do()
+    {
+        // 这四个键对应的 DO 在原理图上根本不存在（尾架夹紧/放松），
+        // 或者把两个不同的动作混成了一个（软着陆分头架侧与尾架侧、头架分正反转）。
+        // 留一条测试把它们钉死，免得哪天照着旧设计稿又加回来。
+        string[] keys = ManualCommandCatalog.All.Select(command => command.Key).ToArray();
+
+        keys.Should().NotContain("tailstock.clamp", "图纸上没有尾架夹紧这个 DO");
+        keys.Should().NotContain("tailstock.release", "图纸上没有尾架放松这个 DO");
+        keys.Should().NotContain("headstock.run", "头架是正转/反转，不是启动/停止");
+        keys.Should().NotContain("softLanding.up", "软着陆分头架侧与尾架侧，不是一个开关");
+        keys.Should().NotContain("softLanding.down", "软着陆分头架侧与尾架侧，不是一个开关");
+    }
+
+    [Fact]
+    public void The_measuring_arms_are_named_by_the_side_they_are_on()
+    {
+        // 原理图里标的是"外测量臂 / 内测量臂"，测头 A 在外臂、B 在内臂。
+        // 按钮上只写 A/B，现场得猜是哪一侧。
+        string[] keys = ManualCommandCatalog.MeasuringArm.Select(command => command.Key).ToArray();
+
+        keys.Should().Contain(new[] { "outerArm.lower", "outerArm.raise", "innerArm.lower", "innerArm.raise" });
+        keys.Should().NotContain(key => key.StartsWith("probeA.", StringComparison.Ordinal));
+        keys.Should().NotContain(key => key.StartsWith("probeB.", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_two_headstock_directions_declare_each_other_as_exclusive()
+    {
+        ManualCommandDescriptor forward = Find("headstock.forward");
+        ManualCommandDescriptor reverse = Find("headstock.reverse");
+
+        forward.Kind.Should().Be(ManualCommandKind.Toggle);
+        reverse.Kind.Should().Be(ManualCommandKind.Toggle);
+        forward.MutuallyExclusiveWith.Should().Be(reverse.Key);
+        reverse.MutuallyExclusiveWith.Should().Be(forward.Key);
+    }
+
+    [Fact]
+    public async Task Starting_one_headstock_direction_clears_the_other_first()
+    {
+        // 先清对方再置本方：中途被打断只会落到"两位都 false"，也就是停机。
+        var gateway = new RecordingGateway();
+        ManualCommandService service = CreateService(gateway, SnapshotWith(NcChannelState.Reset));
+
+        ManualCommandResult result = await service.ExecuteAsync(
+            Find("headstock.forward"), desiredState: true, CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        gateway.Writes.Should().Equal(
+            (MachineTagKeys.ManualCommand("headstock.reverse"), false),
+            (MachineTagKeys.ManualCommand("headstock.forward"), true));
+    }
+
+    [Fact]
+    public async Task Stopping_a_headstock_direction_does_not_touch_the_other()
+    {
+        var gateway = new RecordingGateway();
+        ManualCommandService service = CreateService(gateway, SnapshotWith(NcChannelState.Reset));
+
+        await service.ExecuteAsync(Find("headstock.forward"), desiredState: false, CancellationToken.None);
+
+        gateway.Writes.Should().Equal((MachineTagKeys.ManualCommand("headstock.forward"), false));
     }
 
     [Fact]
@@ -192,7 +260,9 @@ public sealed class ManualCommandTests
 
         confirmed.Should().BeEquivalentTo(new[]
         {
-            "tailstock.release", "driver.retract", "softLanding.down", "axes.home",
+            // 会让辊子失去支承、或者会把辊子落到托瓦上的动作。
+            "quill.retract", "tailstock.backward", "driver.retract",
+            "softLanding.headstock.down", "softLanding.tailstock.down", "axes.home",
         });
     }
 
@@ -265,7 +335,7 @@ public sealed class ManualCommandTests
         ManualCommandService service = CreateService(gateway, SnapshotWith(state));
 
         ManualCommandResult result = await service.ExecuteAsync(
-            Find("tailstock.release"), null, CancellationToken.None);
+            Find("tailstock.backward"), null, CancellationToken.None);
 
         result.Outcome.Should().Be(ManualCommandOutcome.ChannelBusy);
         gateway.Writes.Should().BeEmpty();

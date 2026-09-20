@@ -17,6 +17,7 @@ namespace RollGrinder.Services.Manual;
 ///    真正的联锁在 PLC，上位机只是不去按那个按钮。
 /// 3. 脉冲型写 true → 等脉宽 → 写 false。**PLC 侧必须按上升沿触发并自行复位**：
 ///    上位机被强制结束时，那一句 false 就发不出去了（最高原则）。
+/// 4. 互斥的一对保持型动作（头架正转 / 反转），打开一个之前先把另一个清掉。
 /// </summary>
 public sealed class ManualCommandService : IManualCommandService
 {
@@ -116,6 +117,19 @@ public sealed class ManualCommandService : IManualCommandService
             if (command.Kind == ManualCommandKind.Toggle)
             {
                 bool target = desiredState ?? !(ReadState(command) ?? false);
+
+                // 互斥的一对（头架正转 / 反转）：先把对方清掉再置本方。
+                // 顺序反过来就会有一瞬间两位都是 true；按这个顺序，
+                // 中途被打断也只会落到"两位都 false"，也就是停机。
+                if (target && command.MutuallyExclusiveWith is string opposite)
+                {
+                    string oppositeName = MachineTagKeys.ManualCommand(opposite);
+                    if (this.tagMap.TryResolve(oppositeName, out _))
+                    {
+                        await WriteAsync(oppositeName, false, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+
                 await WriteAsync(logicalName, target, cancellationToken).ConfigureAwait(false);
                 return ManualCommandResult.Sent;
             }

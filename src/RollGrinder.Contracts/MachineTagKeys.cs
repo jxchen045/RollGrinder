@@ -47,13 +47,17 @@ public static class MachineTagKeys
 
     /// <summary>
     /// 需要回读状态的保持型手动动作。动作目录在 RollGrinder.Services 里，
-    /// 而 Contracts 不引用它，所以这三个键在这里单独列一次——
+    /// 而 Contracts 不引用它，所以这几个键在这里单独列一次——
     /// 有测试盯着两边一致，加一个保持型动作而漏了这里，测试会红。
+    ///
+    /// 头架是正转/反转两位（原理图上没有"启动/停止"），两位都 false 才是停，
+    /// 所以两边的状态都要回读，不能只看一位。
     /// </summary>
     public static System.Collections.Generic.IReadOnlyList<string> ManualToggleStateKeys { get; } = new[]
     {
         ManualCommandState("coolant"),
-        ManualCommandState("headstock.run"),
+        ManualCommandState("headstock.forward"),
+        ManualCommandState("headstock.reverse"),
         ManualCommandState("wheel.run"),
     };
 

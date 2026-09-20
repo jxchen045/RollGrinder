@@ -407,18 +407,39 @@
       "access": "Read"
     },
     {
+      "key": "manual.arms.calibrate",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit6\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "测量臂校准（脉冲：PLC 按上升沿触发并自行复位）"
+    },
+    {
+      "key": "manual.arms.home",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit5\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "两测量臂一起归位（脉冲：PLC 按上升沿触发并自行复位）"
+    },
+    {
+      "key": "manual.arms.toRoll",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit4\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "两测量臂一起移到轧辊（脉冲：PLC 按上升沿触发并自行复位）"
+    },
+    {
       "key": "manual.axes.home",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit24\"",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit25\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
       "description": "各轴归位（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
       "key": "manual.coolant",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit21\"",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit22\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "冷却水开/关（保持）"
+      "description": "冷却水开/关。PLC 侧对 Q64.2（现场请核实该地址是否与油冷机重复分配）（保持）"
     },
     {
       "key": "manual.coolant.state",
@@ -429,168 +450,161 @@
     },
     {
       "key": "manual.driver.extend",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit16\"",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit15\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
       "description": "拨盘伸出（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
       "key": "manual.driver.retract",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit17\"",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit16\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
       "description": "拨盘收回（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
-      "key": "manual.headstock.run",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit13\"",
+      "key": "manual.headstock.forward",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit11\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "头架启动/停止（保持）"
+      "description": "头架正转。与反转互斥，两位都 false 才是停机（保持）"
     },
     {
-      "key": "manual.headstock.run.state",
-      "address": "ns=3;s=\"HMI_State\".\"headstock_run\"",
+      "key": "manual.headstock.forward.state",
+      "address": "ns=3;s=\"HMI_State\".\"headstock_forward\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "状态回读"
+    },
+    {
+      "key": "manual.headstock.reverse",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit12\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "头架反转。与正转互斥（保持）"
+    },
+    {
+      "key": "manual.headstock.reverse.state",
+      "address": "ns=3;s=\"HMI_State\".\"headstock_reverse\"",
       "dataType": "Boolean",
       "access": "Read",
       "description": "状态回读"
     },
     {
       "key": "manual.headstock.speedDown",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit15\"",
-      "dataType": "Boolean",
-      "access": "ReadWrite",
-      "description": "头架转速减一档（脉冲：PLC 按上升沿触发并自行复位）"
-    },
-    {
-      "key": "manual.headstock.speedUp",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit14\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "头架转速加一档（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "头架降速（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
-      "key": "manual.probeA.lower",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit0\"",
+      "key": "manual.headstock.speedUp",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit13\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "测量臂 A 放下（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "头架升速（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
-      "key": "manual.probeA.raise",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit1\"",
-      "dataType": "Boolean",
-      "access": "ReadWrite",
-      "description": "测量臂 A 收起（脉冲：PLC 按上升沿触发并自行复位）"
-    },
-    {
-      "key": "manual.probeB.lower",
+      "key": "manual.innerArm.lower",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit2\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "测量臂 B 放下（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "内测量臂（测头 B）放下。到位反馈 I113.3（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
-      "key": "manual.probeB.raise",
+      "key": "manual.innerArm.raise",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit3\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "测量臂 B 收起（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "内测量臂（测头 B）收起。到位反馈 I113.2（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
-      "key": "manual.probes.calibrate",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit6\"",
+      "key": "manual.outerArm.lower",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit0\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "校测量臂（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "外测量臂（测头 A）放下。到位反馈 I113.1（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
-      "key": "manual.probes.home",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit5\"",
+      "key": "manual.outerArm.raise",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit1\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "测量臂 AB 归位（脉冲：PLC 按上升沿触发并自行复位）"
-    },
-    {
-      "key": "manual.probes.toRoll",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit4\"",
-      "dataType": "Boolean",
-      "access": "ReadWrite",
-      "description": "测量臂 AB 到轧辊（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "外测量臂（测头 A）收起。到位反馈 I113.0（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
       "key": "manual.quill.extend",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit7\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "套筒伸出（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "套筒伸出。PLC 侧对 Q66.2（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
       "key": "manual.quill.retract",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit8\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "套筒缩回（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "套筒缩回。PLC 侧对 Q65.3（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
-      "key": "manual.softLanding.down",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit20\"",
-      "dataType": "Boolean",
-      "access": "ReadWrite",
-      "description": "软着陆降（脉冲：PLC 按上升沿触发并自行复位）"
-    },
-    {
-      "key": "manual.softLanding.up",
+      "key": "manual.softLanding.headstock.down",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit19\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "软着陆升（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "软着陆·头架侧下降。PLC 侧对 Q69.1，反馈 I41.3（脉冲：PLC 按上升沿触发并自行复位）"
+    },
+    {
+      "key": "manual.softLanding.headstock.up",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit18\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "软着陆·头架侧上升。PLC 侧对 Q69.0，反馈 I41.2（脉冲：PLC 按上升沿触发并自行复位）"
+    },
+    {
+      "key": "manual.softLanding.tailstock.down",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit21\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "软着陆·尾架侧下降。PLC 侧对 Q69.3，反馈 I41.6（脉冲：PLC 按上升沿触发并自行复位）"
+    },
+    {
+      "key": "manual.softLanding.tailstock.up",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit20\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "软着陆·尾架侧上升。PLC 侧对 Q69.2，反馈 I41.4（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
       "key": "manual.tailstock.backward",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit10\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "尾架向后（脉冲：PLC 按上升沿触发并自行复位）"
-    },
-    {
-      "key": "manual.tailstock.clamp",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit11\"",
-      "dataType": "Boolean",
-      "access": "ReadWrite",
-      "description": "尾架夹紧（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "尾架后退。PLC 侧对 Q66.1（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
       "key": "manual.tailstock.forward",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit9\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "尾架向前（脉冲：PLC 按上升沿触发并自行复位）"
-    },
-    {
-      "key": "manual.tailstock.release",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit12\"",
-      "dataType": "Boolean",
-      "access": "ReadWrite",
-      "description": "尾架放松（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "尾架前进。PLC 侧对 Q67.2（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
       "key": "manual.u1Axis.zero",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit18\"",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit17\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
-      "description": "U1 轴归零（脉冲：PLC 按上升沿触发并自行复位）"
+      "description": "中高轴归零（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
       "key": "manual.wheel.measureDiameter",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit23\"",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit24\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
       "description": "测砂轮直径（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
       "key": "manual.wheel.run",
-      "address": "ns=3;s=\"HMI_Cmd\".\"bit22\"",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit23\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
       "description": "砂轮启动/停止（保持）"

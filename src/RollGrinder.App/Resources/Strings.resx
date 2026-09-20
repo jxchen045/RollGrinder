@@ -61,9 +61,6 @@
   <data name="Action_AllAxesHome" xml:space="preserve">
     <value>各轴归位</value>
   </data>
-  <data name="Action_CalibrateProbes" xml:space="preserve">
-    <value>校测量臂</value>
-  </data>
   <data name="Action_Coolant" xml:space="preserve">
     <value>冷却水</value>
   </data>
@@ -76,32 +73,11 @@
   <data name="Action_HeadstockDown" xml:space="preserve">
     <value>头架 −</value>
   </data>
-  <data name="Action_HeadstockStart" xml:space="preserve">
-    <value>头架启动</value>
-  </data>
   <data name="Action_HeadstockUp" xml:space="preserve">
     <value>头架 +</value>
   </data>
   <data name="Action_MeasureWheelDiameter" xml:space="preserve">
     <value>测砂轮直径</value>
-  </data>
-  <data name="Action_ProbeALower" xml:space="preserve">
-    <value>A 放下</value>
-  </data>
-  <data name="Action_ProbeARaise" xml:space="preserve">
-    <value>A 收起</value>
-  </data>
-  <data name="Action_ProbeBLower" xml:space="preserve">
-    <value>B 放下</value>
-  </data>
-  <data name="Action_ProbeBRaise" xml:space="preserve">
-    <value>B 收起</value>
-  </data>
-  <data name="Action_ProbesHome" xml:space="preserve">
-    <value>AB 归位</value>
-  </data>
-  <data name="Action_ProbesToRoll" xml:space="preserve">
-    <value>AB 到轧辊</value>
   </data>
   <data name="Action_QuillExtend" xml:space="preserve">
     <value>套筒伸出</value>
@@ -112,29 +88,56 @@
   <data name="Action_SampleMeasurement" xml:space="preserve">
     <value>测量采样</value>
   </data>
-  <data name="Action_SoftLandingDown" xml:space="preserve">
-    <value>软着陆降</value>
-  </data>
-  <data name="Action_SoftLandingUp" xml:space="preserve">
-    <value>软着陆升</value>
-  </data>
   <data name="Action_TailstockBackward" xml:space="preserve">
-    <value>尾架向后</value>
-  </data>
-  <data name="Action_TailstockClamp" xml:space="preserve">
-    <value>尾架夹紧</value>
+    <value>尾架后退</value>
   </data>
   <data name="Action_TailstockForward" xml:space="preserve">
-    <value>尾架向前</value>
-  </data>
-  <data name="Action_TailstockRelease" xml:space="preserve">
-    <value>尾架放松</value>
+    <value>尾架前进</value>
   </data>
   <data name="Action_U1AxisZero" xml:space="preserve">
     <value>U1 轴归零</value>
   </data>
   <data name="Action_WheelStart" xml:space="preserve">
     <value>砂轮启动</value>
+  </data>
+  <data name="Action_ArmsHome" xml:space="preserve">
+    <value>双臂归位</value>
+  </data>
+  <data name="Action_ArmsToRoll" xml:space="preserve">
+    <value>双臂到轧辊</value>
+  </data>
+  <data name="Action_CalibrateArms" xml:space="preserve">
+    <value>校测量臂</value>
+  </data>
+  <data name="Action_HeadstockForward" xml:space="preserve">
+    <value>头架正转</value>
+  </data>
+  <data name="Action_HeadstockReverse" xml:space="preserve">
+    <value>头架反转</value>
+  </data>
+  <data name="Action_InnerArmLower" xml:space="preserve">
+    <value>内臂 B 放下</value>
+  </data>
+  <data name="Action_InnerArmRaise" xml:space="preserve">
+    <value>内臂 B 收起</value>
+  </data>
+  <data name="Action_OuterArmLower" xml:space="preserve">
+    <value>外臂 A 放下</value>
+  </data>
+  <data name="Action_OuterArmRaise" xml:space="preserve">
+    <value>外臂 A 收起</value>
+  </data>
+  <data name="Action_SoftLandingHeadstockDown" xml:space="preserve">
+    <value>头架侧降</value>
+  </data>
+  <data name="Action_SoftLandingHeadstockUp" xml:space="preserve">
+    <value>头架侧升</value>
+  </data>
+  <data name="Action_SoftLandingTailstockDown" xml:space="preserve">
+    <value>尾架侧降</value>
+  </data>
+  <data name="Action_SoftLandingTailstockUp" xml:space="preserve">
+    <value>尾架侧升</value>
   </data>
   <data name="Alarm_ActionNeedsTagMapping" xml:space="preserve">
     <value>该动作需要在 tagmap.json 中登记命令变量</value>
@@ -599,10 +602,10 @@
     <value>磨削电流</value>
   </data>
   <data name="Live_ProbeA" xml:space="preserve">
-    <value>A 探头</value>
+    <value>外测头 A</value>
   </data>
   <data name="Live_ProbeB" xml:space="preserve">
-    <value>B 探头</value>
+    <value>内测头 B</value>
   </data>
   <data name="Live_WheelDiameter" xml:space="preserve">
     <value>砂轮直径</value>
@@ -671,7 +674,7 @@
     <value>(A−B)/2 安装误差</value>
   </data>
   <data name="Manual_OtherHeader" xml:space="preserve">
-    <value>头架、中心架与其他（按机床配置显示）</value>
+    <value>头架、软着陆与其他（按机床配置显示）</value>
   </data>
   <data name="Manual_Position" xml:space="preserve">
     <value>位置</value>

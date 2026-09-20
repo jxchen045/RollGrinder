@@ -61,9 +61,6 @@
   <data name="Action_AllAxesHome" xml:space="preserve">
     <value>All axes home</value>
   </data>
-  <data name="Action_CalibrateProbes" xml:space="preserve">
-    <value>Calibrate arms</value>
-  </data>
   <data name="Action_Coolant" xml:space="preserve">
     <value>Coolant</value>
   </data>
@@ -76,32 +73,11 @@
   <data name="Action_HeadstockDown" xml:space="preserve">
     <value>Headstock −</value>
   </data>
-  <data name="Action_HeadstockStart" xml:space="preserve">
-    <value>Headstock start</value>
-  </data>
   <data name="Action_HeadstockUp" xml:space="preserve">
     <value>Headstock +</value>
   </data>
   <data name="Action_MeasureWheelDiameter" xml:space="preserve">
     <value>Measure wheel</value>
-  </data>
-  <data name="Action_ProbeALower" xml:space="preserve">
-    <value>Probe A down</value>
-  </data>
-  <data name="Action_ProbeARaise" xml:space="preserve">
-    <value>Probe A up</value>
-  </data>
-  <data name="Action_ProbeBLower" xml:space="preserve">
-    <value>Probe B down</value>
-  </data>
-  <data name="Action_ProbeBRaise" xml:space="preserve">
-    <value>Probe B up</value>
-  </data>
-  <data name="Action_ProbesHome" xml:space="preserve">
-    <value>Probes home</value>
-  </data>
-  <data name="Action_ProbesToRoll" xml:space="preserve">
-    <value>Probes to roll</value>
   </data>
   <data name="Action_QuillExtend" xml:space="preserve">
     <value>Quill extend</value>
@@ -112,29 +88,56 @@
   <data name="Action_SampleMeasurement" xml:space="preserve">
     <value>Sample</value>
   </data>
-  <data name="Action_SoftLandingDown" xml:space="preserve">
-    <value>Soft landing down</value>
-  </data>
-  <data name="Action_SoftLandingUp" xml:space="preserve">
-    <value>Soft landing up</value>
-  </data>
   <data name="Action_TailstockBackward" xml:space="preserve">
     <value>Tailstock back</value>
   </data>
-  <data name="Action_TailstockClamp" xml:space="preserve">
-    <value>Tailstock clamp</value>
-  </data>
   <data name="Action_TailstockForward" xml:space="preserve">
     <value>Tailstock forward</value>
-  </data>
-  <data name="Action_TailstockRelease" xml:space="preserve">
-    <value>Tailstock release</value>
   </data>
   <data name="Action_U1AxisZero" xml:space="preserve">
     <value>U1 axis zero</value>
   </data>
   <data name="Action_WheelStart" xml:space="preserve">
     <value>Wheel start</value>
+  </data>
+  <data name="Action_ArmsHome" xml:space="preserve">
+    <value>Arms home</value>
+  </data>
+  <data name="Action_ArmsToRoll" xml:space="preserve">
+    <value>Arms to roll</value>
+  </data>
+  <data name="Action_CalibrateArms" xml:space="preserve">
+    <value>Calibrate arms</value>
+  </data>
+  <data name="Action_HeadstockForward" xml:space="preserve">
+    <value>Headstock fwd</value>
+  </data>
+  <data name="Action_HeadstockReverse" xml:space="preserve">
+    <value>Headstock rev</value>
+  </data>
+  <data name="Action_InnerArmLower" xml:space="preserve">
+    <value>Inner arm B down</value>
+  </data>
+  <data name="Action_InnerArmRaise" xml:space="preserve">
+    <value>Inner arm B up</value>
+  </data>
+  <data name="Action_OuterArmLower" xml:space="preserve">
+    <value>Outer arm A down</value>
+  </data>
+  <data name="Action_OuterArmRaise" xml:space="preserve">
+    <value>Outer arm A up</value>
+  </data>
+  <data name="Action_SoftLandingHeadstockDown" xml:space="preserve">
+    <value>Headstock side down</value>
+  </data>
+  <data name="Action_SoftLandingHeadstockUp" xml:space="preserve">
+    <value>Headstock side up</value>
+  </data>
+  <data name="Action_SoftLandingTailstockDown" xml:space="preserve">
+    <value>Tailstock side down</value>
+  </data>
+  <data name="Action_SoftLandingTailstockUp" xml:space="preserve">
+    <value>Tailstock side up</value>
   </data>
   <data name="Alarm_ActionNeedsTagMapping" xml:space="preserve">
     <value>This action needs a command tag in tagmap.json</value>
@@ -599,10 +602,10 @@
     <value>Grinding current</value>
   </data>
   <data name="Live_ProbeA" xml:space="preserve">
-    <value>Probe A</value>
+    <value>Outer probe A</value>
   </data>
   <data name="Live_ProbeB" xml:space="preserve">
-    <value>Probe B</value>
+    <value>Inner probe B</value>
   </data>
   <data name="Live_WheelDiameter" xml:space="preserve">
     <value>Wheel diameter</value>
@@ -671,7 +674,7 @@
     <value>(A−B)/2 mounting error</value>
   </data>
   <data name="Manual_OtherHeader" xml:space="preserve">
-    <value>Headstock, steady rests and others</value>
+    <value>Headstock, soft landing and others</value>
   </data>
   <data name="Manual_Position" xml:space="preserve">
     <value>Position</value>
