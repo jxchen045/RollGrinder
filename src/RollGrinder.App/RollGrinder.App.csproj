@@ -41,6 +41,13 @@
     <PackageReference Include="Serilog.Sinks.File" />
   </ItemGroup>
 
+  <ItemGroup Label="字体：编译进程序集，工控机上装没装无所谓，显示不会因机器而异">
+    <Resource Include="Fonts\*.ttf" />
+    <Resource Include="Fonts\*.otf" />
+    <!-- OFL 要求授权文本随字体一同分发 -->
+    <None Include="Fonts\OFL-*.txt" CopyToOutputDirectory="PreserveNewest" Link="Fonts\%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <ItemGroup Label="部署：config/*.sample.json 随程序发布，升级时不覆盖现场 config/*.json">
     <None Include="..\..\config\*.sample.json" Link="config\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

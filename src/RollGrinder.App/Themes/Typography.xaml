@@ -1,15 +1,21 @@
 <!--
   字号规范见 docs/design/配色与字号规范.png：
   主测量值 54 / 参数值 30 / 数据行 24 / 正文与按钮 19 / 标签 15。
-  中文 Noto Sans SC、数字 IBM Plex Mono；工控机上回退到自带的
-  Microsoft YaHei UI 与 Consolas（同样满足中文可读 + 数字等宽）。
+
+  两套字体都**编译进程序集**（src/RollGrinder.App/Fonts/，OFL 授权）：
+  中文 Noto Sans SC，数字与位置值 IBM Plex Mono（Regular / Medium / SemiBold 三个字重）。
+  嵌进来是为了让显示不因工控机装了什么而异——换一台机器、换一版 Windows 镜像，
+  字宽字距都一样，数字列不会忽然对不齐。
+
+  后面仍留着 Microsoft YaHei UI 与 Consolas 作为兜底：万一资源加载不出来，
+  界面还是可读的，不会变成方块。
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
-  <FontFamily x:Key="Font.Sans">Noto Sans SC, Microsoft YaHei UI, Microsoft YaHei</FontFamily>
-  <FontFamily x:Key="Font.Mono">IBM Plex Mono, Consolas, Cascadia Mono</FontFamily>
+  <FontFamily x:Key="Font.Sans">pack://application:,,,/Fonts/#Noto Sans SC, Microsoft YaHei UI, Microsoft YaHei</FontFamily>
+  <FontFamily x:Key="Font.Mono">pack://application:,,,/Fonts/#IBM Plex Mono, Consolas, Cascadia Mono</FontFamily>
 
   <sys:Double x:Key="Size.Measurement">54</sys:Double>
   <sys:Double x:Key="Size.Parameter">30</sys:Double>
