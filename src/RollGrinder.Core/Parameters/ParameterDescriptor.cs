@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using RollGrinder.Core.Units;
 
 namespace RollGrinder.Core.Parameters;
@@ -14,6 +16,7 @@ namespace RollGrinder.Core.Parameters;
 /// <param name="MinValue">数值下限（含），仅数值参数有效。</param>
 /// <param name="MaxValue">数值上限（含），仅数值参数有效。</param>
 /// <param name="IsRequired">是否必填。</param>
+/// <param name="AllowedValues">选项参数的可选项键；其他种类为空。</param>
 public sealed record ParameterDescriptor(
     string Key,
     ParameterValueKind Kind,
@@ -21,10 +24,14 @@ public sealed record ParameterDescriptor(
     ParameterValue DefaultValue,
     double? MinValue = null,
     double? MaxValue = null,
-    bool IsRequired = true)
+    bool IsRequired = true,
+    IReadOnlyList<string>? AllowedValues = null)
 {
     /// <summary>界面文案的资源键，约定为 "Parameter_" + Key。界面不得自行拼中文。</summary>
     public string ResourceKey => "Parameter_" + Key;
+
+    /// <summary>某个选项的界面文案资源键，约定为 "Choice_" + Key + "_" + 选项键。</summary>
+    public string ChoiceResourceKey(string choice) => "Choice_" + Key + "_" + choice;
 
     /// <summary>声明一个数值参数。</summary>
     public static ParameterDescriptor Number(
@@ -53,6 +60,46 @@ public sealed record ParameterDescriptor(
     /// <summary>声明一个开关参数。</summary>
     public static ParameterDescriptor Boolean(string key, bool defaultValue, bool isRequired = true) =>
         new(key, ParameterValueKind.Boolean, ParameterUnit.None, ParameterValue.FromBoolean(defaultValue), null, null, isRequired);
+
+    /// <summary>
+    /// 声明一个选项参数。取值必须是 <paramref name="allowedValues"/> 之一，
+    /// 界面按选项数渲染成分段按钮——不给自由输入，从源头上防错选。
+    /// </summary>
+    public static ParameterDescriptor Choice(
+        string key,
+        IEnumerable<string> allowedValues,
+        string defaultValue,
+        bool isRequired = true)
+    {
+        ArgumentNullException.ThrowIfNull(allowedValues);
+        ArgumentException.ThrowIfNullOrEmpty(defaultValue);
+
+        string[] options = allowedValues.ToArray();
+        if (options.Length < 2)
+        {
+            throw new DomainException($"Choice parameter '{key}' needs at least two options.");
+        }
+
+        if (options.Distinct(StringComparer.Ordinal).Count() != options.Length)
+        {
+            throw new DomainException($"Choice parameter '{key}' has duplicate options.");
+        }
+
+        if (!options.Contains(defaultValue, StringComparer.Ordinal))
+        {
+            throw new DomainException($"Choice parameter '{key}' defaults to an option it does not offer.");
+        }
+
+        return new ParameterDescriptor(
+            key,
+            ParameterValueKind.Choice,
+            ParameterUnit.None,
+            ParameterValue.FromChoice(defaultValue),
+            null,
+            null,
+            isRequired,
+            options);
+    }
 
     /// <summary>声明一个文本参数。</summary>
     public static ParameterDescriptor Text(string key, string defaultValue = "", bool isRequired = false) =>

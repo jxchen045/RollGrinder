@@ -103,6 +103,49 @@ public sealed class NcJobTranslator
             AddNumber(writes, Indexed(MachineTagKeys.JobStepWorkpieceSpeedRpm, i), plan.WorkpieceSpeedRpm, timestampUtc);
             AddNumber(writes, Indexed(MachineTagKeys.JobStepWheelSpeedRpm, i), plan.WheelSpeedRpm, timestampUtc);
             AddInteger(writes, Indexed(MachineTagKeys.JobStepSparkOutPassCount, i), plan.SparkOutPassCount, timestampUtc);
+
+            // 进给方式与两个互斥的进给量：不生效的那个恒为 0，NC 侧不用再猜。
+            AddInteger(writes, Indexed(MachineTagKeys.JobStepFeedMode, i), (int)plan.FeedMode, timestampUtc);
+            AddNumber(
+                writes,
+                Indexed(MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin, i),
+                plan.ContinuousInfeedRadiusMmPerMin,
+                timestampUtc);
+            AddNumber(
+                writes,
+                Indexed(MachineTagKeys.JobStepTargetStockRadiusMm, i),
+                plan.TargetStockRadiusMm,
+                timestampUtc);
+            AddNumber(
+                writes,
+                Indexed(MachineTagKeys.JobStepWheelSurfaceSpeedMPerSec, i),
+                plan.WheelSurfaceSpeedMPerSec,
+                timestampUtc);
+            AddNumber(
+                writes,
+                Indexed(MachineTagKeys.JobStepReversalDwellSeconds, i),
+                plan.ReversalDwellSeconds,
+                timestampUtc);
+            AddInteger(
+                writes,
+                Indexed(MachineTagKeys.JobStepInProcessMeasurement, i),
+                plan.InProcessMeasurement ? 1 : 0,
+                timestampUtc);
+            AddInteger(
+                writes,
+                Indexed(MachineTagKeys.JobStepSpeedVariationTarget, i),
+                (int)plan.SpeedVariation.Target,
+                timestampUtc);
+            AddNumber(
+                writes,
+                Indexed(MachineTagKeys.JobStepSpeedVariationPercent, i),
+                plan.SpeedVariation.AmplitudePercent,
+                timestampUtc);
+            AddNumber(
+                writes,
+                Indexed(MachineTagKeys.JobStepSpeedVariationPeriodSeconds, i),
+                plan.SpeedVariation.PeriodSeconds,
+                timestampUtc);
         }
 
         for (int i = 0; i < targetProfile.Points.Count; i++)
@@ -133,6 +176,11 @@ public sealed class NcJobTranslator
             MachineTagKeys.JobStepPassCount,
             MachineTagKeys.JobStepInfeedPerPassRadiusMm,
             MachineTagKeys.JobStepFeedMmPerMin,
+
+            // 进给方式与两个进给量一起决定这道工序切多少，缺一个就下发不了。
+            MachineTagKeys.JobStepFeedMode,
+            MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin,
+            MachineTagKeys.JobStepTargetStockRadiusMm,
             MachineTagKeys.JobProfileBodyPositionMm,
             MachineTagKeys.JobProfileRadiusOffsetMm,
             MachineTagKeys.JobParametersValid,
@@ -147,6 +195,9 @@ public sealed class NcJobTranslator
         MachineTagKeys.JobStepPassCount or
         MachineTagKeys.JobStepInfeedPerPassRadiusMm or
         MachineTagKeys.JobStepFeedMmPerMin or
+        MachineTagKeys.JobStepFeedMode or
+        MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin or
+        MachineTagKeys.JobStepTargetStockRadiusMm or
         MachineTagKeys.JobProfileBodyPositionMm or
         MachineTagKeys.JobProfileRadiusOffsetMm => TagKeySyntax.Indexed(key, 0),
         _ => key,

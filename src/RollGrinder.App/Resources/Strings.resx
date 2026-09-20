@@ -851,22 +851,22 @@
     <value>CVC a3</value>
   </data>
   <data name="Parameter_feedMmPerMin" xml:space="preserve">
-    <value>轴向进给</value>
+    <value>拖板速度</value>
   </data>
   <data name="Parameter_infeedPerPassDiameterMicrometer" xml:space="preserve">
-    <value>单刀切深（直径量）</value>
+    <value>周期进给</value>
   </data>
   <data name="Parameter_measurePointCount" xml:space="preserve">
     <value>测点数</value>
   </data>
   <data name="Parameter_passCount" xml:space="preserve">
-    <value>走刀次数</value>
+    <value>磨削道次</value>
   </data>
   <data name="Parameter_sparkOutPassCount" xml:space="preserve">
-    <value>光磨次数</value>
+    <value>光磨道次</value>
   </data>
   <data name="Parameter_stockDiameterMicrometer" xml:space="preserve">
-    <value>去除量（直径量）</value>
+    <value>磨削量</value>
   </data>
   <data name="Parameter_taperDiameterMicrometer" xml:space="preserve">
     <value>锥度（直径量）</value>
@@ -875,7 +875,7 @@
     <value>砂轮转速</value>
   </data>
   <data name="Parameter_workpieceSpeedRpm" xml:space="preserve">
-    <value>工件转速</value>
+    <value>头架转速</value>
   </data>
   <data name="ProfileType_Crown" xml:space="preserve">
     <value>凸度</value>
@@ -1242,5 +1242,119 @@
   </data>
   <data name="SubView_TagMonitor" xml:space="preserve">
     <value>变量监视</value>
+  </data>
+  <data name="Choice_feedMode_continuous" xml:space="preserve">
+    <value>连续</value>
+  </data>
+  <data name="Choice_feedMode_perReversal" xml:space="preserve">
+    <value>周期</value>
+  </data>
+  <data name="Choice_speedVariationTarget_both" xml:space="preserve">
+    <value>两者</value>
+  </data>
+  <data name="Choice_speedVariationTarget_off" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="Choice_speedVariationTarget_wheel" xml:space="preserve">
+    <value>砂轮</value>
+  </data>
+  <data name="Choice_speedVariationTarget_workpiece" xml:space="preserve">
+    <value>轧辊</value>
+  </data>
+  <data name="Parameter_chamferAngleDegree" xml:space="preserve">
+    <value>倒角角度</value>
+  </data>
+  <data name="Parameter_chamferWidthMm" xml:space="preserve">
+    <value>倒角宽度</value>
+  </data>
+  <data name="Parameter_continuousInfeedDiameterMicrometerPerMin" xml:space="preserve">
+    <value>连续进给</value>
+  </data>
+  <data name="Parameter_dressFeedMmPerMin" xml:space="preserve">
+    <value>修整走刀速度</value>
+  </data>
+  <data name="Parameter_dressInfeedRadiusMicrometer" xml:space="preserve">
+    <value>修整切深</value>
+  </data>
+  <data name="Parameter_dressPassCount" xml:space="preserve">
+    <value>修整道次</value>
+  </data>
+  <data name="Parameter_feedMode" xml:space="preserve">
+    <value>进给方式</value>
+  </data>
+  <data name="Parameter_inProcessMeasurement" xml:space="preserve">
+    <value>在线测量</value>
+  </data>
+  <data name="Parameter_reversalDwellSeconds" xml:space="preserve">
+    <value>折返时间</value>
+  </data>
+  <data name="Parameter_scanPitchMm" xml:space="preserve">
+    <value>扫查螺距</value>
+  </data>
+  <data name="Parameter_speedVariationPercent" xml:space="preserve">
+    <value>变速幅度</value>
+  </data>
+  <data name="Parameter_speedVariationPeriodSeconds" xml:space="preserve">
+    <value>变速周期</value>
+  </data>
+  <data name="Parameter_speedVariationTarget" xml:space="preserve">
+    <value>变速模式</value>
+  </data>
+  <data name="Parameter_wheelSurfaceSpeedMPerSec" xml:space="preserve">
+    <value>砂轮线速度</value>
+  </data>
+  <data name="StepType_Chamfer" xml:space="preserve">
+    <value>倒角</value>
+  </data>
+  <data name="StepType_EddyCurrent" xml:space="preserve">
+    <value>涡流探伤</value>
+  </data>
+  <data name="StepType_End" xml:space="preserve">
+    <value>结束</value>
+  </data>
+  <data name="StepType_Polish" xml:space="preserve">
+    <value>抛光</value>
+  </data>
+  <data name="StepType_SemiFinish" xml:space="preserve">
+    <value>半精磨</value>
+  </data>
+  <data name="StepType_ShortStroke" xml:space="preserve">
+    <value>短行程</value>
+  </data>
+  <data name="StepType_Start" xml:space="preserve">
+    <value>开始</value>
+  </data>
+  <data name="StepType_WheelDress" xml:space="preserve">
+    <value>砂轮修整</value>
+  </data>
+  <data name="Unit_MeterPerSecond" xml:space="preserve">
+    <value>m/s</value>
+  </data>
+  <data name="Unit_MicrometerPerMinute" xml:space="preserve">
+    <value>µm/min</value>
+  </data>
+  <data name="Unit_Percent" xml:space="preserve">
+    <value>%</value>
+  </data>
+  <data name="Unit_Second" xml:space="preserve">
+    <value>s</value>
+  </data>
+  <data name="Violation_Inconsistent" xml:space="preserve">
+    <value>与其他参数对不上</value>
+  </data>
+  <data name="Violation_Inconsistent_WithLimit" xml:space="preserve">
+    <value>与其他参数对不上（按道次算得 {0} µm）</value>
+  </data>
+  <data name="Violation_NotAllowed" xml:space="preserve">
+    <value>不是可选项之一</value>
+  </data>
+  <data name="Violation_NotAllowed_WithLimit" xml:space="preserve">
+    <value>不是可选项之一（{0}）</value>
+  </data>
+  <data name="Common_Off" xml:space="preserve">
+    <value>关</value>
+  </data>
+  <data name="Common_On" xml:space="preserve">
+    <value>开</value>
   </data>
 </root>

@@ -69,6 +69,17 @@ public sealed record ParameterSchema
                 continue;
             }
 
+            if (value.Kind == ParameterValueKind.Choice)
+            {
+                if (descriptor.AllowedValues is { Count: > 0 } allowed
+                    && !allowed.Contains(value.Choice, StringComparer.Ordinal))
+                {
+                    violations.Add(new ParameterViolation(descriptor.Key, ParameterViolationKind.NotAllowed));
+                }
+
+                continue;
+            }
+
             if (value.Kind != ParameterValueKind.Number)
             {
                 continue;

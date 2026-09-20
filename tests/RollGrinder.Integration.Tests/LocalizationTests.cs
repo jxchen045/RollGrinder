@@ -64,6 +64,15 @@ public sealed class LocalizationTests
         used.Except(NeutralKeys, StringComparer.Ordinal).Should().BeEmpty("XAML 引用了不存在的资源键");
     }
 
+    /// <summary>界面上能选到的全部工序类型，与组合根的注册保持一致。</summary>
+    private static IGrindingStepType[] AllStepTypes() => new IGrindingStepType[]
+    {
+        new StartStepType(), new ShortStrokeStepType(), new RoughGrindingStepType(), new WheelDressStepType(),
+        new SemiFinishGrindingStepType(), new FinishGrindingStepType(), new SparkOutStepType(),
+        new MeasureStepType(), new PolishStepType(), new ChamferStepType(), new EddyCurrentStepType(),
+        new EndStepType(),
+    };
+
     [Fact]
     public void Every_registered_profile_and_step_type_has_a_label()
     {
@@ -71,10 +80,7 @@ public sealed class LocalizationTests
         {
             new CylindricalProfileType(), new TaperProfileType(), new CrownProfileType(), new CvcProfileType(),
         });
-        var stepTypes = new GrindingStepTypeRegistry(new IGrindingStepType[]
-        {
-            new RoughGrindingStepType(), new FinishGrindingStepType(), new SparkOutStepType(), new MeasureStepType(),
-        });
+        var stepTypes = new GrindingStepTypeRegistry(AllStepTypes());
 
         foreach (IRollProfileType profileType in profileTypes.All)
         {
@@ -95,15 +101,60 @@ public sealed class LocalizationTests
                 new CylindricalProfileType(), new TaperProfileType(), new CrownProfileType(), new CvcProfileType(),
             }
             .SelectMany(type => type.Schema.Descriptors)
-            .Concat(new IGrindingStepType[]
-                {
-                    new RoughGrindingStepType(), new FinishGrindingStepType(), new SparkOutStepType(), new MeasureStepType(),
-                }
-                .SelectMany(type => type.Schema.Descriptors));
+            .Concat(AllStepTypes().SelectMany(type => type.Schema.Descriptors));
 
         foreach (ParameterDescriptor descriptor in descriptors)
         {
             NeutralKeys.Should().Contain(descriptor.ResourceKey, $"参数 {descriptor.Key} 需要界面文案");
+        }
+    }
+
+    [Fact]
+    public void Every_choice_option_has_a_label()
+    {
+        // 选项参数渲染成分段按钮，按钮上的字就是这些键——缺一个，现场按钮上就是 "!Choice_xxx!"。
+        foreach (IGrindingStepType stepType in AllStepTypes())
+        {
+            foreach (ParameterDescriptor descriptor in stepType.Schema.Descriptors)
+            {
+                if (descriptor.AllowedValues is not { Count: > 0 } options)
+                {
+                    continue;
+                }
+
+                foreach (string option in options)
+                {
+                    NeutralKeys.Should().Contain(
+                        descriptor.ChoiceResourceKey(option),
+                        $"参数 {descriptor.Key} 的选项 {option} 需要界面文案");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void Every_step_type_declares_the_parameters_its_kind_of_work_needs()
+    {
+        // 磨削类工序必须给全"进给方式 + 两个互斥进给量 + 变速三件套"，
+        // 少一个，界面上就会出现一个没法解释的空格。
+        string[] grindingKeys =
+        {
+            StepTypeKeys.ShortStroke, StepTypeKeys.Rough, StepTypeKeys.SemiFinish,
+            StepTypeKeys.Finish, StepTypeKeys.Polish,
+        };
+
+        foreach (IGrindingStepType stepType in AllStepTypes().Where(type => grindingKeys.Contains(type.Key)))
+        {
+            string[] declared = stepType.Schema.Descriptors.Select(descriptor => descriptor.Key).ToArray();
+
+            declared.Should().Contain(StepParameterKeys.FeedMode, stepType.Key);
+            declared.Should().Contain(StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, stepType.Key);
+            declared.Should().Contain(StepParameterKeys.InfeedPerPassDiameterMicrometer, stepType.Key);
+            declared.Should().Contain(StepParameterKeys.SpeedVariationTarget, stepType.Key);
+            declared.Should().Contain(StepParameterKeys.SpeedVariationPercent, stepType.Key);
+            declared.Should().Contain(StepParameterKeys.SpeedVariationPeriodSeconds, stepType.Key);
+            declared.Should().Contain(StepParameterKeys.WheelSurfaceSpeedMPerSec, stepType.Key);
+            declared.Should().Contain(StepParameterKeys.ReversalDwellSeconds, stepType.Key);
         }
     }
 

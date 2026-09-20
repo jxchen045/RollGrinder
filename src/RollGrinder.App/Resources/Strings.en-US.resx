@@ -851,22 +851,22 @@
     <value>CVC a3</value>
   </data>
   <data name="Parameter_feedMmPerMin" xml:space="preserve">
-    <value>Axial feed</value>
+    <value>Carriage speed</value>
   </data>
   <data name="Parameter_infeedPerPassDiameterMicrometer" xml:space="preserve">
-    <value>Infeed per pass (diameter)</value>
+    <value>Infeed per reversal</value>
   </data>
   <data name="Parameter_measurePointCount" xml:space="preserve">
     <value>Measuring points</value>
   </data>
   <data name="Parameter_passCount" xml:space="preserve">
-    <value>Passes</value>
+    <value>Grinding passes</value>
   </data>
   <data name="Parameter_sparkOutPassCount" xml:space="preserve">
     <value>Spark-out passes</value>
   </data>
   <data name="Parameter_stockDiameterMicrometer" xml:space="preserve">
-    <value>Stock removal (diameter)</value>
+    <value>Stock removal</value>
   </data>
   <data name="Parameter_taperDiameterMicrometer" xml:space="preserve">
     <value>Taper (diameter)</value>
@@ -875,7 +875,7 @@
     <value>Wheel speed</value>
   </data>
   <data name="Parameter_workpieceSpeedRpm" xml:space="preserve">
-    <value>Workpiece speed</value>
+    <value>Workhead speed</value>
   </data>
   <data name="ProfileType_Crown" xml:space="preserve">
     <value>Crown</value>
@@ -1242,5 +1242,119 @@
   </data>
   <data name="SubView_TagMonitor" xml:space="preserve">
     <value>Tag monitor</value>
+  </data>
+  <data name="Choice_feedMode_continuous" xml:space="preserve">
+    <value>Continuous</value>
+  </data>
+  <data name="Choice_feedMode_perReversal" xml:space="preserve">
+    <value>Per reversal</value>
+  </data>
+  <data name="Choice_speedVariationTarget_both" xml:space="preserve">
+    <value>Both</value>
+  </data>
+  <data name="Choice_speedVariationTarget_off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Choice_speedVariationTarget_wheel" xml:space="preserve">
+    <value>Wheel</value>
+  </data>
+  <data name="Choice_speedVariationTarget_workpiece" xml:space="preserve">
+    <value>Roll</value>
+  </data>
+  <data name="Parameter_chamferAngleDegree" xml:space="preserve">
+    <value>Chamfer angle</value>
+  </data>
+  <data name="Parameter_chamferWidthMm" xml:space="preserve">
+    <value>Chamfer width</value>
+  </data>
+  <data name="Parameter_continuousInfeedDiameterMicrometerPerMin" xml:space="preserve">
+    <value>Continuous infeed</value>
+  </data>
+  <data name="Parameter_dressFeedMmPerMin" xml:space="preserve">
+    <value>Dressing feed</value>
+  </data>
+  <data name="Parameter_dressInfeedRadiusMicrometer" xml:space="preserve">
+    <value>Dressing depth</value>
+  </data>
+  <data name="Parameter_dressPassCount" xml:space="preserve">
+    <value>Dressing passes</value>
+  </data>
+  <data name="Parameter_feedMode" xml:space="preserve">
+    <value>Infeed mode</value>
+  </data>
+  <data name="Parameter_inProcessMeasurement" xml:space="preserve">
+    <value>In-process gauging</value>
+  </data>
+  <data name="Parameter_reversalDwellSeconds" xml:space="preserve">
+    <value>Reversal dwell</value>
+  </data>
+  <data name="Parameter_scanPitchMm" xml:space="preserve">
+    <value>Scan pitch</value>
+  </data>
+  <data name="Parameter_speedVariationPercent" xml:space="preserve">
+    <value>Variation amplitude</value>
+  </data>
+  <data name="Parameter_speedVariationPeriodSeconds" xml:space="preserve">
+    <value>Variation period</value>
+  </data>
+  <data name="Parameter_speedVariationTarget" xml:space="preserve">
+    <value>Speed variation</value>
+  </data>
+  <data name="Parameter_wheelSurfaceSpeedMPerSec" xml:space="preserve">
+    <value>Wheel surface speed</value>
+  </data>
+  <data name="StepType_Chamfer" xml:space="preserve">
+    <value>Chamfer</value>
+  </data>
+  <data name="StepType_EddyCurrent" xml:space="preserve">
+    <value>Eddy-current test</value>
+  </data>
+  <data name="StepType_End" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="StepType_Polish" xml:space="preserve">
+    <value>Polish</value>
+  </data>
+  <data name="StepType_SemiFinish" xml:space="preserve">
+    <value>Semi-finish</value>
+  </data>
+  <data name="StepType_ShortStroke" xml:space="preserve">
+    <value>Short stroke</value>
+  </data>
+  <data name="StepType_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="StepType_WheelDress" xml:space="preserve">
+    <value>Wheel dressing</value>
+  </data>
+  <data name="Unit_MeterPerSecond" xml:space="preserve">
+    <value>m/s</value>
+  </data>
+  <data name="Unit_MicrometerPerMinute" xml:space="preserve">
+    <value>µm/min</value>
+  </data>
+  <data name="Unit_Percent" xml:space="preserve">
+    <value>%</value>
+  </data>
+  <data name="Unit_Second" xml:space="preserve">
+    <value>s</value>
+  </data>
+  <data name="Violation_Inconsistent" xml:space="preserve">
+    <value>does not agree with the other parameters</value>
+  </data>
+  <data name="Violation_Inconsistent_WithLimit" xml:space="preserve">
+    <value>does not agree with the other parameters (passes give {0} µm)</value>
+  </data>
+  <data name="Violation_NotAllowed" xml:space="preserve">
+    <value>is not one of the offered options</value>
+  </data>
+  <data name="Violation_NotAllowed_WithLimit" xml:space="preserve">
+    <value>is not one of the offered options ({0})</value>
+  </data>
+  <data name="Common_Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Common_On" xml:space="preserve">
+    <value>On</value>
   </data>
 </root>

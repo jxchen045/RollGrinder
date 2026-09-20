@@ -24,6 +24,15 @@ public sealed record MachineCapability(
     double MinRadiusMm,
     double MaxRadiusMm)
 {
+    /// <summary>
+    /// 砂轮线速度下限（m/s）。为 null 表示 machine.json 没给这项，
+    /// 校验就跳过它——不猜一个机床数字出来。
+    /// </summary>
+    public double? MinWheelSurfaceSpeedMPerSec { get; init; }
+
+    /// <summary>砂轮线速度上限（m/s）。为 null 表示未配置。</summary>
+    public double? MaxWheelSurfaceSpeedMPerSec { get; init; }
+
     /// <summary>单刀最大切深的直径量微米表示，供界面提示用。</summary>
     public double MaxInfeedPerPassDiameterMicrometer =>
         UnitConversion.RadiusMmToDiameterMicrometer(MaxInfeedPerPassRadiusMm);

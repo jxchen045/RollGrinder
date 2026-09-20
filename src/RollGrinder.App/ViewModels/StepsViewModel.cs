@@ -40,6 +40,53 @@ public sealed partial class StepRowViewModel : ObservableObject
                     ? value
                     : descriptor.DefaultValue,
                 localizer)));
+
+        foreach (ParameterRowViewModel row in Parameters)
+        {
+            row.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ParameterRowViewModel.Text))
+                {
+                    RefreshApplicability();
+                }
+            };
+        }
+
+        RefreshApplicability();
+    }
+
+    /// <summary>
+    /// 按互斥关系点亮/压暗参数格：
+    /// 连续进给与周期进给只有一个生效，变速幅度与周期只在开了变速时才有意义。
+    /// 格子始终留在原位，只是按不动——键位不跳动，操作员的手不用重新找。
+    /// </summary>
+    private void RefreshApplicability()
+    {
+        string? feedMode = ValueOf(StepParameterKeys.FeedMode);
+        SetApplicable(
+            StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin,
+            feedMode is null || feedMode == FeedModeChoices.Continuous);
+        SetApplicable(
+            StepParameterKeys.InfeedPerPassDiameterMicrometer,
+            feedMode is null || feedMode == FeedModeChoices.PerReversal);
+
+        string? variation = ValueOf(StepParameterKeys.SpeedVariationTarget);
+        bool isVarying = variation is null || variation != SpeedVariationChoices.Off;
+        SetApplicable(StepParameterKeys.SpeedVariationPercent, isVarying);
+        SetApplicable(StepParameterKeys.SpeedVariationPeriodSeconds, isVarying);
+    }
+
+    private string? ValueOf(string key) =>
+        Parameters.FirstOrDefault(row => string.Equals(row.Key, key, StringComparison.Ordinal))?.Text;
+
+    private void SetApplicable(string key, bool isApplicable)
+    {
+        ParameterRowViewModel? row = Parameters
+            .FirstOrDefault(candidate => string.Equals(candidate.Key, key, StringComparison.Ordinal));
+        if (row is not null)
+        {
+            row.IsApplicable = isApplicable;
+        }
     }
 
     [ObservableProperty]

@@ -23,6 +23,12 @@ public enum ParameterViolationKind
 
     /// <summary>超出本台机床的能力（行程、阈值等，由机床描述给出）。</summary>
     ExceedsMachineLimit = 5,
+
+    /// <summary>选项参数取了一个未声明的选项。</summary>
+    NotAllowed = 6,
+
+    /// <summary>参数之间互相矛盾（例如周期进给 × 道次 与 磨削量 对不上）。</summary>
+    Inconsistent = 7,
 }
 
 /// <summary>一条参数校验失败记录。</summary>

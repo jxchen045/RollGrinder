@@ -50,6 +50,9 @@ public sealed record ParameterSet
 
     public string GetText(string key) => Get(key).Text;
 
+    /// <summary>取选项值；取错种类立即抛。</summary>
+    public string GetChoice(string key) => Get(key).Choice;
+
     /// <summary>取数值，键不存在时返回给定的兜底值。</summary>
     public double GetNumberOrDefault(string key, double fallback) =>
         this.values.TryGetValue(key, out ParameterValue? value) && value.Kind == ParameterValueKind.Number

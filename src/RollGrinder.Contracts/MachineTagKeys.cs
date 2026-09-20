@@ -54,6 +54,33 @@ public static class MachineTagKeys
     /// <summary>工序光磨次数数组。</summary>
     public const string JobStepSparkOutPassCount = "job.step.sparkOutPassCount";
 
+    /// <summary>工序进给方式数组（0 不进给 / 1 连续 / 2 周期）。</summary>
+    public const string JobStepFeedMode = "job.step.feedMode";
+
+    /// <summary>工序连续进给速率数组（半径量 mm/min）。周期进给时为 0。</summary>
+    public const string JobStepContinuousInfeedRadiusMmPerMin = "job.step.continuousInfeedRadiusMmPerMin";
+
+    /// <summary>工序目标去除量数组（半径量 mm）。两种进给方式下都是终止条件。</summary>
+    public const string JobStepTargetStockRadiusMm = "job.step.targetStockRadiusMm";
+
+    /// <summary>工序砂轮线速度数组（m/s）。rpm 由 NC 按当前砂轮直径恒线速换算。</summary>
+    public const string JobStepWheelSurfaceSpeedMPerSec = "job.step.wheelSurfaceSpeedMPerSec";
+
+    /// <summary>工序换向停顿数组（s）。</summary>
+    public const string JobStepReversalDwellSeconds = "job.step.reversalDwellSeconds";
+
+    /// <summary>工序在线测量开关数组。</summary>
+    public const string JobStepInProcessMeasurement = "job.step.inProcessMeasurement";
+
+    /// <summary>工序变速作用对象数组（0 关 / 1 轧辊 / 2 砂轮 / 3 两者）。</summary>
+    public const string JobStepSpeedVariationTarget = "job.step.speedVariationTarget";
+
+    /// <summary>工序变速幅度数组（±%）。</summary>
+    public const string JobStepSpeedVariationPercent = "job.step.speedVariationPercent";
+
+    /// <summary>工序变速周期数组（s）。</summary>
+    public const string JobStepSpeedVariationPeriodSeconds = "job.step.speedVariationPeriodSeconds";
+
     /// <summary>辊形曲线的点数。</summary>
     public const string JobProfilePointCount = "job.profile.pointCount";
 

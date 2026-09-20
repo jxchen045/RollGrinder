@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -67,7 +68,15 @@ public sealed class StartupSmokeTests : IDisposable
         host.Services.GetRequiredService<ICompensationService>().Should().NotBeNull();
         host.Services.GetRequiredService<IRecordService>().Should().NotBeNull();
         host.Services.GetRequiredService<RollProfileTypeRegistry>().All.Should().HaveCount(4);
-        host.Services.GetRequiredService<GrindingStepTypeRegistry>().All.Should().HaveCount(4);
+        host.Services.GetRequiredService<GrindingStepTypeRegistry>().All
+            .Select(stepType => stepType.Key)
+            .Should().BeEquivalentTo(new[]
+            {
+                // 设计稿的 11 种工序，外加无火花光磨。
+                StepTypeKeys.Start, StepTypeKeys.ShortStroke, StepTypeKeys.Rough, StepTypeKeys.WheelDress,
+                StepTypeKeys.SemiFinish, StepTypeKeys.Finish, StepTypeKeys.SparkOut, StepTypeKeys.Measure,
+                StepTypeKeys.Polish, StepTypeKeys.Chamfer, StepTypeKeys.EddyCurrent, StepTypeKeys.End,
+            });
         host.Services.GetRequiredService<MachineCapability>().Should().NotBeNull();
         host.Services.GetRequiredService<HmiSettings>().UiRefreshHz.Should().BeInRange(5, 10);
     }

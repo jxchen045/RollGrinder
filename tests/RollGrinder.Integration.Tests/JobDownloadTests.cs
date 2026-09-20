@@ -125,12 +125,17 @@ public sealed class JobDownloadTests : IDisposable
             ParameterSet.Empty,
             new[]
             {
+                // 粗磨默认走连续进给，先切到周期进给，单刀切深限幅才轮得上。
                 new GrindingJobStep(
                     1,
                     StepTypeKeys.Rough,
-                    rough.Schema.CreateDefaults().With(
-                        StepParameterKeys.InfeedPerPassDiameterMicrometer,
-                        ParameterValue.FromNumber(200.0))),
+                    rough.Schema.CreateDefaults()
+                        .With(
+                            StepParameterKeys.FeedMode,
+                            ParameterValue.FromChoice(FeedModeChoices.PerReversal))
+                        .With(
+                            StepParameterKeys.InfeedPerPassDiameterMicrometer,
+                            ParameterValue.FromNumber(200.0))),
             });
 
         JobDownloadResult result = await services.GetRequiredService<IJobDownloadService>()

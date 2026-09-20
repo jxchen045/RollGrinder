@@ -17,6 +17,12 @@ public static class MachineCapabilityFactory
     /// <summary>单刀最大切深阈值在 machine.json 中的键。</summary>
     public const string MaxInfeedPerPassRadiusMmKey = "maxInfeedPerPassRadiusMm";
 
+    /// <summary>砂轮线速度下限阈值的键（可选）。</summary>
+    public const string MinWheelSurfaceSpeedMPerSecKey = "minWheelSurfaceSpeedMPerSec";
+
+    /// <summary>砂轮线速度上限阈值的键（可选）。</summary>
+    public const string MaxWheelSurfaceSpeedMPerSecKey = "maxWheelSurfaceSpeedMPerSec";
+
     public static MachineCapability Create(MachineDescription machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -31,8 +37,15 @@ public static class MachineCapabilityFactory
             MinBodyLengthMm: machine.Workpiece.MinBodyLengthMm,
             MaxBodyLengthMm: machine.Workpiece.MaxBodyLengthMm,
             MinRadiusMm: UnitConversion.DiameterMmToRadiusMm(machine.Workpiece.MinDiameterMm),
-            MaxRadiusMm: UnitConversion.DiameterMmToRadiusMm(machine.Workpiece.MaxDiameterMm));
+            MaxRadiusMm: UnitConversion.DiameterMmToRadiusMm(machine.Workpiece.MaxDiameterMm))
+        {
+            MinWheelSurfaceSpeedMPerSec = ThresholdOrNull(machine, MinWheelSurfaceSpeedMPerSecKey),
+            MaxWheelSurfaceSpeedMPerSec = ThresholdOrNull(machine, MaxWheelSurfaceSpeedMPerSecKey),
+        };
     }
+
+    private static double? ThresholdOrNull(MachineDescription machine, string key) =>
+        machine.Thresholds.TryGetValue(key, out double value) ? value : null;
 
     private static double Threshold(MachineDescription machine, string key) =>
         machine.Thresholds.TryGetValue(key, out double value)

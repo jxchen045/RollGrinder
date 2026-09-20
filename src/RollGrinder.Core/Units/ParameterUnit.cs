@@ -25,4 +25,16 @@ public enum ParameterUnit
 
     /// <summary>度（角度）。</summary>
     Degree = 6,
+
+    /// <summary>米每秒（砂轮线速度）。</summary>
+    MeterPerSecond = 7,
+
+    /// <summary>微米每分钟（连续进给，直径量）。</summary>
+    MicrometerPerMinute = 8,
+
+    /// <summary>秒（折返停顿、变速周期）。</summary>
+    Second = 9,
+
+    /// <summary>百分比（变速幅度）。</summary>
+    Percent = 10,
 }

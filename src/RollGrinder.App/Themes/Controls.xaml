@@ -146,6 +146,72 @@
   </Style>
 
   <!-- 数值输入框。运行中（页面 IsReadOnly）自动转只读：能看能选，不能改。 -->
+  <!--
+    参数网格里的一格。数值/文本给输入框，开关与选项给一排分段按钮——
+    界面完全按 ParameterSchema 生成，新增一类辊形或工序不动这里。
+    互斥参数（连续进给 / 周期进给）里没生效的那格压暗并禁掉，位置保留不跳动。
+  -->
+  <DataTemplate x:Key="ParameterCellTemplate">
+    <Border>
+      <Border.Style>
+        <Style TargetType="Border" BasedOn="{StaticResource ParameterCell}">
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding IsApplicable}" Value="False">
+              <Setter Property="Opacity" Value="0.4" />
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+      </Border.Style>
+
+      <StackPanel IsEnabled="{Binding IsApplicable}">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" />
+          <TextBlock Text="{Binding UnitText}" Style="{StaticResource Text.Label}" Margin="6,0,0,0" />
+        </StackPanel>
+
+        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                 Style="{StaticResource ValueTextBox}"
+                 Margin="0,6,0,0"
+                 Visibility="{Binding IsEditableText, Converter={StaticResource BoolToVisibility}}" />
+
+        <ItemsControl ItemsSource="{Binding Choices}"
+                      Margin="0,6,0,0"
+                      Visibility="{Binding HasChoices, Converter={StaticResource BoolToVisibility}}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Rows="1" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,6,0">
+                <Button.Style>
+                  <Style TargetType="Button" BasedOn="{StaticResource SegmentButton}">
+                    <Setter Property="Height" Value="44" />
+                    <Setter Property="Padding" Value="4,0" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                        <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
+                        <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
+                        <Setter Property="BorderThickness" Value="0" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Button.Style>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock Text="{Binding ErrorText}"
+                   FontSize="14"
+                   Foreground="{StaticResource Brush.CurrentStep}"
+                   TextWrapping="Wrap"
+                   Margin="0,4,0,0" />
+      </StackPanel>
+    </Border>
+  </DataTemplate>
+
   <Style x:Key="ValueTextBox" TargetType="TextBox">
     <Setter Property="IsReadOnly"
             Value="{Binding DataContext.IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=False}" />

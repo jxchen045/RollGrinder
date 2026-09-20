@@ -117,26 +117,14 @@
                                        Foreground="{StaticResource Brush.TextMuted}" />
                         </StackPanel>
                     </Border>
-                    <ItemsControl ItemsSource="{Binding SegmentParameters}" Background="{StaticResource Brush.GridLine}">
+                    <ItemsControl ItemsSource="{Binding SegmentParameters}"
+                                  Background="{StaticResource Brush.GridLine}"
+                                  ItemTemplate="{StaticResource ParameterCellTemplate}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="4" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource ParameterCell}">
-                                    <StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" />
-                                            <TextBlock Text="{Binding UnitText}" Style="{StaticResource Text.Label}" Margin="6,0,0,0" />
-                                        </StackPanel>
-                                        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
-                                                 Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </DockPanel>
             </Border>

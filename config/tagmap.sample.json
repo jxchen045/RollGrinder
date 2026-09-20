@@ -171,13 +171,42 @@
       "description": "Nominal roll radius handed over to the NC program"
     },
     {
+      "key": "job.step.continuousInfeedRadiusMmPerMin",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm/min",
+      "arrayLength": 16,
+      "description": "连续进给速率（半径量）；周期进给时为 0",
+      "indexOffset": 780
+    },
+    {
       "key": "job.step.feedMmPerMin",
       "address": "ns=2;s=/Channel/Parameter/R[{index}]",
       "dataType": "Double",
       "access": "ReadWrite",
       "unit": "mm/min",
-      "arrayLength": 8,
-      "indexOffset": 160
+      "arrayLength": 16,
+      "indexOffset": 680,
+      "description": "拖板速度"
+    },
+    {
+      "key": "job.step.feedMode",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "arrayLength": 16,
+      "description": "进给方式：0 不进给 / 1 连续 / 2 周期",
+      "indexOffset": 760
+    },
+    {
+      "key": "job.step.inProcessMeasurement",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "arrayLength": 16,
+      "description": "在线测量开关：0 关 / 1 开",
+      "indexOffset": 860
     },
     {
       "key": "job.step.infeedPerPassRadiusMm",
@@ -185,33 +214,85 @@
       "dataType": "Double",
       "access": "ReadWrite",
       "unit": "mm",
-      "arrayLength": 8,
-      "indexOffset": 150
+      "arrayLength": 16,
+      "indexOffset": 660,
+      "description": "周期进给：每个换向点的切深（半径量）"
     },
     {
       "key": "job.step.passCount",
       "address": "ns=2;s=/Channel/Parameter/R[{index}]",
       "dataType": "Int32",
       "access": "ReadWrite",
-      "arrayLength": 8,
-      "indexOffset": 140
+      "arrayLength": 16,
+      "indexOffset": 640,
+      "description": "磨削道次数组（一道 = 一个往复）"
+    },
+    {
+      "key": "job.step.reversalDwellSeconds",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "s",
+      "arrayLength": 16,
+      "description": "换向停顿",
+      "indexOffset": 840
     },
     {
       "key": "job.step.sparkOutPassCount",
       "address": "ns=2;s=/Channel/Parameter/R[{index}]",
       "dataType": "Int32",
       "access": "ReadWrite",
-      "arrayLength": 8,
-      "indexOffset": 190
+      "arrayLength": 16,
+      "indexOffset": 740,
+      "description": "光磨道次数组"
+    },
+    {
+      "key": "job.step.speedVariationPercent",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "%",
+      "arrayLength": 16,
+      "description": "变速幅度（±）",
+      "indexOffset": 900
+    },
+    {
+      "key": "job.step.speedVariationPeriodSeconds",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "s",
+      "arrayLength": 16,
+      "description": "变速周期",
+      "indexOffset": 920
+    },
+    {
+      "key": "job.step.speedVariationTarget",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "arrayLength": 16,
+      "description": "变速作用对象：0 关 / 1 轧辊 / 2 砂轮 / 3 两者",
+      "indexOffset": 880
+    },
+    {
+      "key": "job.step.targetStockRadiusMm",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "arrayLength": 16,
+      "description": "目标去除量（半径量），两种进给方式下都是终止条件",
+      "indexOffset": 800
     },
     {
       "key": "job.step.typeCode",
       "address": "ns=2;s=/Channel/Parameter/R[{index}]",
       "dataType": "Int32",
       "access": "ReadWrite",
-      "arrayLength": 8,
+      "arrayLength": 16,
       "description": "工序类型代码数组",
-      "indexOffset": 130
+      "indexOffset": 620
     },
     {
       "key": "job.step.wheelSpeedRpm",
@@ -219,8 +300,19 @@
       "dataType": "Double",
       "access": "ReadWrite",
       "unit": "rpm",
-      "arrayLength": 8,
-      "indexOffset": 180
+      "arrayLength": 16,
+      "indexOffset": 720,
+      "description": "砂轮转速；为 0 表示由 NC 按线速度恒线速换算"
+    },
+    {
+      "key": "job.step.wheelSurfaceSpeedMPerSec",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "m/s",
+      "arrayLength": 16,
+      "description": "砂轮线速度",
+      "indexOffset": 820
     },
     {
       "key": "job.step.workpieceSpeedRpm",
@@ -228,8 +320,9 @@
       "dataType": "Double",
       "access": "ReadWrite",
       "unit": "rpm",
-      "arrayLength": 8,
-      "indexOffset": 170
+      "arrayLength": 16,
+      "indexOffset": 700,
+      "description": "头架转速"
     },
     {
       "key": "job.stepCount",

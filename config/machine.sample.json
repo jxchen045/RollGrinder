@@ -78,7 +78,9 @@
     "maxProfileDeviationMicrometer": 5.0,
     "maxRoundnessMicrometer": 3.0,
     "wheelWearWarningRadiusMm": 15.0,
-    "maxCompensationRadiusMm": 0.02
+    "maxCompensationRadiusMm": 0.02,
+    "minWheelSurfaceSpeedMPerSec": 18.0,
+    "maxWheelSurfaceSpeedMPerSec": 45.0
   },
   "workpiece": {
     "minBodyLengthMm": 300.0,
@@ -88,9 +90,17 @@
     "maxWeightKg": 42000.0
   },
   "stepTypeCodes": {
-    "Rough": 1,
-    "Finish": 2,
-    "SparkOut": 3,
-    "Measure": 4
+    "Start": 10,
+    "ShortStroke": 20,
+    "Rough": 30,
+    "WheelDress": 40,
+    "SemiFinish": 50,
+    "Finish": 60,
+    "SparkOut": 70,
+    "Measure": 80,
+    "Polish": 90,
+    "Chamfer": 100,
+    "EddyCurrent": 110,
+    "End": 120
   }
 }

@@ -9,6 +9,9 @@ public enum ParameterValueKind
     Number = 0,
     Boolean = 1,
     Text = 2,
+
+    /// <summary>有限选项之一（例如变速模式）。取值是选项键，界面渲染成分段按钮。</summary>
+    Choice = 3,
 }
 
 /// <summary>
@@ -45,6 +48,11 @@ public sealed record ParameterValue
         ? this.text
         : throw new DomainException($"Parameter value of kind {Kind} is not text.");
 
+    /// <summary>选项取值（选项键）。</summary>
+    public string Choice => Kind == ParameterValueKind.Choice
+        ? this.text
+        : throw new DomainException($"Parameter value of kind {Kind} is not a choice.");
+
     public static ParameterValue FromNumber(double value)
     {
         if (double.IsNaN(value) || double.IsInfinity(value))
@@ -61,12 +69,23 @@ public sealed record ParameterValue
     public static ParameterValue FromText(string value) =>
         new(ParameterValueKind.Text, 0.0, false, value ?? throw new ArgumentNullException(nameof(value)));
 
+    /// <summary>从选项键建值。是否属于允许集合由 schema 校验，这里不判断。</summary>
+    public static ParameterValue FromChoice(string value) =>
+        new(ParameterValueKind.Choice, 0.0, false, value ?? throw new ArgumentNullException(nameof(value)));
+
+    /// <summary>
+    /// 调试与异常信息用。必须自己写：record 自动生成的 ToString 会挨个读取每个属性，
+    /// 而 Number / Boolean / Text / Choice 这几个属性取错种类就抛——
+    /// 结果是"打印一个值"本身会炸，而且炸在毫不相干的地方。
+    /// </summary>
+    public override string ToString() => Kind + ":" + ToInvariantString();
+
     /// <summary>与 <see cref="Parse"/> 对应的持久化文本形式（不随界面语言变化）。</summary>
     public string ToInvariantString() => Kind switch
     {
         ParameterValueKind.Number => this.number.ToString("R", CultureInfo.InvariantCulture),
         ParameterValueKind.Boolean => this.boolean ? "true" : "false",
-        ParameterValueKind.Text => this.text,
+        ParameterValueKind.Text or ParameterValueKind.Choice => this.text,
         _ => throw new DomainException($"Unsupported parameter value kind {Kind}."),
     };
 
@@ -94,6 +113,9 @@ public sealed record ParameterValue
 
             case ParameterValueKind.Text:
                 return FromText(text);
+
+            case ParameterValueKind.Choice:
+                return FromChoice(text);
 
             default:
                 throw new DomainException($"Unsupported parameter value kind {kind}.");

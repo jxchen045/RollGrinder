@@ -28,4 +28,11 @@ public static class UnitConversion
     /// <summary>直径量（µm）→ 半径量（mm）：界面输入辊形参数用的组合换算。</summary>
     public static double DiameterMicrometerToRadiusMm(double diameterMicrometer) =>
         DiameterMmToRadiusMm(MicrometerToMm(diameterMicrometer));
+
+    /// <summary>
+    /// 直径量速率（µm/min）→ 半径量速率（mm/min）：连续进给用。
+    /// 换算因子与长度一致，单独起个名字是为了让调用处读起来不含糊。
+    /// </summary>
+    public static double DiameterMicrometerPerMinToRadiusMmPerMin(double diameterMicrometerPerMin) =>
+        DiameterMicrometerToRadiusMm(diameterMicrometerPerMin);
 }

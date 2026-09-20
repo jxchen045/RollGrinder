@@ -176,6 +176,85 @@ public sealed class NcJobTranslatorTests
     }
 
     [Fact]
+    public void Only_one_of_the_two_infeed_quantities_ever_reaches_the_machine()
+    {
+        // 这是问题的根子：如果两个进给量同时非零，NC 侧就不知道该听谁的，
+        // 而这道工序的实际切除量会变成"取决于行程时间"。下发内容必须只有一个是活的。
+        NcDownload download = CreateTranslator(FakeTagMap.Complete())
+            .Translate(CreateJob(), null, 21, Now);
+
+        for (int i = 0; i < download.Plans.Count; i++)
+        {
+            double perReversal = NumberAt(download, MachineTagKeys.JobStepInfeedPerPassRadiusMm, i);
+            double continuous = NumberAt(download, MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin, i);
+
+            (perReversal > 0.0 && continuous > 0.0).Should().BeFalse(
+                $"第 {i + 1} 道工序同时下发了两种进给量");
+        }
+    }
+
+    [Fact]
+    public void The_feed_mode_written_matches_the_quantity_that_is_non_zero()
+    {
+        NcDownload download = CreateTranslator(FakeTagMap.Complete())
+            .Translate(CreateJob(), null, 21, Now);
+
+        for (int i = 0; i < download.Plans.Count; i++)
+        {
+            var mode = (StepFeedMode)(int)NumberAt(download, MachineTagKeys.JobStepFeedMode, i);
+            double perReversal = NumberAt(download, MachineTagKeys.JobStepInfeedPerPassRadiusMm, i);
+            double continuous = NumberAt(download, MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin, i);
+
+            mode.Should().Be(download.Plans[i].FeedMode);
+            switch (mode)
+            {
+                case StepFeedMode.Continuous:
+                    perReversal.Should().Be(0.0);
+                    break;
+
+                case StepFeedMode.PerReversal:
+                    continuous.Should().Be(0.0);
+                    break;
+
+                default:
+                    perReversal.Should().Be(0.0);
+                    continuous.Should().Be(0.0);
+                    break;
+            }
+        }
+    }
+
+    [Fact]
+    public void Speed_variation_reaches_the_machine_as_target_amplitude_and_period()
+    {
+        NcDownload download = CreateTranslator(FakeTagMap.Complete())
+            .Translate(CreateJob(), null, 21, Now);
+
+        int rough = download.Plans.ToList().FindIndex(plan => plan.StepTypeKey == StepTypeKeys.Rough);
+        rough.Should().BeGreaterThanOrEqualTo(0);
+
+        NumberAt(download, MachineTagKeys.JobStepSpeedVariationTarget, rough)
+            .Should().Be((double)(int)SpeedVariationTarget.Workpiece, "变速默认作用在轧辊转速上");
+        NumberAt(download, MachineTagKeys.JobStepSpeedVariationPercent, rough).Should().BeGreaterThan(0.0);
+        NumberAt(download, MachineTagKeys.JobStepSpeedVariationPeriodSeconds, rough)
+            .Should().BeGreaterThan(0.0, "只给幅度不给周期，机床没法生成这条正弦曲线");
+
+        // 光磨不变速：转速在这一段必须稳。
+        int sparkOut = download.Plans.ToList().FindIndex(plan => plan.StepTypeKey == StepTypeKeys.SparkOut);
+        NumberAt(download, MachineTagKeys.JobStepSpeedVariationTarget, sparkOut)
+            .Should().Be((double)(int)SpeedVariationTarget.Off);
+    }
+
+    private static double NumberAt(NcDownload download, string baseKey, int index)
+    {
+        string key = TagKeySyntax.Indexed(baseKey, index);
+        TagWrite write = download.Writes.Single(candidate =>
+            string.Equals(candidate.LogicalName, key, StringComparison.Ordinal));
+
+        return Convert.ToDouble(write.Value.Raw, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    [Fact]
     public void A_tag_map_without_profile_slots_cannot_hand_over_a_profile()
     {
         NcJobTranslator translator = CreateTranslator(

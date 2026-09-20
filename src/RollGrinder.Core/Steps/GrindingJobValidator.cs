@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
+using RollGrinder.Core.Units;
 
 namespace RollGrinder.Core.Steps;
 
@@ -43,7 +45,8 @@ public sealed class GrindingJobValidator
                 continue;
             }
 
-            violations.AddRange(ValidatePlan(stepType.CreatePlan(job.Geometry, step.Parameters), capability));
+            violations.AddRange(ValidatePlan(
+                stepType.CreatePlan(job.Geometry, step.Parameters), job.Geometry, capability));
         }
 
         return new ParameterValidationResult(violations);
@@ -72,7 +75,10 @@ public sealed class GrindingJobValidator
         }
     }
 
-    private static IEnumerable<ParameterViolation> ValidatePlan(GrindingStepPlan plan, MachineCapability capability)
+    private static IEnumerable<ParameterViolation> ValidatePlan(
+        GrindingStepPlan plan,
+        RollGeometry geometry,
+        MachineCapability capability)
     {
         if (plan.InfeedPerPassRadiusMm > capability.MaxInfeedPerPassRadiusMm)
         {
@@ -80,6 +86,46 @@ public sealed class GrindingJobValidator
                 StepParameterKeys.InfeedPerPassDiameterMicrometer,
                 ParameterViolationKind.ExceedsMachineLimit,
                 capability.MaxInfeedPerPassDiameterMicrometer);
+        }
+
+        // 连续进给也有"每道次实际切了多少"——把它折算出来，用同一条单刀切深限幅卡住，
+        // 免得换个进给方式就绕过了机床能力。
+        if (plan.FeedMode == StepFeedMode.Continuous
+            && plan.ContinuousInfeedRadiusMmPerMin > 0.0
+            && plan.FeedMmPerMin > 0.0)
+        {
+            double returnStrokeMinutes =
+                (2.0 * geometry.BodyLengthMm / plan.FeedMmPerMin) + (2.0 * plan.ReversalDwellSeconds / 60.0);
+            double equivalentPerPassRadiusMm = plan.ContinuousInfeedRadiusMmPerMin * returnStrokeMinutes;
+
+            if (equivalentPerPassRadiusMm > capability.MaxInfeedPerPassRadiusMm)
+            {
+                yield return new ParameterViolation(
+                    StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin,
+                    ParameterViolationKind.ExceedsMachineLimit,
+                    UnitConversion.RadiusMmToDiameterMicrometer(
+                        capability.MaxInfeedPerPassRadiusMm / returnStrokeMinutes));
+            }
+        }
+
+        // 周期进给：道次 × 每道次 与 目标去除量 必须对得上，
+        // 否则操作员以为自己设了 0.15 mm，机床磨到 0.10 就停了。
+        if (plan.FeedMode == StepFeedMode.PerReversal
+            && plan.TargetStockRadiusMm > 0.0
+            && plan.InfeedPerPassRadiusMm > 0.0)
+        {
+            double plannedRadiusMm = plan.TotalInfeedRadiusMm;
+            double toleranceRadiusMm = Math.Max(
+                UnitConversion.DiameterMicrometerToRadiusMm(1.0),
+                plan.TargetStockRadiusMm * 0.05);
+
+            if (Math.Abs(plannedRadiusMm - plan.TargetStockRadiusMm) > toleranceRadiusMm)
+            {
+                yield return new ParameterViolation(
+                    StepParameterKeys.StockDiameterMicrometer,
+                    ParameterViolationKind.Inconsistent,
+                    UnitConversion.RadiusMmToDiameterMicrometer(plannedRadiusMm));
+            }
         }
 
         if (plan.FeedMmPerMin > capability.MaxFeedMmPerMin)
@@ -90,7 +136,12 @@ public sealed class GrindingJobValidator
                 capability.MaxFeedMmPerMin);
         }
 
-        if (plan.WorkpieceSpeedRpm > capability.MaxWorkpieceSpeedRpm)
+        // 变速的峰值才是机床真正要跑到的转速，按峰值卡限幅，不按设定值。
+        double workpiecePeakRpm = plan.SpeedVariation.AffectsWorkpiece
+            ? plan.SpeedVariation.PeakOf(plan.WorkpieceSpeedRpm)
+            : plan.WorkpieceSpeedRpm;
+
+        if (workpiecePeakRpm > capability.MaxWorkpieceSpeedRpm)
         {
             yield return new ParameterViolation(
                 StepParameterKeys.WorkpieceSpeedRpm,
@@ -104,6 +155,49 @@ public sealed class GrindingJobValidator
                 StepParameterKeys.WheelSpeedRpm,
                 ParameterViolationKind.ExceedsMachineLimit,
                 capability.MaxWheelSpeedRpm);
+        }
+
+        foreach (ParameterViolation violation in ValidateWheelSurfaceSpeed(plan, capability))
+        {
+            yield return violation;
+        }
+    }
+
+    /// <summary>
+    /// 砂轮线速度。砂轮变速会同步改变线速度，所以上下限要按变速后的峰谷算——
+    /// 线速度高了烧伤，低了磨不动，两头都要管。
+    /// machine.json 没给这两个阈值时跳过，不猜。
+    /// </summary>
+    private static IEnumerable<ParameterViolation> ValidateWheelSurfaceSpeed(
+        GrindingStepPlan plan,
+        MachineCapability capability)
+    {
+        if (plan.WheelSurfaceSpeedMPerSec <= 0.0)
+        {
+            yield break;
+        }
+
+        double peak = plan.SpeedVariation.AffectsWheel
+            ? plan.SpeedVariation.PeakOf(plan.WheelSurfaceSpeedMPerSec)
+            : plan.WheelSurfaceSpeedMPerSec;
+        double trough = plan.SpeedVariation.AffectsWheel
+            ? plan.SpeedVariation.TroughOf(plan.WheelSurfaceSpeedMPerSec)
+            : plan.WheelSurfaceSpeedMPerSec;
+
+        if (capability.MaxWheelSurfaceSpeedMPerSec is double maximum && peak > maximum)
+        {
+            yield return new ParameterViolation(
+                StepParameterKeys.WheelSurfaceSpeedMPerSec,
+                ParameterViolationKind.ExceedsMachineLimit,
+                maximum);
+        }
+
+        if (capability.MinWheelSurfaceSpeedMPerSec is double minimum && trough < minimum)
+        {
+            yield return new ParameterViolation(
+                StepParameterKeys.WheelSurfaceSpeedMPerSec,
+                ParameterViolationKind.BelowMinimum,
+                minimum);
         }
     }
 }
