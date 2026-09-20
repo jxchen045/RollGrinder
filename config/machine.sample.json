@@ -71,7 +71,9 @@
     "hasSteadyRest": true,
     "hasChatterMonitor": false,
     "hasAutomaticWheelBalancer": true,
-    "hasRollLoader": false
+    "hasRollLoader": false,
+    "hasWheelDresser": true,
+    "hasEddyCurrentTester": false
   },
   "thresholds": {
     "maxInfeedPerPassRadiusMm": 0.05,

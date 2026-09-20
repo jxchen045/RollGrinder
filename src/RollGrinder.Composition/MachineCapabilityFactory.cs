@@ -41,6 +41,17 @@ public static class MachineCapabilityFactory
         {
             MinWheelSurfaceSpeedMPerSec = ThresholdOrNull(machine, MinWheelSurfaceSpeedMPerSecKey),
             MaxWheelSurfaceSpeedMPerSec = ThresholdOrNull(machine, MaxWheelSurfaceSpeedMPerSecKey),
+
+            // 只有取值为 true 的选件才算装了；没写的键一律当作没装，不默认"有"。
+            InstalledOptions = machine.Options
+                .Where(option => option.Value)
+                .Select(option => option.Key)
+                .ToHashSet(StringComparer.Ordinal),
+
+            AvailableMeasurements = machine.MeasurementChannels
+                .Where(channel => channel.IsPresent)
+                .Select(channel => channel.Quantity)
+                .ToHashSet(StringComparer.Ordinal),
         };
     }
 

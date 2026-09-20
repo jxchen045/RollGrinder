@@ -37,6 +37,14 @@ public sealed class GrindingJobValidator
         foreach (GrindingJobStep step in job.Steps)
         {
             IGrindingStepType stepType = this.stepTypes.Get(step.StepTypeKey);
+
+            if (!capability.Supports(stepType))
+            {
+                // 这台机床没装这道工序要用的装置：参数再对也没用，不再往下展开。
+                violations.Add(new ParameterViolation(stepType.Key, ParameterViolationKind.MachineOptionMissing));
+                continue;
+            }
+
             ParameterValidationResult schemaResult = stepType.Schema.Validate(step.Parameters);
             violations.AddRange(schemaResult.Violations);
             if (!schemaResult.IsValid)
@@ -160,6 +168,18 @@ public sealed class GrindingJobValidator
         foreach (ParameterViolation violation in ValidateWheelSurfaceSpeed(plan, capability))
         {
             yield return violation;
+        }
+
+        // 要测量的工序得有测头。没有测头还编"磨后测量"，到现场就是一道空转的工序。
+        if (plan.RequiresMeasurement && !capability.CanMeasureDiameter)
+        {
+            yield return new ParameterViolation(plan.StepTypeKey, ParameterViolationKind.MachineOptionMissing);
+        }
+
+        if (plan.InProcessMeasurement && !capability.CanMeasureDiameter)
+        {
+            yield return new ParameterViolation(
+                StepParameterKeys.InProcessMeasurement, ParameterViolationKind.MachineOptionMissing);
         }
     }
 

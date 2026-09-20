@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
@@ -155,6 +156,59 @@ public sealed class LocalizationTests
             declared.Should().Contain(StepParameterKeys.SpeedVariationPeriodSeconds, stepType.Key);
             declared.Should().Contain(StepParameterKeys.WheelSurfaceSpeedMPerSec, stepType.Key);
             declared.Should().Contain(StepParameterKeys.ReversalDwellSeconds, stepType.Key);
+        }
+    }
+
+    [Fact]
+    public void Every_device_a_step_requires_has_a_label()
+    {
+        // 缺这个键，诊断页的"机床能力"就会显示 hasEddyCurrentTester 这种原始键，
+        // 而校验报出来的"本台机床未配置"也说不清缺的是什么。
+        foreach (IGrindingStepType stepType in AllStepTypes())
+        {
+            if (stepType.RequiredOptionKey is not string option)
+            {
+                continue;
+            }
+
+            NeutralKeys.Should().Contain(
+                "Option_" + option, $"工序 {stepType.Key} 要用的装置 {option} 需要界面文案");
+        }
+    }
+
+    [Fact]
+    public void Every_step_type_the_machine_file_can_gate_is_declared_in_the_sample()
+    {
+        // 工序声明了要用某个装置，machine.sample.json 里就得有这一项（true 或 false 都行），
+        // 否则现场拿样例改配置时会漏掉，而漏掉等于"没装"。
+        string path = Path.Combine(RepositoryLayout.Root, "config", "machine.sample.json");
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+        JsonElement options = document.RootElement.GetProperty("options");
+
+        foreach (IGrindingStepType stepType in AllStepTypes())
+        {
+            if (stepType.RequiredOptionKey is not string option)
+            {
+                continue;
+            }
+
+            options.TryGetProperty(option, out _).Should().BeTrue(
+                $"machine.sample.json 的 options 缺少 {option}");
+        }
+    }
+
+    [Fact]
+    public void Every_step_type_has_an_nc_code_in_the_sample_machine_file()
+    {
+        // 少一个代码，下发时就抛 GatewayException——宁可现在红，别到现场才红。
+        string path = Path.Combine(RepositoryLayout.Root, "config", "machine.sample.json");
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+        JsonElement codes = document.RootElement.GetProperty("stepTypeCodes");
+
+        foreach (IGrindingStepType stepType in AllStepTypes())
+        {
+            codes.TryGetProperty(stepType.Key, out _).Should().BeTrue(
+                $"machine.sample.json 的 stepTypeCodes 缺少 {stepType.Key}");
         }
     }
 

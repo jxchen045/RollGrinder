@@ -1357,4 +1357,22 @@
   <data name="Common_On" xml:space="preserve">
     <value>开</value>
   </data>
+  <data name="Alarm_StepTypeNotAvailable" xml:space="preserve">
+    <value>本台机床没有这道工序需要的装置</value>
+  </data>
+  <data name="Option_hasEddyCurrentTester" xml:space="preserve">
+    <value>涡流探伤</value>
+  </data>
+  <data name="Option_hasWheelDresser" xml:space="preserve">
+    <value>砂轮修整装置</value>
+  </data>
+  <data name="Steps_StepTypeNotAvailable" xml:space="preserve">
+    <value>（未配置）</value>
+  </data>
+  <data name="Violation_MachineOptionMissing" xml:space="preserve">
+    <value>本台机床未配置</value>
+  </data>
+  <data name="Violation_MachineOptionMissing_WithLimit" xml:space="preserve">
+    <value>本台机床未配置（{0}）</value>
+  </data>
 </root>

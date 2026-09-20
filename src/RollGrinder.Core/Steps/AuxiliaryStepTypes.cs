@@ -66,6 +66,9 @@ public sealed class WheelDressStepType : IGrindingStepType
 {
     public string Key => StepTypeKeys.WheelDress;
 
+    /// <summary>没有修整装置就没法修砂轮。</summary>
+    public string? RequiredOptionKey => MachineOptionKeys.WheelDresser;
+
     public ParameterSchema Schema { get; } = new(new[]
     {
         ParameterDescriptor.Number(
@@ -195,6 +198,9 @@ public sealed class ChamferStepType : IGrindingStepType
 public sealed class EddyCurrentStepType : IGrindingStepType
 {
     public string Key => StepTypeKeys.EddyCurrent;
+
+    /// <summary>没有探伤器就别把这道工序编进程序。</summary>
+    public string? RequiredOptionKey => MachineOptionKeys.EddyCurrentTester;
 
     public ParameterSchema Schema { get; } = new(new[]
     {

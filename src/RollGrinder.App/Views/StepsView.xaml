@@ -16,8 +16,9 @@
                 </Border>
 
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
-                    <ComboBox ItemsSource="{Binding StepTypeKeys}" SelectedItem="{Binding SelectedStepTypeKey}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                              Width="150" Height="46" FontSize="17" Margin="0,0,8,0" />
+                    <ComboBox ItemsSource="{Binding StepTypeOptions}" SelectedItem="{Binding SelectedStepType}"
+                              DisplayMemberPath="DisplayName" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                              Width="190" Height="46" FontSize="17" Margin="0,0,8,0" />
                     <Button Content="{loc:Loc Steps_AddStep}" Command="{Binding AddStepCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource SecondaryButton}" Height="46" Width="80" Margin="0,0,8,0" />
                     <Button Content="{loc:Loc Steps_NewJob}" Command="{Binding NewJobCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"

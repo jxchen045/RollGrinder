@@ -157,6 +157,82 @@ public sealed class JobDownloadTests : IDisposable
     }
 
     [Fact]
+    public async Task A_step_the_machine_is_not_equipped_for_is_refused_and_writes_nothing()
+    {
+        // config/machine.sample.json 里 hasEddyCurrentTester = false。
+        await using ServiceProvider services = await BuildAsync();
+        IMachineGateway gateway = services.GetRequiredService<IMachineGateway>();
+        await gateway.ConnectAsync(CancellationToken.None);
+
+        GrindingJob job = GrindingJob.Create(
+            "J-nodevice",
+            "R-1",
+            RollGeometry.FromDiameter(2000.0, 650.0),
+            ProfileTypeKeys.Cylindrical,
+            ParameterSet.Empty,
+            new[]
+            {
+                new GrindingJobStep(
+                    1, StepTypeKeys.EddyCurrent, new EddyCurrentStepType().Schema.CreateDefaults()),
+            });
+
+        JobDownloadResult result = await services.GetRequiredService<IJobDownloadService>()
+            .DownloadAsync(job, CancellationToken.None);
+
+        result.Succeeded.Should().BeFalse();
+        result.Violations.Should().Contain(violation =>
+            violation.ParameterKey == StepTypeKeys.EddyCurrent
+            && violation.Kind == ParameterViolationKind.MachineOptionMissing);
+        result.WriteCount.Should().Be(0, "机床装不了的工序，一个字节也不该写下去");
+
+        MachineStateSnapshot snapshot = await gateway.ReadStateAsync(
+            MachineTagKeys.MonitoringKeys(services.GetRequiredService<MachineDescription>()),
+            CancellationToken.None);
+        snapshot.GetNumberOrNull(MachineTagKeys.ChannelState)
+            .Should().Be((double)(int)NcChannelState.Reset);
+    }
+
+    [Fact]
+    public async Task A_step_the_machine_is_equipped_for_goes_through()
+    {
+        // 同一份样例里 hasWheelDresser = true，所以砂轮修整能编能下发。
+        await using ServiceProvider services = await BuildAsync();
+        await services.GetRequiredService<IMachineGateway>().ConnectAsync(CancellationToken.None);
+
+        GrindingJob job = GrindingJob.Create(
+            "J-dress",
+            "R-1",
+            RollGeometry.FromDiameter(2000.0, 650.0),
+            ProfileTypeKeys.Cylindrical,
+            ParameterSet.Empty,
+            new[]
+            {
+                new GrindingJobStep(
+                    1, StepTypeKeys.WheelDress, new WheelDressStepType().Schema.CreateDefaults()),
+            });
+
+        JobDownloadResult result = await services.GetRequiredService<IJobDownloadService>()
+            .DownloadAsync(job, CancellationToken.None);
+
+        result.Violations.Should().NotContain(violation =>
+            violation.Kind == ParameterViolationKind.MachineOptionMissing);
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task The_machine_capability_mirrors_the_sample_configuration()
+    {
+        await using ServiceProvider services = await BuildAsync();
+        MachineCapability capability = services.GetRequiredService<MachineCapability>();
+
+        capability.InstalledOptions.Should().Contain(MachineOptionKeys.WheelDresser);
+        capability.InstalledOptions.Should().NotContain(MachineOptionKeys.EddyCurrentTester);
+        capability.CanMeasureDiameter.Should().BeTrue("样例机床装了测径仪");
+        capability.Supports(new WheelDressStepType()).Should().BeTrue();
+        capability.Supports(new EddyCurrentStepType()).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task A_stored_compensation_is_folded_into_the_handed_over_profile()
     {
         await using ServiceProvider services = await BuildAsync();

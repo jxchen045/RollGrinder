@@ -29,6 +29,9 @@ public enum ParameterViolationKind
 
     /// <summary>参数之间互相矛盾（例如周期进给 × 道次 与 磨削量 对不上）。</summary>
     Inconsistent = 7,
+
+    /// <summary>本台机床没装这道工序要用的装置（探伤器、修整器、测头等）。</summary>
+    MachineOptionMissing = 8,
 }
 
 /// <summary>一条参数校验失败记录。</summary>

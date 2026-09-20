@@ -220,6 +220,36 @@ public sealed class GrindingJobValidatorTests
         MinRadiusMm: 75.0,
         MaxRadiusMm: 650.0);
 
+    /// <summary>装齐了所有选件、也装了测头的一台机床。</summary>
+    private static MachineCapability FullyEquipped => Capability with
+    {
+        InstalledOptions = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal)
+        {
+            MachineOptionKeys.WheelDresser,
+            MachineOptionKeys.EddyCurrentTester,
+        },
+        AvailableMeasurements = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal)
+        {
+            MeasurementQuantities.Diameter,
+        },
+    };
+
+    private static GrindingJobValidator CreateFullValidator() => new(
+        new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType() }),
+        new GrindingStepTypeRegistry(new IGrindingStepType[]
+        {
+            new RoughGrindingStepType(), new SparkOutStepType(), new FinishGrindingStepType(),
+            new WheelDressStepType(), new EddyCurrentStepType(),
+        }));
+
+    private static GrindingJob JobWith(params GrindingJobStep[] steps) => GrindingJob.Create(
+        "J-cap",
+        "R-1",
+        Geometry,
+        ProfileTypeKeys.Cylindrical,
+        ParameterSet.Empty,
+        steps);
+
     private static GrindingJobValidator CreateValidator() => new(
         new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType() }),
         new GrindingStepTypeRegistry(new IGrindingStepType[] { new RoughGrindingStepType(), new SparkOutStepType() }));
@@ -406,6 +436,109 @@ public sealed class GrindingJobValidatorTests
         result.Violations.Should().Contain(violation =>
             violation.ParameterKey == StepParameterKeys.FeedMode
             && violation.Kind == ParameterViolationKind.NotAllowed);
+    }
+
+    [Fact]
+    public void A_step_needing_a_device_the_machine_does_not_have_is_rejected()
+    {
+        var eddyCurrent = new EddyCurrentStepType();
+        GrindingJob job = JobWith(
+            new GrindingJobStep(1, StepTypeKeys.EddyCurrent, eddyCurrent.Schema.CreateDefaults()));
+
+        // Capability 里没有任何选件：这台机床没装探伤器。
+        ParameterValidationResult result = CreateFullValidator().Validate(job, Capability);
+
+        result.Violations.Should().Contain(violation =>
+            violation.ParameterKey == StepTypeKeys.EddyCurrent
+            && violation.Kind == ParameterViolationKind.MachineOptionMissing);
+    }
+
+    [Fact]
+    public void The_same_step_passes_once_the_device_is_fitted()
+    {
+        var eddyCurrent = new EddyCurrentStepType();
+        GrindingJob job = JobWith(
+            new GrindingJobStep(1, StepTypeKeys.EddyCurrent, eddyCurrent.Schema.CreateDefaults()));
+
+        CreateFullValidator().Validate(job, FullyEquipped).Violations
+            .Should().NotContain(violation =>
+                violation.Kind == ParameterViolationKind.MachineOptionMissing);
+    }
+
+    [Fact]
+    public void Wheel_dressing_needs_a_dresser()
+    {
+        var dress = new WheelDressStepType();
+        GrindingJob job = JobWith(
+            new GrindingJobStep(1, StepTypeKeys.WheelDress, dress.Schema.CreateDefaults()));
+
+        CreateFullValidator().Validate(job, Capability).Violations.Should().Contain(violation =>
+            violation.ParameterKey == StepTypeKeys.WheelDress
+            && violation.Kind == ParameterViolationKind.MachineOptionMissing);
+    }
+
+    [Fact]
+    public void A_step_that_needs_no_device_runs_on_any_machine()
+    {
+        Capability.Supports(new RoughGrindingStepType()).Should().BeTrue();
+        Capability.Supports(new StartStepType()).Should().BeTrue();
+        Capability.Supports(new EddyCurrentStepType()).Should().BeFalse();
+        FullyEquipped.Supports(new EddyCurrentStepType()).Should().BeTrue();
+    }
+
+    [Fact]
+    public void A_missing_device_does_not_pile_parameter_errors_on_top()
+    {
+        // 装置都没有，参数再怎么校验都没意义——只报"未配置"这一条，别让人去改参数。
+        var eddyCurrent = new EddyCurrentStepType();
+        GrindingJob job = JobWith(
+            new GrindingJobStep(1, StepTypeKeys.EddyCurrent, ParameterSet.Empty));
+
+        ParameterValidationResult result = CreateFullValidator().Validate(job, Capability);
+
+        result.Violations.Should().ContainSingle()
+            .Which.Kind.Should().Be(ParameterViolationKind.MachineOptionMissing);
+    }
+
+    [Fact]
+    public void A_step_that_measures_needs_a_diameter_gauge()
+    {
+        var finish = new FinishGrindingStepType();
+        GrindingJob job = JobWith(
+            new GrindingJobStep(1, StepTypeKeys.Finish, finish.Schema.CreateDefaults()));
+
+        // 精磨结束后要测量，而这台机床没有测径通道。
+        ParameterValidationResult result = CreateFullValidator().Validate(job, Capability);
+
+        result.Violations.Should().Contain(violation =>
+            violation.ParameterKey == StepTypeKeys.Finish
+            && violation.Kind == ParameterViolationKind.MachineOptionMissing);
+    }
+
+    [Fact]
+    public void In_process_gauging_needs_a_diameter_gauge_too()
+    {
+        var finish = new FinishGrindingStepType();
+        GrindingJob job = JobWith(
+            new GrindingJobStep(1, StepTypeKeys.Finish, finish.Schema.CreateDefaults()));
+
+        ParameterValidationResult result = CreateFullValidator().Validate(job, Capability);
+
+        result.Violations.Should().Contain(violation =>
+            violation.ParameterKey == StepParameterKeys.InProcessMeasurement
+            && violation.Kind == ParameterViolationKind.MachineOptionMissing);
+    }
+
+    [Fact]
+    public void Measuring_steps_are_accepted_on_a_machine_with_a_gauge()
+    {
+        var finish = new FinishGrindingStepType();
+        GrindingJob job = JobWith(
+            new GrindingJobStep(1, StepTypeKeys.Finish, finish.Schema.CreateDefaults()));
+
+        CreateFullValidator().Validate(job, FullyEquipped).Violations
+            .Should().NotContain(violation =>
+                violation.Kind == ParameterViolationKind.MachineOptionMissing);
     }
 
     [Fact]

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using RollGrinder.Core.Units;
 
 namespace RollGrinder.Core.Steps;
@@ -32,6 +34,28 @@ public sealed record MachineCapability(
 
     /// <summary>砂轮线速度上限（m/s）。为 null 表示未配置。</summary>
     public double? MaxWheelSurfaceSpeedMPerSec { get; init; }
+
+    /// <summary>
+    /// 本台机床装有的选装装置（machine.json 的 options 里取值为 true 的那些键）。
+    /// 工序类型按 <see cref="IGrindingStepType.RequiredOptionKey"/> 对着它查。
+    /// </summary>
+    public IReadOnlySet<string> InstalledOptions { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 本台机床装有的测量量（machine.json 的 measurementChannels 里 isPresent 的那些 quantity）。
+    /// 要测量的工序对着它查——没有测头就别编"磨后测量"。
+    /// </summary>
+    public IReadOnlySet<string> AvailableMeasurements { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <summary>这台机床有没有直径测量通道。</summary>
+    public bool CanMeasureDiameter => AvailableMeasurements.Contains(MeasurementQuantities.Diameter);
+
+    /// <summary>这台机床能不能做某道工序（按选装装置判断）。</summary>
+    public bool Supports(IGrindingStepType stepType)
+    {
+        ArgumentNullException.ThrowIfNull(stepType);
+        return stepType.RequiredOptionKey is not string option || InstalledOptions.Contains(option);
+    }
 
     /// <summary>单刀最大切深的直径量微米表示，供界面提示用。</summary>
     public double MaxInfeedPerPassDiameterMicrometer =>

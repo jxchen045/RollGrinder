@@ -105,6 +105,36 @@ public sealed partial class StepRowViewModel : ObservableObject
     private string durationText = string.Empty;
 }
 
+/// <summary>
+/// "插入工序"下拉里的一项。本台机床装不了的工序照样列出来，但标上"（未配置）"并禁掉——
+/// 藏起来只会让人找不到，标出来才知道是机床没装，不是软件少做。
+/// </summary>
+public sealed class StepTypeOptionViewModel
+{
+    public StepTypeOptionViewModel(IGrindingStepType stepType, bool isAvailable, IStringLocalizer localizer)
+    {
+        ArgumentNullException.ThrowIfNull(stepType);
+        ArgumentNullException.ThrowIfNull(localizer);
+
+        Key = stepType.Key;
+        IsAvailable = isAvailable;
+        RequiredOptionKey = stepType.RequiredOptionKey;
+
+        string name = localizer["StepType_" + stepType.Key];
+        DisplayName = isAvailable ? name : name + localizer["Steps_StepTypeNotAvailable"];
+    }
+
+    public string Key { get; }
+
+    public string DisplayName { get; }
+
+    /// <summary>本台机床能不能做这道工序。</summary>
+    public bool IsAvailable { get; }
+
+    /// <summary>缺的是哪一项装置；不需要装置时为 null。</summary>
+    public string? RequiredOptionKey { get; }
+}
+
 /// <summary>校验失败的一行，文案由原因与参数键组合而成。</summary>
 public sealed class ViolationRowViewModel
 {
@@ -113,8 +143,13 @@ public sealed class ViolationRowViewModel
         ArgumentNullException.ThrowIfNull(violation);
         ArgumentNullException.ThrowIfNull(localizer);
 
-        string parameterLabel = localizer["Parameter_" + violation.ParameterKey];
-        ParameterText = parameterLabel.StartsWith('!') ? violation.ParameterKey : parameterLabel;
+        // 违规项可能是一个参数，也可能是一整道工序（机床没装那个装置时）。
+        // 两个命名空间都试一遍，都没有才退回原始键——界面上不留 "!Key!"。
+        ParameterText = FirstLocalized(
+            localizer,
+            violation.ParameterKey,
+            "Parameter_" + violation.ParameterKey,
+            "StepType_" + violation.ParameterKey);
         ReasonText = violation.Limit is null
             ? localizer["Violation_" + violation.Kind]
             : localizer.Format("Violation_" + violation.Kind + "_WithLimit", violation.Limit.Value);
@@ -123,6 +158,20 @@ public sealed class ViolationRowViewModel
     public string ParameterText { get; }
 
     public string ReasonText { get; }
+
+    private static string FirstLocalized(IStringLocalizer localizer, string fallback, params string[] candidates)
+    {
+        foreach (string candidate in candidates)
+        {
+            string text = localizer[candidate];
+            if (!text.StartsWith('!'))
+            {
+                return text;
+            }
+        }
+
+        return fallback;
+    }
 }
 
 /// <summary>程序的一份快照，"放弃修改"用它回退。参数按界面文本原样存，回填时不做二次解析。</summary>
@@ -172,24 +221,28 @@ public sealed partial class StepsViewModel : PageViewModelBase
         GrindingStepTypeRegistry stepTypes,
         IJobDownloadService downloadService,
         MachineDescription machine,
+        MachineCapability capability,
         HmiSettings settings,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
         : base(alarms, localizer, navigator)
     {
+        ArgumentNullException.ThrowIfNull(capability);
         this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
         this.stepTypes = stepTypes ?? throw new ArgumentNullException(nameof(stepTypes));
         this.downloadService = downloadService ?? throw new ArgumentNullException(nameof(downloadService));
         ArgumentNullException.ThrowIfNull(machine);
 
         ProfileTypeKeys = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
-        StepTypeKeys = new ObservableCollection<string>(stepTypes.All.Select(type => type.Key));
+        StepTypeOptions = new ObservableCollection<StepTypeOptionViewModel>(
+            stepTypes.All.Select(type => new StepTypeOptionViewModel(type, capability.Supports(type), localizer)));
 
         this.bodyLengthMmText = machine.Workpiece.MinBodyLengthMm.ToString("F1", CultureInfo.InvariantCulture);
         this.nominalDiameterMmText = machine.Workpiece.MinDiameterMm.ToString("F1", CultureInfo.InvariantCulture);
         this.selectedProfileTypeKey = ProfileTypeKeys.FirstOrDefault() ?? string.Empty;
-        this.selectedStepTypeKey = StepTypeKeys.FirstOrDefault() ?? string.Empty;
+        this.selectedStepType = StepTypeOptions.FirstOrDefault(option => option.IsAvailable)
+            ?? StepTypeOptions.FirstOrDefault();
         this.jobId = NewJobId();
         this.rollId = string.Empty;
 
@@ -226,7 +279,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     public ObservableCollection<string> ProfileTypeKeys { get; }
 
-    public ObservableCollection<string> StepTypeKeys { get; }
+    public ObservableCollection<StepTypeOptionViewModel> StepTypeOptions { get; }
 
     public ObservableCollection<ParameterRowViewModel> ProfileParameters { get; } = new();
 
@@ -256,7 +309,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private string selectedProfileTypeKey;
 
     [ObservableProperty]
-    private string selectedStepTypeKey;
+    private StepTypeOptionViewModel? selectedStepType;
 
     [ObservableProperty]
     private string statusResourceKey = string.Empty;
@@ -283,12 +336,22 @@ public sealed partial class StepsViewModel : PageViewModelBase
     [RelayCommand]
     private void AddStep()
     {
-        if (string.IsNullOrEmpty(SelectedStepTypeKey))
+        if (SelectedStepType is null)
         {
             return;
         }
 
-        IGrindingStepType stepType = this.stepTypes.Get(SelectedStepTypeKey);
+        if (!SelectedStepType.IsAvailable)
+        {
+            // 机床没装这道工序要用的装置：当场说清楚，而不是让人编完、下发时才被打回来。
+            Alarms.Raise(
+                AlarmSeverity.Warning,
+                "Alarm_StepTypeNotAvailable",
+                Localizer["StepType_" + SelectedStepType.Key]);
+            return;
+        }
+
+        IGrindingStepType stepType = this.stepTypes.Get(SelectedStepType.Key);
         Steps.Add(Track(new StepRowViewModel(Steps.Count + 1, stepType, stepType.Schema.CreateDefaults(), Localizer)));
         RefreshDurations();
         MarkEdited();

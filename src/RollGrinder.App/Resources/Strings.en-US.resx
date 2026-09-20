@@ -1357,4 +1357,22 @@
   <data name="Common_On" xml:space="preserve">
     <value>On</value>
   </data>
+  <data name="Alarm_StepTypeNotAvailable" xml:space="preserve">
+    <value>This machine does not have the device this step needs</value>
+  </data>
+  <data name="Option_hasEddyCurrentTester" xml:space="preserve">
+    <value>Eddy-current tester</value>
+  </data>
+  <data name="Option_hasWheelDresser" xml:space="preserve">
+    <value>Wheel dresser</value>
+  </data>
+  <data name="Steps_StepTypeNotAvailable" xml:space="preserve">
+    <value>(not fitted)</value>
+  </data>
+  <data name="Violation_MachineOptionMissing" xml:space="preserve">
+    <value>is not fitted on this machine</value>
+  </data>
+  <data name="Violation_MachineOptionMissing_WithLimit" xml:space="preserve">
+    <value>is not fitted on this machine ({0})</value>
+  </data>
 </root>
