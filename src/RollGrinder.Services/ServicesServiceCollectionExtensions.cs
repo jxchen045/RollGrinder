@@ -7,6 +7,7 @@ using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
 using RollGrinder.Nc;
 using RollGrinder.Services.Jobs;
+using RollGrinder.Services.Manual;
 using RollGrinder.Services.Measurement;
 using RollGrinder.Services.Monitoring;
 using RollGrinder.Services.Records;
@@ -46,6 +47,7 @@ public static class ServicesServiceCollectionExtensions
             provider.GetRequiredService<MachineDescription>()));
         services.AddSingleton<IJobDownloadService, JobDownloadService>();
         services.AddSingleton<IMeasurementService, MeasurementService>();
+        services.AddSingleton<IManualCommandService, ManualCommandService>();
         services.AddSingleton<ICompensationService, CompensationService>();
         services.AddSingleton<IRecordService, RecordService>();
 

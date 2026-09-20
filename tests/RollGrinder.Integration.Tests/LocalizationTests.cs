@@ -213,6 +213,33 @@ public sealed class LocalizationTests
     }
 
     [Fact]
+    public void Every_manual_action_button_has_a_label()
+    {
+        // 手动页的 26 个按钮，字都在 resx 里——少一个，现场按钮上就是 "!Action_xxx!"。
+        foreach (Services.Manual.ManualCommandDescriptor command in Services.Manual.ManualCommandCatalog.All)
+        {
+            NeutralKeys.Should().Contain(command.ResourceKey, $"动作 {command.Key} 需要界面文案");
+        }
+    }
+
+    [Fact]
+    public void Every_reason_a_manual_action_can_be_refused_has_a_label()
+    {
+        string[] reasons =
+        {
+            Services.Manual.ManualCommandService.NotMappedResourceKey,
+            Services.Manual.ManualCommandService.ChannelBusyResourceKey,
+            Services.Manual.ManualCommandService.DisconnectedResourceKey,
+            Services.Manual.ManualCommandService.WriteFailedResourceKey,
+        };
+
+        foreach (string key in reasons)
+        {
+            NeutralKeys.Should().Contain(key);
+        }
+    }
+
+    [Fact]
     public void Every_enum_value_shown_on_screen_has_a_label()
     {
         foreach (GatewayConnectionState value in Enum.GetValues<GatewayConnectionState>())

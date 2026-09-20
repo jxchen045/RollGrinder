@@ -143,23 +143,32 @@
         </Grid>
 
         <StackPanel Grid.Column="1">
+            <!-- 动作发出去的回执：停几秒自己消失，不占报警条 -->
+            <Border Background="{StaticResource Brush.NormalFill}"
+                    BorderBrush="{StaticResource Brush.Normal}"
+                    BorderThickness="0,0,0,2"
+                    Height="40"
+                    Padding="14,0"
+                    Margin="0,0,0,12"
+                    Visibility="{Binding LastActionText, Converter={StaticResource TextToVisibility}}">
+                <TextBlock Text="{Binding LastActionText}"
+                           Style="{StaticResource Text.Body}"
+                           VerticalAlignment="Center" />
+            </Border>
+
             <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                         <TextBlock Text="{loc:Loc Manual_MeasuringArmHeader}" Style="{StaticResource Text.CardTitle}" />
                     </Border>
-                    <ItemsControl ItemsSource="{Binding MeasuringArmActions}" Margin="12">
+                    <ItemsControl ItemsSource="{Binding MeasuringArmActions}" Margin="12"
+                                  ItemTemplate="{StaticResource MachineActionTemplate}"
+                                  IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="4" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Content="{Binding Label}" Command="{Binding Command}"
-                                        Style="{StaticResource SecondaryButton}" Height="56" Margin="4" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </DockPanel>
             </Border>
@@ -169,18 +178,14 @@
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                         <TextBlock Text="{loc:Loc Manual_TailstockHeader}" Style="{StaticResource Text.CardTitle}" />
                     </Border>
-                    <ItemsControl ItemsSource="{Binding TailstockActions}" Margin="12">
+                    <ItemsControl ItemsSource="{Binding TailstockActions}" Margin="12"
+                                  ItemTemplate="{StaticResource MachineActionTemplate}"
+                                  IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="4" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Content="{Binding Label}" Command="{Binding Command}"
-                                        Style="{StaticResource SecondaryButton}" Height="56" Margin="4" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </DockPanel>
             </Border>
@@ -190,18 +195,14 @@
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                         <TextBlock Text="{loc:Loc Manual_OtherHeader}" Style="{StaticResource Text.CardTitle}" />
                     </Border>
-                    <ItemsControl ItemsSource="{Binding OtherActions}" Margin="12">
+                    <ItemsControl ItemsSource="{Binding OtherActions}" Margin="12"
+                                  ItemTemplate="{StaticResource MachineActionTemplate}"
+                                  IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="4" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Content="{Binding Label}" Command="{Binding Command}"
-                                        Style="{StaticResource SecondaryButton}" Height="56" Margin="4" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </DockPanel>
             </Border>

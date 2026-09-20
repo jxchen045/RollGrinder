@@ -77,6 +77,9 @@ public sealed class SimulatedMachine
     /// <summary>当前程序名。</summary>
     public string ProgramName { get; private set; } = string.Empty;
 
+    /// <summary>状态回读变量的后缀，与 <see cref="MachineTagKeys.ManualCommandState"/> 保持一致。</summary>
+    private const string ManualStateSuffix = ".state";
+
     /// <summary>接受一次写入。参数有效标志置真即开始模拟磨削。</summary>
     public void Write(string logicalName, TagValue value)
     {
@@ -84,6 +87,17 @@ public sealed class SimulatedMachine
         ArgumentNullException.ThrowIfNull(value);
 
         this.writtenValues[logicalName] = value;
+
+        // 手动动作：把命令位原样回显到状态位，界面上的"冷却水开着"这类指示才有东西可读。
+        // 仿真机床就是这台"机床"，所以这是真回读，不是假数据。
+        if (logicalName.StartsWith(MachineTagKeys.ManualCommandPrefix, StringComparison.Ordinal)
+            && !logicalName.EndsWith(ManualStateSuffix, StringComparison.Ordinal)
+            && value.Raw is bool)
+        {
+            string stateName = logicalName + ManualStateSuffix;
+            this.writtenValues[stateName] = value with { Key = stateName };
+            return;
+        }
 
         // 工序走刀次数是数组变量，下发时一条一条写进来：记下来，仿真才知道每道磨几刀。
         if (TagKeySyntax.TrySplit(logicalName, out string baseKey, out int index)

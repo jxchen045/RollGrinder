@@ -37,6 +37,26 @@ public sealed class SimulationGatewayTests
         new(key, TagDataType.Double, value, DateTimeOffset.UtcNow);
 
     [Fact]
+    public async Task A_manual_toggle_is_readable_back_from_the_simulated_machine()
+    {
+        // 界面靠状态回读点亮"冷却水开着"。仿真机床就是这台机床，所以这是真回读。
+        using var workspace = new TempWorkspace();
+        (IMachineGateway gateway, _) = await BuildAsync(workspace);
+        await gateway.ConnectAsync(CancellationToken.None);
+
+        string command = MachineTagKeys.ManualCommand("coolant");
+        string state = MachineTagKeys.ManualCommandState("coolant");
+
+        await gateway.WriteTagAsync(
+            command, new TagValue(command, TagDataType.Boolean, true, DateTimeOffset.UtcNow), CancellationToken.None);
+        (await gateway.ReadTagAsync(state, CancellationToken.None)).Raw.Should().Be(true);
+
+        await gateway.WriteTagAsync(
+            command, new TagValue(command, TagDataType.Boolean, false, DateTimeOffset.UtcNow), CancellationToken.None);
+        (await gateway.ReadTagAsync(state, CancellationToken.None)).Raw.Should().Be(false);
+    }
+
+    [Fact]
     public async Task Sim_gateway_refuses_reads_before_connecting()
     {
         using var workspace = new TempWorkspace();

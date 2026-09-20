@@ -10,5 +10,6 @@
   "compensationGain": 0.7,
   "compensationSmoothingPoints": 5,
   "profileToleranceDiameterMicrometer": 5.0,
-  "defaultRole": "Operator"
+  "defaultRole": "Operator",
+  "manualPulseMs": 300
 }

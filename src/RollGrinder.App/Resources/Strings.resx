@@ -1375,4 +1375,22 @@
   <data name="Violation_MachineOptionMissing_WithLimit" xml:space="preserve">
     <value>本台机床未配置（{0}）</value>
   </data>
+  <data name="Alarm_ActionBlockedWhileRunning" xml:space="preserve">
+    <value>自动循环还挂着程序，这个动作现在不能按</value>
+  </data>
+  <data name="Alarm_ActionNeedsConnection" xml:space="preserve">
+    <value>没连上机床，动作没发出去</value>
+  </data>
+  <data name="Alarm_ActionWriteFailed" xml:space="preserve">
+    <value>写机床失败，动作没发出去</value>
+  </data>
+  <data name="Manual_CommandSentFormat" xml:space="preserve">
+    <value>{0} · 已发出</value>
+  </data>
+  <data name="Manual_ConfirmAgain" xml:space="preserve">
+    <value>再按一次</value>
+  </data>
+  <data name="Manual_LastActionHeader" xml:space="preserve">
+    <value>最近动作</value>
+  </data>
 </root>

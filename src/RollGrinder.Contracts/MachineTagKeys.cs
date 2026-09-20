@@ -30,6 +30,27 @@ public static class MachineTagKeys
     /// <summary>测量得到的直径（mm）。</summary>
     public const string MeasuredDiameterMm = "measure.diameterMm";
 
+    /// <summary>手动动作命令位的逻辑名前缀。</summary>
+    public const string ManualCommandPrefix = "manual.";
+
+    /// <summary>某个手动动作的命令位逻辑名。</summary>
+    public static string ManualCommand(string actionKey) => ManualCommandPrefix + actionKey;
+
+    /// <summary>某个保持型手动动作的状态回读逻辑名。</summary>
+    public static string ManualCommandState(string actionKey) => ManualCommandPrefix + actionKey + ".state";
+
+    /// <summary>
+    /// 需要回读状态的保持型手动动作。动作目录在 RollGrinder.Services 里，
+    /// 而 Contracts 不引用它，所以这三个键在这里单独列一次——
+    /// 有测试盯着两边一致，加一个保持型动作而漏了这里，测试会红。
+    /// </summary>
+    public static System.Collections.Generic.IReadOnlyList<string> ManualToggleStateKeys { get; } = new[]
+    {
+        ManualCommandState("coolant"),
+        ManualCommandState("headstock.run"),
+        ManualCommandState("wheel.run"),
+    };
+
     /// <summary>本次作业的工序数。</summary>
     public const string JobStepCount = "job.stepCount";
 
@@ -167,6 +188,10 @@ public static class MachineTagKeys
             CompensationRealtimeOffsetMm,
             CompensationDegradationLevel,
         };
+
+        // 保持型手动动作的状态回读：界面要按它点亮"冷却水开着"这类指示。
+        // 逻辑名在这里出现，物理地址在 tagmap.json 里——没映射就读不到，界面显示"--"。
+        keys.AddRange(ManualToggleStateKeys);
 
         foreach (AxisDescription axis in machine.Axes)
         {

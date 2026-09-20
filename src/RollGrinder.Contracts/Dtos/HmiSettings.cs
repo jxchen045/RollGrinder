@@ -15,6 +15,7 @@ namespace RollGrinder.Contracts.Dtos;
 /// <param name="CompensationSmoothingPoints">补偿平滑窗口点数（奇数）。</param>
 /// <param name="ProfileToleranceDiameterMicrometer">辊形验收公差（直径量 µm）。</param>
 /// <param name="DefaultRole">启动时的操作权限。</param>
+/// <param name="ManualPulseMs">手动动作脉冲命令的脉宽（ms）。</param>
 public sealed record HmiSettings(
     int SchemaVersion,
     string Culture,
@@ -27,4 +28,5 @@ public sealed record HmiSettings(
     double CompensationGain,
     int CompensationSmoothingPoints,
     double ProfileToleranceDiameterMicrometer,
-    UserRole DefaultRole);
+    UserRole DefaultRole,
+    int ManualPulseMs = 300);

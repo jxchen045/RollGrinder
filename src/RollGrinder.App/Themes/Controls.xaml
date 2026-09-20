@@ -15,6 +15,7 @@
   <conv:FractionToWidthConverter x:Key="FractionToWidth" />
   <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
   <conv:InverseBooleanConverter x:Key="InverseBool" />
+  <conv:TextToVisibilityConverter x:Key="TextToVisibility" />
   <conv:LeaveTitleConverter x:Key="LeaveTitle" />
 
   <!-- 卡片：白底 + 1px 描边 -->
@@ -95,6 +96,40 @@
   <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
     <Setter Property="Background" Value="{StaticResource Brush.CurrentStep}" />
   </Style>
+
+  <!--
+    手动页按钮矩阵的一格。四种样子：
+    可按 / 压暗（tagmap 未登记）/ 禁用（机床在忙，ToolTip 说明原因）/ 待确认（红底，按第二下才真发）；
+    保持型动作开着时点亮。禁用时按钮留在原位只是变灰——键位不跳动，手的肌肉记忆不作废。
+  -->
+  <DataTemplate x:Key="MachineActionTemplate">
+    <Button Content="{Binding Label}"
+            Command="{Binding Command}"
+            IsEnabled="{Binding IsEnabled}"
+            ToolTip="{Binding DisabledHint}"
+            Height="56"
+            Margin="4">
+      <Button.Style>
+        <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding IsActive}" Value="True">
+              <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
+              <Setter Property="Background" Value="{StaticResource Brush.Normal}" />
+              <Setter Property="BorderThickness" Value="0" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsAwaitingConfirmation}" Value="True">
+              <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
+              <Setter Property="Background" Value="{StaticResource Brush.CurrentStep}" />
+              <Setter Property="BorderThickness" Value="0" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsMapped}" Value="False">
+              <Setter Property="Opacity" Value="0.35" />
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+      </Button.Style>
+    </Button>
+  </DataTemplate>
 
   <!-- 导航槽（功能条第 8 格）。深底色，和 7 个功能键一眼分得开：
        这一格永远是"出路"，不是功能。 -->

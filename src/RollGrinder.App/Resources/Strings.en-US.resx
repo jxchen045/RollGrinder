@@ -1375,4 +1375,22 @@
   <data name="Violation_MachineOptionMissing_WithLimit" xml:space="preserve">
     <value>is not fitted on this machine ({0})</value>
   </data>
+  <data name="Alarm_ActionBlockedWhileRunning" xml:space="preserve">
+    <value>A program is still loaded; this action is blocked</value>
+  </data>
+  <data name="Alarm_ActionNeedsConnection" xml:space="preserve">
+    <value>Not connected to the machine; the action was not sent</value>
+  </data>
+  <data name="Alarm_ActionWriteFailed" xml:space="preserve">
+    <value>Writing to the machine failed; the action was not sent</value>
+  </data>
+  <data name="Manual_CommandSentFormat" xml:space="preserve">
+    <value>{0} · sent</value>
+  </data>
+  <data name="Manual_ConfirmAgain" xml:space="preserve">
+    <value>Press again</value>
+  </data>
+  <data name="Manual_LastActionHeader" xml:space="preserve">
+    <value>Last action</value>
+  </data>
 </root>
