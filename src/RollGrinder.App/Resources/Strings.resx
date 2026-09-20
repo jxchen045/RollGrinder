@@ -394,9 +394,6 @@
   <data name="Fn_AuditLog" xml:space="preserve">
     <value>审计日志</value>
   </data>
-  <data name="Fn_Back" xml:space="preserve">
-    <value>返回</value>
-  </data>
   <data name="Fn_BackupRestore" xml:space="preserve">
     <value>备份与恢复</value>
   </data>
@@ -1152,5 +1149,98 @@
   </data>
   <data name="Violation_Unknown_WithLimit" xml:space="preserve">
     <value>未知参数（{0}）</value>
+  </data>
+  <data name="Alarm_SaveFailedStayingOnPage" xml:space="preserve">
+    <value>保存失败，已留在本页</value>
+  </data>
+  <data name="Diag_TagMonitorKey" xml:space="preserve">
+    <value>逻辑名</value>
+  </data>
+  <data name="Diag_TagMonitorQuality" xml:space="preserve">
+    <value>质量</value>
+  </data>
+  <data name="Diag_TagMonitorTitle" xml:space="preserve">
+    <value>变量监视（当前快照）</value>
+  </data>
+  <data name="Diag_TagMonitorValue" xml:space="preserve">
+    <value>取值</value>
+  </data>
+  <data name="Diag_TagQualityBad" xml:space="preserve">
+    <value>坏</value>
+  </data>
+  <data name="Diag_TagQualityGood" xml:space="preserve">
+    <value>好</value>
+  </data>
+  <data name="Fn_Empty" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Leave_Cancel" xml:space="preserve">
+    <value>继续编辑</value>
+  </data>
+  <data name="Leave_Discard" xml:space="preserve">
+    <value>放弃修改并离开</value>
+  </data>
+  <data name="Leave_Message" xml:space="preserve">
+    <value>离开本页前，请先决定这些修改怎么处理。</value>
+  </data>
+  <data name="Leave_Save" xml:space="preserve">
+    <value>保存并离开</value>
+  </data>
+  <data name="Leave_TitleFormat" xml:space="preserve">
+    <value>{0} 有未保存的修改</value>
+  </data>
+  <data name="Menu_AutoGrindingHint" xml:space="preserve">
+    <value>运行中的这支辊：进度、曲线、实时数据</value>
+  </data>
+  <data name="Menu_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Menu_Current" xml:space="preserve">
+    <value>当前页</value>
+  </data>
+  <data name="Menu_DiagnosticsHint" xml:space="preserve">
+    <value>连接、变量、日志与机床能力</value>
+  </data>
+  <data name="Menu_ManualHint" xml:space="preserve">
+    <value>点动、测量与对中、辅助动作</value>
+  </data>
+  <data name="Menu_ProfileHint" xml:space="preserve">
+    <value>辊形曲线段、预览与校验</value>
+  </data>
+  <data name="Menu_RecordsHint" xml:space="preserve">
+    <value>历史记录、曲线与报表</value>
+  </data>
+  <data name="Menu_StepsHint" xml:space="preserve">
+    <value>工序序列与工艺参数、下发 NC</value>
+  </data>
+  <data name="Menu_Title" xml:space="preserve">
+    <value>去哪个页面</value>
+  </data>
+  <data name="Nav_AreaMenu" xml:space="preserve">
+    <value>页面菜单</value>
+  </data>
+  <data name="Nav_BackToHome" xml:space="preserve">
+    <value>返回主页</value>
+  </data>
+  <data name="Nav_BackToPageFormat" xml:space="preserve">
+    <value>返回 {0}</value>
+  </data>
+  <data name="Nav_BreadcrumbSeparator" xml:space="preserve">
+    <value> › </value>
+  </data>
+  <data name="Shell_MenuButton" xml:space="preserve">
+    <value>菜单</value>
+  </data>
+  <data name="Shell_Modified" xml:space="preserve">
+    <value>已修改</value>
+  </data>
+  <data name="Shell_OpenAreaMenu" xml:space="preserve">
+    <value>打开页面菜单</value>
+  </data>
+  <data name="Shell_ReadOnlyRunning" xml:space="preserve">
+    <value>运行中 · 只读</value>
+  </data>
+  <data name="SubView_TagMonitor" xml:space="preserve">
+    <value>变量监视</value>
   </data>
 </root>

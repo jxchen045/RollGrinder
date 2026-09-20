@@ -61,6 +61,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
     private CompositeRollProfile composite;
 
+    /// <summary>上一次"干净"的辊形，供"放弃修改"回退。</summary>
+    private CompositeRollProfile committedComposite;
+
     public ProfileViewModel(
         RollProfileTypeRegistry profileTypes,
         MachineDescription machine,
@@ -78,17 +81,18 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             machine.Workpiece.MinBodyLengthMm, machine.Workpiece.MinDiameterMm);
         this.composite = CompositeRollProfile.Single(
             ProfileTypeKeys.Cylindrical, this.geometry, ParameterSet.Empty);
+        this.committedComposite = this.composite;
 
         AvailableTypes = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
         this.selectedTypeForInsert = AvailableTypes.FirstOrDefault() ?? ProfileTypeKeys.Cylindrical;
 
         SetFunctionKeys(new[]
         {
-            FunctionKeyViewModel.Placeholder("Fn_Save", localizer, () => NotImplementedYet("Fn_Save"), FunctionKeyKind.Primary),
-            FunctionKeyViewModel.Placeholder("Fn_SaveAs", localizer, () => NotImplementedYet("Fn_SaveAs")),
-            new FunctionKeyViewModel("Fn_NewSegment", InsertSegmentCommand, localizer),
-            FunctionKeyViewModel.Placeholder("Fn_ImportPoints", localizer, () => NotImplementedYet("Fn_ImportPoints")),
-            FunctionKeyViewModel.Placeholder("Fn_GeneratePoints", localizer, () => NotImplementedYet("Fn_GeneratePoints")),
+            FunctionKeyViewModel.Placeholder("Fn_Save", localizer, () => NotImplementedYet("Fn_Save"), FunctionKeyKind.Primary, requiresEditable: true),
+            FunctionKeyViewModel.Placeholder("Fn_SaveAs", localizer, () => NotImplementedYet("Fn_SaveAs"), requiresEditable: true),
+            new FunctionKeyViewModel("Fn_NewSegment", InsertSegmentCommand, localizer, requiresEditable: true),
+            FunctionKeyViewModel.Placeholder("Fn_ImportPoints", localizer, () => NotImplementedYet("Fn_ImportPoints"), requiresEditable: true),
+            FunctionKeyViewModel.Placeholder("Fn_GeneratePoints", localizer, () => NotImplementedYet("Fn_GeneratePoints"), requiresEditable: true),
             new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
             FunctionKeyViewModel.Placeholder("Fn_ProfileLibrary", localizer, () => NotImplementedYet("Fn_ProfileLibrary")),
         });
@@ -99,6 +103,11 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     public override PageKey Key => PageKey.Profile;
 
     public override string TitleResourceKey => "Page_Profile";
+
+    public override string MenuHintResourceKey => "Menu_ProfileHint";
+
+    /// <summary>编辑页：自动循环挂着程序时落只读锁，免得改了辊形以为机床会跟着变。</summary>
+    public override bool LocksDuringRun => true;
 
     public ObservableCollection<SegmentRowViewModel> Segments { get; } = new();
 
@@ -137,9 +146,6 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     [ObservableProperty]
     private string compensationAxisText = "--";
 
-    [ObservableProperty]
-    private bool isModified;
-
     partial void OnSelectedSegmentChanged(SegmentRowViewModel? value)
     {
         foreach (SegmentRowViewModel row in Segments)
@@ -164,7 +170,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             this.geometry.BodyLengthMm,
             profileType.Schema.CreateDefaults()));
 
-        IsModified = true;
+        MarkDirty();
         Rebuild();
     }
 
@@ -177,7 +183,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
 
         this.composite = this.composite.RemoveAt(SelectedSegment.Order);
-        IsModified = true;
+        MarkDirty();
         Rebuild();
     }
 
@@ -190,12 +196,23 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
 
         this.composite = this.composite.MoveUp(SelectedSegment.Order);
-        IsModified = true;
+        MarkDirty();
         Rebuild();
     }
 
     [RelayCommand]
     private void Validate() => Rebuild();
+
+    /// <summary>放弃修改：回到上次进入本页时的辊形，而不是清空。</summary>
+    public override void DiscardChanges()
+    {
+        this.composite = this.committedComposite;
+        base.DiscardChanges();
+        Rebuild();
+    }
+
+    /// <summary>切到本页时记住当前状态，"放弃修改"才有东西可回。</summary>
+    public override void OnActivated() => this.committedComposite = this.composite;
 
     private void ShowSegmentParameters(SegmentRowViewModel? row)
     {

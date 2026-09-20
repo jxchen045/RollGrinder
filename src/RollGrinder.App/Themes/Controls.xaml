@@ -14,6 +14,8 @@
   <conv:LocalizeConverter x:Key="LocalizeConverter" />
   <conv:FractionToWidthConverter x:Key="FractionToWidth" />
   <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+  <conv:InverseBooleanConverter x:Key="InverseBool" />
+  <conv:LeaveTitleConverter x:Key="LeaveTitle" />
 
   <!-- 卡片：白底 + 1px 描边 -->
   <Style x:Key="Card" TargetType="Border">
@@ -94,6 +96,42 @@
     <Setter Property="Background" Value="{StaticResource Brush.CurrentStep}" />
   </Style>
 
+  <!-- 导航槽（功能条第 8 格）。深底色，和 7 个功能键一眼分得开：
+       这一格永远是"出路"，不是功能。 -->
+  <Style x:Key="NavigationButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+    <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
+    <Setter Property="Background" Value="{StaticResource Brush.AccentDark}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <!-- 区域菜单里的一格：触摸目标做大，戴手套也点得准 -->
+  <Style x:Key="AreaMenuTile" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+    <Setter Property="Height" Value="136" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="Padding" Value="20,16" />
+    <Setter Property="Margin" Value="8" />
+  </Style>
+
+  <!-- 确认框里的按钮 -->
+  <Style x:Key="DialogButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+    <Setter Property="Height" Value="64" />
+    <Setter Property="MinWidth" Value="220" />
+    <Setter Property="Margin" Value="8,0,0,0" />
+  </Style>
+
+  <Style x:Key="DialogPrimaryButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
+    <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
+    <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <Style x:Key="DialogDangerButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
+    <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
+    <Setter Property="Background" Value="{StaticResource Brush.CurrentStep}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
   <!-- 曲线切换这类分段选择键 -->
   <Style x:Key="SegmentButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
     <Setter Property="FontSize" Value="16" />
@@ -107,7 +145,10 @@
     <Setter Property="BorderThickness" Value="0" />
   </Style>
 
+  <!-- 数值输入框。运行中（页面 IsReadOnly）自动转只读：能看能选，不能改。 -->
   <Style x:Key="ValueTextBox" TargetType="TextBox">
+    <Setter Property="IsReadOnly"
+            Value="{Binding DataContext.IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=False}" />
     <Setter Property="FontFamily" Value="{StaticResource Font.Mono}" />
     <Setter Property="FontSize" Value="{StaticResource Size.DataRow}" />
     <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />

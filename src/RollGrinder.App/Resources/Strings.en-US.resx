@@ -394,9 +394,6 @@
   <data name="Fn_AuditLog" xml:space="preserve">
     <value>Audit log</value>
   </data>
-  <data name="Fn_Back" xml:space="preserve">
-    <value>Back</value>
-  </data>
   <data name="Fn_BackupRestore" xml:space="preserve">
     <value>Backup / restore</value>
   </data>
@@ -1152,5 +1149,98 @@
   </data>
   <data name="Violation_Unknown_WithLimit" xml:space="preserve">
     <value>Unknown parameter ({0})</value>
+  </data>
+  <data name="Alarm_SaveFailedStayingOnPage" xml:space="preserve">
+    <value>Save failed; staying on this page</value>
+  </data>
+  <data name="Diag_TagMonitorKey" xml:space="preserve">
+    <value>Logical name</value>
+  </data>
+  <data name="Diag_TagMonitorQuality" xml:space="preserve">
+    <value>Quality</value>
+  </data>
+  <data name="Diag_TagMonitorTitle" xml:space="preserve">
+    <value>Tag monitor (current snapshot)</value>
+  </data>
+  <data name="Diag_TagMonitorValue" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Diag_TagQualityBad" xml:space="preserve">
+    <value>Bad</value>
+  </data>
+  <data name="Diag_TagQualityGood" xml:space="preserve">
+    <value>Good</value>
+  </data>
+  <data name="Fn_Empty" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Leave_Cancel" xml:space="preserve">
+    <value>Keep editing</value>
+  </data>
+  <data name="Leave_Discard" xml:space="preserve">
+    <value>Discard and leave</value>
+  </data>
+  <data name="Leave_Message" xml:space="preserve">
+    <value>Decide what to do with these changes before leaving the page.</value>
+  </data>
+  <data name="Leave_Save" xml:space="preserve">
+    <value>Save and leave</value>
+  </data>
+  <data name="Leave_TitleFormat" xml:space="preserve">
+    <value>{0} has unsaved changes</value>
+  </data>
+  <data name="Menu_AutoGrindingHint" xml:space="preserve">
+    <value>The roll on the machine: progress, curves, live data</value>
+  </data>
+  <data name="Menu_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Menu_Current" xml:space="preserve">
+    <value>Current</value>
+  </data>
+  <data name="Menu_DiagnosticsHint" xml:space="preserve">
+    <value>Connection, tags, logs and machine capabilities</value>
+  </data>
+  <data name="Menu_ManualHint" xml:space="preserve">
+    <value>Jogging, measuring and alignment, auxiliary actions</value>
+  </data>
+  <data name="Menu_ProfileHint" xml:space="preserve">
+    <value>Profile segments, preview and validation</value>
+  </data>
+  <data name="Menu_RecordsHint" xml:space="preserve">
+    <value>History, curves and reports</value>
+  </data>
+  <data name="Menu_StepsHint" xml:space="preserve">
+    <value>Step sequence, process parameters, NC download</value>
+  </data>
+  <data name="Menu_Title" xml:space="preserve">
+    <value>Go to page</value>
+  </data>
+  <data name="Nav_AreaMenu" xml:space="preserve">
+    <value>Page menu</value>
+  </data>
+  <data name="Nav_BackToHome" xml:space="preserve">
+    <value>Back to home</value>
+  </data>
+  <data name="Nav_BackToPageFormat" xml:space="preserve">
+    <value>Back to {0}</value>
+  </data>
+  <data name="Nav_BreadcrumbSeparator" xml:space="preserve">
+    <value> › </value>
+  </data>
+  <data name="Shell_MenuButton" xml:space="preserve">
+    <value>Menu</value>
+  </data>
+  <data name="Shell_Modified" xml:space="preserve">
+    <value>Modified</value>
+  </data>
+  <data name="Shell_OpenAreaMenu" xml:space="preserve">
+    <value>Open the page menu</value>
+  </data>
+  <data name="Shell_ReadOnlyRunning" xml:space="preserve">
+    <value>Running · read-only</value>
+  </data>
+  <data name="SubView_TagMonitor" xml:space="preserve">
+    <value>Tag monitor</value>
   </data>
 </root>

@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Services.Alarms;
@@ -14,10 +17,14 @@ namespace RollGrinder.App.ViewModels;
 public sealed record ContextItem(string LabelResourceKey, string Value, bool IsMonospaced = false);
 
 /// <summary>
-/// 一个主界面。外壳负责画顶栏与底部功能条，页面负责给出标题、上下文与 8 个功能键。
+/// 一个一级页面。外壳负责画顶栏、区域菜单与底部功能条，
+/// 页面负责给出标题、上下文与前 7 个功能键——第 8 个是导航槽，页面碰不到。
 /// </summary>
 public abstract partial class PageViewModelBase : ViewModelBase
 {
+    /// <summary>页面自己能占的功能键数量；第 8 个恒为导航槽。</summary>
+    public const int PageFunctionKeyCount = 7;
+
     protected PageViewModelBase(IAlarmSink alarms, IStringLocalizer localizer, INavigator navigator)
         : base(alarms)
     {
@@ -38,14 +45,46 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// <summary>页面标题。</summary>
     public string Title => Localizer[TitleResourceKey];
 
+    /// <summary>区域菜单里这一项的副标题：一句话说明这页有什么，避免靠猜。</summary>
+    public virtual string MenuHintResourceKey => TitleResourceKey;
+
     /// <summary>顶栏上显示的上下文。</summary>
     public ObservableCollection<ContextItem> ContextItems { get; } = new();
 
-    /// <summary>底部功能条的 8 个键，最后一个恒为"返回"。</summary>
+    /// <summary>本页的功能键，最多 7 个。</summary>
     public ObservableCollection<FunctionKeyViewModel> FunctionKeys { get; } = new();
+
+    /// <summary>本页是不是编辑页：自动循环运行期间要落只读锁。</summary>
+    public virtual bool LocksDuringRun => false;
+
+    /// <summary>有没有未保存的修改。脏页离开时外壳会拦一道。</summary>
+    [ObservableProperty]
+    private bool isDirty;
+
+    /// <summary>当前是否只读（自动循环运行中）。</summary>
+    [ObservableProperty]
+    private bool isReadOnly;
+
+    /// <summary>当前打开的二级子视图资源键；null 表示停在本页根部。</summary>
+    [ObservableProperty]
+    private string? activeSubViewKey;
+
+    /// <summary>本页能不能就地保存。接上存储之前为 false，离开确认框就不会给出"保存并离开"。</summary>
+    public virtual bool CanSave => false;
+
+    /// <summary>保存本页的修改。返回 false 表示没保存成功，外壳会留在本页。</summary>
+    public virtual Task<bool> SaveAsync(CancellationToken cancellationToken) => Task.FromResult(false);
+
+    /// <summary>丢掉未保存的修改（操作员在离开确认框里选了"放弃"）。</summary>
+    public virtual void DiscardChanges() => IsDirty = false;
 
     /// <summary>切到本页时调用。</summary>
     public virtual void OnActivated()
+    {
+    }
+
+    /// <summary>切走本页时调用。草稿留在内存里——误触回来数据还在。</summary>
+    public virtual void OnDeactivated()
     {
     }
 
@@ -54,7 +93,13 @@ public abstract partial class PageViewModelBase : ViewModelBase
     {
     }
 
-    /// <summary>登记功能键。第 8 个由基类补上"返回"。</summary>
+    /// <summary>外壳按机床状态刷新只读锁，并同步功能键的可用性。</summary>
+    public void ApplyRunState(bool machineRunning)
+    {
+        IsReadOnly = LocksDuringRun && machineRunning;
+    }
+
+    /// <summary>登记功能键。多于 7 个直接抛——设计稿就是 8 格，超了应该在编译期之外立刻暴露。</summary>
     protected void SetFunctionKeys(IEnumerable<FunctionKeyViewModel> keys)
     {
         ArgumentNullException.ThrowIfNull(keys);
@@ -64,10 +109,32 @@ public abstract partial class PageViewModelBase : ViewModelBase
             FunctionKeys.Add(key);
         }
 
-        FunctionKeys.Add(FunctionKeyViewModel.Placeholder("Fn_Back", Localizer, () => Navigator.GoBack()));
+        if (FunctionKeys.Count > PageFunctionKeyCount)
+        {
+            throw new InvalidOperationException(
+                $"Page {Key} declares {FunctionKeys.Count} function keys; at most {PageFunctionKeyCount} fit beside the navigation key.");
+        }
+
+        ApplyKeyEnablement();
     }
+
+    /// <summary>标记本页有未保存的修改。</summary>
+    protected void MarkDirty() => IsDirty = true;
+
+    /// <summary>标记本页已保存/已同步。</summary>
+    protected void MarkClean() => IsDirty = false;
 
     /// <summary>尚未接通的动作：按下去登记一条提示级报警，而不是假装成功。</summary>
     protected void NotImplementedYet(string labelResourceKey) =>
         Alarms.Raise(AlarmSeverity.Information, "Alarm_ActionNotWiredYet", Localizer[labelResourceKey]);
+
+    partial void OnIsReadOnlyChanged(bool value) => ApplyKeyEnablement();
+
+    private void ApplyKeyEnablement()
+    {
+        foreach (FunctionKeyViewModel key in FunctionKeys)
+        {
+            key.IsEnabled = !(key.RequiresEditable && IsReadOnly);
+        }
+    }
 }

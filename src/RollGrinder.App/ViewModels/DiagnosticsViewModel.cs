@@ -16,6 +16,24 @@ using RollGrinder.Services.Monitoring;
 
 namespace RollGrinder.App.ViewModels;
 
+/// <summary>变量监视里的一行：逻辑名、原始值、质量位。</summary>
+public sealed partial class TagMonitorRowViewModel : ObservableObject
+{
+    public TagMonitorRowViewModel(string key)
+    {
+        this.key = key ?? throw new ArgumentNullException(nameof(key));
+    }
+
+    [ObservableProperty]
+    private string key;
+
+    [ObservableProperty]
+    private string valueText = "--";
+
+    [ObservableProperty]
+    private bool isGood;
+}
+
 /// <summary>诊断页里的一行"名称 → 取值"。</summary>
 public sealed partial class DiagnosticRowViewModel : ObservableObject
 {
@@ -118,7 +136,8 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         {
             FunctionKeyViewModel.Placeholder("Fn_ExportSnapshot", localizer, () => NotImplementedYet("Fn_ExportSnapshot"), FunctionKeyKind.Primary),
             FunctionKeyViewModel.Placeholder("Fn_RunLog", localizer, () => NotImplementedYet("Fn_RunLog")),
-            FunctionKeyViewModel.Placeholder("Fn_TagMonitor", localizer, () => NotImplementedYet("Fn_TagMonitor")),
+            // 二级子视图：打开后导航槽变成"返回 诊断"。
+            FunctionKeyViewModel.Placeholder("Fn_TagMonitor", localizer, () => Navigator.OpenSubView(TagMonitorSubView)),
             FunctionKeyViewModel.Placeholder("Fn_MachineConfig", localizer, () => NotImplementedYet("Fn_MachineConfig")),
             FunctionKeyViewModel.Placeholder("Fn_TagMapping", localizer, () => NotImplementedYet("Fn_TagMapping")),
             FunctionKeyViewModel.Placeholder("Fn_AuditLog", localizer, () => NotImplementedYet("Fn_AuditLog")),
@@ -130,6 +149,11 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
 
     public override string TitleResourceKey => "Page_Diagnostics";
 
+    public override string MenuHintResourceKey => "Menu_DiagnosticsHint";
+
+    /// <summary>变量监视子视图的资源键，同时用作面包屑文案。</summary>
+    public const string TagMonitorSubView = "SubView_TagMonitor";
+
     public ObservableCollection<DiagnosticRowViewModel> ConnectionRows { get; }
 
     public ObservableCollection<DiagnosticRowViewModel> CompensationRows { get; }
@@ -137,6 +161,9 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
     public ObservableCollection<CapabilityRow> Capabilities { get; }
 
     public ObservableCollection<AlarmRowViewModel> Events { get; } = new();
+
+    /// <summary>变量监视子视图的行。只在子视图打开时刷新。</summary>
+    public ObservableCollection<TagMonitorRowViewModel> TagMonitorRows { get; } = new();
 
     /// <summary>tagmap 缺失的必需变量；为空表示契约校验通过。</summary>
     public ObservableCollection<string> MissingTags { get; } = new();
@@ -214,6 +241,34 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         }
 
         RefreshEvents();
+
+        if (ActiveSubViewKey == TagMonitorSubView)
+        {
+            RefreshTagMonitor(snapshot);
+        }
+    }
+
+    /// <summary>变量监视：把当前快照里的每个变量原样列出来，不做单位换算也不补默认值。</summary>
+    private void RefreshTagMonitor(MachineStateSnapshot snapshot)
+    {
+        // 快照里的变量数以十计，条数稳定，整行重建比逐行比对更简单也不会闪。
+        if (TagMonitorRows.Count != snapshot.Values.Count)
+        {
+            TagMonitorRows.Clear();
+            foreach (TagValue value in snapshot.Values)
+            {
+                TagMonitorRows.Add(new TagMonitorRowViewModel(value.Key));
+            }
+        }
+
+        for (int i = 0; i < snapshot.Values.Count; i++)
+        {
+            TagValue value = snapshot.Values[i];
+            TagMonitorRowViewModel row = TagMonitorRows[i];
+            row.Key = value.Key;
+            row.ValueText = value.Raw?.ToString() ?? "--";
+            row.IsGood = value.IsGood;
+        }
     }
 
     private void RefreshEvents()

@@ -93,6 +93,7 @@ public sealed class FunctionKeyStyleConverter : IValueConverter
                 FunctionKeyKind.Primary => "PrimaryButton",
                 FunctionKeyKind.Start => "StartButton",
                 FunctionKeyKind.Danger => "DangerButton",
+                FunctionKeyKind.Navigation => "NavigationButton",
                 _ => "SecondaryButton",
             }
             : "SecondaryButton";
@@ -126,6 +127,26 @@ public sealed class FractionToWidthConverter : IValueConverter
 
         return fraction * total;
     }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>布尔取反。浮层盖住时，底下的页面用它变成不可点。</summary>
+public sealed class InverseBooleanConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is not bool flag || !flag;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is not bool flag || !flag;
+}
+
+/// <summary>页名 → "…… 有未保存的修改"。文案在 resx 里，这里只做填空。</summary>
+public sealed class LeaveTitleConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        Localization.LocalizationScope.Current.Format("Leave_TitleFormat", value as string ?? string.Empty);
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();

@@ -169,14 +169,18 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             FunctionKeyViewModel.Placeholder("Fn_SkipStep", localizer, () => NotImplementedYet("Fn_SkipStep")),
             FunctionKeyViewModel.Placeholder("Fn_EndEarly", localizer, () => NotImplementedYet("Fn_EndEarly")),
             FunctionKeyViewModel.Placeholder("Fn_Coolant", localizer, () => NotImplementedYet("Fn_Coolant")),
-            FunctionKeyViewModel.Placeholder("Fn_CompensationSettings", localizer, () => Navigator.NavigateTo(PageKey.Steps)),
-            FunctionKeyViewModel.Placeholder("Fn_Records", localizer, () => Navigator.NavigateTo(PageKey.Records)),
+            // 补偿设置住在工序编程页：派过去，导航槽会显示"返回 自动磨削"。
+            FunctionKeyViewModel.Placeholder(
+                "Fn_CompensationSettings", localizer, () => Navigator.StartTask(PageKey.Steps, PageKey.AutoGrinding)),
+            FunctionKeyViewModel.Placeholder("Fn_Records", localizer, () => Navigator.GoToArea(PageKey.Records)),
         });
     }
 
     public override PageKey Key => PageKey.AutoGrinding;
 
     public override string TitleResourceKey => "Page_AutoGrinding";
+
+    public override string MenuHintResourceKey => "Menu_AutoGrindingHint";
 
     /// <summary>左栏：工序序列。</summary>
     public ObservableCollection<SequenceRowViewModel> Sequence { get; } = new();

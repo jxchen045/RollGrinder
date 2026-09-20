@@ -16,11 +16,11 @@
                 </Border>
 
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
-                    <ComboBox ItemsSource="{Binding StepTypeKeys}" SelectedItem="{Binding SelectedStepTypeKey}"
+                    <ComboBox ItemsSource="{Binding StepTypeKeys}" SelectedItem="{Binding SelectedStepTypeKey}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                               Width="150" Height="46" FontSize="17" Margin="0,0,8,0" />
-                    <Button Content="{loc:Loc Steps_AddStep}" Command="{Binding AddStepCommand}"
+                    <Button Content="{loc:Loc Steps_AddStep}" Command="{Binding AddStepCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource SecondaryButton}" Height="46" Width="80" Margin="0,0,8,0" />
-                    <Button Content="{loc:Loc Steps_NewJob}" Command="{Binding NewJobCommand}"
+                    <Button Content="{loc:Loc Steps_NewJob}" Command="{Binding NewJobCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource SecondaryButton}" Height="46" Width="90" />
                 </StackPanel>
 
@@ -45,6 +45,9 @@
                                                 Command="{Binding DataContext.RemoveStepCommand,
                                                     RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                 CommandParameter="{Binding}"
+                                                IsEnabled="{Binding DataContext.IsReadOnly,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl},
+                                                    Converter={StaticResource InverseBool}}"
                                                 Style="{StaticResource SecondaryButton}" FontSize="15" Padding="10,2" Height="32" />
                                         <TextBlock Text="{Binding DurationText}" DockPanel.Dock="Right" FontSize="14"
                                                    Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center"
@@ -110,7 +113,7 @@
                             <Border Style="{StaticResource ParameterCell}">
                                 <StackPanel>
                                     <TextBlock Text="{loc:Loc Job_ProfileTypeLabel}" Style="{StaticResource Text.Label}" />
-                                    <ComboBox ItemsSource="{Binding ProfileTypeKeys}" SelectedItem="{Binding SelectedProfileTypeKey}"
+                                    <ComboBox ItemsSource="{Binding ProfileTypeKeys}" SelectedItem="{Binding SelectedProfileTypeKey}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                                               Height="46" FontSize="18" Margin="0,8,0,0" />
                                 </StackPanel>
                             </Border>

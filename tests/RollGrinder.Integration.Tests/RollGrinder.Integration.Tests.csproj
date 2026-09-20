@@ -19,6 +19,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- 导航状态机是纯逻辑（不引用 WPF），链接进来直接测：
+         App 是 net8.0-windows 目标，测试工程不能引用它。 -->
+    <Compile Include="..\..\src\RollGrinder.App\Navigation\PageKey.cs" Link="Navigation\PageKey.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\Navigation\NavigationModel.cs" Link="Navigation\NavigationModel.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />

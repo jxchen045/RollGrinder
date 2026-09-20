@@ -3,6 +3,18 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization">
     <Grid>
+        <Grid.Resources>
+            <!-- 子视图开着时盖住本页根部内容；导航槽这时显示"返回 诊断"。 -->
+            <Style x:Key="TagMonitorPanel" TargetType="Border" BasedOn="{StaticResource Card}">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_TagMonitor">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Resources>
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="520" />
             <ColumnDefinition Width="*" />
@@ -194,5 +206,65 @@
                 </DockPanel>
             </Border>
         </Grid>
+
+        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource TagMonitorPanel}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                    <TextBlock Text="{loc:Loc Diag_TagMonitorTitle}" Style="{StaticResource Text.CardTitle}" />
+                </Border>
+
+                <Border DockPanel.Dock="Top" Background="{StaticResource Brush.HeaderFill}" Height="40">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="360" />
+                            <ColumnDefinition Width="120" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{loc:Loc Diag_TagMonitorKey}"
+                                   Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                        <TextBlock Grid.Column="1" Text="{loc:Loc Diag_TagMonitorValue}"
+                                   Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{loc:Loc Diag_TagMonitorQuality}"
+                                   Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding TagMonitorRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource DataRowBorder}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="360" />
+                                            <ColumnDefinition Width="120" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Key}"
+                                                   Style="{StaticResource Text.DataRow}" Margin="16,0,0,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding ValueText}"
+                                                   Style="{StaticResource Text.DataRow}" />
+                                        <TextBlock Grid.Column="2">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource Text.DataRow}">
+                                                    <Setter Property="Text" Value="{loc:Loc Diag_TagQualityBad}" />
+                                                    <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsGood}" Value="True">
+                                                            <Setter Property="Text" Value="{loc:Loc Diag_TagQualityGood}" />
+                                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
     </Grid>
 </UserControl>

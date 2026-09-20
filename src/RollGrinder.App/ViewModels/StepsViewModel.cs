@@ -78,6 +78,32 @@ public sealed class ViolationRowViewModel
     public string ReasonText { get; }
 }
 
+/// <summary>程序的一份快照，"放弃修改"用它回退。参数按界面文本原样存，回填时不做二次解析。</summary>
+/// <param name="TypeKey">工序类型键。</param>
+/// <param name="ParameterTexts">参数行文本，顺序与 schema 一致。</param>
+internal sealed record StepSnapshot(string TypeKey, IReadOnlyList<string> ParameterTexts);
+
+/// <summary>整支程序的快照。</summary>
+internal sealed record StepsSnapshot(
+    string JobId,
+    string RollId,
+    string BodyLengthMmText,
+    string NominalDiameterMmText,
+    string SelectedProfileTypeKey,
+    IReadOnlyList<string> ProfileParameterTexts,
+    IReadOnlyList<StepSnapshot> Steps)
+{
+    /// <summary>空快照：还没进过本页时用。</summary>
+    public static StepsSnapshot Empty { get; } = new(
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        string.Empty,
+        Array.Empty<string>(),
+        Array.Empty<StepSnapshot>());
+}
+
 /// <summary>
 /// 工艺编排：辊件几何、目标辊形、工序序列的编辑与下发。
 /// 界面按注册表与 schema 生成，新增一类辊形或工序不改这里。
@@ -87,6 +113,12 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly GrindingStepTypeRegistry stepTypes;
     private readonly IJobDownloadService downloadService;
+
+    /// <summary>进入本页时的程序快照，供"放弃修改"回退。</summary>
+    private StepsSnapshot committed = StepsSnapshot.Empty;
+
+    /// <summary>回退期间不要把恢复动作本身算成修改。</summary>
+    private bool suppressDirty;
 
     public StepsViewModel(
         RollProfileTypeRegistry profileTypes,
@@ -120,19 +152,30 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
         SetFunctionKeys(new[]
         {
-            FunctionKeyViewModel.Placeholder("Fn_SaveProgram", localizer, () => NotImplementedYet("Fn_SaveProgram"), FunctionKeyKind.Primary),
-            FunctionKeyViewModel.Placeholder("Fn_SaveAs", localizer, () => NotImplementedYet("Fn_SaveAs")),
-            FunctionKeyViewModel.Placeholder("Fn_SelectProfile", localizer, () => Navigator.NavigateTo(PageKey.Profile)),
-            FunctionKeyViewModel.Placeholder("Fn_RollData", localizer, () => NotImplementedYet("Fn_RollData")),
-            new FunctionKeyViewModel("Fn_DownloadNc", DownloadCommand, localizer),
+            FunctionKeyViewModel.Placeholder("Fn_SaveProgram", localizer, () => NotImplementedYet("Fn_SaveProgram"), FunctionKeyKind.Primary, requiresEditable: true),
+            FunctionKeyViewModel.Placeholder("Fn_SaveAs", localizer, () => NotImplementedYet("Fn_SaveAs"), requiresEditable: true),
+
+            // 派去辊形编辑页选一个辊形，办完由导航槽送回本页。
+            FunctionKeyViewModel.Placeholder(
+                "Fn_SelectProfile", localizer, () => Navigator.StartTask(PageKey.Profile, PageKey.Steps)),
+            FunctionKeyViewModel.Placeholder("Fn_RollData", localizer, () => NotImplementedYet("Fn_RollData"), requiresEditable: true),
+
+            // 下发是唯一的写机床通道；自动循环挂着程序时锁掉，免得把运行中的程序改了。
+            new FunctionKeyViewModel("Fn_DownloadNc", DownloadCommand, localizer, requiresEditable: true),
             FunctionKeyViewModel.Placeholder("Fn_ProgramLibrary", localizer, () => NotImplementedYet("Fn_ProgramLibrary")),
-            FunctionKeyViewModel.Placeholder("Fn_EnterAuto", localizer, () => Navigator.NavigateTo(PageKey.AutoGrinding), FunctionKeyKind.Start),
+            FunctionKeyViewModel.Placeholder(
+                "Fn_EnterAuto", localizer, () => Navigator.GoToArea(PageKey.AutoGrinding), FunctionKeyKind.Start),
         });
     }
 
     public override PageKey Key => PageKey.Steps;
 
     public override string TitleResourceKey => "Page_Steps";
+
+    public override string MenuHintResourceKey => "Menu_StepsHint";
+
+    /// <summary>编辑页：自动循环挂着程序时落只读锁。</summary>
+    public override bool LocksDuringRun => true;
 
     public ObservableCollection<string> ProfileTypeKeys { get; }
 
@@ -176,7 +219,19 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     partial void OnStatusResourceKeyChanged(string value) => OnPropertyChanged(nameof(StatusText));
 
-    partial void OnSelectedProfileTypeKeyChanged(string value) => RebuildProfileParameters();
+    partial void OnSelectedProfileTypeKeyChanged(string value)
+    {
+        RebuildProfileParameters();
+        MarkEdited();
+    }
+
+    partial void OnJobIdChanged(string value) => MarkEdited();
+
+    partial void OnRollIdChanged(string value) => MarkEdited();
+
+    partial void OnBodyLengthMmTextChanged(string value) => MarkEdited();
+
+    partial void OnNominalDiameterMmTextChanged(string value) => MarkEdited();
 
     [RelayCommand]
     private void AddStep()
@@ -187,8 +242,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
 
         IGrindingStepType stepType = this.stepTypes.Get(SelectedStepTypeKey);
-        Steps.Add(new StepRowViewModel(Steps.Count + 1, stepType, stepType.Schema.CreateDefaults(), Localizer));
+        Steps.Add(Track(new StepRowViewModel(Steps.Count + 1, stepType, stepType.Schema.CreateDefaults(), Localizer)));
         RefreshDurations();
+        MarkEdited();
     }
 
     [RelayCommand]
@@ -205,6 +261,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
             Steps[i].Order = i + 1;
         }
 
+        MarkEdited();
+
         RefreshDurations();
     }
 
@@ -215,6 +273,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         Steps.Clear();
         Violations.Clear();
         StatusResourceKey = string.Empty;
+        MarkEdited();
     }
 
     [RelayCommand]
@@ -253,6 +312,10 @@ public sealed partial class StepsViewModel : PageViewModelBase
             if (result.Succeeded)
             {
                 StatusResourceKey = "Job_HandedOver";
+
+                // 下发成功 = 机床上的程序与界面一致，本页不再是脏的。
+                Capture();
+                MarkClean();
                 return;
             }
 
@@ -316,6 +379,107 @@ public sealed partial class StepsViewModel : PageViewModelBase
             steps);
     }
 
+    /// <summary>切到本页时记住当前程序，"放弃修改"才有东西可回。</summary>
+    public override void OnActivated() => Capture();
+
+    /// <summary>放弃修改：回到进入本页（或上次下发成功）时的程序。</summary>
+    public override void DiscardChanges()
+    {
+        Restore(this.committed);
+        base.DiscardChanges();
+    }
+
+    /// <summary>把当前程序存成"干净"版本。</summary>
+    private void Capture() => this.committed = new StepsSnapshot(
+        JobId,
+        RollId,
+        BodyLengthMmText,
+        NominalDiameterMmText,
+        SelectedProfileTypeKey,
+        ProfileParameters.Select(row => row.Text).ToArray(),
+        Steps.Select(step => new StepSnapshot(
+            step.StepTypeKey,
+            step.Parameters.Select(row => row.Text).ToArray())).ToArray());
+
+    private void Restore(StepsSnapshot snapshot)
+    {
+        this.suppressDirty = true;
+        try
+        {
+            JobId = snapshot.JobId;
+            RollId = snapshot.RollId;
+            BodyLengthMmText = snapshot.BodyLengthMmText;
+            NominalDiameterMmText = snapshot.NominalDiameterMmText;
+
+            // 换类型会重建参数行，所以要先换类型、再回填文本。
+            SelectedProfileTypeKey = snapshot.SelectedProfileTypeKey;
+            RebuildProfileParameters();
+            ApplyTexts(ProfileParameters, snapshot.ProfileParameterTexts);
+
+            Steps.Clear();
+            for (int i = 0; i < snapshot.Steps.Count; i++)
+            {
+                StepSnapshot stepSnapshot = snapshot.Steps[i];
+                IGrindingStepType stepType = this.stepTypes.Get(stepSnapshot.TypeKey);
+                var row = new StepRowViewModel(i + 1, stepType, stepType.Schema.CreateDefaults(), Localizer);
+                ApplyTexts(row.Parameters, stepSnapshot.ParameterTexts);
+                Steps.Add(Track(row));
+            }
+
+            Violations.Clear();
+            StatusResourceKey = string.Empty;
+            RefreshDurations();
+        }
+        finally
+        {
+            this.suppressDirty = false;
+        }
+    }
+
+    private static void ApplyTexts(IList<ParameterRowViewModel> rows, IReadOnlyList<string> texts)
+    {
+        int count = Math.Min(rows.Count, texts.Count);
+        for (int i = 0; i < count; i++)
+        {
+            rows[i].Text = texts[i];
+        }
+    }
+
+    /// <summary>参数行的文本一改就算改了程序。</summary>
+    private ParameterRowViewModel Track(ParameterRowViewModel row)
+    {
+        row.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ParameterRowViewModel.Text))
+            {
+                MarkEdited();
+            }
+        };
+
+        return row;
+    }
+
+    private StepRowViewModel Track(StepRowViewModel row)
+    {
+        foreach (ParameterRowViewModel parameter in row.Parameters)
+        {
+            Track(parameter);
+        }
+
+        return row;
+    }
+
+    /// <summary>程序被改动：打脏标记，并把"已下发"状态清掉——界面与机床已经不一致了。</summary>
+    private void MarkEdited()
+    {
+        if (this.suppressDirty)
+        {
+            return;
+        }
+
+        MarkDirty();
+    }
+
     private static ParameterSet? Collect(IEnumerable<ParameterRowViewModel> rows)
     {
         var values = new List<KeyValuePair<string, ParameterValue>>();
@@ -345,7 +509,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         ParameterSet defaults = profileType.Schema.CreateDefaults();
         foreach (ParameterDescriptor descriptor in profileType.Schema.Descriptors)
         {
-            ProfileParameters.Add(new ParameterRowViewModel(descriptor, defaults.Get(descriptor.Key), Localizer));
+            ProfileParameters.Add(Track(new ParameterRowViewModel(descriptor, defaults.Get(descriptor.Key), Localizer)));
         }
     }
 

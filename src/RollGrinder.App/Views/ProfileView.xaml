@@ -16,13 +16,13 @@
                 </Border>
 
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
-                    <ComboBox ItemsSource="{Binding AvailableTypes}" SelectedItem="{Binding SelectedTypeForInsert}"
+                    <ComboBox ItemsSource="{Binding AvailableTypes}" SelectedItem="{Binding SelectedTypeForInsert}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                               Width="120" Height="46" FontSize="17" Margin="0,0,8,0" />
-                    <Button Content="{loc:Loc Profile_Insert}" Command="{Binding InsertSegmentCommand}"
+                    <Button Content="{loc:Loc Profile_Insert}" Command="{Binding InsertSegmentCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource SecondaryButton}" Height="46" Width="66" Margin="0,0,8,0" />
-                    <Button Content="{loc:Loc Profile_Delete}" Command="{Binding RemoveSegmentCommand}"
+                    <Button Content="{loc:Loc Profile_Delete}" Command="{Binding RemoveSegmentCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource SecondaryButton}" Height="46" Width="66" Margin="0,0,8,0" />
-                    <Button Content="{loc:Loc Profile_MoveUp}" Command="{Binding MoveSegmentUpCommand}"
+                    <Button Content="{loc:Loc Profile_MoveUp}" Command="{Binding MoveSegmentUpCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource SecondaryButton}" Height="46" Width="66" />
                 </StackPanel>
 

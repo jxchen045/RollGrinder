@@ -95,7 +95,8 @@ public sealed partial class ManualViewModel : PageViewModelBase
             FunctionKeyViewModel.Placeholder("Fn_WheelDress", localizer, () => NotImplementedYet("Fn_WheelDress")),
             FunctionKeyViewModel.Placeholder("Fn_RollAlign", localizer, () => NotImplementedYet("Fn_RollAlign")),
             FunctionKeyViewModel.Placeholder("Fn_ReferencePoint", localizer, () => NotImplementedYet("Fn_ReferencePoint")),
-            FunctionKeyViewModel.Placeholder("Fn_Diagnostics", localizer, () => Navigator.NavigateTo(PageKey.Diagnostics)),
+            FunctionKeyViewModel.Placeholder(
+                "Fn_Diagnostics", localizer, () => Navigator.StartTask(PageKey.Diagnostics, PageKey.Manual)),
             FunctionKeyViewModel.Placeholder("Fn_HmiReset", localizer, () => NotImplementedYet("Fn_HmiReset"), FunctionKeyKind.Danger),
         });
     }
@@ -105,6 +106,8 @@ public sealed partial class ManualViewModel : PageViewModelBase
     public override PageKey Key => PageKey.Manual;
 
     public override string TitleResourceKey => "Page_Manual";
+
+    public override string MenuHintResourceKey => "Menu_ManualHint";
 
     public ObservableCollection<LiveValueViewModel> AxisValues { get; }
 

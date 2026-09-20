@@ -84,6 +84,8 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
     public override string TitleResourceKey => "Page_Records";
 
+    public override string MenuHintResourceKey => "Menu_RecordsHint";
+
     public override void OnActivated() => _ = QueryAsync(CancellationToken.None);
 
     public ObservableCollection<RecordRowViewModel> Records { get; } = new();
