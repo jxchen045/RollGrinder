@@ -36,6 +36,12 @@ public sealed record MachineCapability(
     public double? MaxWheelSurfaceSpeedMPerSec { get; init; }
 
     /// <summary>
+    /// 连续进给分量的上限（半径量 mm/min）。对应机床侧那条"连续进给超限则该参数不生效"
+    /// 的软件保护。为 null 表示 machine.json 没给这项，校验就跳过它——不猜机床数字。
+    /// </summary>
+    public double? MaxContinuousInfeedRadiusMmPerMin { get; init; }
+
+    /// <summary>
     /// 本台机床装有的选装装置（machine.json 的 options 里取值为 true 的那些键）。
     /// 工序类型按 <see cref="IGrindingStepType.RequiredOptionKey"/> 对着它查。
     /// </summary>
@@ -84,4 +90,10 @@ public sealed record MachineCapability(
     /// <summary>单刀最大切深的直径量微米表示，供界面提示用。</summary>
     public double MaxInfeedPerPassDiameterMicrometer =>
         UnitConversion.RadiusMmToDiameterMicrometer(MaxInfeedPerPassRadiusMm);
+
+    /// <summary>连续进给上限的直径量微米表示，供界面提示用。未配置时为 null。</summary>
+    public double? MaxContinuousInfeedDiameterMicrometerPerMin =>
+        MaxContinuousInfeedRadiusMmPerMin is double radiusMmPerMin
+            ? UnitConversion.RadiusMmToDiameterMicrometer(radiusMmPerMin)
+            : null;
 }

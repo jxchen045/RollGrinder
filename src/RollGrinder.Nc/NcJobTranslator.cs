@@ -104,7 +104,9 @@ public sealed class NcJobTranslator
             AddNumber(writes, Indexed(MachineTagKeys.JobStepWheelSpeedRpm, i), plan.WheelSpeedRpm, timestampUtc);
             AddInteger(writes, Indexed(MachineTagKeys.JobStepSparkOutPassCount, i), plan.SparkOutPassCount, timestampUtc);
 
-            // 进给方式与两个互斥的进给量：不生效的那个恒为 0，NC 侧不用再猜。
+            // 两路进给分量都照原值下发，NC 侧把它们相加；哪一路是 0 就自然不起作用。
+            // feedMode 只是这两个值的分类（0 不进给 / 1 仅连续 / 2 仅周期 / 3 两者），
+            // 方便 NC 侧分支，不是另一个独立的设定。
             AddInteger(writes, Indexed(MachineTagKeys.JobStepFeedMode, i), (int)plan.FeedMode, timestampUtc);
             AddNumber(
                 writes,

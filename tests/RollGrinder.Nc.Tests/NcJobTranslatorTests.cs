@@ -209,25 +209,26 @@ public sealed class NcJobTranslatorTests
     }
 
     [Fact]
-    public void Only_one_of_the_two_infeed_quantities_ever_reaches_the_machine()
+    public void Both_infeed_quantities_reach_the_machine_untouched()
     {
-        // 这是问题的根子：如果两个进给量同时非零，NC 侧就不知道该听谁的，
-        // 而这道工序的实际切除量会变成"取决于行程时间"。下发内容必须只有一个是活的。
+        // 这是 2026-09 按 MGK84160 说明书纠正的地方：两路进给分量可以同时非零，
+        // 下发时谁都不许被压成 0——压掉连续那一路，粗磨就少掉主要的材料去除分量。
         NcDownload download = CreateTranslator(FakeTagMap.Complete())
             .Translate(CreateJob(), null, 21, Now);
 
-        for (int i = 0; i < download.Plans.Count; i++)
-        {
-            double perReversal = NumberAt(download, MachineTagKeys.JobStepInfeedPerPassRadiusMm, i);
-            double continuous = NumberAt(download, MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin, i);
+        int rough = download.Plans.ToList().FindIndex(plan => plan.StepTypeKey == StepTypeKeys.Rough);
+        rough.Should().BeGreaterThanOrEqualTo(0);
 
-            (perReversal > 0.0 && continuous > 0.0).Should().BeFalse(
-                $"第 {i + 1} 道工序同时下发了两种进给量");
-        }
+        NumberAt(download, MachineTagKeys.JobStepInfeedPerPassRadiusMm, rough)
+            .Should().BeApproximately(download.Plans[rough].InfeedPerPassRadiusMm, 1e-12)
+            .And.BeGreaterThan(0.0);
+        NumberAt(download, MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin, rough)
+            .Should().BeApproximately(download.Plans[rough].ContinuousInfeedRadiusMmPerMin, 1e-12)
+            .And.BeGreaterThan(0.0);
     }
 
     [Fact]
-    public void The_feed_mode_written_matches_the_quantity_that_is_non_zero()
+    public void The_feed_mode_written_classifies_the_two_quantities()
     {
         NcDownload download = CreateTranslator(FakeTagMap.Complete())
             .Translate(CreateJob(), null, 21, Now);
@@ -239,21 +240,15 @@ public sealed class NcJobTranslatorTests
             double continuous = NumberAt(download, MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin, i);
 
             mode.Should().Be(download.Plans[i].FeedMode);
-            switch (mode)
+
+            StepFeedMode expected = (perReversal > 0.0, continuous > 0.0) switch
             {
-                case StepFeedMode.Continuous:
-                    perReversal.Should().Be(0.0);
-                    break;
-
-                case StepFeedMode.PerReversal:
-                    continuous.Should().Be(0.0);
-                    break;
-
-                default:
-                    perReversal.Should().Be(0.0);
-                    continuous.Should().Be(0.0);
-                    break;
-            }
+                (true, true) => StepFeedMode.Combined,
+                (false, true) => StepFeedMode.Continuous,
+                (true, false) => StepFeedMode.PerReversal,
+                _ => StepFeedMode.None,
+            };
+            mode.Should().Be(expected, $"第 {i + 1} 道工序下发的进给方式与两个进给量对不上");
         }
     }
 

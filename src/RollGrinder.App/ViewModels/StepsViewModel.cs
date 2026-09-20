@@ -56,20 +56,15 @@ public sealed partial class StepRowViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 按互斥关系点亮/压暗参数格：
-    /// 连续进给与周期进给只有一个生效，变速幅度与周期只在开了变速时才有意义。
+    /// 按依赖关系点亮/压暗参数格：变速幅度与周期只在开了变速时才有意义。
+    ///
+    /// 连续进给与周期进给**不在这里互斥**——两路分量可以同时给值（说明书的磨削实例
+    /// 粗磨一列两者都非零），哪一路不用就填 0。
+    ///
     /// 格子始终留在原位，只是按不动——键位不跳动，操作员的手不用重新找。
     /// </summary>
     private void RefreshApplicability()
     {
-        string? feedMode = ValueOf(StepParameterKeys.FeedMode);
-        SetApplicable(
-            StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin,
-            feedMode is null || feedMode == FeedModeChoices.Continuous);
-        SetApplicable(
-            StepParameterKeys.InfeedPerPassDiameterMicrometer,
-            feedMode is null || feedMode == FeedModeChoices.PerReversal);
-
         string? variation = ValueOf(StepParameterKeys.SpeedVariationTarget);
         bool isVarying = variation is null || variation != SpeedVariationChoices.Off;
         SetApplicable(StepParameterKeys.SpeedVariationPercent, isVarying);

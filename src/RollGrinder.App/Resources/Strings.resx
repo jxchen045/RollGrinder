@@ -1243,12 +1243,6 @@
   <data name="SubView_TagMonitor" xml:space="preserve">
     <value>变量监视</value>
   </data>
-  <data name="Choice_feedMode_continuous" xml:space="preserve">
-    <value>连续</value>
-  </data>
-  <data name="Choice_feedMode_perReversal" xml:space="preserve">
-    <value>周期</value>
-  </data>
   <data name="Choice_speedVariationTarget_both" xml:space="preserve">
     <value>两者</value>
   </data>
@@ -1278,9 +1272,6 @@
   </data>
   <data name="Parameter_dressPassCount" xml:space="preserve">
     <value>修整道次</value>
-  </data>
-  <data name="Parameter_feedMode" xml:space="preserve">
-    <value>进给方式</value>
   </data>
   <data name="Parameter_inProcessMeasurement" xml:space="preserve">
     <value>在线测量</value>

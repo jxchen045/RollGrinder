@@ -9,14 +9,16 @@ public static class StepParameterKeys
     /// <summary>本工序的目标去除量（直径量 µm）。两种进给方式下都是终止条件。</summary>
     public const string StockDiameterMicrometer = "stockDiameterMicrometer";
 
-    /// <summary>周期进给：每个换向点进的量（直径量 µm）。仅 <see cref="StepFeedMode.PerReversal"/> 生效。</summary>
+    /// <summary>
+    /// 周期进给分量：每道次换向时进的量（直径量 µm）。置 0 表示不用这一路。
+    /// 与连续进给**可以同时非零**，两者相加才是这道工序的实际切入。
+    /// </summary>
     public const string InfeedPerPassDiameterMicrometer = "infeedPerPassDiameterMicrometer";
 
-    /// <summary>连续进给：持续切入的速率（直径量 µm/min）。仅 <see cref="StepFeedMode.Continuous"/> 生效。</summary>
+    /// <summary>
+    /// 连续进给分量：持续切入的速率（直径量 µm/min）。置 0 表示不用这一路。
+    /// </summary>
     public const string ContinuousInfeedDiameterMicrometerPerMin = "continuousInfeedDiameterMicrometerPerMin";
-
-    /// <summary>进给方式：连续 / 周期。决定上面两个里哪一个生效。</summary>
-    public const string FeedMode = "feedMode";
 
     /// <summary>拖板速度（轴向进给，mm/min）。</summary>
     public const string FeedMmPerMin = "feedMmPerMin";
@@ -71,13 +73,6 @@ public static class StepParameterKeys
 
     /// <summary>探伤扫查螺距（mm/转）。</summary>
     public const string ScanPitchMm = "scanPitchMm";
-}
-
-/// <summary>进给方式参数的选项键。</summary>
-public static class FeedModeChoices
-{
-    public const string Continuous = "continuous";
-    public const string PerReversal = "perReversal";
 }
 
 /// <summary>变速模式参数的选项键。</summary>

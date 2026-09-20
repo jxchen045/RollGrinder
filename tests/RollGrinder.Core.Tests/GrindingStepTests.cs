@@ -29,71 +29,115 @@ public sealed class GrindingStepTests
     }
 
     [Fact]
-    public void Rough_grinding_defaults_to_continuous_infeed()
+    public void Rough_grinding_runs_both_infeed_components_at_once()
     {
+        // MGK84160 操作说明书的磨削实例，粗磨一列：连续 0.05 mm/min 与周期 0.005 mm
+        // 同时给值。两者是可叠加的分量，不是二选一。
         var stepType = new RoughGrindingStepType();
 
         GrindingStepPlan plan = stepType.CreatePlan(Geometry, stepType.Schema.CreateDefaults());
 
-        plan.FeedMode.Should().Be(StepFeedMode.Continuous, "粗磨求切除率，用连续进给");
+        plan.FeedMode.Should().Be(StepFeedMode.Combined, "粗磨两路分量同时用");
         plan.ContinuousInfeedRadiusMmPerMin.Should().BeGreaterThan(0.0);
-        plan.InfeedPerPassRadiusMm.Should().Be(0.0, "连续进给时周期进给必须为 0，不能两个一起下发");
+        plan.InfeedPerPassRadiusMm.Should().BeGreaterThan(0.0);
     }
 
     [Fact]
-    public void Finish_grinding_defaults_to_infeed_at_reversal()
+    public void Finish_grinding_keeps_only_the_per_reversal_component()
     {
         var stepType = new FinishGrindingStepType();
 
         GrindingStepPlan plan = stepType.CreatePlan(Geometry, stepType.Schema.CreateDefaults());
 
-        plan.FeedMode.Should().Be(StepFeedMode.PerReversal, "精磨要每道次等深，用周期进给");
+        plan.FeedMode.Should().Be(StepFeedMode.PerReversal, "精磨要每道次等深，连续分量置 0");
         plan.InfeedPerPassRadiusMm.Should().BeGreaterThan(0.0);
-        plan.ContinuousInfeedRadiusMmPerMin.Should().Be(0.0, "周期进给时连续进给必须为 0");
+        plan.ContinuousInfeedRadiusMmPerMin.Should().Be(0.0);
     }
 
     [Fact]
-    public void The_two_infeed_modes_are_mutually_exclusive_whichever_is_selected()
+    public void Both_infeed_components_reach_the_plan_untouched()
+    {
+        // 这是本次纠正的核心：展开时谁都不许把另一路压成 0。
+        var stepType = new SemiFinishGrindingStepType();
+        ParameterSet parameters = stepType.Schema.CreateDefaults()
+            .With(StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, ParameterValue.FromNumber(6.0))
+            .With(StepParameterKeys.InfeedPerPassDiameterMicrometer, ParameterValue.FromNumber(4.0));
+
+        GrindingStepPlan plan = stepType.CreatePlan(Geometry, parameters);
+
+        plan.ContinuousInfeedRadiusMmPerMin.Should().BeApproximately(0.003, 1e-9);
+        plan.InfeedPerPassRadiusMm.Should().BeApproximately(0.002, 1e-9);
+        plan.FeedMode.Should().Be(StepFeedMode.Combined);
+    }
+
+    [Theory]
+    [InlineData(0.0, 0.0, StepFeedMode.None)]
+    [InlineData(5.0, 0.0, StepFeedMode.Continuous)]
+    [InlineData(0.0, 5.0, StepFeedMode.PerReversal)]
+    [InlineData(5.0, 5.0, StepFeedMode.Combined)]
+    public void Feed_mode_is_derived_from_the_two_components(
+        double continuousMicrometerPerMin, double perPassMicrometer, StepFeedMode expected)
     {
         var stepType = new SemiFinishGrindingStepType();
+        ParameterSet parameters = stepType.Schema.CreateDefaults()
+            .With(
+                StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin,
+                ParameterValue.FromNumber(continuousMicrometerPerMin))
+            .With(
+                StepParameterKeys.InfeedPerPassDiameterMicrometer,
+                ParameterValue.FromNumber(perPassMicrometer));
 
-        foreach (string mode in new[] { FeedModeChoices.Continuous, FeedModeChoices.PerReversal })
+        stepType.CreatePlan(Geometry, parameters).FeedMode.Should().Be(expected);
+    }
+
+    [Fact]
+    public void There_is_no_infeed_mode_switch_to_get_wrong()
+    {
+        // 进给方式不再是一个可设的参数——它是从两个进给量推出来的。
+        foreach (IGrindingStepType stepType in new IGrindingStepType[]
+                 {
+                     new ShortStrokeStepType(), new RoughGrindingStepType(),
+                     new SemiFinishGrindingStepType(), new FinishGrindingStepType(), new PolishStepType(),
+                 })
         {
-            ParameterSet parameters = stepType.Schema.CreateDefaults()
-                .With(StepParameterKeys.FeedMode, ParameterValue.FromChoice(mode));
-
-            GrindingStepPlan plan = stepType.CreatePlan(Geometry, parameters);
-
-            bool continuousIsActive = plan.ContinuousInfeedRadiusMmPerMin > 0.0;
-            bool perReversalIsActive = plan.InfeedPerPassRadiusMm > 0.0;
-            (continuousIsActive && perReversalIsActive).Should().BeFalse(
-                "同一道工序里两种进给方式不能同时生效");
+            stepType.Schema.Descriptors.Select(descriptor => descriptor.Key)
+                .Should().NotContain("feedMode", stepType.Key);
         }
     }
 
-    [Fact]
-    public void Semi_finish_matches_the_design_sheet()
+    [Theory]
+    [InlineData(StepTypeKeys.Rough, 40.0, 35.0, 2300.0, 50.0, 5.0, 10.0)]
+    [InlineData(StepTypeKeys.SemiFinish, 40.0, 38.0, 1200.0, 2.0, 2.0, 4.0)]
+    [InlineData(StepTypeKeys.Finish, 35.0, 40.0, 800.0, 0.0, 2.0, 6.0)]
+    public void Defaults_follow_the_manuals_worked_example(
+        string stepTypeKey,
+        double wheelSurfaceSpeedMPerSec,
+        double workpieceSpeedRpm,
+        double feedMmPerMin,
+        double continuousMicrometerPerMin,
+        double perPassMicrometer,
+        double passCount)
     {
-        // 取值对照 docs/design/B-Steps-工序编程.html 的"工艺参数 · 半精磨"。
-        // 设计稿写 mm 的地方这里是 µm 直径量，是同一个量（架构约束 ⑨）。
-        var stepType = new SemiFinishGrindingStepType();
+        // 取值对照 MGK84160 操作说明书的"磨削实例"表：
+        // 粗磨 / 半粗磨 / 中磨 三列分别对应 Rough / SemiFinish / Finish。
+        // 说明书写 mm 的地方这里是 µm 直径量，是同一个量（架构约束 ⑨）。
+        IGrindingStepType stepType = stepTypeKey switch
+        {
+            StepTypeKeys.Rough => new RoughGrindingStepType(),
+            StepTypeKeys.SemiFinish => new SemiFinishGrindingStepType(),
+            _ => new FinishGrindingStepType(),
+        };
         ParameterSet defaults = stepType.Schema.CreateDefaults();
 
-        defaults.GetNumber(StepParameterKeys.WheelSurfaceSpeedMPerSec).Should().Be(30.0);
-        defaults.GetNumber(StepParameterKeys.WorkpieceSpeedRpm).Should().Be(25.6);
-        defaults.GetNumber(StepParameterKeys.FeedMmPerMin).Should().Be(1200.0);
-        defaults.GetNumber(StepParameterKeys.InfeedPerPassDiameterMicrometer).Should().Be(10.0);
-        defaults.GetNumber(StepParameterKeys.PassCount).Should().Be(10.0);
-        defaults.GetNumber(StepParameterKeys.StockDiameterMicrometer).Should().Be(100.0);
-        defaults.GetNumber(StepParameterKeys.ReversalDwellSeconds).Should().Be(1.0);
+        defaults.GetNumber(StepParameterKeys.WheelSurfaceSpeedMPerSec).Should().Be(wheelSurfaceSpeedMPerSec);
+        defaults.GetNumber(StepParameterKeys.WorkpieceSpeedRpm).Should().Be(workpieceSpeedRpm);
+        defaults.GetNumber(StepParameterKeys.FeedMmPerMin).Should().Be(feedMmPerMin);
+        defaults.GetNumber(StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin)
+            .Should().Be(continuousMicrometerPerMin);
+        defaults.GetNumber(StepParameterKeys.InfeedPerPassDiameterMicrometer).Should().Be(perPassMicrometer);
+        defaults.GetNumber(StepParameterKeys.PassCount).Should().Be(passCount);
         defaults.GetChoice(StepParameterKeys.SpeedVariationTarget)
             .Should().Be(SpeedVariationChoices.Workpiece, "变速默认作用在轧辊（头架）转速上");
-
-        GrindingStepPlan plan = stepType.CreatePlan(Geometry, defaults);
-        plan.TotalStockDiameterMicrometer.Should().BeApproximately(
-            defaults.GetNumber(StepParameterKeys.StockDiameterMicrometer),
-            1e-6,
-            "周期进给 × 道次 应当正好等于磨削量");
     }
 
     [Fact]
@@ -306,7 +350,7 @@ public sealed class GrindingJobValidatorTests
         ParameterSet overrides = new ParameterSet(new[]
         {
             new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
-                StepParameterKeys.FeedMode, ParameterValue.FromChoice(FeedModeChoices.PerReversal)),
+                StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, ParameterValue.FromNumber(0.0)),
             new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
                 StepParameterKeys.InfeedPerPassDiameterMicrometer, ParameterValue.FromNumber(200.0)),
         });
@@ -321,12 +365,12 @@ public sealed class GrindingJobValidatorTests
     [Fact]
     public void Pass_count_that_does_not_add_up_to_the_stock_target_is_reported()
     {
-        // 周期进给 10 µm × 10 道 = 100 µm，却把磨削量填成 300 µm：
+        // 只用周期分量时（连续置 0）：10 µm × 10 道 = 100 µm，却把磨削量填成 300 µm，
         // 机床磨到 100 就停，操作员以为磨了 300。这种对不上必须报出来。
         ParameterSet overrides = new ParameterSet(new[]
         {
             new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
-                StepParameterKeys.FeedMode, ParameterValue.FromChoice(FeedModeChoices.PerReversal)),
+                StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, ParameterValue.FromNumber(0.0)),
             new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
                 StepParameterKeys.InfeedPerPassDiameterMicrometer, ParameterValue.FromNumber(10.0)),
             new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
@@ -348,7 +392,7 @@ public sealed class GrindingJobValidatorTests
         ParameterSet overrides = new ParameterSet(new[]
         {
             new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
-                StepParameterKeys.FeedMode, ParameterValue.FromChoice(FeedModeChoices.PerReversal)),
+                StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, ParameterValue.FromNumber(0.0)),
             new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
                 StepParameterKeys.InfeedPerPassDiameterMicrometer, ParameterValue.FromNumber(10.0)),
             new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
@@ -359,6 +403,62 @@ public sealed class GrindingJobValidatorTests
 
         CreateValidator().Validate(CreateJob(overrides), Capability).Violations
             .Should().NotContain(violation => violation.Kind == ParameterViolationKind.Inconsistent);
+    }
+
+    [Fact]
+    public void Stock_target_is_not_reconciled_once_a_continuous_component_is_added()
+    {
+        // 叠了连续分量之后，实际去除量还取决于行程时间，"道次 × 每道次"不再等于磨削量，
+        // 两个终止条件谁先到先停。这时候再报 Inconsistent 就是误报——说明书自己的
+        // 粗磨参数（连续 0.05 + 周期 0.005）每根辊子都会中招。
+        ParameterSet overrides = new ParameterSet(new[]
+        {
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, ParameterValue.FromNumber(50.0)),
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                StepParameterKeys.InfeedPerPassDiameterMicrometer, ParameterValue.FromNumber(10.0)),
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                StepParameterKeys.PassCount, ParameterValue.FromNumber(10.0)),
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                StepParameterKeys.StockDiameterMicrometer, ParameterValue.FromNumber(300.0)),
+        });
+
+        CreateValidator().Validate(CreateJob(overrides), Capability).Violations
+            .Should().NotContain(violation => violation.Kind == ParameterViolationKind.Inconsistent);
+    }
+
+    [Fact]
+    public void A_continuous_component_beyond_the_configured_limit_is_reported()
+    {
+        // 机床侧那条软件保护：连续进给超限该参数就不生效。上位机直接拦在下发之前。
+        MachineCapability bounded = Capability with { MaxContinuousInfeedRadiusMmPerMin = 0.01 };
+        ParameterSet overrides = new ParameterSet(new[]
+        {
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, ParameterValue.FromNumber(100.0)),
+        });
+
+        ParameterValidationResult result = CreateValidator().Validate(CreateJob(overrides), bounded);
+
+        result.Violations.Should().Contain(violation =>
+            violation.ParameterKey == StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin
+            && violation.Kind == ParameterViolationKind.ExceedsMachineLimit);
+    }
+
+    [Fact]
+    public void Without_a_configured_continuous_limit_the_check_is_skipped()
+    {
+        // machine.json 没给这项就不校验——不替机床猜一个数字出来。
+        Capability.MaxContinuousInfeedRadiusMmPerMin.Should().BeNull();
+        ParameterSet overrides = new ParameterSet(new[]
+        {
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, ParameterValue.FromNumber(100.0)),
+        });
+
+        CreateValidator().Validate(CreateJob(overrides), Capability).Violations
+            .Should().NotContain(violation =>
+                violation.ParameterKey == StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin);
     }
 
     [Fact]
@@ -446,13 +546,13 @@ public sealed class GrindingJobValidatorTests
         ParameterSet overrides = new ParameterSet(new[]
         {
             new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
-                StepParameterKeys.FeedMode, ParameterValue.FromChoice("sideways")),
+                StepParameterKeys.SpeedVariationTarget, ParameterValue.FromChoice("sideways")),
         });
 
         ParameterValidationResult result = CreateValidator().Validate(CreateJob(overrides), Capability);
 
         result.Violations.Should().Contain(violation =>
-            violation.ParameterKey == StepParameterKeys.FeedMode
+            violation.ParameterKey == StepParameterKeys.SpeedVariationTarget
             && violation.Kind == ParameterViolationKind.NotAllowed);
     }
 
@@ -778,8 +878,8 @@ public sealed class StepDurationTests
     {
         var stepType = new RoughGrindingStepType();
         ParameterSet parameters = stepType.Schema.CreateDefaults()
-            .With(StepParameterKeys.FeedMode, ParameterValue.FromChoice(FeedModeChoices.Continuous))
             .With(StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, ParameterValue.FromNumber(10.0))
+            .With(StepParameterKeys.InfeedPerPassDiameterMicrometer, ParameterValue.FromNumber(0.0))
             .With(StepParameterKeys.StockDiameterMicrometer, ParameterValue.FromNumber(50.0))
             .With(StepParameterKeys.PassCount, ParameterValue.FromNumber(100.0))
             .With(StepParameterKeys.FeedMmPerMin, ParameterValue.FromNumber(2000.0))
@@ -789,6 +889,45 @@ public sealed class StepDurationTests
 
         // 50 µm ÷ 10 µm/min = 5 min，远早于 100 道次的预算，取先到的那个。
         plan.EstimateDuration(Geometry).TotalMinutes.Should().BeApproximately(5.0, 1e-9);
+    }
+
+    [Fact]
+    public void Both_components_together_reach_the_stock_target_sooner()
+    {
+        // 连续 10 µm/min，加上每道 5 µm；一道 = 2×2000÷2000 = 2 min，
+        // 折算成 2.5 µm/min，合计 12.5 µm/min → 50 µm 要 4 min。
+        // 按旧的"二选一"模型只算连续那一路会算成 5 min，实际早磨到了。
+        var stepType = new RoughGrindingStepType();
+        ParameterSet parameters = stepType.Schema.CreateDefaults()
+            .With(StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, ParameterValue.FromNumber(10.0))
+            .With(StepParameterKeys.InfeedPerPassDiameterMicrometer, ParameterValue.FromNumber(5.0))
+            .With(StepParameterKeys.StockDiameterMicrometer, ParameterValue.FromNumber(50.0))
+            .With(StepParameterKeys.PassCount, ParameterValue.FromNumber(100.0))
+            .With(StepParameterKeys.FeedMmPerMin, ParameterValue.FromNumber(2000.0))
+            .With(StepParameterKeys.ReversalDwellSeconds, ParameterValue.FromNumber(0.0));
+
+        GrindingStepPlan plan = stepType.CreatePlan(Geometry, parameters);
+
+        plan.EstimateDuration(Geometry).TotalMinutes.Should().BeApproximately(4.0, 1e-9);
+    }
+
+    [Fact]
+    public void Spark_out_passes_run_after_the_stock_target_is_reached()
+    {
+        // 切削段 4 min 就到量，之后 2 道光磨照走（每道 2 min）→ 8 min。
+        var stepType = new RoughGrindingStepType();
+        ParameterSet parameters = stepType.Schema.CreateDefaults()
+            .With(StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, ParameterValue.FromNumber(10.0))
+            .With(StepParameterKeys.InfeedPerPassDiameterMicrometer, ParameterValue.FromNumber(5.0))
+            .With(StepParameterKeys.StockDiameterMicrometer, ParameterValue.FromNumber(50.0))
+            .With(StepParameterKeys.PassCount, ParameterValue.FromNumber(100.0))
+            .With(StepParameterKeys.SparkOutPassCount, ParameterValue.FromNumber(2.0))
+            .With(StepParameterKeys.FeedMmPerMin, ParameterValue.FromNumber(2000.0))
+            .With(StepParameterKeys.ReversalDwellSeconds, ParameterValue.FromNumber(0.0));
+
+        GrindingStepPlan plan = stepType.CreatePlan(Geometry, parameters);
+
+        plan.EstimateDuration(Geometry).TotalMinutes.Should().BeApproximately(8.0, 1e-9);
     }
 
     [Fact]

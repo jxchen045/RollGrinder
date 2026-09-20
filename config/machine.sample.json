@@ -89,6 +89,7 @@
   },
   "thresholds": {
     "maxInfeedPerPassRadiusMm": 0.05,
+    "maxContinuousInfeedRadiusMmPerMin": 0.25,
     "maxProfileDeviationMicrometer": 5.0,
     "maxRoundnessMicrometer": 3.0,
     "wheelWearWarningRadiusMm": 15.0,

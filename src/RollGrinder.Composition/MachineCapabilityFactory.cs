@@ -23,6 +23,9 @@ public static class MachineCapabilityFactory
     /// <summary>砂轮线速度上限阈值的键（可选）。</summary>
     public const string MaxWheelSurfaceSpeedMPerSecKey = "maxWheelSurfaceSpeedMPerSec";
 
+    /// <summary>连续进给上限阈值的键（可选，半径量 mm/min）。</summary>
+    public const string MaxContinuousInfeedRadiusMmPerMinKey = "maxContinuousInfeedRadiusMmPerMin";
+
     public static MachineCapability Create(MachineDescription machine)
     {
         ArgumentNullException.ThrowIfNull(machine);
@@ -41,6 +44,8 @@ public static class MachineCapabilityFactory
         {
             MinWheelSurfaceSpeedMPerSec = ThresholdOrNull(machine, MinWheelSurfaceSpeedMPerSecKey),
             MaxWheelSurfaceSpeedMPerSec = ThresholdOrNull(machine, MaxWheelSurfaceSpeedMPerSecKey),
+            MaxContinuousInfeedRadiusMmPerMin =
+                ThresholdOrNull(machine, MaxContinuousInfeedRadiusMmPerMinKey),
 
             // 只有取值为 true 的选件才算装了；没写的键一律当作没装，不默认"有"。
             InstalledOptions = machine.Options

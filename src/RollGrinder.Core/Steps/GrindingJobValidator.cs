@@ -56,7 +56,7 @@ public sealed class GrindingJobValidator
             }
 
             violations.AddRange(ValidatePlan(
-                stepType.CreatePlan(job.Geometry, step.Parameters), job.Geometry, capability));
+                stepType.CreatePlan(job.Geometry, step.Parameters), capability));
         }
 
         return new ParameterValidationResult(violations);
@@ -104,9 +104,12 @@ public sealed class GrindingJobValidator
 
     private static IEnumerable<ParameterViolation> ValidatePlan(
         GrindingStepPlan plan,
-        RollGeometry geometry,
         MachineCapability capability)
     {
+        // 两路进给分量各有各的限幅，和机床侧的软件保护一一对应
+        // （MGK84160 操作说明书：端部周期进给 >0.2 mm 或连续进给 >0.5 mm/min 时该参数不生效）。
+        // 不做"把连续折算成每道次再合并卡一次"——那样一根 5 m 的辊子按说明书自己的
+        // 粗磨参数就会被判超限，而机床本身并不这么卡。
         if (plan.InfeedPerPassRadiusMm > capability.MaxInfeedPerPassRadiusMm)
         {
             yield return new ParameterViolation(
@@ -115,31 +118,20 @@ public sealed class GrindingJobValidator
                 capability.MaxInfeedPerPassDiameterMicrometer);
         }
 
-        // 连续进给也有"每道次实际切了多少"——把它折算出来，用同一条单刀切深限幅卡住，
-        // 免得换个进给方式就绕过了机床能力。
-        if (plan.FeedMode == StepFeedMode.Continuous
-            && plan.ContinuousInfeedRadiusMmPerMin > 0.0
-            && plan.FeedMmPerMin > 0.0)
+        if (capability.MaxContinuousInfeedRadiusMmPerMin is double maxContinuousRadiusMmPerMin
+            && plan.ContinuousInfeedRadiusMmPerMin > maxContinuousRadiusMmPerMin)
         {
-            double returnStrokeMinutes =
-                (2.0 * geometry.BodyLengthMm / plan.FeedMmPerMin) + (2.0 * plan.ReversalDwellSeconds / 60.0);
-            double equivalentPerPassRadiusMm = plan.ContinuousInfeedRadiusMmPerMin * returnStrokeMinutes;
-
-            if (equivalentPerPassRadiusMm > capability.MaxInfeedPerPassRadiusMm)
-            {
-                yield return new ParameterViolation(
-                    StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin,
-                    ParameterViolationKind.ExceedsMachineLimit,
-                    UnitConversion.RadiusMmToDiameterMicrometer(
-                        capability.MaxInfeedPerPassRadiusMm / returnStrokeMinutes));
-            }
+            yield return new ParameterViolation(
+                StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin,
+                ParameterViolationKind.ExceedsMachineLimit,
+                UnitConversion.RadiusMmToDiameterMicrometer(maxContinuousRadiusMmPerMin));
         }
 
-        // 周期进给：道次 × 每道次 与 目标去除量 必须对得上，
-        // 否则操作员以为自己设了 0.15 mm，机床磨到 0.10 就停了。
+        // 只有周期分量单独用时，"道次 × 每道次"才等于"磨削量"，对不上就是设错了。
+        // 一旦叠了连续分量，实际去除量还取决于行程时间（辊身长度 ÷ 拖板速度），
+        // 两个终止条件谁先到先停（见 docs/design/工艺参数语义.md 三），不再是可以对账的等式。
         if (plan.FeedMode == StepFeedMode.PerReversal
-            && plan.TargetStockRadiusMm > 0.0
-            && plan.InfeedPerPassRadiusMm > 0.0)
+            && plan.TargetStockRadiusMm > 0.0)
         {
             double plannedRadiusMm = plan.TotalInfeedRadiusMm;
             double toleranceRadiusMm = Math.Max(

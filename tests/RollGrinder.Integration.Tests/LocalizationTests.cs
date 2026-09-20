@@ -137,7 +137,7 @@ public sealed class LocalizationTests
     [Fact]
     public void Every_step_type_declares_the_parameters_its_kind_of_work_needs()
     {
-        // 磨削类工序必须给全"进给方式 + 两个互斥进给量 + 变速三件套"，
+        // 磨削类工序必须给全"两路进给分量 + 变速三件套"，
         // 少一个，界面上就会出现一个没法解释的空格。
         string[] grindingKeys =
         {
@@ -149,7 +149,6 @@ public sealed class LocalizationTests
         {
             string[] declared = stepType.Schema.Descriptors.Select(descriptor => descriptor.Key).ToArray();
 
-            declared.Should().Contain(StepParameterKeys.FeedMode, stepType.Key);
             declared.Should().Contain(StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin, stepType.Key);
             declared.Should().Contain(StepParameterKeys.InfeedPerPassDiameterMicrometer, stepType.Key);
             declared.Should().Contain(StepParameterKeys.SpeedVariationTarget, stepType.Key);

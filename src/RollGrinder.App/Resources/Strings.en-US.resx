@@ -1243,12 +1243,6 @@
   <data name="SubView_TagMonitor" xml:space="preserve">
     <value>Tag monitor</value>
   </data>
-  <data name="Choice_feedMode_continuous" xml:space="preserve">
-    <value>Continuous</value>
-  </data>
-  <data name="Choice_feedMode_perReversal" xml:space="preserve">
-    <value>Per reversal</value>
-  </data>
   <data name="Choice_speedVariationTarget_both" xml:space="preserve">
     <value>Both</value>
   </data>
@@ -1278,9 +1272,6 @@
   </data>
   <data name="Parameter_dressPassCount" xml:space="preserve">
     <value>Dressing passes</value>
-  </data>
-  <data name="Parameter_feedMode" xml:space="preserve">
-    <value>Infeed mode</value>
   </data>
   <data name="Parameter_inProcessMeasurement" xml:space="preserve">
     <value>In-process gauging</value>

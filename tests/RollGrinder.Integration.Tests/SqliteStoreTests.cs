@@ -319,7 +319,7 @@ public sealed class SqliteStoreTests : IDisposable
         listed.Should().HaveCount(2);
         listed[0].MessageResourceKey.Should().Be("Alarm_ConnectionLost");
         listed[0].Code.Should().Be(AlarmCodes.ConnectionLost);
-        AlarmCodes.IsHmiCode(listed[0].Code).Should().BeTrue("上位机报警必须落在 720000–720999 号段");
+        AlarmCodes.IsHmiCode(listed[0].Code).Should().BeTrue("上位机报警必须落在 800000–800999 号段");
 
         (await alarms.PurgeOlderThanAsync(DateTimeOffset.UnixEpoch.AddYears(1), CancellationToken.None)).Should().Be(1);
     }

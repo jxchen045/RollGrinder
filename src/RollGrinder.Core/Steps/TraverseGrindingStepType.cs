@@ -21,16 +21,13 @@ public sealed record TraverseStepDefaults
     /// <summary>拖板速度（mm/min）。</summary>
     public double FeedMmPerMin { get; init; } = 1200.0;
 
-    /// <summary>默认进给方式。</summary>
-    public string FeedMode { get; init; } = FeedModeChoices.PerReversal;
-
-    /// <summary>连续进给（直径量 µm/min）。</summary>
+    /// <summary>连续进给分量（直径量 µm/min）。0 表示这一路默认不用。</summary>
     public double ContinuousInfeedDiameterMicrometerPerMin { get; init; } = 5.0;
 
     /// <summary>连续进给上限（直径量 µm/min）。</summary>
     public double MaxContinuousInfeedDiameterMicrometerPerMin { get; init; } = 200.0;
 
-    /// <summary>周期进给（直径量 µm/道次）。</summary>
+    /// <summary>周期进给分量（直径量 µm/道次）。0 表示这一路默认不用。</summary>
     public double InfeedPerPassDiameterMicrometer { get; init; } = 10.0;
 
     /// <summary>周期进给上限（直径量 µm/道次）。</summary>
@@ -68,11 +65,12 @@ public sealed record TraverseStepDefaults
 }
 
 /// <summary>
-/// 纵磨工序的共同实现：砂轮沿辊身往复，X 轴按"连续"或"周期"其中一种方式切入。
+/// 纵磨工序的共同实现：砂轮沿辊身往复，X 轴同时可以有两路切入分量——
+/// 连续分量（走行程时持续切入）与周期分量（换向点一次性切入）。
 ///
-/// 两种进给方式互斥（见 docs/design/工艺参数语义.md）：
-/// 参数格里两个都在，但只有 <see cref="StepParameterKeys.FeedMode"/> 选中的那个参与展开，
-/// 另一个在计划里置 0，NC 侧也就收不到它。
+/// **两者可以同时非零，不是二选一**（见 docs/design/工艺参数语义.md）：
+/// 依据是 MGK84160 操作说明书的磨削实例表——粗磨 连续 0.05 mm/min 与周期 0.005 mm
+/// 同时给值。哪一路不用就把它设成 0，展开时照原值下发，NC 侧把两路相加。
 /// </summary>
 public abstract class TraverseGrindingStepType : IGrindingStepType
 {
@@ -96,22 +94,14 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
 
         ParameterSet values = Schema.ApplyDefaults(parameters);
 
-        StepFeedMode feedMode = ReadFeedMode(values);
         double targetStockRadiusMm = UnitConversion.DiameterMicrometerToRadiusMm(
             values.GetNumber(StepParameterKeys.StockDiameterMicrometer));
 
-        double infeedPerPassRadiusMm = 0.0;
-        double continuousInfeedRadiusMmPerMin = 0.0;
-        if (feedMode == StepFeedMode.PerReversal)
-        {
-            infeedPerPassRadiusMm = UnitConversion.DiameterMicrometerToRadiusMm(
-                values.GetNumber(StepParameterKeys.InfeedPerPassDiameterMicrometer));
-        }
-        else if (feedMode == StepFeedMode.Continuous)
-        {
-            continuousInfeedRadiusMmPerMin = UnitConversion.DiameterMicrometerPerMinToRadiusMmPerMin(
-                values.GetNumber(StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin));
-        }
+        // 两路分量都照原值展开——设成 0 的那一路自然就不起作用，不需要再压一次。
+        double infeedPerPassRadiusMm = UnitConversion.DiameterMicrometerToRadiusMm(
+            values.GetNumber(StepParameterKeys.InfeedPerPassDiameterMicrometer));
+        double continuousInfeedRadiusMmPerMin = UnitConversion.DiameterMicrometerPerMinToRadiusMmPerMin(
+            values.GetNumber(StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin));
 
         return new GrindingStepPlan(
             Key,
@@ -125,7 +115,6 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
             (int)values.GetNumber(StepParameterKeys.SparkOutPassCount),
             this.defaults.RequiresMeasurement)
         {
-            FeedMode = feedMode,
             ContinuousInfeedRadiusMmPerMin = continuousInfeedRadiusMmPerMin,
             TargetStockRadiusMm = targetStockRadiusMm,
             WheelSurfaceSpeedMPerSec = values.GetNumber(StepParameterKeys.WheelSurfaceSpeedMPerSec),
@@ -134,14 +123,6 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
             SpeedVariation = ReadSpeedVariation(values),
         };
     }
-
-    private static StepFeedMode ReadFeedMode(ParameterSet values) =>
-        values.GetChoice(StepParameterKeys.FeedMode) switch
-        {
-            FeedModeChoices.Continuous => StepFeedMode.Continuous,
-            FeedModeChoices.PerReversal => StepFeedMode.PerReversal,
-            var other => throw new DomainException($"Unknown feed mode '{other}'."),
-        };
 
     private static SpeedVariation ReadSpeedVariation(ParameterSet values)
     {
@@ -184,10 +165,6 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
                 defaults.FeedMmPerMin,
                 1.0,
                 20000.0),
-            ParameterDescriptor.Choice(
-                StepParameterKeys.FeedMode,
-                new[] { FeedModeChoices.Continuous, FeedModeChoices.PerReversal },
-                defaults.FeedMode),
             ParameterDescriptor.Number(
                 StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin,
                 ParameterUnit.MicrometerPerMinute,

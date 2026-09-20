@@ -33,10 +33,7 @@ public abstract class MarkerStepType : IGrindingStepType
             WorkpieceSpeedRpm: 0.0,
             WheelSpeedRpm: 0.0,
             SparkOutPassCount: 0,
-            RequiresMeasurement: false)
-        {
-            FeedMode = StepFeedMode.None,
-        };
+            RequiresMeasurement: false);
     }
 }
 
@@ -99,7 +96,6 @@ public sealed class WheelDressStepType : IGrindingStepType
             RequiresMeasurement: false)
         {
             // 修整不动轧辊，对辊件没有去除量。
-            FeedMode = StepFeedMode.None,
             WheelSurfaceSpeedMPerSec = values.GetNumber(StepParameterKeys.WheelSurfaceSpeedMPerSec),
         };
     }
@@ -138,7 +134,6 @@ public sealed class MeasureStepType : IGrindingStepType
             RequiresMeasurement: true)
         {
             // 测量时转速必须稳，不能变速。
-            FeedMode = StepFeedMode.None,
             SpeedVariation = SpeedVariation.Off,
         };
     }
@@ -185,7 +180,6 @@ public sealed class ChamferStepType : IGrindingStepType
             RequiresMeasurement: false)
         {
             // 倒角走的是端部轮廓，不是辊身的径向去除量。
-            FeedMode = StepFeedMode.None,
             WheelSurfaceSpeedMPerSec = values.GetNumber(StepParameterKeys.WheelSurfaceSpeedMPerSec),
         };
     }
@@ -232,7 +226,6 @@ public sealed class EddyCurrentStepType : IGrindingStepType
             SparkOutPassCount: 0,
             RequiresMeasurement: false)
         {
-            FeedMode = StepFeedMode.None,
             SpeedVariation = SpeedVariation.Off,
         };
     }
@@ -275,7 +268,6 @@ public sealed class SparkOutStepType : IGrindingStepType
             RequiresMeasurement: false)
         {
             // 名副其实：不进给。
-            FeedMode = StepFeedMode.None,
             WheelSurfaceSpeedMPerSec = values.GetNumber(StepParameterKeys.WheelSurfaceSpeedMPerSec),
             ReversalDwellSeconds = values.GetNumber(StepParameterKeys.ReversalDwellSeconds),
         };
