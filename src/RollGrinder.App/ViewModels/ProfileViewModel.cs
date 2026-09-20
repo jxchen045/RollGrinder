@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Localization;
@@ -13,6 +15,7 @@ using RollGrinder.Core;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
+using RollGrinder.Data;
 using RollGrinder.Core.Units;
 using RollGrinder.Services.Alarms;
 
@@ -59,7 +62,12 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
     private readonly RollGeometry geometry;
 
+    private readonly IRollProfileRepository library;
+
     private CompositeRollProfile composite;
+
+    /// <summary>编辑参数行时不要反过来又触发一次回写，否则 Rebuild 里的重建会递归。</summary>
+    private bool suppressWriteBack;
 
     /// <summary>上一次"干净"的辊形，供"放弃修改"回退。</summary>
     private CompositeRollProfile committedComposite;
@@ -68,6 +76,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         RollProfileTypeRegistry profileTypes,
         MachineDescription machine,
         HmiSettings settings,
+        IRollProfileRepository library,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
@@ -76,6 +85,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        this.library = library ?? throw new ArgumentNullException(nameof(library));
 
         this.geometry = RollGeometry.FromDiameter(
             machine.Workpiece.MinBodyLengthMm, machine.Workpiece.MinDiameterMm);
@@ -88,13 +98,14 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
         SetFunctionKeys(new[]
         {
-            FunctionKeyViewModel.Placeholder("Fn_Save", localizer, () => NotImplementedYet("Fn_Save"), FunctionKeyKind.Primary, requiresEditable: true),
-            FunctionKeyViewModel.Placeholder("Fn_SaveAs", localizer, () => NotImplementedYet("Fn_SaveAs"), requiresEditable: true),
+            new FunctionKeyViewModel("Fn_Save", new AsyncRelayCommand(
+                () => SaveAsync(CancellationToken.None)), localizer, FunctionKeyKind.Primary, requiresEditable: true),
+            new FunctionKeyViewModel("Fn_SaveAs", SaveAsCommand, localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_NewSegment", InsertSegmentCommand, localizer, requiresEditable: true),
             FunctionKeyViewModel.Placeholder("Fn_ImportPoints", localizer, () => NotImplementedYet("Fn_ImportPoints"), requiresEditable: true),
             FunctionKeyViewModel.Placeholder("Fn_GeneratePoints", localizer, () => NotImplementedYet("Fn_GeneratePoints"), requiresEditable: true),
             new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
-            FunctionKeyViewModel.Placeholder("Fn_ProfileLibrary", localizer, () => NotImplementedYet("Fn_ProfileLibrary")),
+            new FunctionKeyViewModel("Fn_ProfileLibrary", OpenLibraryCommand, localizer),
         });
 
         Rebuild();
@@ -153,8 +164,105 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             row.IsSelected = ReferenceEquals(row, value);
         }
 
+        this.suppressWriteBack = true;
+        try
+        {
+            SegmentFromMmText = value is null
+                ? string.Empty
+                : value.Segment.FromMm.ToString("F1", CultureInfo.CurrentCulture);
+            SegmentToMmText = value is null
+                ? string.Empty
+                : value.Segment.ToMm.ToString("F1", CultureInfo.CurrentCulture);
+            SegmentIsMirrored = value?.Segment.IsMirrored ?? false;
+        }
+        finally
+        {
+            this.suppressWriteBack = false;
+        }
+
         ShowSegmentParameters(value);
     }
+
+    /// <summary>选中段的区间起点（辊身坐标 mm）。</summary>
+    [ObservableProperty]
+    private string segmentFromMmText = string.Empty;
+
+    /// <summary>选中段的区间终点（辊身坐标 mm）。</summary>
+    [ObservableProperty]
+    private string segmentToMmText = string.Empty;
+
+    /// <summary>选中段是否沿区间中点镜像——头架端那一段倒角就是尾架端那一段的镜像。</summary>
+    [ObservableProperty]
+    private bool segmentIsMirrored;
+
+    partial void OnSegmentFromMmTextChanged(string value) => WriteBackSelectedSegment();
+
+    partial void OnSegmentToMmTextChanged(string value) => WriteBackSelectedSegment();
+
+    partial void OnSegmentIsMirroredChanged(bool value) => WriteBackSelectedSegment();
+
+    /// <summary>
+    /// 把右侧参数格与区间框里的内容写回选中的那一段。
+    ///
+    /// 在这之前参数格是**只读的假象**：改了凸度，预览、校验、下发全都当没看见。
+    /// </summary>
+    private void WriteBackSelectedSegment()
+    {
+        if (this.suppressWriteBack || SelectedSegment is null)
+        {
+            return;
+        }
+
+        RollProfileSegment current = SelectedSegment.Segment;
+
+        if (!TryParseDouble(SegmentFromMmText, out double fromMm)
+            || !TryParseDouble(SegmentToMmText, out double toMm))
+        {
+            // 正在输入的中间态（空串、只打了一个减号）不报错也不回写，等它打完。
+            return;
+        }
+
+        var pairs = new List<KeyValuePair<string, ParameterValue>>(SegmentParameters.Count);
+        foreach (ParameterRowViewModel row in SegmentParameters)
+        {
+            ParameterValue? value = row.ToParameterValue();
+            if (value is null)
+            {
+                // 这一格现在填的东西还不成立，等它填对了再回写。
+                return;
+            }
+
+            pairs.Add(new KeyValuePair<string, ParameterValue>(row.Key, value));
+        }
+
+        RollProfileSegment updated;
+        try
+        {
+            updated = RollProfileSegment.Create(
+                current.Order,
+                current.ProfileTypeKey,
+                fromMm,
+                toMm,
+                new ParameterSet(pairs),
+                SegmentIsMirrored);
+        }
+        catch (DomainException)
+        {
+            // 区间还没填成立（终点小于起点之类），先不回写；校验会在保存时再报一次。
+            return;
+        }
+
+        this.composite = this.composite.Replace(current.Order, updated);
+        MarkDirty();
+
+        int keepOrder = current.Order;
+        Rebuild();
+        SelectedSegment = Segments.FirstOrDefault(row => row.Order == keepOrder) ?? Segments.FirstOrDefault();
+    }
+
+    private static bool TryParseDouble(string text, out double value) =>
+        double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value)
+        || double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
 
     [RelayCommand]
     private void InsertSegment()
@@ -203,6 +311,180 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     [RelayCommand]
     private void Validate() => Rebuild();
 
+    // ── 辊形库 ────────────────────────────────────────────────────────────────
+    //
+    // 辊形是可复用的模板：同一条 CVC 辊形会被几十支辊用到，所以它有自己的库。
+    // 作业引用它的时候复制一份快照，库里之后改了也不动已经磨过的那支辊的记录。
+
+    /// <summary>当前辊形的名字，库里按这个名字找。</summary>
+    [ObservableProperty]
+    private string profileName = string.Empty;
+
+    /// <summary>当前辊形在库里的标识；还没存过就是 null（按"保存"时现生成一个）。</summary>
+    [ObservableProperty]
+    private string? profileId;
+
+    /// <summary>库里现有的辊形，"打开"面板上列的就是这些。</summary>
+    public ObservableCollection<RollProfileSummary> LibraryEntries { get; } = new();
+
+    /// <summary>"打开"面板开着没有。</summary>
+    [ObservableProperty]
+    private bool isLibraryOpen;
+
+    [ObservableProperty]
+    private RollProfileSummary? selectedLibraryEntry;
+
+    partial void OnProfileNameChanged(string value)
+    {
+        MarkDirty();
+        OnPropertyChanged(nameof(CanSave));
+    }
+
+    /// <summary>有名字才谈得上保存——没名字存进库里就找不回来了。</summary>
+    public override bool CanSave => !string.IsNullOrWhiteSpace(ProfileName);
+
+    /// <summary>
+    /// 存回当前这条辊形。走的是页面基类的保存契约，
+    /// 所以"改了没存就想离开"那道拦截也会用到它。
+    /// </summary>
+    public override Task<bool> SaveAsync(CancellationToken cancellationToken) =>
+        StoreAsync(ProfileId ?? NewProfileId(), cancellationToken);
+
+    /// <summary>另存一条新辊形，库里原来那条不动。</summary>
+    [RelayCommand]
+    private Task SaveAsAsync(CancellationToken cancellationToken) =>
+        StoreAsync(NewProfileId(), cancellationToken);
+
+    private async Task<bool> StoreAsync(string profileId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(ProfileName))
+        {
+            // 没名字存进去就找不回来了，宁可不存。
+            Alarms.Raise(AlarmSeverity.Warning, "Profile_NeedsName", code: AlarmCodes.DomainFailure);
+            return false;
+        }
+
+        try
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            RollProfileDefinition? existing = ProfileId is null
+                ? null
+                : await this.library.GetAsync(profileId, cancellationToken).ConfigureAwait(true);
+
+            await this.library.SaveAsync(
+                new RollProfileDefinition(
+                    profileId,
+                    ProfileName.Trim(),
+                    this.geometry.BodyLengthMm,
+                    this.composite,
+                    existing?.CreatedAtUtc ?? now,
+                    now),
+                cancellationToken).ConfigureAwait(true);
+
+            ProfileId = profileId;
+            this.committedComposite = this.composite;
+            IsDirty = false;
+            Alarms.Raise(AlarmSeverity.Information, "Profile_Saved", ProfileName, AlarmCodes.HandoverCompleted);
+            return true;
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+            return false;
+        }
+    }
+
+    /// <summary>打开辊形库面板并刷新列表。</summary>
+    [RelayCommand]
+    private async Task OpenLibraryAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            IReadOnlyList<RollProfileSummary> entries =
+                await this.library.ListAsync(LibraryListLimit, cancellationToken).ConfigureAwait(true);
+
+            LibraryEntries.Clear();
+            foreach (RollProfileSummary entry in entries)
+            {
+                LibraryEntries.Add(entry);
+            }
+
+            SelectedLibraryEntry = LibraryEntries.FirstOrDefault();
+            IsLibraryOpen = true;
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+        }
+    }
+
+    [RelayCommand]
+    private void CloseLibrary() => IsLibraryOpen = false;
+
+    /// <summary>把选中的那条辊形调进编辑器。当前未保存的改动会丢，所以脏的时候先拦一下。</summary>
+    [RelayCommand]
+    private async Task LoadFromLibraryAsync(CancellationToken cancellationToken)
+    {
+        if (SelectedLibraryEntry is null)
+        {
+            return;
+        }
+
+        try
+        {
+            RollProfileDefinition? definition = await this.library
+                .GetAsync(SelectedLibraryEntry.ProfileId, cancellationToken).ConfigureAwait(true);
+            if (definition is null)
+            {
+                return;
+            }
+
+            this.composite = definition.Profile;
+            this.committedComposite = definition.Profile;
+            ProfileId = definition.ProfileId;
+            ProfileName = definition.Name;
+            IsDirty = false;
+            IsLibraryOpen = false;
+            Rebuild();
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+        }
+    }
+
+    /// <summary>从库里删掉选中的那条。已经用过它的作业不受影响——作业存的是快照。</summary>
+    [RelayCommand]
+    private async Task DeleteFromLibraryAsync(CancellationToken cancellationToken)
+    {
+        if (SelectedLibraryEntry is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await this.library.DeleteAsync(SelectedLibraryEntry.ProfileId, cancellationToken).ConfigureAwait(true);
+            if (string.Equals(ProfileId, SelectedLibraryEntry.ProfileId, StringComparison.Ordinal))
+            {
+                // 编辑器里还开着它：曲线留着，但它已经不在库里了，再存就是新的一条。
+                ProfileId = null;
+            }
+
+            await OpenLibraryAsync(cancellationToken).ConfigureAwait(true);
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+        }
+    }
+
+    /// <summary>"打开"面板一次列多少条。</summary>
+    private const int LibraryListLimit = 200;
+
+    private static string NewProfileId() =>
+        string.Create(CultureInfo.InvariantCulture, $"P{DateTimeOffset.Now:yyyyMMddHHmmss}");
+
     /// <summary>放弃修改：回到上次进入本页时的辊形，而不是清空。</summary>
     public override void DiscardChanges()
     {
@@ -229,7 +511,15 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         ParameterSet values = profileType.Schema.ApplyDefaults(row.Segment.Parameters);
         foreach (ParameterDescriptor descriptor in profileType.Schema.Descriptors)
         {
-            SegmentParameters.Add(new ParameterRowViewModel(descriptor, values.Get(descriptor.Key), Localizer));
+            var parameterRow = new ParameterRowViewModel(descriptor, values.Get(descriptor.Key), Localizer);
+            parameterRow.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ParameterRowViewModel.Text))
+                {
+                    WriteBackSelectedSegment();
+                }
+            };
+            SegmentParameters.Add(parameterRow);
         }
     }
 

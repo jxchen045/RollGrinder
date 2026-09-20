@@ -892,6 +892,51 @@
   <data name="ProfileType_Taper" xml:space="preserve">
     <value>锥度</value>
   </data>
+  <data name="Profile_Library" xml:space="preserve">
+    <value>辊形库</value>
+  </data>
+  <data name="Profile_LibraryClose" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="Profile_LibraryColumnModified" xml:space="preserve">
+    <value>修改时间</value>
+  </data>
+  <data name="Profile_LibraryColumnName" xml:space="preserve">
+    <value>辊形名</value>
+  </data>
+  <data name="Profile_LibraryColumnSegments" xml:space="preserve">
+    <value>段数</value>
+  </data>
+  <data name="Profile_LibraryColumnType" xml:space="preserve">
+    <value>主曲线</value>
+  </data>
+  <data name="Profile_LibraryDelete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="Profile_LibraryEmpty" xml:space="preserve">
+    <value>库里还没有辊形</value>
+  </data>
+  <data name="Profile_LibraryOpen" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="Profile_Name" xml:space="preserve">
+    <value>辊形名</value>
+  </data>
+  <data name="Profile_NeedsName" xml:space="preserve">
+    <value>辊形要先起个名字才能存进库里</value>
+  </data>
+  <data name="Profile_Saved" xml:space="preserve">
+    <value>辊形已存入库</value>
+  </data>
+  <data name="Profile_SegmentFrom" xml:space="preserve">
+    <value>区间起点</value>
+  </data>
+  <data name="Profile_SegmentMirrored" xml:space="preserve">
+    <value>镜像</value>
+  </data>
+  <data name="Profile_SegmentTo" xml:space="preserve">
+    <value>区间终点</value>
+  </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>已对齐</value>
   </data>

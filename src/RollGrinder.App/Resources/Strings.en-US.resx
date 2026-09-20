@@ -892,6 +892,51 @@
   <data name="ProfileType_Taper" xml:space="preserve">
     <value>Taper</value>
   </data>
+  <data name="Profile_Library" xml:space="preserve">
+    <value>Profile library</value>
+  </data>
+  <data name="Profile_LibraryClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Profile_LibraryColumnModified" xml:space="preserve">
+    <value>Modified</value>
+  </data>
+  <data name="Profile_LibraryColumnName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Profile_LibraryColumnSegments" xml:space="preserve">
+    <value>Segments</value>
+  </data>
+  <data name="Profile_LibraryColumnType" xml:space="preserve">
+    <value>Main curve</value>
+  </data>
+  <data name="Profile_LibraryDelete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Profile_LibraryEmpty" xml:space="preserve">
+    <value>The library is empty</value>
+  </data>
+  <data name="Profile_LibraryOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Profile_Name" xml:space="preserve">
+    <value>Profile name</value>
+  </data>
+  <data name="Profile_NeedsName" xml:space="preserve">
+    <value>Name the profile before saving it to the library</value>
+  </data>
+  <data name="Profile_Saved" xml:space="preserve">
+    <value>Profile saved to the library</value>
+  </data>
+  <data name="Profile_SegmentFrom" xml:space="preserve">
+    <value>Segment from</value>
+  </data>
+  <data name="Profile_SegmentMirrored" xml:space="preserve">
+    <value>Mirrored</value>
+  </data>
+  <data name="Profile_SegmentTo" xml:space="preserve">
+    <value>Segment to</value>
+  </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>Aligned</value>
   </data>

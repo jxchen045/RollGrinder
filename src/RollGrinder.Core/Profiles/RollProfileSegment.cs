@@ -149,6 +149,19 @@ public sealed record CompositeRollProfile
             .Where(segment => segment.Order != order)
             .Select((segment, index) => segment with { Order = index + 1 }));
 
+    /// <summary>换掉某一段，顺序不变。编辑器改完参数或区间就走这一条回写。</summary>
+    public CompositeRollProfile Replace(int order, RollProfileSegment segment)
+    {
+        ArgumentNullException.ThrowIfNull(segment);
+        if (order < 1 || order > Segments.Count)
+        {
+            throw new DomainException($"Profile segment {order} does not exist.");
+        }
+
+        return new CompositeRollProfile(Segments
+            .Select(existing => existing.Order == order ? segment with { Order = order } : existing));
+    }
+
     /// <summary>把一段上移一位。</summary>
     public CompositeRollProfile MoveUp(int order)
     {
