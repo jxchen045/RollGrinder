@@ -33,7 +33,7 @@ public sealed class SqliteStoreTests : IDisposable
         return this.database;
     }
 
-    private static GrindingJob CreateJob(string jobId = "J-1")
+    private static GrindingJob CreateJob(string jobId = "J-1", ParameterSet? programOptions = null)
     {
         var rough = new RoughGrindingStepType();
         var sparkOut = new SparkOutStepType();
@@ -50,7 +50,39 @@ public sealed class SqliteStoreTests : IDisposable
             {
                 new GrindingJobStep(1, StepTypeKeys.Rough, rough.Schema.CreateDefaults()),
                 new GrindingJobStep(2, StepTypeKeys.SparkOut, sparkOut.Schema.CreateDefaults()),
-            });
+            },
+            programOptions);
+    }
+
+    [Fact]
+    public async Task Program_step_switches_survive_a_save_and_load()
+    {
+        await MigratedAsync();
+        await new SqliteRollRepository(this.database).UpsertAsync(
+            new RollRecord("R-1", "WR", RollGeometry.FromDiameter(2000.0, 650.0), null, DateTimeOffset.UnixEpoch),
+            CancellationToken.None);
+
+        var jobs = new SqliteJobRepository(this.database);
+
+        // 八个开关里挑两个反着设，存进去再读出来必须一模一样。
+        ParameterSet options = ProgramOptionCatalog.Defaults
+            .With(ProgramOptionKeys.PreGrindMeasure, ParameterValue.FromBoolean(false))
+            .With(ProgramOptionKeys.EddyCurrentTest, ParameterValue.FromBoolean(true));
+
+        GrindingJob job = CreateJob("J-opt", options);
+        await jobs.SaveAsync(job, JobState.Draft, CancellationToken.None);
+
+        (GrindingJob Job, JobState State)? stored = await jobs.GetAsync("J-opt", CancellationToken.None);
+
+        stored.Should().NotBeNull();
+        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
+        {
+            stored!.Value.Job.IsProgramOptionEnabled(option.Key)
+                .Should().Be(job.IsProgramOptionEnabled(option.Key), $"开关 {option.Key} 没存住");
+        }
+
+        stored!.Value.Job.IsProgramOptionEnabled(ProgramOptionKeys.PreGrindMeasure).Should().BeFalse();
+        stored.Value.Job.IsProgramOptionEnabled(ProgramOptionKeys.EddyCurrentTest).Should().BeTrue();
     }
 
     [Fact]

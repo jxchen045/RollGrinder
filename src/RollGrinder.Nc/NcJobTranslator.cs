@@ -148,6 +148,12 @@ public sealed class NcJobTranslator
                 timestampUtc);
         }
 
+        // 程序步骤开关：NC 程序按它决定要不要走那几段辅助子程序。
+        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
+        {
+            AddBoolean(writes, MachineTagKeys.JobOption(option.Key), job.IsProgramOptionEnabled(option.Key), timestampUtc);
+        }
+
         for (int i = 0; i < targetProfile.Points.Count; i++)
         {
             ProfilePoint point = targetProfile.Points[i];
@@ -215,6 +221,24 @@ public sealed class NcJobTranslator
         this.tagMap.TryResolve(baseKey, out TagDescriptor? descriptor) && descriptor is not null
             ? descriptor.ArrayLength
             : 0;
+
+    private void AddBoolean(ICollection<TagWrite> writes, string logicalName, bool value, DateTimeOffset timestampUtc)
+    {
+        if (!this.tagMap.TryResolve(logicalName, out TagDescriptor? descriptor) || descriptor is null)
+        {
+            return;
+        }
+
+        // 有些机床把开关映射成 R 参数而不是布尔位，所以按 tagmap 声明的类型写。
+        object raw = descriptor.DataType switch
+        {
+            TagDataType.Boolean => value,
+            TagDataType.Double => value ? 1.0 : 0.0,
+            _ => value ? 1 : 0,
+        };
+
+        writes.Add(new TagWrite(logicalName, new TagValue(logicalName, descriptor.DataType, raw, timestampUtc)));
+    }
 
     private void AddNumber(ICollection<TagWrite> writes, string logicalName, double value, DateTimeOffset timestampUtc)
     {

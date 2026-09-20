@@ -192,6 +192,55 @@
                     </DockPanel>
                 </Border>
 
+                <!-- 程序步骤（自动磨削前取舍）：八个开关，本台机床做不了的压暗禁掉 -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                            <TextBlock Text="{loc:Loc Steps_ProgramOptionsHeader}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding ProgramOptions}"
+                                      Margin="12"
+                                      IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="2" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ToggleButton IsChecked="{Binding IsOn}"
+                                                  IsEnabled="{Binding IsAvailable}"
+                                                  ToolTip="{Binding UnavailableHint}"
+                                                  Height="42"
+                                                  Margin="2"
+                                                  HorizontalContentAlignment="Left"
+                                                  Style="{StaticResource ProgramOptionToggle}">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Border Width="22" Height="22" Margin="10,0,12,0">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="Transparent" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource Brush.ButtonBorder}" />
+                                                        <Setter Property="BorderThickness" Value="2" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsOn}" Value="True">
+                                                                <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
+                                                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </ToggleButton>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+
                 <ItemsControl ItemsSource="{Binding Violations}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>

@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
+using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
@@ -237,6 +238,80 @@ public sealed class LocalizationTests
         {
             NeutralKeys.Should().Contain(key);
         }
+    }
+
+    [Fact]
+    public void Every_program_step_switch_has_a_label()
+    {
+        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
+        {
+            NeutralKeys.Should().Contain(option.ResourceKey, $"程序步骤 {option.Key} 需要界面文案");
+        }
+    }
+
+    [Fact]
+    public void Every_prerequisite_a_program_step_needs_is_declared_in_the_sample()
+    {
+        // 开关声明了要用某个装置或某根轴，machine.sample.json 里就得有——
+        // 漏掉等于"没装"，现场拿样例改配置时会莫名其妙少几个开关。
+        string path = Path.Combine(RepositoryLayout.Root, "config", "machine.sample.json");
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+        JsonElement root = document.RootElement;
+
+        JsonElement options = root.GetProperty("options");
+        string[] axisRoles = root.GetProperty("axes")
+            .EnumerateArray()
+            .Select(axis => axis.GetProperty("role").GetString()!)
+            .ToArray();
+        string[] quantities = root.GetProperty("measurementChannels")
+            .EnumerateArray()
+            .Select(channel => channel.GetProperty("quantity").GetString()!)
+            .ToArray();
+
+        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
+        {
+            if (option.RequiredMachineOption is string machineOption)
+            {
+                options.TryGetProperty(machineOption, out _).Should().BeTrue(
+                    $"machine.sample.json 的 options 缺少 {machineOption}");
+                NeutralKeys.Should().Contain("Option_" + machineOption);
+            }
+
+            if (option.RequiredAxisRole is string role)
+            {
+                axisRoles.Should().Contain(role, $"machine.sample.json 缺少角色为 {role} 的轴");
+                NeutralKeys.Should().Contain("AxisRole_" + role);
+            }
+
+            if (option.RequiresDiameterMeasurement)
+            {
+                quantities.Should().Contain(MeasurementQuantities.Diameter);
+            }
+        }
+    }
+
+    [Fact]
+    public void Every_program_step_switch_is_mapped_in_the_sample_tag_map()
+    {
+        string path = Path.Combine(RepositoryLayout.Root, "config", "tagmap.sample.json");
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+
+        HashSet<string> keys = document.RootElement.GetProperty("tags")
+            .EnumerateArray()
+            .Select(tag => tag.GetProperty("key").GetString()!)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
+        {
+            keys.Should().Contain(MachineTagKeys.JobOption(option.Key), $"开关 {option.Key} 需要一个下发变量");
+        }
+    }
+
+    [Fact]
+    public void The_domain_and_the_contracts_agree_on_axis_role_names()
+    {
+        // 领域层不引用 Contracts，所以 CrownAdjust 这个角色名在两边各写了一次。
+        MachineAxisRoleNames.CrownAdjust.Should().Be(MachineAxisRoles.CrownAdjust);
     }
 
     [Fact]

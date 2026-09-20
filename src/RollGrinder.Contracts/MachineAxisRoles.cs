@@ -20,4 +20,7 @@ public static class MachineAxisRoles
 
     /// <summary>砂轮摆角轴。</summary>
     public const string WheelSwivel = "WheelSwivel";
+
+    /// <summary>中高调整轴（补偿执行轴）。</summary>
+    public const string CrownAdjust = "CrownAdjust";
 }

@@ -170,6 +170,39 @@ public sealed class NcJobTranslatorTests
     }
 
     [Fact]
+    public void Every_program_step_switch_reaches_the_machine()
+    {
+        // NC 程序按这八个开关决定要不要走那几段辅助子程序，所以八个都得下发，
+        // 关着的那些写 false——"没写"和"写了 false"在 NC 侧不是一回事。
+        NcDownload download = CreateTranslator(FakeTagMap.Complete())
+            .Translate(CreateJob(), null, 21, Now);
+
+        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
+        {
+            TagWrite write = download.Writes.Single(candidate =>
+                candidate.LogicalName == MachineTagKeys.JobOption(option.Key));
+
+            write.Value.Raw.Should().Be(option.DefaultEnabled, $"开关 {option.Key} 应当按它的取值下发");
+        }
+    }
+
+    [Fact]
+    public void A_switch_that_is_turned_off_is_written_as_false()
+    {
+        GrindingJob job = CreateJob() with
+        {
+            ProgramOptions = ProgramOptionCatalog.Defaults
+                .With(ProgramOptionKeys.PreGrindMeasure, ParameterValue.FromBoolean(false)),
+        };
+
+        NcDownload download = CreateTranslator(FakeTagMap.Complete()).Translate(job, null, 21, Now);
+
+        download.Writes
+            .Single(write => write.LogicalName == MachineTagKeys.JobOption(ProgramOptionKeys.PreGrindMeasure))
+            .Value.Raw.Should().Be(false);
+    }
+
+    [Fact]
     public void A_complete_tag_map_reports_nothing_missing()
     {
         CreateTranslator(FakeTagMap.Complete()).FindMissingRequiredTags().Should().BeEmpty();

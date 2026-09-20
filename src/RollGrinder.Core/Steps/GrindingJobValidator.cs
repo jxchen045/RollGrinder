@@ -33,6 +33,8 @@ public sealed class GrindingJobValidator
         IRollProfileType profileType = this.profileTypes.Get(job.ProfileTypeKey);
         violations.AddRange(profileType.Schema.Validate(job.ProfileParameters).Violations);
         violations.AddRange(ValidateGeometry(job, capability));
+        violations.AddRange(ProgramOptionCatalog.Schema.Validate(job.ProgramOptions).Violations);
+        violations.AddRange(ValidateProgramOptions(job, capability));
 
         foreach (GrindingJobStep step in job.Steps)
         {
@@ -58,6 +60,23 @@ public sealed class GrindingJobValidator
         }
 
         return new ParameterValidationResult(violations);
+    }
+
+    /// <summary>
+    /// 程序步骤开关：开着的那些，机床得做得了。
+    /// 这条挡得住从程序库里调出来、在别台机床上编好的程序。
+    /// </summary>
+    private static IEnumerable<ParameterViolation> ValidateProgramOptions(
+        GrindingJob job,
+        MachineCapability capability)
+    {
+        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
+        {
+            if (job.IsProgramOptionEnabled(option.Key) && !capability.Supports(option))
+            {
+                yield return new ParameterViolation(option.Key, ParameterViolationKind.MachineOptionMissing);
+            }
+        }
     }
 
     private static IEnumerable<ParameterViolation> ValidateGeometry(GrindingJob job, MachineCapability capability)

@@ -30,6 +30,12 @@ public static class MachineTagKeys
     /// <summary>测量得到的直径（mm）。</summary>
     public const string MeasuredDiameterMm = "measure.diameterMm";
 
+    /// <summary>程序步骤开关的逻辑名前缀。</summary>
+    public const string JobOptionPrefix = "job.option.";
+
+    /// <summary>某个程序步骤开关的逻辑名。</summary>
+    public static string JobOption(string optionKey) => JobOptionPrefix + optionKey;
+
     /// <summary>手动动作命令位的逻辑名前缀。</summary>
     public const string ManualCommandPrefix = "manual.";
 

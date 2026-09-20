@@ -1393,4 +1393,43 @@
   <data name="Manual_LastActionHeader" xml:space="preserve">
     <value>Last action</value>
   </data>
+  <data name="Option_hasContactDetection" xml:space="preserve">
+    <value>Wheel contact detection</value>
+  </data>
+  <data name="Option_hasDualProbeMeasurement" xml:space="preserve">
+    <value>A/B dual probes</value>
+  </data>
+  <data name="Option_hasU1Leveling" xml:space="preserve">
+    <value>U1 support levelling</value>
+  </data>
+  <data name="Parameter_axisFeedForward" xml:space="preserve">
+    <value>Axis feed-forward compensation</value>
+  </data>
+  <data name="Parameter_eddyCurrentTest" xml:space="preserve">
+    <value>Eddy-current test</value>
+  </data>
+  <data name="Parameter_inProcessMeasure" xml:space="preserve">
+    <value>Allow in-process gauging</value>
+  </data>
+  <data name="Parameter_mountingErrorMeasure" xml:space="preserve">
+    <value>Mounting error measurement</value>
+  </data>
+  <data name="Parameter_postGrindMeasure" xml:space="preserve">
+    <value>Post-grind measurement</value>
+  </data>
+  <data name="Parameter_preGrindMeasure" xml:space="preserve">
+    <value>Pre-grind measurement</value>
+  </data>
+  <data name="Parameter_u1AutoLevel" xml:space="preserve">
+    <value>U1 auto levelling</value>
+  </data>
+  <data name="Parameter_wheelAutoApproach" xml:space="preserve">
+    <value>Wheel auto approach</value>
+  </data>
+  <data name="Steps_OptionNotAvailable" xml:space="preserve">
+    <value>This machine is not fitted for it</value>
+  </data>
+  <data name="Steps_ProgramOptionsHeader" xml:space="preserve">
+    <value>Program steps (before auto grinding)</value>
+  </data>
 </root>

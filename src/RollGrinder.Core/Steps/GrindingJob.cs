@@ -21,22 +21,36 @@ public sealed record GrindingJobStep(int Order, string StepTypeKey, ParameterSet
 /// <param name="ProfileTypeKey">目标辊形类型键。</param>
 /// <param name="ProfileParameters">辊形参数（界面量）。</param>
 /// <param name="Steps">工序序列，按 Order 升序。</param>
+/// <param name="ProgramOptions">程序步骤开关（自动磨削前的取舍），见 <see cref="ProgramOptionCatalog"/>。</param>
 public sealed record GrindingJob(
     string JobId,
     string RollId,
     RollGeometry Geometry,
     string ProfileTypeKey,
     ParameterSet ProfileParameters,
-    IReadOnlyList<GrindingJobStep> Steps)
+    IReadOnlyList<GrindingJobStep> Steps,
+    ParameterSet ProgramOptions)
 {
+    /// <summary>某个程序步骤开关开着没有。没存过这个键时取它的默认值。</summary>
+    public bool IsProgramOptionEnabled(string key)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+
+        return ProgramOptions.TryGet(key, out ParameterValue? value) && value is { Kind: ParameterValueKind.Boolean }
+            ? value.Boolean
+            : ProgramOptionCatalog.Get(key).DefaultEnabled;
+    }
+
     /// <summary>构造并做结构性校验（顺序连续、非空）。</summary>
+    /// <param name="programOptions">程序步骤开关；传 null 取全套默认值。</param>
     public static GrindingJob Create(
         string jobId,
         string rollId,
         RollGeometry geometry,
         string profileTypeKey,
         ParameterSet profileParameters,
-        IEnumerable<GrindingJobStep> steps)
+        IEnumerable<GrindingJobStep> steps,
+        ParameterSet? programOptions = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(jobId);
         ArgumentException.ThrowIfNullOrWhiteSpace(rollId);
@@ -59,6 +73,15 @@ public sealed record GrindingJob(
             }
         }
 
-        return new GrindingJob(jobId, rollId, geometry, profileTypeKey, profileParameters, ordered);
+        return new GrindingJob(
+            jobId,
+            rollId,
+            geometry,
+            profileTypeKey,
+            profileParameters,
+            ordered,
+
+            // 没给就补全默认值：少一个键不该让"这个开关开没开"变成未定义。
+            ProgramOptionCatalog.Schema.ApplyDefaults(programOptions ?? ParameterSet.Empty));
     }
 }

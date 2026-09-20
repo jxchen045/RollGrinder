@@ -1393,4 +1393,43 @@
   <data name="Manual_LastActionHeader" xml:space="preserve">
     <value>最近动作</value>
   </data>
+  <data name="Option_hasContactDetection" xml:space="preserve">
+    <value>砂轮接触检测</value>
+  </data>
+  <data name="Option_hasDualProbeMeasurement" xml:space="preserve">
+    <value>A/B 双测头</value>
+  </data>
+  <data name="Option_hasU1Leveling" xml:space="preserve">
+    <value>U1 托瓦调平</value>
+  </data>
+  <data name="Parameter_axisFeedForward" xml:space="preserve">
+    <value>轴线前馈补偿</value>
+  </data>
+  <data name="Parameter_eddyCurrentTest" xml:space="preserve">
+    <value>涡流探伤</value>
+  </data>
+  <data name="Parameter_inProcessMeasure" xml:space="preserve">
+    <value>允许在线测量</value>
+  </data>
+  <data name="Parameter_mountingErrorMeasure" xml:space="preserve">
+    <value>测量安装误差</value>
+  </data>
+  <data name="Parameter_postGrindMeasure" xml:space="preserve">
+    <value>轧辊磨后测量</value>
+  </data>
+  <data name="Parameter_preGrindMeasure" xml:space="preserve">
+    <value>轧辊磨前测量</value>
+  </data>
+  <data name="Parameter_u1AutoLevel" xml:space="preserve">
+    <value>U1 轴自动调平</value>
+  </data>
+  <data name="Parameter_wheelAutoApproach" xml:space="preserve">
+    <value>砂轮自动趋近</value>
+  </data>
+  <data name="Steps_OptionNotAvailable" xml:space="preserve">
+    <value>本台机床未配置这项装置</value>
+  </data>
+  <data name="Steps_ProgramOptionsHeader" xml:space="preserve">
+    <value>程序步骤（自动磨削前取舍）</value>
+  </data>
 </root>

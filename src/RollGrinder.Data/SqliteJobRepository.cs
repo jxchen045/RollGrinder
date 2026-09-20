@@ -63,6 +63,10 @@ public sealed class SqliteJobRepository : IJobRepository
             connection, transaction, job.JobId, SqlMapping.ProfileParameterStepOrder, job.ProfileParameters, cancellationToken)
             .ConfigureAwait(false);
 
+        await SqlMapping.WriteParametersAsync(
+            connection, transaction, job.JobId, SqlMapping.ProgramOptionStepOrder, job.ProgramOptions, cancellationToken)
+            .ConfigureAwait(false);
+
         foreach (GrindingJobStep step in job.Steps)
         {
             await ExecuteAsync(
@@ -141,7 +145,13 @@ public sealed class SqliteJobRepository : IJobRepository
                 ? found
                 : ParameterSet.Empty;
 
-        GrindingJob job = GrindingJob.Create(jobId, rollId, geometry, profileTypeKey, profileParameters, steps);
+        ParameterSet programOptions =
+            parameters.TryGetValue(SqlMapping.ProgramOptionStepOrder, out ParameterSet? storedOptions)
+                ? storedOptions
+                : ParameterSet.Empty;
+
+        GrindingJob job = GrindingJob.Create(
+            jobId, rollId, geometry, profileTypeKey, profileParameters, steps, programOptions);
         return (job, state);
     }
 

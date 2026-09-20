@@ -47,6 +47,12 @@ public sealed record MachineCapability(
     /// </summary>
     public IReadOnlySet<string> AvailableMeasurements { get; init; } = new HashSet<string>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// 本台机床装有的轴角色（machine.json 的 axes 里 isPresent 的那些 role）。
+    /// 领域层按角色找轴，绝不按轴名。
+    /// </summary>
+    public IReadOnlySet<string> AvailableAxisRoles { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+
     /// <summary>这台机床有没有直径测量通道。</summary>
     public bool CanMeasureDiameter => AvailableMeasurements.Contains(MeasurementQuantities.Diameter);
 
@@ -55,6 +61,24 @@ public sealed record MachineCapability(
     {
         ArgumentNullException.ThrowIfNull(stepType);
         return stepType.RequiredOptionKey is not string option || InstalledOptions.Contains(option);
+    }
+
+    /// <summary>这台机床能不能做某个程序步骤（装置、轴、测量通道三个条件都要满足）。</summary>
+    public bool Supports(ProgramOptionDescriptor programOption)
+    {
+        ArgumentNullException.ThrowIfNull(programOption);
+
+        if (programOption.RequiredMachineOption is string option && !InstalledOptions.Contains(option))
+        {
+            return false;
+        }
+
+        if (programOption.RequiredAxisRole is string role && !AvailableAxisRoles.Contains(role))
+        {
+            return false;
+        }
+
+        return !programOption.RequiresDiameterMeasurement || CanMeasureDiameter;
     }
 
     /// <summary>单刀最大切深的直径量微米表示，供界面提示用。</summary>

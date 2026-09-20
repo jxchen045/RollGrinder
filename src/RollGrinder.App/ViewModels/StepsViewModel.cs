@@ -135,6 +135,46 @@ public sealed class StepTypeOptionViewModel
     public string? RequiredOptionKey { get; }
 }
 
+/// <summary>
+/// 程序步骤（自动磨削前取舍）里的一行。
+/// 本台机床做不了的那几项压暗并禁掉，ToolTip 说明缺什么——
+/// 藏起来只会让人以为软件少做，标出来才知道是机床没装。
+/// </summary>
+public sealed partial class ProgramOptionRowViewModel : ObservableObject
+{
+    public ProgramOptionRowViewModel(
+        ProgramOptionDescriptor descriptor,
+        bool isEnabled,
+        bool isAvailable,
+        IStringLocalizer localizer)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(localizer);
+
+        Descriptor = descriptor;
+        Label = localizer[descriptor.ResourceKey];
+        IsAvailable = isAvailable;
+        UnavailableHint = isAvailable ? null : localizer["Steps_OptionNotAvailable"];
+
+        // 机床做不了的项一律按"关"处理，免得存进程序里再到下发时被打回来。
+        this.isOn = isEnabled && isAvailable;
+    }
+
+    public ProgramOptionDescriptor Descriptor { get; }
+
+    public string Label { get; }
+
+    /// <summary>本台机床做不做得了。</summary>
+    public bool IsAvailable { get; }
+
+    /// <summary>做不了时的说明。</summary>
+    public string? UnavailableHint { get; }
+
+    /// <summary>开关状态。</summary>
+    [ObservableProperty]
+    private bool isOn;
+}
+
 /// <summary>校验失败的一行，文案由原因与参数键组合而成。</summary>
 public sealed class ViolationRowViewModel
 {
@@ -187,7 +227,8 @@ internal sealed record StepsSnapshot(
     string NominalDiameterMmText,
     string SelectedProfileTypeKey,
     IReadOnlyList<string> ProfileParameterTexts,
-    IReadOnlyList<StepSnapshot> Steps)
+    IReadOnlyList<StepSnapshot> Steps,
+    IReadOnlyList<bool> ProgramOptions)
 {
     /// <summary>空快照：还没进过本页时用。</summary>
     public static StepsSnapshot Empty { get; } = new(
@@ -197,7 +238,8 @@ internal sealed record StepsSnapshot(
         string.Empty,
         string.Empty,
         Array.Empty<string>(),
-        Array.Empty<StepSnapshot>());
+        Array.Empty<StepSnapshot>(),
+        Array.Empty<bool>());
 }
 
 /// <summary>
@@ -248,6 +290,21 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
         RebuildProfileParameters();
 
+        ProgramOptions = new ObservableCollection<ProgramOptionRowViewModel>(
+            ProgramOptionCatalog.All.Select(option => new ProgramOptionRowViewModel(
+                option, option.DefaultEnabled, capability.Supports(option), localizer)));
+
+        foreach (ProgramOptionRowViewModel row in ProgramOptions)
+        {
+            row.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ProgramOptionRowViewModel.IsOn))
+                {
+                    MarkEdited();
+                }
+            };
+        }
+
         BuildCompensationSettings(settings, machine);
 
         SetFunctionKeys(new[]
@@ -286,6 +343,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
     public ObservableCollection<StepRowViewModel> Steps { get; } = new();
 
     public ObservableCollection<ViolationRowViewModel> Violations { get; } = new();
+
+    /// <summary>程序步骤（自动磨削前取舍）的八个开关。</summary>
+    public ObservableCollection<ProgramOptionRowViewModel> ProgramOptions { get; }
 
     /// <summary>补偿设置（制造商权限）。取值来自 hmi.json 与 machine.json 的阈值。</summary>
     public ObservableCollection<LabelValueViewModel> CompensationSettings { get; } = new();
@@ -486,8 +546,13 @@ public sealed partial class StepsViewModel : PageViewModelBase
             RollGeometry.FromDiameter(bodyLengthMm, nominalDiameterMm),
             SelectedProfileTypeKey,
             profileParameters,
-            steps);
+            steps,
+            CollectProgramOptions());
     }
+
+    private ParameterSet CollectProgramOptions() => new(ProgramOptions.Select(row =>
+        new KeyValuePair<string, ParameterValue>(
+            row.Descriptor.Key, ParameterValue.FromBoolean(row.IsOn))));
 
     /// <summary>切到本页时记住当前程序，"放弃修改"才有东西可回。</summary>
     public override void OnActivated() => Capture();
@@ -509,7 +574,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
         ProfileParameters.Select(row => row.Text).ToArray(),
         Steps.Select(step => new StepSnapshot(
             step.StepTypeKey,
-            step.Parameters.Select(row => row.Text).ToArray())).ToArray());
+            step.Parameters.Select(row => row.Text).ToArray())).ToArray(),
+        ProgramOptions.Select(row => row.IsOn).ToArray());
 
     private void Restore(StepsSnapshot snapshot)
     {
@@ -534,6 +600,12 @@ public sealed partial class StepsViewModel : PageViewModelBase
                 var row = new StepRowViewModel(i + 1, stepType, stepType.Schema.CreateDefaults(), Localizer);
                 ApplyTexts(row.Parameters, stepSnapshot.ParameterTexts);
                 Steps.Add(Track(row));
+            }
+
+            int optionCount = Math.Min(ProgramOptions.Count, snapshot.ProgramOptions.Count);
+            for (int i = 0; i < optionCount; i++)
+            {
+                ProgramOptions[i].IsOn = snapshot.ProgramOptions[i];
             }
 
             Violations.Clear();

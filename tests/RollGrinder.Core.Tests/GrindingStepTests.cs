@@ -220,19 +220,35 @@ public sealed class GrindingJobValidatorTests
         MinRadiusMm: 75.0,
         MaxRadiusMm: 650.0);
 
-    /// <summary>装齐了所有选件、也装了测头的一台机床。</summary>
+    /// <summary>装齐了所有选件、所有轴、也装了测头的一台机床。</summary>
     private static MachineCapability FullyEquipped => Capability with
     {
         InstalledOptions = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal)
         {
             MachineOptionKeys.WheelDresser,
             MachineOptionKeys.EddyCurrentTester,
+            MachineOptionKeys.DualProbeMeasurement,
+            MachineOptionKeys.U1Leveling,
+            MachineOptionKeys.ContactDetection,
+        },
+        AvailableAxisRoles = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal)
+        {
+            MachineAxisRoleNames.CrownAdjust,
         },
         AvailableMeasurements = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal)
         {
             MeasurementQuantities.Diameter,
         },
     };
+
+    /// <summary>
+    /// 八个程序步骤开关全关。绝大多数用例不关心它们，关掉就不会互相干扰——
+    /// 程序步骤自己的门禁另有专门的用例覆盖。
+    /// </summary>
+    private static ParameterSet AllProgramOptionsOff => new(
+        ProgramOptionCatalog.All.Select(option =>
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                option.Key, ParameterValue.FromBoolean(false))));
 
     private static GrindingJobValidator CreateFullValidator() => new(
         new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType() }),
@@ -248,7 +264,8 @@ public sealed class GrindingJobValidatorTests
         Geometry,
         ProfileTypeKeys.Cylindrical,
         ParameterSet.Empty,
-        steps);
+        steps,
+        AllProgramOptionsOff);
 
     private static GrindingJobValidator CreateValidator() => new(
         new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType() }),
@@ -271,7 +288,8 @@ public sealed class GrindingJobValidatorTests
             {
                 new GrindingJobStep(1, StepTypeKeys.Rough, rough),
                 new GrindingJobStep(2, StepTypeKeys.SparkOut, new SparkOutStepType().Schema.CreateDefaults()),
-            });
+            },
+            AllProgramOptionsOff);
     }
 
     [Fact]
@@ -540,6 +558,130 @@ public sealed class GrindingJobValidatorTests
             .Should().NotContain(violation =>
                 violation.Kind == ParameterViolationKind.MachineOptionMissing);
     }
+
+    [Fact]
+    public void The_catalogue_holds_the_eight_switches_from_the_design_sheet()
+    {
+        ProgramOptionCatalog.All.Should().HaveCount(8);
+        ProgramOptionCatalog.All.Select(option => option.Key).Should().Equal(
+            ProgramOptionKeys.PreGrindMeasure,
+            ProgramOptionKeys.MountingErrorMeasure,
+            ProgramOptionKeys.AxisFeedForward,
+            ProgramOptionKeys.U1AutoLevel,
+            ProgramOptionKeys.WheelAutoApproach,
+            ProgramOptionKeys.InProcessMeasure,
+            ProgramOptionKeys.PostGrindMeasure,
+            ProgramOptionKeys.EddyCurrentTest);
+
+        ProgramOptionCatalog.All.Should().OnlyContain(option => option.HasRequirement,
+            "八个开关都有前置条件，否则就不该做成可关的开关");
+    }
+
+    [Fact]
+    public void A_job_without_program_options_still_has_every_switch_defined()
+    {
+        GrindingJob job = JobWith(
+            new GrindingJobStep(1, StepTypeKeys.Rough, new RoughGrindingStepType().Schema.CreateDefaults()));
+
+        // 不传就补默认值：少一个键不该让"这个开关开没开"变成未定义。
+        GrindingJob withDefaults = GrindingJob.Create(
+            job.JobId, job.RollId, job.Geometry, job.ProfileTypeKey, job.ProfileParameters, job.Steps);
+
+        withDefaults.ProgramOptions.Count.Should().Be(8);
+        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
+        {
+            withDefaults.IsProgramOptionEnabled(option.Key).Should().Be(option.DefaultEnabled);
+        }
+    }
+
+    [Fact]
+    public void A_switch_the_machine_cannot_do_is_reported_when_it_is_on()
+    {
+        GrindingJob job = JobFor(ProgramOptionKeys.EddyCurrentTest, isOn: true);
+
+        // Capability 没装探伤器。
+        ParameterValidationResult result = CreateValidator().Validate(job, Capability);
+
+        result.Violations.Should().Contain(violation =>
+            violation.ParameterKey == ProgramOptionKeys.EddyCurrentTest
+            && violation.Kind == ParameterViolationKind.MachineOptionMissing);
+    }
+
+    [Fact]
+    public void The_same_switch_turned_off_is_fine_on_any_machine()
+    {
+        GrindingJob job = JobFor(ProgramOptionKeys.EddyCurrentTest, isOn: false);
+
+        CreateValidator().Validate(job, Capability).Violations
+            .Should().NotContain(violation => violation.ParameterKey == ProgramOptionKeys.EddyCurrentTest);
+    }
+
+    [Fact]
+    public void Every_switch_passes_on_a_fully_equipped_machine()
+    {
+        ParameterSet allOn = new(ProgramOptionCatalog.All.Select(option =>
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                option.Key, ParameterValue.FromBoolean(true))));
+
+        GrindingJob job = GrindingJob.Create(
+            "J-opt", "R-1", Geometry, ProfileTypeKeys.Cylindrical, ParameterSet.Empty,
+            new[] { new GrindingJobStep(1, StepTypeKeys.Rough, new RoughGrindingStepType().Schema.CreateDefaults()) },
+            allOn);
+
+        CreateValidator().Validate(job, FullyEquipped).Violations
+            .Should().NotContain(violation => violation.Kind == ParameterViolationKind.MachineOptionMissing);
+    }
+
+    [Fact]
+    public void Feed_forward_needs_the_crown_adjust_axis()
+    {
+        GrindingJob job = JobFor(ProgramOptionKeys.AxisFeedForward, isOn: true);
+
+        // 装了所有选件与测头，但没有中高调整轴。
+        MachineCapability withoutAxis = FullyEquipped with
+        {
+            AvailableAxisRoles = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal),
+        };
+
+        CreateValidator().Validate(job, withoutAxis).Violations.Should().Contain(violation =>
+            violation.ParameterKey == ProgramOptionKeys.AxisFeedForward
+            && violation.Kind == ParameterViolationKind.MachineOptionMissing);
+    }
+
+    [Fact]
+    public void Measuring_switches_need_a_diameter_gauge()
+    {
+        MachineCapability withoutGauge = FullyEquipped with
+        {
+            AvailableMeasurements = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal),
+        };
+
+        string[] measuringSwitches =
+        {
+            ProgramOptionKeys.PreGrindMeasure,
+            ProgramOptionKeys.InProcessMeasure,
+            ProgramOptionKeys.PostGrindMeasure,
+        };
+
+        foreach (string key in measuringSwitches)
+        {
+            CreateValidator().Validate(JobFor(key, isOn: true), withoutGauge).Violations
+                .Should().Contain(
+                    violation => violation.ParameterKey == key
+                        && violation.Kind == ParameterViolationKind.MachineOptionMissing,
+                    $"开关 {key} 要用测头");
+        }
+    }
+
+    /// <summary>只打开一个开关、其余全关的一份作业。</summary>
+    private static GrindingJob JobFor(string optionKey, bool isOn) => GrindingJob.Create(
+        "J-opt",
+        "R-1",
+        Geometry,
+        ProfileTypeKeys.Cylindrical,
+        ParameterSet.Empty,
+        new[] { new GrindingJobStep(1, StepTypeKeys.Rough, new RoughGrindingStepType().Schema.CreateDefaults()) },
+        AllProgramOptionsOff.With(optionKey, ParameterValue.FromBoolean(isOn)));
 
     [Fact]
     public void Roll_longer_than_the_machine_is_reported()

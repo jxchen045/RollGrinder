@@ -131,6 +131,42 @@
     </Button>
   </DataTemplate>
 
+  <!--
+    程序步骤的开关。左边那个方块就是"勾"：选中时填成强调色。
+    做不了的项禁用后整行压暗，ToolTip 说明缺什么。
+  -->
+  <Style x:Key="ProgramOptionToggle" TargetType="ToggleButton">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Sans}" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+    <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Brush.Divider}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToggleButton">
+          <Border x:Name="Chrome"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}">
+            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.SelectionFill}" />
+              <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.HeaderFill}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.35" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
   <!-- 导航槽（功能条第 8 格）。深底色，和 7 个功能键一眼分得开：
        这一格永远是"出路"，不是功能。 -->
   <Style x:Key="NavigationButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">

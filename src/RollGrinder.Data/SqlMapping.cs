@@ -17,6 +17,12 @@ internal static class SqlMapping
     /// <summary>辊形参数在 job_parameter 里的 step_order 取值。</summary>
     public const int ProfileParameterStepOrder = 0;
 
+    /// <summary>
+    /// 程序步骤开关在 job_parameter 里的 step_order 取值。
+    /// 工序从 1 起、辊形占 0，所以 -1 是空着的——用它省掉一次建表迁移。
+    /// </summary>
+    public const int ProgramOptionStepOrder = -1;
+
     public static string ToText(DateTimeOffset value) =>
         value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
 

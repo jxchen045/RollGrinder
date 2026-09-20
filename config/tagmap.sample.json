@@ -129,6 +129,62 @@
       "unit": "mm/min"
     },
     {
+      "key": "job.option.axisFeedForward",
+      "address": "ns=3;s=\"HMI_JobOption\".\"bit2\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "轴线前馈补偿（程序步骤开关）"
+    },
+    {
+      "key": "job.option.eddyCurrentTest",
+      "address": "ns=3;s=\"HMI_JobOption\".\"bit7\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "涡流探伤（程序步骤开关）"
+    },
+    {
+      "key": "job.option.inProcessMeasure",
+      "address": "ns=3;s=\"HMI_JobOption\".\"bit5\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "允许在线测量（程序步骤开关）"
+    },
+    {
+      "key": "job.option.mountingErrorMeasure",
+      "address": "ns=3;s=\"HMI_JobOption\".\"bit1\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "测量安装误差（程序步骤开关）"
+    },
+    {
+      "key": "job.option.postGrindMeasure",
+      "address": "ns=3;s=\"HMI_JobOption\".\"bit6\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "轧辊磨后测量（程序步骤开关）"
+    },
+    {
+      "key": "job.option.preGrindMeasure",
+      "address": "ns=3;s=\"HMI_JobOption\".\"bit0\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "轧辊磨前测量（程序步骤开关）"
+    },
+    {
+      "key": "job.option.u1AutoLevel",
+      "address": "ns=3;s=\"HMI_JobOption\".\"bit3\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "U1 轴自动调平（程序步骤开关）"
+    },
+    {
+      "key": "job.option.wheelAutoApproach",
+      "address": "ns=3;s=\"HMI_JobOption\".\"bit4\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "砂轮自动趋近（程序步骤开关）"
+    },
+    {
       "key": "job.parametersValid",
       "address": "ns=2;s=/Channel/Parameter/R[110]",
       "dataType": "Boolean",

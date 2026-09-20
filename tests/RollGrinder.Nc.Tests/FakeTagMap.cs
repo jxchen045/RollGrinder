@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
+using RollGrinder.Core.Steps;
 
 namespace RollGrinder.Nc.Tests;
 
@@ -47,7 +48,10 @@ internal sealed class FakeTagMap : ITagMap
             : throw new GatewayException($"Tag '{logicalName}' is not present in the tag map.");
 
     /// <summary>一份覆盖下发所需全部逻辑名的映射。</summary>
-    public static FakeTagMap Complete(int stepSlots = 8, int profileSlots = 21) => new(new[]
+    public static FakeTagMap Complete(int stepSlots = 8, int profileSlots = 21) => new(
+        ProgramOptionCatalog.All
+            .Select(option => Scalar(MachineTagKeys.JobOption(option.Key), TagDataType.Boolean))
+            .Concat(new[]
     {
         Scalar(MachineTagKeys.JobRollRadiusMm, TagDataType.Double),
         Scalar(MachineTagKeys.JobBodyLengthMm, TagDataType.Double),
@@ -73,7 +77,7 @@ internal sealed class FakeTagMap : ITagMap
         Array(MachineTagKeys.JobStepSpeedVariationPeriodSeconds, TagDataType.Double, stepSlots),
         Array(MachineTagKeys.JobProfileBodyPositionMm, TagDataType.Double, profileSlots),
         Array(MachineTagKeys.JobProfileRadiusOffsetMm, TagDataType.Double, profileSlots),
-    });
+    }));
 
     public FakeTagMap Without(string key) => new(Tags.Where(tag => tag.Key != key));
 

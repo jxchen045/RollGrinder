@@ -48,6 +48,10 @@ public static class MachineCapabilityFactory
                 .Select(option => option.Key)
                 .ToHashSet(StringComparer.Ordinal),
 
+            AvailableAxisRoles = axes
+                .Select(axis => axis.Role)
+                .ToHashSet(StringComparer.Ordinal),
+
             AvailableMeasurements = machine.MeasurementChannels
                 .Where(channel => channel.IsPresent)
                 .Select(channel => channel.Quantity)

@@ -51,6 +51,15 @@
       "closedLoop": "SemiClosed",
       "minPositionMm": -2.0,
       "maxPositionMm": 2.0
+    },
+    {
+      "name": "U1",
+      "role": "CrownAdjust",
+      "isPresent": true,
+      "closedLoop": "SemiClosed",
+      "minPositionMm": -1.0,
+      "maxPositionMm": 1.0,
+      "maxFeedMmPerMin": 60.0
     }
   ],
   "measurementChannels": [
@@ -73,7 +82,10 @@
     "hasAutomaticWheelBalancer": true,
     "hasRollLoader": false,
     "hasWheelDresser": true,
-    "hasEddyCurrentTester": false
+    "hasEddyCurrentTester": false,
+    "hasDualProbeMeasurement": true,
+    "hasU1Leveling": false,
+    "hasContactDetection": true
   },
   "thresholds": {
     "maxInfeedPerPassRadiusMm": 0.05,
