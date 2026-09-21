@@ -14,6 +14,7 @@
   <conv:LocalizeConverter x:Key="LocalizeConverter" />
   <conv:FractionToWidthConverter x:Key="FractionToWidth" />
   <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+  <conv:InverseBooleanToVisibilityConverter x:Key="InverseBoolVisibility" />
   <conv:InverseBooleanConverter x:Key="InverseBool" />
   <conv:TextToVisibilityConverter x:Key="TextToVisibility" />
   <conv:LeaveTitleConverter x:Key="LeaveTitle" />

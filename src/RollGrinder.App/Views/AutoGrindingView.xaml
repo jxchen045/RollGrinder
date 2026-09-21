@@ -116,35 +116,105 @@
                 </DockPanel>
             </Border>
 
+            <!--
+                参数矩阵：行 = 参数，列 = 工序，一屏看完整支程序。
+                列头与每一格的底色跟着机床走——红色是正在跑的那一道，黄色是下一道，
+                用的是与左侧工序序列同一套 StepRowState 与同一套配色。
+            -->
             <Border Grid.Row="1" Style="{StaticResource Card}">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{loc:Loc Auto_StepParametersHeader}" Style="{StaticResource Text.CardTitle}" />
-                            <TextBlock Text="{Binding StepParametersTitle}" Style="{StaticResource Text.CardTitle}"
-                                       Margin="10,0,0,0" Foreground="{StaticResource Brush.TextPrimary}" />
+                            <TextBlock Text="{loc:Loc Auto_MatrixHeader}" Style="{StaticResource Text.CardTitle}" />
+                            <TextBlock Text="{loc:Loc Auto_MatrixHint}" Style="{StaticResource Text.Label}"
+                                       Margin="12,0,0,0" Foreground="{StaticResource Brush.TextMuted}" />
                         </StackPanel>
                     </Border>
-                    <ItemsControl ItemsSource="{Binding StepParameters}" Background="{StaticResource Brush.GridLine}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="5" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource ParameterCell}">
-                                    <StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" />
-                                            <TextBlock Text="{Binding UnitText}" Style="{StaticResource Text.Label}" Margin="6,0,0,0" />
-                                        </StackPanel>
-                                        <TextBlock Text="{Binding Text}" Style="{StaticResource Text.Parameter}" Margin="0,6,0,0" />
-                                    </StackPanel>
+
+                    <TextBlock Text="{loc:Loc Auto_MatrixEmpty}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="17"
+                               Foreground="{StaticResource Brush.TextMuted}"
+                               Visibility="{Binding HasMatrix, Converter={StaticResource InverseBoolVisibility}}" />
+
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding HasMatrix, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel Background="{StaticResource Brush.GridLine}">
+
+                            <!-- 列头：工序名 -->
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="190" Height="52" Background="{StaticResource Brush.HeaderFill}"
+                                        BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,0,1,1"
+                                        Padding="10,0">
+                                    <TextBlock Text="{loc:Loc Auto_MatrixParameterColumn}"
+                                               Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
                                 </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                                <ItemsControl ItemsSource="{Binding MatrixColumns}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Width="116" Height="52" Padding="8,0"
+                                                    BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,0,1,1"
+                                                    Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding OrderText}" FontSize="13"
+                                                               FontFamily="{StaticResource Font.Mono}"
+                                                               Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
+                                                    <TextBlock Text="{Binding DisplayName}" FontSize="15"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <!-- 数据行：一个参数横着看过去 -->
+                            <ItemsControl ItemsSource="{Binding MatrixRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Width="190" Height="40" Padding="10,0"
+                                                    Background="{StaticResource Brush.Surface}"
+                                                    BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,0,1,1">
+                                                <DockPanel VerticalAlignment="Center">
+                                                    <TextBlock DockPanel.Dock="Right" Text="{Binding UnitText}"
+                                                               Style="{StaticResource Text.Label}" Margin="6,0,0,0" />
+                                                    <TextBlock Text="{Binding Label}" FontSize="15"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </DockPanel>
+                                            </Border>
+                                            <ItemsControl ItemsSource="{Binding Cells}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Width="116" Height="40" Padding="8,0"
+                                                                BorderBrush="{StaticResource Brush.Divider}"
+                                                                BorderThickness="0,0,1,1"
+                                                                Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
+                                                            <TextBlock Text="{Binding Text}"
+                                                                       FontFamily="{StaticResource Font.Mono}"
+                                                                       FontSize="16" VerticalAlignment="Center"
+                                                                       HorizontalAlignment="Right"
+                                                                       Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
                 </DockPanel>
             </Border>
         </Grid>

@@ -153,6 +153,16 @@ public sealed class LeaveTitleConverter : IValueConverter
 }
 
 /// <summary>有文字就显示，没文字就收起来。瞬时提示条用它。</summary>
+public sealed class InverseBooleanToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is true ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>文本非空 → 可见。空字符串就收起来，不留一行空白。</summary>
 public sealed class TextToVisibilityConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>

@@ -40,6 +40,70 @@ public enum StepRowState
     Done = 3,
 }
 
+/// <summary>
+/// 参数矩阵里的一列：一道工序的列头。状态（当前/下一道/已完成）跟着机床走，
+/// 与左侧工序序列用的是同一套 <see cref="StepRowState"/> 与同一套配色。
+/// </summary>
+public sealed partial class MatrixColumnViewModel : ObservableObject
+{
+    public MatrixColumnViewModel(int order, string displayName)
+    {
+        Order = order;
+        OrderText = order.ToString("00", CultureInfo.InvariantCulture);
+        DisplayName = displayName;
+    }
+
+    public int Order { get; }
+
+    public string OrderText { get; }
+
+    public string DisplayName { get; }
+
+    [ObservableProperty]
+    private StepRowState state = StepRowState.Pending;
+}
+
+/// <summary>参数矩阵里的一格。</summary>
+public sealed partial class MatrixCellViewModel : ObservableObject
+{
+    public MatrixCellViewModel(int stepOrder, string text, bool isApplicable)
+    {
+        StepOrder = stepOrder;
+        Text = text;
+        IsApplicable = isApplicable;
+    }
+
+    public int StepOrder { get; }
+
+    /// <summary>显示文本；这道工序没有这个参数时是空串。</summary>
+    public string Text { get; }
+
+    /// <summary>这道工序有没有这个参数。没有就留空——空格的含义不是"值为 0"。</summary>
+    public bool IsApplicable { get; }
+
+    /// <summary>这一格所属的工序是不是正在跑的那一道。</summary>
+    [ObservableProperty]
+    private StepRowState state = StepRowState.Pending;
+}
+
+/// <summary>参数矩阵里的一行：一个参数横着看过去。</summary>
+public sealed class MatrixRowViewModel
+{
+    public MatrixRowViewModel(string label, string unitText, IReadOnlyList<MatrixCellViewModel> cells)
+    {
+        Label = label;
+        UnitText = unitText;
+        Cells = cells;
+    }
+
+    public string Label { get; }
+
+    /// <summary>单位后缀，无量纲时为空。</summary>
+    public string UnitText { get; }
+
+    public IReadOnlyList<MatrixCellViewModel> Cells { get; }
+}
+
 /// <summary>工序序列里的一行。</summary>
 public sealed partial class SequenceRowViewModel : ObservableObject
 {
@@ -192,8 +256,23 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     /// <summary>右栏：实时数据。</summary>
     public ObservableCollection<LiveValueViewModel> LiveValues { get; }
 
-    /// <summary>中下：当前工序的工艺参数（只读）。</summary>
-    public ObservableCollection<ParameterRowViewModel> StepParameters { get; } = new();
+    /// <summary>
+    /// 参数矩阵的列头：一道工序一列，红色是正在跑的那一道，黄色是下一道。
+    /// </summary>
+    public ObservableCollection<MatrixColumnViewModel> MatrixColumns { get; } = new();
+
+    /// <summary>
+    /// 参数矩阵：行 = 参数，列 = 工序，一屏看完整支程序。
+    ///
+    /// 自动磨削时操作工要看的是"各道的拖板速度是怎么一路降下来的"这种横向对比，
+    /// 一次只显示一道工序的话，这些都得靠翻页在脑子里拼。
+    /// 编程时相反——一次专心改一道，所以工序编程页仍然是单工序视图。
+    /// </summary>
+    public ObservableCollection<MatrixRowViewModel> MatrixRows { get; } = new();
+
+    /// <summary>矩阵里有东西可看没有。没装载作业时整块收起来。</summary>
+    [ObservableProperty]
+    private bool hasMatrix;
 
     /// <summary>曲线数据（辊身坐标 mm，直径量 µm）。</summary>
     public IReadOnlyList<(double BodyPositionMm, double DiameterMicrometer)> CurvePoints { get; private set; } =
@@ -228,9 +307,6 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
     [ObservableProperty]
     private double progressFraction;
-
-    [ObservableProperty]
-    private string stepParametersTitle = string.Empty;
 
     [ObservableProperty]
     private string feedForwardText = "--";
@@ -321,18 +397,47 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         foreach (SequenceRowViewModel row in Sequence)
         {
-            row.State = row.Order < currentOrder ? StepRowState.Done
-                : row.Order == currentOrder ? StepRowState.Current
-                : row.Order == currentOrder + 1 ? StepRowState.Next
-                : StepRowState.Pending;
+            row.State = StateOf(row.Order, currentOrder);
 
             row.PassText = row.State == StepRowState.Current && pass is not null && totalPasses is not null
                 ? string.Create(CultureInfo.InvariantCulture, $"{(int)pass.Value}/{(int)totalPasses.Value}")
                 : string.Empty;
         }
 
+        UpdateMatrixState(currentOrder);
         UpdateProgress(currentOrder, pass, totalPasses);
     }
+
+    /// <summary>
+    /// 把"哪一道在跑、下一道是哪个"同步到矩阵的列头与每一格上，
+    /// 与左侧工序序列用的是同一条判断，不会出现两处说法不一致。
+    /// </summary>
+    private void UpdateMatrixState(int currentOrder)
+    {
+        if (MatrixColumns.Count == 0)
+        {
+            return;
+        }
+
+        foreach (MatrixColumnViewModel column in MatrixColumns)
+        {
+            column.State = StateOf(column.Order, currentOrder);
+        }
+
+        foreach (MatrixRowViewModel row in MatrixRows)
+        {
+            foreach (MatrixCellViewModel cell in row.Cells)
+            {
+                cell.State = StateOf(cell.StepOrder, currentOrder);
+            }
+        }
+    }
+
+    private static StepRowState StateOf(int order, int currentOrder) =>
+        order < currentOrder ? StepRowState.Done
+        : order == currentOrder ? StepRowState.Current
+        : order == currentOrder + 1 ? StepRowState.Next
+        : StepRowState.Pending;
 
     private void UpdateProgress(int currentOrder, double? pass, double? totalPasses)
     {
@@ -397,13 +502,14 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             .ConfigureAwait(true);
 
         Sequence.Clear();
-        StepParameters.Clear();
         this.activeJob = null;
+        MatrixRows.Clear();
+        MatrixColumns.Clear();
+        HasMatrix = false;
         this.activePlans = Array.Empty<GrindingStepPlan>();
 
         if (recent.Count == 0)
         {
-            StepParametersTitle = Localizer["Auto_NoActiveJob"];
             CurveHasData = false;
             CurveEmptyText = Localizer["Auto_NoActiveJob"];
             return;
@@ -433,23 +539,70 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                     : string.Empty));
         }
 
-        ShowStepParameters(this.activeJob.Steps[0]);
+        BuildMatrix(this.activeJob);
         await RefreshCurveAsync(cancellationToken).ConfigureAwait(true);
     }
 
-    private void ShowStepParameters(GrindingJobStep step)
+    /// <summary>
+    /// 按当前作业摊出参数矩阵。投影本身在 <see cref="StepParameterMatrix"/> 里，
+    /// 这里只负责把取值变成显示文本。
+    /// </summary>
+    private void BuildMatrix(GrindingJob job)
     {
-        StepParameters.Clear();
-        IGrindingStepType stepType = this.stepTypes.Get(step.StepTypeKey);
-        StepParametersTitle = Localizer["StepType_" + step.StepTypeKey];
+        MatrixColumns.Clear();
+        MatrixRows.Clear();
 
-        foreach (Core.Parameters.ParameterDescriptor descriptor in stepType.Schema.Descriptors)
+        StepParameterMatrix matrix = StepParameterMatrix.Build(job, this.stepTypes);
+
+        foreach (GrindingJobStep step in matrix.Steps)
         {
-            if (step.Parameters.TryGet(descriptor.Key, out Core.Parameters.ParameterValue? value) && value is not null)
-            {
-                StepParameters.Add(new ParameterRowViewModel(descriptor, value, Localizer));
-            }
+            MatrixColumns.Add(new MatrixColumnViewModel(step.Order, Localizer["StepType_" + step.StepTypeKey]));
         }
+
+        foreach (StepMatrixRow row in matrix.Rows)
+        {
+            MatrixRows.Add(new MatrixRowViewModel(
+                LabelOf(row.Descriptor),
+                UnitOf(row.Descriptor),
+                row.Cells
+                    .Select(cell => new MatrixCellViewModel(
+                        cell.StepOrder, Format(row.Descriptor, cell.Value), cell.IsApplicable))
+                    .ToArray()));
+        }
+
+        HasMatrix = MatrixRows.Count > 0;
+    }
+
+    private string LabelOf(Core.Parameters.ParameterDescriptor descriptor)
+    {
+        string localized = Localizer[descriptor.ResourceKey];
+        return localized.StartsWith('!') ? descriptor.Key : localized;
+    }
+
+    private string UnitOf(Core.Parameters.ParameterDescriptor descriptor) =>
+        descriptor.Unit == ParameterUnit.None ? string.Empty : Localizer["Unit_" + descriptor.Unit];
+
+    /// <summary>
+    /// 一格的显示文本。留空的含义是"这类工序没有这个参数"，
+    /// 与"值是 0"不是一回事，所以 null 才返回空串。
+    /// </summary>
+    private string Format(Core.Parameters.ParameterDescriptor descriptor, Core.Parameters.ParameterValue? value)
+    {
+        if (value is null)
+        {
+            return string.Empty;
+        }
+
+        return value.Kind switch
+        {
+            Core.Parameters.ParameterValueKind.Number =>
+                value.Number.ToString("0.###", CultureInfo.CurrentCulture),
+            Core.Parameters.ParameterValueKind.Boolean =>
+                Localizer[value.Boolean ? "Common_On" : "Common_Off"],
+            Core.Parameters.ParameterValueKind.Choice =>
+                Localizer[descriptor.ChoiceResourceKey(value.Choice)],
+            _ => value.ToInvariantString(),
+        };
     }
 
     private async Task RefreshCurveAsync(CancellationToken cancellationToken)

@@ -223,9 +223,6 @@
   <data name="Auto_StepDurationFormat" xml:space="preserve">
     <value>约 {0} min</value>
   </data>
-  <data name="Auto_StepParametersHeader" xml:space="preserve">
-    <value>工艺参数 ·</value>
-  </data>
   <data name="Auto_StrokeCompensation" xml:space="preserve">
     <value>行程间补偿 版本</value>
   </data>
@@ -1080,6 +1077,18 @@
   </data>
   <data name="Unit_Ampere" xml:space="preserve">
     <value>A</value>
+  </data>
+  <data name="Auto_MatrixEmpty" xml:space="preserve">
+    <value>还没有装载作业</value>
+  </data>
+  <data name="Auto_MatrixHeader" xml:space="preserve">
+    <value>工艺参数矩阵</value>
+  </data>
+  <data name="Auto_MatrixHint" xml:space="preserve">
+    <value>行 = 参数，列 = 工序；红色为当前工序，黄色为下一道</value>
+  </data>
+  <data name="Auto_MatrixParameterColumn" xml:space="preserve">
+    <value>参数</value>
   </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>已对齐</value>

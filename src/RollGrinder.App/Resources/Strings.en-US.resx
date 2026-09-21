@@ -223,9 +223,6 @@
   <data name="Auto_StepDurationFormat" xml:space="preserve">
     <value>approx. {0} min</value>
   </data>
-  <data name="Auto_StepParametersHeader" xml:space="preserve">
-    <value>Process parameters ·</value>
-  </data>
   <data name="Auto_StrokeCompensation" xml:space="preserve">
     <value>Stroke compensation version</value>
   </data>
@@ -1080,6 +1077,18 @@
   </data>
   <data name="Unit_Ampere" xml:space="preserve">
     <value>A</value>
+  </data>
+  <data name="Auto_MatrixEmpty" xml:space="preserve">
+    <value>No job loaded yet</value>
+  </data>
+  <data name="Auto_MatrixHeader" xml:space="preserve">
+    <value>Parameter matrix</value>
+  </data>
+  <data name="Auto_MatrixHint" xml:space="preserve">
+    <value>Rows = parameters, columns = steps; red is running, amber is next</value>
+  </data>
+  <data name="Auto_MatrixParameterColumn" xml:space="preserve">
+    <value>Parameter</value>
   </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>Aligned</value>
