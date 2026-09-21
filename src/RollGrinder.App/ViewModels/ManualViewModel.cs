@@ -12,6 +12,7 @@ using RollGrinder.App.Navigation;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core.Compensation;
+using RollGrinder.Core.Centring;
 using RollGrinder.Core.Units;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Calibration;
@@ -83,8 +84,20 @@ public sealed partial class MachineActionViewModel : ObservableObject
     internal DateTimeOffset ConfirmDeadlineUtc { get; set; }
 }
 
-/// <summary>两端比对表里的一行。</summary>
-public sealed record EndComparisonRow(string PositionText, string ProbeAText, string ProbeBText, string DeviationText);
+/// <summary>
+/// 对中比对表里的一行：一个量，两端各一个读数，外加两端之差。
+/// </summary>
+/// <param name="QuantityText">量的名字（A 测头、B 测头、(A−B)/2、直径、拖板、进给）。</param>
+/// <param name="HeadText">头架侧的读数。</param>
+/// <param name="TailText">尾架侧的读数。</param>
+/// <param name="DifferenceText">两端之差；位置一类的量没有"差"可言，留空。</param>
+/// <param name="IsOutOfTolerance">这一行是不是超差（只有安装偏差那一行会是 true）。</param>
+public sealed record CentringRow(
+    string QuantityText,
+    string HeadText,
+    string TailText,
+    string DifferenceText,
+    bool IsOutOfTolerance = false);
 
 /// <summary>
 /// 手动与辅助操作。版面见 docs/design/B-Manual-手动与辅助操作.html。
@@ -103,6 +116,7 @@ public sealed partial class ManualViewModel : PageViewModelBase
     private readonly IManualCommandService commands;
     private readonly MachineDescription machine;
     private readonly ICalibrationService calibration;
+    private readonly ICentringService centring;
     private readonly HmiSettings settings;
 
     private DateTimeOffset feedbackExpiryUtc;
@@ -114,12 +128,14 @@ public sealed partial class ManualViewModel : PageViewModelBase
         MachineDescription machine,
         HmiSettings settings,
         ICalibrationService calibration,
+        ICentringService centring,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
         : base(alarms, localizer, navigator)
     {
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
+        this.centring = centring ?? throw new ArgumentNullException(nameof(centring));
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.measurementService = measurementService ?? throw new ArgumentNullException(nameof(measurementService));
         this.commands = commands ?? throw new ArgumentNullException(nameof(commands));
@@ -186,8 +202,12 @@ public sealed partial class ManualViewModel : PageViewModelBase
     /// <summary>手动采下的测点。</summary>
     public ObservableCollection<MeasurementRowViewModel> Points { get; } = new();
 
-    /// <summary>两端比对（用于中心架找正）。</summary>
-    public ObservableCollection<EndComparisonRow> EndComparison { get; } = new();
+    /// <summary>
+    /// 对中比对表：头架侧与尾架侧各记一组，逐项比。
+    ///
+    /// 量的是**装夹**不是辊形——所以比的是两端之差，不是某一端的绝对值。
+    /// </summary>
+    public ObservableCollection<CentringRow> Centring { get; } = new();
 
     [ObservableProperty]
     private string probeAText = "--";
@@ -251,16 +271,12 @@ public sealed partial class ManualViewModel : PageViewModelBase
             MeasurementPoint point = await this.measurementService.CapturePointAsync(token).ConfigureAwait(true);
             Points.Add(new MeasurementRowViewModel(point));
             StatusResourceKey = "Measurement_PointCaptured";
-            RefreshEndComparison();
         }, cancellationToken);
 
     [RelayCommand]
     private void ClearPoints()
     {
         Points.Clear();
-        EndComparison.Clear();
-        AlignmentHintText = string.Empty;
-        HasAlignmentProblem = false;
         StatusResourceKey = string.Empty;
     }
 
@@ -279,49 +295,102 @@ public sealed partial class ManualViewModel : PageViewModelBase
             StatusResourceKey = "Measurement_Saved";
         }, cancellationToken);
 
-    /// <summary>
-    /// 两端比对：取最靠头架侧与最靠尾座侧的两个测点，算出两端差与折合锥度。
-    /// 超出公差时给出往哪边调中心架的提示。
-    /// </summary>
-    private void RefreshEndComparison()
+    /// <summary>记下头架侧那一组读数。</summary>
+    [RelayCommand]
+    private Task CaptureHeadAsync(CancellationToken cancellationToken) =>
+        CaptureCentringAsync(RollEnd.Head, cancellationToken);
+
+    /// <summary>记下尾架侧那一组读数。</summary>
+    [RelayCommand]
+    private Task CaptureTailAsync(CancellationToken cancellationToken) =>
+        CaptureCentringAsync(RollEnd.Tail, cancellationToken);
+
+    /// <summary>清掉两端的记录，重新找正。</summary>
+    [RelayCommand]
+    private void ClearCentring()
     {
-        EndComparison.Clear();
+        this.centring.Clear();
+        RefreshCentring();
+        StatusResourceKey = string.Empty;
+    }
+
+    private Task CaptureCentringAsync(RollEnd end, CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            await this.centring.CaptureAsync(end, token).ConfigureAwait(true);
+            StatusResourceKey = end == RollEnd.Head ? "Centring_HeadCaptured" : "Centring_TailCaptured";
+            RefreshCentring();
+        }, cancellationToken);
+
+    /// <summary>
+    /// 摊开对中比对表。
+    ///
+    /// 只记了一端时也照样列出来——让人看见"这一端记过了、另一端还没有"，
+    /// 比一张空表清楚。两端都有了才算得出差，也才谈得上超差。
+    /// </summary>
+    private void RefreshCentring()
+    {
+        Centring.Clear();
         AlignmentHintText = string.Empty;
         HasAlignmentProblem = false;
 
-        if (Points.Count < 2)
+        CentringReading? head = this.centring.Reading(RollEnd.Head);
+        CentringReading? tail = this.centring.Reading(RollEnd.Tail);
+        if (head is null && tail is null)
         {
             return;
         }
 
-        MeasurementRowViewModel head = Points.OrderBy(row => row.Point.BodyPositionMm).First();
-        MeasurementRowViewModel tail = Points.OrderBy(row => row.Point.BodyPositionMm).Last();
+        CentringComparison? comparison = this.centring.Compare();
 
-        EndComparison.Add(Describe("Manual_HeadSide", head));
-        EndComparison.Add(Describe("Manual_TailSide", tail));
+        Centring.Add(Row("Live_ProbeA", head?.ProbeARadiusMm, tail?.ProbeARadiusMm, "F4"));
+        Centring.Add(Row("Live_ProbeB", head?.ProbeBRadiusMm, tail?.ProbeBRadiusMm, "F4"));
+        Centring.Add(new CentringRow(
+            Localizer["Manual_MountingDeviation"],
+            Format(head?.MountingDeviationRadiusMm, "F4", showSign: true),
+            Format(tail?.MountingDeviationRadiusMm, "F4", showSign: true),
+            comparison is null
+                ? string.Empty
+                : Localizer.Format("Centring_MicrometerFormat", comparison.DeviationDifferenceMicrometer),
+            comparison is not null && !comparison.IsWithinTolerance));
 
-        double differenceMm = UnitConversion.RadiusMmToDiameterMm(
-            head.Point.MeasuredRadiusMm - tail.Point.MeasuredRadiusMm);
-        // 头架侧与尾架侧的差值是**安装误差**，按对中公差卡，不是辊形公差。
-        double toleranceMm = UnitConversion.MicrometerToMm(
-            this.calibration.Current.CentringToleranceMicrometer);
+        // 直径之差是辊本身的锥度，调中心架调不掉它——所以它只报数，不判超差。
+        Centring.Add(new CentringRow(
+            Localizer["Manual_RollDiameter"],
+            Format(head?.DiameterMm, "F3"),
+            Format(tail?.DiameterMm, "F3"),
+            comparison is null
+                ? string.Empty
+                : Localizer.Format("Centring_MicrometerFormat", comparison.DiameterDifferenceMicrometer)));
 
-        if (Math.Abs(differenceMm) <= toleranceMm)
+        // 轴名来自 machine.json：列头写的就是现场面板上那个字母。
+        Centring.Add(Row(this.centring.CarriageAxisName, head?.CarriagePositionMm, tail?.CarriagePositionMm, "F2"));
+        Centring.Add(Row(this.centring.InfeedAxisName, head?.InfeedPositionMm, tail?.InfeedPositionMm, "F4"));
+
+        if (comparison is null || comparison.IsWithinTolerance)
         {
             return;
         }
 
         HasAlignmentProblem = true;
         AlignmentHintText = Localizer.Format(
-            differenceMm > 0.0 ? "Manual_AlignHeadInward" : "Manual_AlignTailInward",
-            Math.Abs(differenceMm));
+            comparison.Adjustment == CentringAdjustment.HeadInward
+                ? "Manual_AlignHeadInward"
+                : "Manual_AlignTailInward",
+            Math.Abs(UnitConversion.MicrometerToMm(comparison.DeviationDifferenceMicrometer)));
     }
 
-    private EndComparisonRow Describe(string positionResourceKey, MeasurementRowViewModel row) => new(
-        Localizer[positionResourceKey],
-        row.DiameterText,
-        "--",
-        Format(row.Point.MeasuredRadiusMm, "F4", showSign: true));
+    private CentringRow Row(string quantity, double? headValue, double? tailValue, string format)
+    {
+        string localized = Localizer[quantity];
+
+        // 轴名（Z、X）不是资源键，取不到就照原样写——那本来就是面板上的字母。
+        return new CentringRow(
+            localized.StartsWith('!') ? quantity : localized,
+            Format(headValue, format),
+            Format(tailValue, format),
+            string.Empty);
+    }
 
     private double? WorkpieceSpeed(MachineStateSnapshot snapshot)
     {

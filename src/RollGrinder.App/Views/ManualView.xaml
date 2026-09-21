@@ -109,6 +109,16 @@
                         </Border>
                     </Grid>
 
+                    <!-- 对中：两端各记一组，比的是两端之差 -->
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="14,12,14,0">
+                        <Button Content="{loc:Loc Centring_CaptureHead}" Command="{Binding CaptureHeadCommand}"
+                                Style="{StaticResource SecondaryButton}" Height="42" Margin="0,0,8,0" />
+                        <Button Content="{loc:Loc Centring_CaptureTail}" Command="{Binding CaptureTailCommand}"
+                                Style="{StaticResource SecondaryButton}" Height="42" Margin="0,0,8,0" />
+                        <Button Content="{loc:Loc Centring_ClearButton}" Command="{Binding ClearCentringCommand}"
+                                Style="{StaticResource SecondaryButton}" Height="42" />
+                    </StackPanel>
+
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="14,12,14,0">
                         <Button Content="{loc:Loc Measurement_CaptureButton}" Command="{Binding CapturePointCommand}"
                                 Style="{StaticResource SecondaryButton}" Height="42" Margin="0,0,8,0" />
@@ -129,13 +139,26 @@
                         </StackPanel>
                     </Border>
 
-                    <DataGrid ItemsSource="{Binding EndComparison}" AutoGenerateColumns="False" IsReadOnly="True"
+                    <DataGrid ItemsSource="{Binding Centring}" AutoGenerateColumns="False" IsReadOnly="True"
                               HeadersVisibility="Column" Margin="14,12,14,0" FontSize="16" MinHeight="90"
                               Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Divider}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{loc:Loc Manual_Position}" Binding="{Binding PositionText}" Width="*" />
-                            <DataGridTextColumn Header="{loc:Loc Manual_DiameterColumn}" Binding="{Binding ProbeAText}" Width="*" />
-                            <DataGridTextColumn Header="{loc:Loc Manual_RadiusColumn}" Binding="{Binding DeviationText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Centring_Quantity}" Binding="{Binding QuantityText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Manual_HeadSide}" Binding="{Binding HeadText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Manual_TailSide}" Binding="{Binding TailText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Centring_Difference}" Binding="{Binding DifferenceText}" Width="*">
+                                <DataGridTextColumn.CellStyle>
+                                    <Style TargetType="DataGridCell">
+                                        <Style.Triggers>
+                                            <!-- 超差的那一行标出来：一眼看到该调哪一项 -->
+                                            <DataTrigger Binding="{Binding IsOutOfTolerance}" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource Brush.WarningFill}" />
+                                                <Setter Property="FontWeight" Value="Bold" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.CellStyle>
+                            </DataGridTextColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>

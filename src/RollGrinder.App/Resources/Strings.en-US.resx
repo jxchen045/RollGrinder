@@ -1801,4 +1801,28 @@
   <data name="Auto_CurveNoTraceYet" xml:space="preserve">
     <value>No data collected for this roll yet</value>
   </data>
+  <data name="Centring_CaptureHead" xml:space="preserve">
+    <value>Capture head side</value>
+  </data>
+  <data name="Centring_CaptureTail" xml:space="preserve">
+    <value>Capture tail side</value>
+  </data>
+  <data name="Centring_ClearButton" xml:space="preserve">
+    <value>Clear centring</value>
+  </data>
+  <data name="Centring_Quantity" xml:space="preserve">
+    <value>Quantity</value>
+  </data>
+  <data name="Centring_Difference" xml:space="preserve">
+    <value>Difference</value>
+  </data>
+  <data name="Centring_HeadCaptured" xml:space="preserve">
+    <value>Head-side reading captured</value>
+  </data>
+  <data name="Centring_TailCaptured" xml:space="preserve">
+    <value>Tail-side reading captured</value>
+  </data>
+  <data name="Centring_MicrometerFormat" xml:space="preserve">
+    <value>{0:+0.0;-0.0;0.0} µm</value>
+  </data>
 </root>

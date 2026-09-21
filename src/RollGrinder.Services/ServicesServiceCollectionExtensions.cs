@@ -52,6 +52,7 @@ public static class ServicesServiceCollectionExtensions
             provider.GetRequiredService<MachineDescription>()));
         services.AddSingleton<IJobDownloadService, JobDownloadService>();
         services.AddSingleton<IMeasurementService, MeasurementService>();
+        services.AddSingleton<ICentringService, CentringService>();
         services.AddSingleton<IManualCommandService, ManualCommandService>();
         services.AddSingleton<ISurfaceTraceService, SurfaceTraceService>();
         services.AddSingleton<ICompensationService, CompensationService>();

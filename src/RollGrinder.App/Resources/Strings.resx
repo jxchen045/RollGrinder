@@ -1801,4 +1801,28 @@
   <data name="Auto_CurveNoTraceYet" xml:space="preserve">
     <value>本支辊还没有采到数据</value>
   </data>
+  <data name="Centring_CaptureHead" xml:space="preserve">
+    <value>记录头架侧</value>
+  </data>
+  <data name="Centring_CaptureTail" xml:space="preserve">
+    <value>记录尾架侧</value>
+  </data>
+  <data name="Centring_ClearButton" xml:space="preserve">
+    <value>清除对中</value>
+  </data>
+  <data name="Centring_Quantity" xml:space="preserve">
+    <value>量</value>
+  </data>
+  <data name="Centring_Difference" xml:space="preserve">
+    <value>两端之差</value>
+  </data>
+  <data name="Centring_HeadCaptured" xml:space="preserve">
+    <value>已记下头架侧读数</value>
+  </data>
+  <data name="Centring_TailCaptured" xml:space="preserve">
+    <value>已记下尾架侧读数</value>
+  </data>
+  <data name="Centring_MicrometerFormat" xml:space="preserve">
+    <value>{0:+0.0;-0.0;0.0} µm</value>
+  </data>
 </root>
