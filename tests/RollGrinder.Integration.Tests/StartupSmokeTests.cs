@@ -72,10 +72,11 @@ public sealed class StartupSmokeTests : IDisposable
             .Select(stepType => stepType.Key)
             .Should().BeEquivalentTo(new[]
             {
-                // 设计稿的 11 种工序，外加无火花光磨。
+                // 设计稿的 11 种工序，外加无火花光磨、圆度测量与暂停。
                 StepTypeKeys.Start, StepTypeKeys.ShortStroke, StepTypeKeys.Rough, StepTypeKeys.WheelDress,
                 StepTypeKeys.SemiFinish, StepTypeKeys.Finish, StepTypeKeys.SparkOut, StepTypeKeys.Measure,
-                StepTypeKeys.Polish, StepTypeKeys.Chamfer, StepTypeKeys.EddyCurrent, StepTypeKeys.End,
+                StepTypeKeys.Roundness, StepTypeKeys.Polish, StepTypeKeys.Chamfer, StepTypeKeys.EddyCurrent,
+                StepTypeKeys.Pause, StepTypeKeys.End,
             });
         host.Services.GetRequiredService<MachineCapability>().Should().NotBeNull();
         host.Services.GetRequiredService<HmiSettings>().UiRefreshHz.Should().BeInRange(5, 10);

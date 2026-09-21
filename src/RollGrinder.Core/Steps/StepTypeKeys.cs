@@ -30,6 +30,18 @@ public static class StepTypeKeys
     /// <summary>辊形测量。</summary>
     public const string Measure = "Measure";
 
+    /// <summary>
+    /// 圆度测量：在若干个辊身位置上各绕一圈取点，算圆度与偏心度。
+    /// 与辊形测量分开——辊形是沿轴线扫，圆度是绕圆周扫，两件事。
+    /// </summary>
+    public const string Roundness = "Roundness";
+
+    /// <summary>
+    /// 暂停：磨到这一步停下来等人。换砂轮、量个尺寸、请人来看一眼都用它。
+    /// 不是报警，也不是结束——按继续就往下走。
+    /// </summary>
+    public const string Pause = "Pause";
+
     /// <summary>抛光：极轻载，只降粗糙度。</summary>
     public const string Polish = "Polish";
 

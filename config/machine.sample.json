@@ -113,9 +113,11 @@
     "Finish": 60,
     "SparkOut": 70,
     "Measure": 80,
+    "Roundness": 85,
     "Polish": 90,
     "Chamfer": 100,
     "EddyCurrent": 110,
+    "Pause": 115,
     "End": 120
   }
 }

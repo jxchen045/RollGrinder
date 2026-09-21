@@ -1132,6 +1132,21 @@
   <data name="Top_OfflineMode" xml:space="preserve">
     <value>Offline · programming</value>
   </data>
+  <data name="Parameter_pauseReason" xml:space="preserve">
+    <value>Pause note</value>
+  </data>
+  <data name="Parameter_roundnessPointsPerRevolution" xml:space="preserve">
+    <value>Points per revolution</value>
+  </data>
+  <data name="Parameter_roundnessSectionCount" xml:space="preserve">
+    <value>Sections</value>
+  </data>
+  <data name="StepType_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="StepType_Roundness" xml:space="preserve">
+    <value>Roundness</value>
+  </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>Aligned</value>
   </data>
@@ -1740,5 +1755,17 @@
   </data>
   <data name="Steps_ProgramOptionsHeader" xml:space="preserve">
     <value>Program steps (before auto grinding)</value>
+  </data>
+  <data name="Choice_pauseReason_wheelChange" xml:space="preserve">
+    <value>Change wheel</value>
+  </data>
+  <data name="Choice_pauseReason_manualMeasure" xml:space="preserve">
+    <value>Manual measurement</value>
+  </data>
+  <data name="Choice_pauseReason_inspect" xml:space="preserve">
+    <value>Inspection</value>
+  </data>
+  <data name="Choice_pauseReason_other" xml:space="preserve">
+    <value>Other</value>
   </data>
 </root>

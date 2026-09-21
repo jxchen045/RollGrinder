@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using FluentAssertions;
 using RollGrinder.Core.Geometry;
@@ -175,7 +176,7 @@ public sealed class GrindingStepTests
         {
             new StartStepType(), new EndStepType(), new MeasureStepType(),
             new EddyCurrentStepType(), new SparkOutStepType(), new WheelDressStepType(),
-            new ChamferStepType(),
+            new ChamferStepType(), new RoundnessStepType(), new PauseStepType(),
         };
 
         foreach (IGrindingStepType stepType in quietTypes)
@@ -233,6 +234,58 @@ public sealed class GrindingStepTests
         plan.PassCount.Should().Be(1);
         plan.WheelSpeedRpm.Should().Be(0.0);
         plan.RequiresMeasurement.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Roundness_step_spins_the_roll_in_place_without_the_wheel()
+    {
+        // 圆度是停在一个截面上绕圈量 r(θ)：拖板不走、砂轮不转、转速必须稳。
+        var stepType = new RoundnessStepType();
+
+        GrindingStepPlan plan = stepType.CreatePlan(Geometry, stepType.Schema.CreateDefaults());
+
+        plan.PassCount.Should().Be(1);
+        plan.FeedMmPerMin.Should().Be(0.0);
+        plan.WheelSpeedRpm.Should().Be(0.0);
+        plan.WorkpieceSpeedRpm.Should().BeGreaterThan(0.0);
+        plan.SpeedVariation.Target.Should().Be(SpeedVariationTarget.Off);
+        plan.RequiresMeasurement.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Roundness_step_keeps_the_sampling_grid_in_range()
+    {
+        var stepType = new RoundnessStepType();
+        ParameterSet defaults = stepType.Schema.CreateDefaults();
+
+        defaults.GetNumber(StepParameterKeys.RoundnessSectionCount).Should().BeGreaterThan(0.0);
+        defaults.GetNumber(StepParameterKeys.RoundnessPointsPerRevolution).Should().BeGreaterThanOrEqualTo(8.0);
+    }
+
+    [Fact]
+    public void Pause_step_does_nothing_and_waits_for_a_person()
+    {
+        // 暂停既不是报警也不是结束：没有道次、不进给、不测量，按继续就往下走。
+        var stepType = new PauseStepType();
+
+        GrindingStepPlan plan = stepType.CreatePlan(Geometry, stepType.Schema.CreateDefaults());
+
+        plan.PassCount.Should().Be(0);
+        plan.RequiresMeasurement.Should().BeFalse();
+        plan.IsCutting.Should().BeFalse();
+        plan.EstimateDuration(Geometry).Should().Be(TimeSpan.Zero);
+    }
+
+    [Fact]
+    public void Pause_step_carries_the_reason_it_stopped()
+    {
+        var stepType = new PauseStepType();
+        ParameterSet parameters = stepType.Schema.CreateDefaults()
+            .With(StepParameterKeys.PauseReason, ParameterValue.FromChoice(PauseReasonChoices.WheelChange));
+
+        // 原因只给界面看，不影响计划本身——计划仍然是"什么都不做"。
+        stepType.CreatePlan(Geometry, parameters).PassCount.Should().Be(0);
+        parameters.GetChoice(StepParameterKeys.PauseReason).Should().Be(PauseReasonChoices.WheelChange);
     }
 
     [Fact]

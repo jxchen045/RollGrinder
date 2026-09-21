@@ -56,6 +56,15 @@ public static class StepParameterKeys
     /// <summary>沿辊身的测点数（测量工序）。</summary>
     public const string MeasurePointCount = "measurePointCount";
 
+    /// <summary>圆度测量：沿辊身取几个截面。</summary>
+    public const string RoundnessSectionCount = "roundnessSectionCount";
+
+    /// <summary>圆度测量：每个截面绕一圈取几点。36 点 = 每 10°一点，是现场惯例。</summary>
+    public const string RoundnessPointsPerRevolution = "roundnessPointsPerRevolution";
+
+    /// <summary>暂停工序的提示文案键，界面按它显示"为什么停在这里"。</summary>
+    public const string PauseReason = "pauseReason";
+
     /// <summary>修整进给：每道修整的切深（半径量 µm，砂轮半径）。</summary>
     public const string DressInfeedRadiusMicrometer = "dressInfeedRadiusMicrometer";
 
@@ -73,6 +82,22 @@ public static class StepParameterKeys
 
     /// <summary>探伤扫查螺距（mm/转）。</summary>
     public const string ScanPitchMm = "scanPitchMm";
+}
+
+/// <summary>暂停原因参数的选项键。</summary>
+public static class PauseReasonChoices
+{
+    /// <summary>换砂轮。</summary>
+    public const string WheelChange = "wheelChange";
+
+    /// <summary>人工测量。</summary>
+    public const string ManualMeasure = "manualMeasure";
+
+    /// <summary>请人来看一眼（工艺确认、质量检查）。</summary>
+    public const string Inspect = "inspect";
+
+    /// <summary>其他，由操作员自行掌握。</summary>
+    public const string Other = "other";
 }
 
 /// <summary>变速模式参数的选项键。</summary>

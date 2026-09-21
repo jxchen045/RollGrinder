@@ -67,14 +67,19 @@ public sealed class LocalizationTests
         used.Except(NeutralKeys, StringComparer.Ordinal).Should().BeEmpty("XAML 引用了不存在的资源键");
     }
 
-    /// <summary>界面上能选到的全部工序类型，与组合根的注册保持一致。</summary>
-    private static IGrindingStepType[] AllStepTypes() => new IGrindingStepType[]
-    {
-        new StartStepType(), new ShortStrokeStepType(), new RoughGrindingStepType(), new WheelDressStepType(),
-        new SemiFinishGrindingStepType(), new FinishGrindingStepType(), new SparkOutStepType(),
-        new MeasureStepType(), new PolishStepType(), new ChamferStepType(), new EddyCurrentStepType(),
-        new EndStepType(),
-    };
+    /// <summary>
+    /// 界面上能选到的全部工序类型。
+    ///
+    /// 用反射从 Core 里捞，而不是手写一份名单：手写的名单会忘记更新，
+    /// 新加一种工序时文案守卫就悄悄漏掉它——这正是架构约束 ④ 要挡的事。
+    /// </summary>
+    private static IGrindingStepType[] AllStepTypes() =>
+        typeof(IGrindingStepType).Assembly.GetTypes()
+            .Where(type => type is { IsAbstract: false, IsPublic: true }
+                && typeof(IGrindingStepType).IsAssignableFrom(type))
+            .Select(type => (IGrindingStepType)Activator.CreateInstance(type)!)
+            .OrderBy(stepType => stepType.Key, StringComparer.Ordinal)
+            .ToArray();
 
     [Fact]
     public void Every_registered_profile_and_step_type_has_a_label()
