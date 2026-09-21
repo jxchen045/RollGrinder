@@ -1825,4 +1825,109 @@
   <data name="Centring_MicrometerFormat" xml:space="preserve">
     <value>{0:+0.0;-0.0;0.0} µm</value>
   </data>
+  <data name="Fn_PreGrindReport" xml:space="preserve">
+    <value>Pre-grind report</value>
+  </data>
+  <data name="SubView_Report" xml:space="preserve">
+    <value>Report preview</value>
+  </data>
+  <data name="Report_PreviewHeader" xml:space="preserve">
+    <value>Report preview</value>
+  </data>
+  <data name="Report_PrintButton" xml:space="preserve">
+    <value>Print</value>
+  </data>
+  <data name="Report_JobMissing" xml:space="preserve">
+    <value>This record has no job to trace back to; no report can be produced</value>
+  </data>
+  <data name="Report_TitlePreGrind" xml:space="preserve">
+    <value>Pre-grind process sheet</value>
+  </data>
+  <data name="Report_TitlePostGrind" xml:space="preserve">
+    <value>Grinding report</value>
+  </data>
+  <data name="Report_GeneratedAtFormat" xml:space="preserve">
+    <value>Generated {0}</value>
+  </data>
+  <data name="Report_RollCode" xml:space="preserve">
+    <value>Roll code</value>
+  </data>
+  <data name="Report_JobId" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="Report_Material" xml:space="preserve">
+    <value>Material</value>
+  </data>
+  <data name="Report_BodyLength" xml:space="preserve">
+    <value>Body length (mm)</value>
+  </data>
+  <data name="Report_NominalDiameter" xml:space="preserve">
+    <value>Nominal diameter (mm)</value>
+  </data>
+  <data name="Report_Profile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Report_Program" xml:space="preserve">
+    <value>Program</value>
+  </data>
+  <data name="Report_StartedAt" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="Report_FinishedAt" xml:space="preserve">
+    <value>Finished</value>
+  </data>
+  <data name="Report_Duration" xml:space="preserve">
+    <value>Duration (min)</value>
+  </data>
+  <data name="Report_State" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="Report_Note" xml:space="preserve">
+    <value>Note</value>
+  </data>
+  <data name="Report_StepsTable" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="Report_StepOrder" xml:space="preserve">
+    <value>#</value>
+  </data>
+  <data name="Report_StepType" xml:space="preserve">
+    <value>Step</value>
+  </data>
+  <data name="Report_PassCount" xml:space="preserve">
+    <value>Passes</value>
+  </data>
+  <data name="Report_InfeedPerPass" xml:space="preserve">
+    <value>Infeed/pass (µm)</value>
+  </data>
+  <data name="Report_Feed" xml:space="preserve">
+    <value>Feed (mm/min)</value>
+  </data>
+  <data name="Report_WorkpieceSpeed" xml:space="preserve">
+    <value>Roll speed (rpm)</value>
+  </data>
+  <data name="Report_ResultsTable" xml:space="preserve">
+    <value>Results</value>
+  </data>
+  <data name="Report_MeasuredAt" xml:space="preserve">
+    <value>Measured at</value>
+  </data>
+  <data name="Report_MeasurementSource" xml:space="preserve">
+    <value>Measurement source</value>
+  </data>
+  <data name="Report_PointCount" xml:space="preserve">
+    <value>Points</value>
+  </data>
+  <data name="Report_WorstDeviation" xml:space="preserve">
+    <value>Worst deviation (µm)</value>
+  </data>
+  <data name="Report_DeviationRms" xml:space="preserve">
+    <value>Deviation RMS (µm)</value>
+  </data>
+  <data name="Report_CurveTarget" xml:space="preserve">
+    <value>Target profile (µm)</value>
+  </data>
+  <data name="Report_CurveDeviation" xml:space="preserve">
+    <value>Measured deviation (µm)</value>
+  </data>
 </root>

@@ -32,7 +32,11 @@ public abstract partial class PageViewModelBase : ViewModelBase
         Navigator = navigator ?? throw new ArgumentNullException(nameof(navigator));
     }
 
-    protected IStringLocalizer Localizer { get; }
+    /// <summary>
+    /// 取字用。公开而不是 protected：报表打印这类**排版**留在视图的代码后置里，
+    /// 它得用与视图模型同一个取字器，否则同一张报表预览与打印可能是两种语言。
+    /// </summary>
+    public IStringLocalizer Localizer { get; }
 
     protected INavigator Navigator { get; }
 

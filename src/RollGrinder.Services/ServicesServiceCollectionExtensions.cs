@@ -57,6 +57,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<ISurfaceTraceService, SurfaceTraceService>();
         services.AddSingleton<ICompensationService, CompensationService>();
         services.AddSingleton<IRecordService, RecordService>();
+        services.AddSingleton<IReportService, ReportService>();
 
         services.AddHostedService<MachineMonitorHostedService>();
         services.AddHostedService<AlarmArchiveHostedService>();

@@ -1825,4 +1825,109 @@
   <data name="Centring_MicrometerFormat" xml:space="preserve">
     <value>{0:+0.0;-0.0;0.0} µm</value>
   </data>
+  <data name="Fn_PreGrindReport" xml:space="preserve">
+    <value>磨前报表</value>
+  </data>
+  <data name="SubView_Report" xml:space="preserve">
+    <value>报表预览</value>
+  </data>
+  <data name="Report_PreviewHeader" xml:space="preserve">
+    <value>报表预览</value>
+  </data>
+  <data name="Report_PrintButton" xml:space="preserve">
+    <value>打印</value>
+  </data>
+  <data name="Report_JobMissing" xml:space="preserve">
+    <value>这条记录追溯不到对应的作业，无法出表</value>
+  </data>
+  <data name="Report_TitlePreGrind" xml:space="preserve">
+    <value>磨前工艺单</value>
+  </data>
+  <data name="Report_TitlePostGrind" xml:space="preserve">
+    <value>磨削报告</value>
+  </data>
+  <data name="Report_GeneratedAtFormat" xml:space="preserve">
+    <value>出表时间 {0}</value>
+  </data>
+  <data name="Report_RollCode" xml:space="preserve">
+    <value>辊号</value>
+  </data>
+  <data name="Report_JobId" xml:space="preserve">
+    <value>作业号</value>
+  </data>
+  <data name="Report_Material" xml:space="preserve">
+    <value>材质</value>
+  </data>
+  <data name="Report_BodyLength" xml:space="preserve">
+    <value>辊身长度 (mm)</value>
+  </data>
+  <data name="Report_NominalDiameter" xml:space="preserve">
+    <value>公称直径 (mm)</value>
+  </data>
+  <data name="Report_Profile" xml:space="preserve">
+    <value>辊形</value>
+  </data>
+  <data name="Report_Program" xml:space="preserve">
+    <value>程序</value>
+  </data>
+  <data name="Report_StartedAt" xml:space="preserve">
+    <value>开始时间</value>
+  </data>
+  <data name="Report_FinishedAt" xml:space="preserve">
+    <value>结束时间</value>
+  </data>
+  <data name="Report_Duration" xml:space="preserve">
+    <value>用时 (min)</value>
+  </data>
+  <data name="Report_State" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="Report_Note" xml:space="preserve">
+    <value>备注</value>
+  </data>
+  <data name="Report_StepsTable" xml:space="preserve">
+    <value>工序</value>
+  </data>
+  <data name="Report_StepOrder" xml:space="preserve">
+    <value>序</value>
+  </data>
+  <data name="Report_StepType" xml:space="preserve">
+    <value>工序</value>
+  </data>
+  <data name="Report_PassCount" xml:space="preserve">
+    <value>道次</value>
+  </data>
+  <data name="Report_InfeedPerPass" xml:space="preserve">
+    <value>每刀 (µm)</value>
+  </data>
+  <data name="Report_Feed" xml:space="preserve">
+    <value>进给 (mm/min)</value>
+  </data>
+  <data name="Report_WorkpieceSpeed" xml:space="preserve">
+    <value>转速 (r/min)</value>
+  </data>
+  <data name="Report_ResultsTable" xml:space="preserve">
+    <value>结果</value>
+  </data>
+  <data name="Report_MeasuredAt" xml:space="preserve">
+    <value>测量时间</value>
+  </data>
+  <data name="Report_MeasurementSource" xml:space="preserve">
+    <value>测量来源</value>
+  </data>
+  <data name="Report_PointCount" xml:space="preserve">
+    <value>测点数</value>
+  </data>
+  <data name="Report_WorstDeviation" xml:space="preserve">
+    <value>最大偏差 (µm)</value>
+  </data>
+  <data name="Report_DeviationRms" xml:space="preserve">
+    <value>偏差均方根 (µm)</value>
+  </data>
+  <data name="Report_CurveTarget" xml:space="preserve">
+    <value>目标辊形 (µm)</value>
+  </data>
+  <data name="Report_CurveDeviation" xml:space="preserve">
+    <value>实测偏差 (µm)</value>
+  </data>
 </root>

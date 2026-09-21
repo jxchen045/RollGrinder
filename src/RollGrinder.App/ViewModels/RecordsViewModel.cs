@@ -55,15 +55,18 @@ public sealed class RecordRowViewModel
 public sealed partial class RecordsViewModel : PageViewModelBase
 {
     private readonly IRecordService recordService;
+    private readonly IReportService reportService;
 
     public RecordsViewModel(
         IRecordService recordService,
+        IReportService reportService,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
         : base(alarms, localizer, navigator)
     {
         this.recordService = recordService ?? throw new ArgumentNullException(nameof(recordService));
+        this.reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
 
         this.toDate = DateTime.Today;
         this.fromDate = DateTime.Today.AddDays(-7);
@@ -71,11 +74,11 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         SetFunctionKeys(new[]
         {
             new FunctionKeyViewModel("Fn_OpenRecord", QueryCommand, localizer, FunctionKeyKind.Primary),
-            FunctionKeyViewModel.Placeholder("Fn_Latest", localizer, () => NotImplementedYet("Fn_Latest")),
+            new FunctionKeyViewModel("Fn_PreGrindReport", PreviewPreGrindReportCommand, localizer),
             FunctionKeyViewModel.Placeholder("Fn_DailyReport", localizer, () => NotImplementedYet("Fn_DailyReport")),
             FunctionKeyViewModel.Placeholder("Fn_MonthlyReport", localizer, () => NotImplementedYet("Fn_MonthlyReport")),
             FunctionKeyViewModel.Placeholder("Fn_ExportExcel", localizer, () => NotImplementedYet("Fn_ExportExcel")),
-            FunctionKeyViewModel.Placeholder("Fn_Print", localizer, () => NotImplementedYet("Fn_Print")),
+            new FunctionKeyViewModel("Fn_Print", PreviewPostGrindReportCommand, localizer),
             FunctionKeyViewModel.Placeholder("Fn_RollLedger", localizer, () => NotImplementedYet("Fn_RollLedger")),
         });
     }
@@ -172,6 +175,54 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
             StatusResourceKey = "Records_Finished";
             await QueryAsync(token).ConfigureAwait(true);
+        }, cancellationToken);
+
+    /// <summary>报表预览子视图的资源键，同时用作面包屑文案。</summary>
+    public const string ReportSubView = "SubView_Report";
+
+    /// <summary>
+    /// 预览里那张报表。界面层拿它排版、打印；没有选中记录时为 null。
+    ///
+    /// 视图模型只持有**内容**，不持有 FlowDocument——排版是界面层的事，
+    /// 这样同一份内容也能被测试直接核对。
+    /// </summary>
+    public GrindingReport? Report { get; private set; }
+
+    /// <summary>报表变了，界面该重排。</summary>
+    public event EventHandler? ReportChanged;
+
+    /// <summary>磨前报表：这支辊准备按什么磨。</summary>
+    [RelayCommand]
+    private Task PreviewPreGrindReportAsync(CancellationToken cancellationToken) =>
+        PreviewReportAsync(ReportKind.PreGrind, cancellationToken);
+
+    /// <summary>磨后报表：这支辊实际磨成了什么样。</summary>
+    [RelayCommand]
+    private Task PreviewPostGrindReportAsync(CancellationToken cancellationToken) =>
+        PreviewReportAsync(ReportKind.PostGrind, cancellationToken);
+
+    private Task PreviewReportAsync(ReportKind kind, CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            if (SelectedRecord is null)
+            {
+                StatusResourceKey = "Records_NoSelection";
+                return;
+            }
+
+            Report = await this.reportService
+                .BuildAsync(SelectedRecord.RecordId, kind, token).ConfigureAwait(true);
+
+            if (Report is null)
+            {
+                // 记录在、作业不在：那条记录追溯不到按什么磨的，打出来也是半张纸。
+                StatusResourceKey = "Report_JobMissing";
+                return;
+            }
+
+            StatusResourceKey = string.Empty;
+            ReportChanged?.Invoke(this, EventArgs.Empty);
+            Navigator.OpenSubView(ReportSubView);
         }, cancellationToken);
 
     /// <summary>导出当前列表；路径由界面选定。</summary>

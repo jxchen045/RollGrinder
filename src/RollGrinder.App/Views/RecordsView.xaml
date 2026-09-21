@@ -3,6 +3,18 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization">
     <Grid>
+        <Grid.Resources>
+            <!-- 报表预览子视图：开着时盖住本页根部内容，导航槽这时显示"返回 磨削记录"。 -->
+            <Style x:Key="ReportPanel" TargetType="Border" BasedOn="{StaticResource Card}">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_Report">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Resources>
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="420" />
             <ColumnDefinition Width="*" />
@@ -106,5 +118,26 @@
                 </DockPanel>
             </Border>
         </Grid>
+
+        <!--
+            报表预览：纸上是什么样，这里就是什么样（同一份 FlowDocument），
+            所以"预览没问题"就真的能打出来。
+        -->
+        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource ReportPanel}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
+                    <DockPanel>
+                        <TextBlock Text="{loc:Loc Report_PreviewHeader}" Style="{StaticResource Text.CardTitle}"
+                                   VerticalAlignment="Center" />
+                        <Button Content="{loc:Loc Report_PrintButton}" Click="OnPrintClick"
+                                Style="{StaticResource PrimaryButton}" Height="40" Padding="20,0"
+                                HorizontalAlignment="Right" />
+                    </DockPanel>
+                </Border>
+                <FlowDocumentScrollViewer x:Name="ReportPreview" Margin="12"
+                                          Background="{StaticResource Brush.Surface}"
+                                          VerticalScrollBarVisibility="Auto" />
+            </DockPanel>
+        </Border>
     </Grid>
 </UserControl>
