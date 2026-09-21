@@ -157,6 +157,15 @@ public static class MachineTagKeys
     /// <summary>B 测头读数（mm）。</summary>
     public const string MeasureProbeBMm = "measure.probeBMm";
 
+    /// <summary>
+    /// 当前截面的圆度（µm，峰谷值）。由测量系统按一转的读数自己算好，
+    /// 上位机看不到原始的 r(θ)，只沿辊身把这个数收集成一条曲线。
+    /// </summary>
+    public const string MeasureRoundnessMicrometer = "measure.roundnessMicrometer";
+
+    /// <summary>当前截面的偏心量（µm）。同样由测量系统给出。</summary>
+    public const string MeasureEccentricityMicrometer = "measure.eccentricityMicrometer";
+
     /// <summary>砂轮直径（mm）。</summary>
     public const string WheelDiameterMm = "wheel.diameterMm";
 
@@ -210,6 +219,8 @@ public static class MachineTagKeys
             JobTotalPasses,
             MeasureProbeAMm,
             MeasureProbeBMm,
+            MeasureRoundnessMicrometer,
+            MeasureEccentricityMicrometer,
             WheelDiameterMm,
             WheelSpeedRpm,
             GrindingCurrentA,

@@ -54,16 +54,28 @@ public partial class AutoGrindingView : UserControl
         }
 
         double[] positions = this.viewModel.CurvePoints.Select(point => point.BodyPositionMm).ToArray();
-        double[] micrometres = this.viewModel.CurvePoints.Select(point => point.DiameterMicrometer).ToArray();
+        double[] values = this.viewModel.CurvePoints.Select(point => point.Value).ToArray();
 
         CurvePlot.Plot.Clear();
         CurvePlot.Plot.Add.HorizontalLine(0.0, 1f, Colors.Gray, LinePattern.Dotted);
 
-        var line = CurvePlot.Plot.Add.Scatter(positions, micrometres);
+        // 公差带只有误差曲线才有意义：圆度、偏心、电流各有各的判据，
+        // 画一条同样的带子会让人按错的尺子读数。
+        if (this.viewModel.CurveShowsTolerance)
+        {
+            double tolerance = this.viewModel.ToleranceMicrometer;
+            foreach (double edge in new[] { tolerance, -tolerance })
+            {
+                CurvePlot.Plot.Add.HorizontalLine(edge, 1f, Color.FromHex("#9AA0A6"), LinePattern.Dashed);
+            }
+        }
+
+        var line = CurvePlot.Plot.Add.Scatter(positions, values);
         line.LineWidth = 2.5f;
         line.MarkerSize = 0;
         line.Color = Color.FromHex("#B3241C");
 
+        CurvePlot.Plot.Axes.Left.Label.Text = this.viewModel.CurveYAxisLabel;
         CurvePlot.Plot.Axes.AutoScale();
         CurvePlot.Refresh();
     }

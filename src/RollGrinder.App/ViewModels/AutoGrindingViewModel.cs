@@ -234,6 +234,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly ICalibrationService calibration;
     private readonly IStepParameterUpdateService stepUpdates;
     private readonly IStepFlowControlService stepFlow;
+    private readonly ISurfaceTraceService traces;
     private readonly IUserSession userSession;
 
     private readonly LiveValueViewModel probeA;
@@ -272,6 +273,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         ICalibrationService calibration,
         IStepParameterUpdateService stepUpdates,
         IStepFlowControlService stepFlow,
+        ISurfaceTraceService traces,
         IUserSession userSession,
         IStringLocalizer localizer,
         IAlarmSink alarms,
@@ -281,6 +283,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.stepUpdates = stepUpdates ?? throw new ArgumentNullException(nameof(stepUpdates));
         this.stepFlow = stepFlow ?? throw new ArgumentNullException(nameof(stepFlow));
+        this.traces = traces ?? throw new ArgumentNullException(nameof(traces));
         this.userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
@@ -511,8 +514,11 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         }
     }
 
-    /// <summary>曲线数据（辊身坐标 mm，直径量 µm）。</summary>
-    public IReadOnlyList<(double BodyPositionMm, double DiameterMicrometer)> CurvePoints { get; private set; } =
+    /// <summary>
+    /// 曲线数据：横坐标恒为辊身坐标（mm），纵坐标的单位随曲线变
+    /// （辊形三条是直径量 µm，电流是 A），由 <see cref="CurveYAxisLabel"/> 标出来。
+    /// </summary>
+    public IReadOnlyList<(double BodyPositionMm, double Value)> CurvePoints { get; private set; } =
         Array.Empty<(double, double)>();
 
     /// <summary>曲线有更新。</summary>
@@ -560,6 +566,20 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     /// <summary>曲线没有数据时给出的原因（例如通道未配置）。</summary>
     [ObservableProperty]
     private string curveEmptyText = string.Empty;
+
+    /// <summary>
+    /// 纵轴标题，随曲线切换。五条线里三条是 µm、一条是 A——
+    /// 不标出来的话，换条线看数量级会当成同一个东西。
+    /// </summary>
+    [ObservableProperty]
+    private string curveYAxisLabel = string.Empty;
+
+    /// <summary>画不画公差带。只有误差曲线有"合格范围"可言。</summary>
+    [ObservableProperty]
+    private bool curveShowsTolerance;
+
+    /// <summary>公差带的半宽（µm，直径量）。</summary>
+    public double ToleranceMicrometer => this.calibration.Current.ProfileToleranceMicrometer;
 
     public override void OnActivated()
     {
@@ -902,6 +922,9 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 JumpToStepCommand));
         }
 
+        // 换了一支辊：之前那支收来的圆度/偏心/电流轨迹与这支无关，清掉重收。
+        this.traces.Reset(this.activeJob.Geometry.BodyLengthMm);
+
         BuildMatrix(this.activeJob);
         await RefreshCurveAsync(cancellationToken).ConfigureAwait(true);
     }
@@ -990,6 +1013,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         CurveHasData = false;
         CurveEmptyText = string.Empty;
         RmsText = "--";
+        CurveShowsTolerance = SelectedCurve == CurveKind.Error;
+        CurveYAxisLabel = Localizer[SelectedCurve == CurveKind.GrindingCurrent
+            ? "Unit_Ampere"
+            : "Unit_Micrometer"];
 
         if (this.activeJob is null)
         {
@@ -1008,9 +1035,19 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 await BuildErrorCurveAsync(cancellationToken).ConfigureAwait(true);
                 break;
 
+            case CurveKind.Roundness:
+                BuildTraceCurve(SurfaceTraceKind.Roundness);
+                break;
+
+            case CurveKind.Eccentricity:
+                BuildTraceCurve(SurfaceTraceKind.Eccentricity);
+                break;
+
+            case CurveKind.GrindingCurrent:
+                BuildTraceCurve(SurfaceTraceKind.GrindingCurrent);
+                break;
+
             default:
-                // 圆度、偏心度、磨削电流曲线需要机床侧对应的测量通道，
-                // machine.json 里没有描述就如实说明，不画一条编出来的线。
                 CurveEmptyText = Localizer["Auto_CurveChannelNotConfigured"];
                 break;
         }
@@ -1057,9 +1094,36 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             .ToArray();
         CurveHasData = true;
 
-        double sumOfSquares = CurvePoints.Sum(point => point.DiameterMicrometer * point.DiameterMicrometer);
+        double sumOfSquares = CurvePoints.Sum(point => point.Value * point.Value);
         double rms = Math.Sqrt(sumOfSquares / CurvePoints.Count);
         RmsText = Localizer.Format("Auto_RmsFormat", rms);
+    }
+
+    /// <summary>
+    /// 沿辊身收来的一条轨迹（圆度 / 偏心 / 电流）。
+    ///
+    /// 这三条线上位机不参与计算：数是测量系统与驱动报上来的，
+    /// 这里只是把"拖板走到哪、报了多少"按位置摆出来。tagmap 里没登记
+    /// 就如实说通道未配置；登记了但还没走过就说还没有数据——
+    /// 两种情况对现场是两回事，不能混成一句"没有曲线"。
+    /// </summary>
+    private void BuildTraceCurve(SurfaceTraceKind kind)
+    {
+        if (!this.traces.IsAvailable(kind))
+        {
+            CurveEmptyText = Localizer["Auto_CurveChannelNotConfigured"];
+            return;
+        }
+
+        IReadOnlyList<SurfaceTracePoint> trace = this.traces.Trace(kind);
+        if (trace.Count < 2)
+        {
+            CurveEmptyText = Localizer["Auto_CurveNoTraceYet"];
+            return;
+        }
+
+        CurvePoints = trace.Select(point => (point.BodyPositionMm, point.Value)).ToArray();
+        CurveHasData = true;
     }
 
     private static string FormatOrDash(double? value, string format, bool showSign = false)

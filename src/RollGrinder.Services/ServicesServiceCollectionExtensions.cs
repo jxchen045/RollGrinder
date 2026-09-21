@@ -53,6 +53,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<IJobDownloadService, JobDownloadService>();
         services.AddSingleton<IMeasurementService, MeasurementService>();
         services.AddSingleton<IManualCommandService, ManualCommandService>();
+        services.AddSingleton<ISurfaceTraceService, SurfaceTraceService>();
         services.AddSingleton<ICompensationService, CompensationService>();
         services.AddSingleton<IRecordService, RecordService>();
 

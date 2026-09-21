@@ -1798,4 +1798,7 @@
   <data name="Fn_ConfirmAgain" xml:space="preserve">
     <value>再按一次确认</value>
   </data>
+  <data name="Auto_CurveNoTraceYet" xml:space="preserve">
+    <value>本支辊还没有采到数据</value>
+  </data>
 </root>

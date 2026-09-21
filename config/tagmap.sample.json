@@ -645,6 +645,14 @@
       "unit": "mm"
     },
     {
+      "key": "measure.eccentricityMicrometer",
+      "address": "ns=2;s=/Channel/Parameter/R[131]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "µm",
+      "description": "当前截面的偏心量（全跳动），由测量系统算出"
+    },
+    {
       "key": "measure.probeAMm",
       "address": "ns=2;s=/Plc/DB100.DBD4",
       "dataType": "Double",
@@ -659,6 +667,14 @@
       "access": "Read",
       "unit": "mm",
       "description": "B 测头"
+    },
+    {
+      "key": "measure.roundnessMicrometer",
+      "address": "ns=2;s=/Channel/Parameter/R[130]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "µm",
+      "description": "当前截面的圆度（峰谷值），由测量系统算出"
     },
     {
       "key": "wheel.diameterMm",

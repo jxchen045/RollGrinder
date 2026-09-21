@@ -258,6 +258,18 @@ public sealed class SimulatedMachine
             return Noise() - (MeasurementNoiseRadiusMm * 0.6);
         }
 
+        // 圆度与偏心：真机上由测量系统按一转的读数算好后报上来，
+        // 上位机不看原始 r(θ)。仿真按同一个契约给当前截面的结果。
+        if (logicalName == MachineTagKeys.MeasureRoundnessMicrometer)
+        {
+            return this.surface.RoundnessMicrometerAtMm(this.carriagePositionMm);
+        }
+
+        if (logicalName == MachineTagKeys.MeasureEccentricityMicrometer)
+        {
+            return this.surface.EccentricityMicrometerAtMm(this.carriagePositionMm);
+        }
+
         if (logicalName == MachineTagKeys.WheelDiameterMm)
         {
             return this.wheelDiameterMm;

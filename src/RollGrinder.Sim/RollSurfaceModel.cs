@@ -164,6 +164,28 @@ public sealed class RollSurfaceModel
         return amplitude * Math.Cos(angleRadians);
     }
 
+    /// <summary>
+    /// 这个截面的圆度（µm，半径峰谷值）。
+    ///
+    /// 真机上这是测量系统按一转的读数自己算出来的，上位机只收结果；
+    /// 仿真里照着同一个定义给：三瓣形的幅值乘 2 就是峰谷。
+    /// </summary>
+    public double RoundnessMicrometerAtMm(double bodyPositionMm)
+    {
+        double t = Clamp01(bodyPositionMm / this.bodyLengthMm);
+        double amplitude = 0.004 * ((0.25 + (0.75 * this.asReceivedFraction)) + (0.2 * ValueNoise(t * 11.0)));
+        return amplitude * 2.0 * 1000.0;
+    }
+
+    /// <summary>
+    /// 这个截面的偏心量（µm，全跳动）。装夹偏心磨不掉，所以它不随余量变小。
+    /// </summary>
+    public double EccentricityMicrometerAtMm(double bodyPositionMm)
+    {
+        double t = Clamp01(bodyPositionMm / this.bodyLengthMm);
+        return 0.006 * (0.6 + (0.4 * t)) * 2.0 * 1000.0;
+    }
+
     /// <summary>记下一个下发进来的辊形点。</summary>
     public void SetCommandedPoint(int index, double bodyPositionMm, double radiusOffsetMm)
     {

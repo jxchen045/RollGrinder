@@ -1798,4 +1798,7 @@
   <data name="Fn_ConfirmAgain" xml:space="preserve">
     <value>Press again</value>
   </data>
+  <data name="Auto_CurveNoTraceYet" xml:space="preserve">
+    <value>No data collected for this roll yet</value>
+  </data>
 </root>

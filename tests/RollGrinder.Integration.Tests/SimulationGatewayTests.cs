@@ -57,6 +57,25 @@ public sealed class SimulationGatewayTests
     }
 
     [Fact]
+    public async Task The_simulated_machine_reports_roundness_and_eccentricity()
+    {
+        // 这两条曲线在真机上靠测量系统算好后报上来，仿真也得报——
+        // 否则无机床环境下这两页永远是"通道未配置"，改了也没法验。
+        using var workspace = new TempWorkspace();
+        (IMachineGateway gateway, _) = await BuildAsync(workspace);
+        await gateway.ConnectAsync(CancellationToken.None);
+
+        TagValue roundness = await gateway.ReadTagAsync(
+            MachineTagKeys.MeasureRoundnessMicrometer, CancellationToken.None);
+        TagValue eccentricity = await gateway.ReadTagAsync(
+            MachineTagKeys.MeasureEccentricityMicrometer, CancellationToken.None);
+
+        // 圆度与偏心都是峰谷/跳动量：负数没有意义。
+        Convert.ToDouble(roundness.Raw).Should().BePositive();
+        Convert.ToDouble(eccentricity.Raw).Should().BePositive();
+    }
+
+    [Fact]
     public async Task Sim_gateway_refuses_reads_before_connecting()
     {
         using var workspace = new TempWorkspace();
