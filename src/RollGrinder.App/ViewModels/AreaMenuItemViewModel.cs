@@ -21,9 +21,11 @@ public sealed partial class AreaMenuItemViewModel : ObservableObject
         string titleResourceKey,
         string hintResourceKey,
         ICommand command,
-        IStringLocalizer localizer)
+        IStringLocalizer localizer,
+        bool isAvailable = true)
     {
         Key = key;
+        IsAvailable = isAvailable;
         ShortcutNumber = shortcutNumber;
         TitleResourceKey = titleResourceKey ?? throw new ArgumentNullException(nameof(titleResourceKey));
         HintResourceKey = hintResourceKey ?? throw new ArgumentNullException(nameof(hintResourceKey));
@@ -49,6 +51,15 @@ public sealed partial class AreaMenuItemViewModel : ObservableObject
 
     /// <summary>序号文本。</summary>
     public string ShortcutText => ShortcutNumber.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// 这一格现在进不进得去。离线模式下自动磨削、手动、诊断进不去——
+    /// 但**照样列出来并说明原因**，藏起来只会让人以为软件少做。
+    /// </summary>
+    public bool IsAvailable { get; }
+
+    /// <summary>进不去时给的说明。</summary>
+    public string UnavailableHint => IsAvailable ? string.Empty : this.localizer["Nav_OfflineUnavailable"];
 
     /// <summary>是不是当前所在的区域：高亮它，点它只是关菜单。</summary>
     [ObservableProperty]

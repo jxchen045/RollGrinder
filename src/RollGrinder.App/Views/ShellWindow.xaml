@@ -120,6 +120,14 @@
                         </StackPanel>
                     </Border>
 
+                    <Border Background="{StaticResource Brush.WarningFill}" Height="46" Padding="14,0" Margin="16,0,0,0"
+                            Visibility="{Binding IsOffline, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{loc:Loc Top_OfflineMode}"
+                                   FontSize="17"
+                                   Foreground="{StaticResource Brush.OnAccent}"
+                                   VerticalAlignment="Center" />
+                    </Border>
+
                     <Border Background="{StaticResource Brush.AccentDark}" Height="46" Padding="14,0" Margin="16,0,0,0">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{Binding RoleText}"
@@ -262,6 +270,10 @@
                                                         <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
                                                         <Setter Property="BorderThickness" Value="3" />
                                                     </DataTrigger>
+                                                    <!-- 离线进不去的格子：压暗但照样列出来并说明原因 -->
+                                                    <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                                        <Setter Property="Opacity" Value="0.4" />
+                                                    </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </Button.Style>
@@ -293,6 +305,12 @@
                                                            Foreground="{StaticResource Brush.Accent}"
                                                            Margin="0,6,0,0"
                                                            Visibility="{Binding IsCurrent, Converter={StaticResource BoolToVisibility}}" />
+                                                <TextBlock Text="{Binding UnavailableHint}"
+                                                           FontSize="15"
+                                                           Foreground="{StaticResource Brush.WarningFill}"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,6,0,0"
+                                                           Visibility="{Binding UnavailableHint, Converter={StaticResource TextToVisibility}}" />
                                             </StackPanel>
                                         </DockPanel>
                                     </Button>

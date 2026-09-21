@@ -28,6 +28,14 @@ public interface IAppOptions
     /// <summary>是否以打桩模式运行（命令行 --stub）。</summary>
     bool UseStub { get; }
 
+    /// <summary>
+    /// 离线模式（命令行 --offline）：没有机床。
+    ///
+    /// 这是**界面可用性**的开关，不是网关分支——业务代码仍然只经 IMachineGateway
+    /// 访问机床（架构约束 ②）。界面按它决定哪几页开放、顶栏标什么。
+    /// </summary>
+    bool IsOffline { get; }
+
     /// <summary>回放文件路径（命令行 --replay）；为空时由文件网关取最新一份录制。</summary>
     string? ReplayFilePath { get; }
 }

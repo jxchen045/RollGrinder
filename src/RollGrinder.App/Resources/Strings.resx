@@ -1123,6 +1123,15 @@
   <data name="Auto_MatrixWriteFailed" xml:space="preserve">
     <value>写机床失败，参数没有下发</value>
   </data>
+  <data name="Alarm_OfflineNoMachine" xml:space="preserve">
+    <value>离线模式：没有机床，写入已被拒绝</value>
+  </data>
+  <data name="Nav_OfflineUnavailable" xml:space="preserve">
+    <value>离线模式不可用：这一页要连上机床</value>
+  </data>
+  <data name="Top_OfflineMode" xml:space="preserve">
+    <value>离线 · 编程模式</value>
+  </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>已对齐</value>
   </data>

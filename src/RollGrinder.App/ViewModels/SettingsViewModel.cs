@@ -69,6 +69,9 @@ public sealed partial class SettingsViewModel : PageViewModelBase
     /// <summary>自动循环挂着程序时落只读锁：标定值一改，正在跑的程序算出来的位置就变了。</summary>
     public override bool LocksDuringRun => true;
 
+    /// <summary>离线可用：只和数据库与配置打交道，不碰机床。</summary>
+    public override bool WorksOffline => true;
+
     /// <summary>标定值的参数格。</summary>
     public ObservableCollection<ParameterRowViewModel> Values { get; } = new();
 

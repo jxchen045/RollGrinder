@@ -11,7 +11,8 @@ namespace RollGrinder.Composition;
 /// 允许命令行覆盖。
 /// 支持的参数：
 ///   --stub                 以打桩网关启动（等价于 --gateway stub）
-///   --gateway &lt;kind&gt;  opcua | stub | sim | file
+///   --offline              离线模式：没有机床，只做编程、辊形、记录与打印
+///   --gateway &lt;kind&gt;  opcua | stub | sim | file | offline
 ///   --config &lt;dir&gt;    配置目录
 ///   --data &lt;dir&gt;      数据目录
 ///   --replay &lt;file&gt;   回放指定的 .jsonl 录制文件（隐含 --gateway file）
@@ -43,6 +44,12 @@ public sealed class AppOptions : IAppOptions
 
     public bool UseStub => Gateway == GatewayKind.Stub;
 
+    /// <summary>
+    /// 离线模式：没有机床。自动磨削、手动与诊断这几页用不了，
+    /// 编程、辊形、记录、设置照常。界面上顶栏会标出来。
+    /// </summary>
+    public bool IsOffline => Gateway == GatewayKind.Offline;
+
     /// <summary>回放文件路径（--replay）；为空时取 data/replay 下最新的 .jsonl。</summary>
     public string? ReplayFilePath { get; }
 
@@ -67,6 +74,10 @@ public sealed class AppOptions : IAppOptions
             {
                 case "--stub":
                     gateway = GatewayKind.Stub;
+                    break;
+
+                case "--offline":
+                    gateway = GatewayKind.Offline;
                     break;
 
                 case "--gateway":
@@ -112,6 +123,8 @@ public sealed class AppOptions : IAppOptions
         "stub" => GatewayKind.Stub,
         "file" => GatewayKind.File,
         "sim" => GatewayKind.Sim,
-        _ => throw new ArgumentException($"Unknown gateway kind '{value}'. Expected opcua, stub, sim or file.", nameof(value)),
+        "offline" => GatewayKind.Offline,
+        _ => throw new ArgumentException(
+            $"Unknown gateway kind '{value}'. Expected opcua, stub, sim, file or offline.", nameof(value)),
     };
 }

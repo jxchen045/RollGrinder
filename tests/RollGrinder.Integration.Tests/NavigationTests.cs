@@ -184,7 +184,7 @@ public sealed class NavigationTests
             model.GoToArea(area);
             model.OpenSubView("SubView_TagMonitor");
 
-            model.GoToArea(NavigationModel.HomeArea);
+            model.GoToArea(model.HomeArea);
 
             model.CurrentArea.Should().Be(PageKey.AutoGrinding);
             model.Depth.Should().Be(1);

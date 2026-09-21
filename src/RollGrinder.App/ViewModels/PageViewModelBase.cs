@@ -57,6 +57,14 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// <summary>本页是不是编辑页：自动循环运行期间要落只读锁。</summary>
     public virtual bool LocksDuringRun => false;
 
+    /// <summary>
+    /// 没有机床时这一页还用不用得了。
+    ///
+    /// 默认 false——一页要在离线模式下开放，得有人确认它真的不碰机床。
+    /// 编程、辊形、记录、设置是 true：它们只和数据库与配置打交道。
+    /// </summary>
+    public virtual bool WorksOffline => false;
+
     /// <summary>有没有未保存的修改。脏页离开时外壳会拦一道。</summary>
     [ObservableProperty]
     private bool isDirty;

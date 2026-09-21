@@ -346,6 +346,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// <summary>编辑页：自动循环挂着程序时落只读锁。</summary>
     public override bool LocksDuringRun => true;
 
+    /// <summary>离线可用：只和数据库与配置打交道，不碰机床。</summary>
+    public override bool WorksOffline => true;
+
     public ObservableCollection<string> ProfileTypeKeys { get; }
 
     public ObservableCollection<StepTypeOptionViewModel> StepTypeOptions { get; }

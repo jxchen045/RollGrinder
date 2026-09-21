@@ -52,7 +52,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly IUserDirectory userDirectory;
     private readonly IStringLocalizer localizer;
     private readonly Navigator navigator;
-    private readonly NavigationModel model = new();
+    private readonly NavigationModel model;
     private readonly Dictionary<PageKey, PageViewModelBase> pages;
     private readonly FunctionKeyViewModel navigationKey;
 
@@ -68,6 +68,7 @@ public sealed partial class ShellViewModel : ViewModelBase
         IMachineMonitor monitor,
         IUserSession userSession,
         IUserDirectory userDirectory,
+        IAppOptions options,
         HmiSettings settings,
         IStringLocalizer localizer)
         : base(alarmLog)
@@ -82,7 +83,13 @@ public sealed partial class ShellViewModel : ViewModelBase
         this.localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
         ArgumentNullException.ThrowIfNull(settings);
 
+        ArgumentNullException.ThrowIfNull(options);
         this.pages = pages.ToDictionary(page => page.Key);
+        IsOffline = options.IsOffline;
+
+        // 离线模式下自动磨削页用不了（没有机床可监控），主页改成第一个离线可用的区域——
+        // 否则"返回主页"会把人送到一个只能看不能用的页面上。
+        this.model = new NavigationModel(IsOffline ? FirstOfflineArea() : null);
         RefreshInterval = TimeSpan.FromSeconds(1.0 / settings.UiRefreshHz);
 
         this.navigationKey = new FunctionKeyViewModel(
@@ -99,18 +106,20 @@ public sealed partial class ShellViewModel : ViewModelBase
             }
 
             PageKey target = area;
+            bool available = !IsOffline || page.WorksOffline;
             AreaMenuItems.Add(new AreaMenuItemViewModel(
                 target,
                 AreaMenuItems.Count + 1,
                 page.TitleResourceKey,
                 page.MenuHintResourceKey,
-                new RelayCommand(() => ChooseArea(target)),
-                localizer));
+                new RelayCommand(() => ChooseArea(target), () => available),
+                localizer,
+                available));
         }
 
         this.navigator.Requested += (_, request) => Handle(request);
 
-        this.currentPage = this.pages[NavigationModel.HomeArea];
+        this.currentPage = this.pages[this.model.HomeArea];
         RebuildFunctionKeys();
         SyncNavigation();
         this.currentPage.OnActivated();
@@ -178,6 +187,25 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     /// <summary>品牌标识。</summary>
     public string Brand => this.localizer["Shell_Brand"];
+
+    /// <summary>
+    /// 离线模式：没有机床。顶栏标出来，免得有人对着一台"连不上"的机床查半天线路。
+    /// </summary>
+    public bool IsOffline { get; }
+
+    /// <summary>离线时第一个能进的区域，兼作主页。</summary>
+    private PageKey FirstOfflineArea()
+    {
+        foreach (PageKey area in AreaOrder)
+        {
+            if (this.pages.TryGetValue(area, out PageViewModelBase? page) && page.WorksOffline)
+            {
+                return area;
+            }
+        }
+
+        return NavigationModel.DefaultHomeArea;
+    }
 
     /// <summary>有浮层挡着时，底下的页面与功能条不接受点击。</summary>
     public bool IsOverlayOpen => IsAreaMenuOpen || IsLeaveConfirmOpen || IsSignInOpen || IsUserAdminOpen;
@@ -635,7 +663,7 @@ public sealed partial class ShellViewModel : ViewModelBase
                 break;
 
             case NavigationRequestKind.CompleteTask:
-                RequestArea(this.model.TaskReturnArea ?? NavigationModel.HomeArea, isTaskReturn: true);
+                RequestArea(this.model.TaskReturnArea ?? this.model.HomeArea, isTaskReturn: true);
                 break;
 
             case NavigationRequestKind.OpenSubView:
@@ -676,11 +704,11 @@ public sealed partial class ShellViewModel : ViewModelBase
                 break;
 
             case NavigationKeyRole.BackToTask:
-                RequestArea(descriptor.TargetArea ?? NavigationModel.HomeArea, isTaskReturn: true);
+                RequestArea(descriptor.TargetArea ?? this.model.HomeArea, isTaskReturn: true);
                 break;
 
             case NavigationKeyRole.BackToHome:
-                RequestArea(NavigationModel.HomeArea, isTaskReturn: false);
+                RequestArea(this.model.HomeArea, isTaskReturn: false);
                 break;
 
             default:
@@ -847,10 +875,10 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     private string BuildBreadcrumb()
     {
-        string home = this.localizer[this.pages[NavigationModel.HomeArea].TitleResourceKey];
+        string home = this.localizer[this.pages[this.model.HomeArea].TitleResourceKey];
         string separator = this.localizer["Nav_BreadcrumbSeparator"];
 
-        if (this.model.CurrentArea == NavigationModel.HomeArea)
+        if (this.model.CurrentArea == this.model.HomeArea)
         {
             return this.model.CurrentSubViewKey is null
                 ? home

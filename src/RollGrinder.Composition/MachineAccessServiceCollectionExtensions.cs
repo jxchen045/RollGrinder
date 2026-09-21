@@ -56,6 +56,7 @@ public static class MachineAccessServiceCollectionExtensions
         options.Gateway switch
         {
             GatewayKind.Stub => new StubGateway(tagMap),
+            GatewayKind.Offline => new OfflineGateway(TimeProvider.System),
             GatewayKind.Sim => new SimulationGateway(tagMap, machine, TimeProvider.System),
             GatewayKind.File => new FileGateway(tagMap, options.DataDirectory, options.ReplayFilePath, TimeProvider.System),
             GatewayKind.OpcUa => new OpcUaGateway(

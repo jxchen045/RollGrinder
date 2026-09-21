@@ -120,6 +120,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     /// <summary>编辑页：自动循环挂着程序时落只读锁，免得改了辊形以为机床会跟着变。</summary>
     public override bool LocksDuringRun => true;
 
+    /// <summary>离线可用：只和数据库与配置打交道，不碰机床。</summary>
+    public override bool WorksOffline => true;
+
     public ObservableCollection<SegmentRowViewModel> Segments { get; } = new();
 
     public ObservableCollection<ParameterRowViewModel> SegmentParameters { get; } = new();

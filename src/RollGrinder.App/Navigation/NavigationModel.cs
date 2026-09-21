@@ -41,11 +41,27 @@ public sealed record NavigationKeyDescriptor(
 /// </summary>
 public sealed class NavigationModel
 {
-    /// <summary>主页。开机停在这里，任何地方按"返回主页"也回这里。</summary>
-    public const PageKey HomeArea = PageKey.AutoGrinding;
+    /// <summary>
+    /// 平常的主页。<see cref="INavigator"/> 的默认参数要一个编译期常量，所以它得是 const。
+    /// </summary>
+    public const PageKey DefaultHomeArea = PageKey.AutoGrinding;
+
+    /// <summary>
+    /// 本次运行的主页。开机停在这里，任何地方按"返回主页"也回这里。
+    ///
+    /// 离线模式下自动磨削页用不了（没有机床可监控），主页改成工序编程——
+    /// 否则"返回主页"会把人送到一个只能看不能用的页面上。
+    /// </summary>
+    public PageKey HomeArea { get; }
+
+    public NavigationModel(PageKey? homeArea = null)
+    {
+        HomeArea = homeArea ?? DefaultHomeArea;
+        CurrentArea = HomeArea;
+    }
 
     /// <summary>当前一级区域。</summary>
-    public PageKey CurrentArea { get; private set; } = HomeArea;
+    public PageKey CurrentArea { get; private set; }
 
     /// <summary>当前二级子视图的资源键；null 表示停在一级页根部。</summary>
     public string? CurrentSubViewKey { get; private set; }

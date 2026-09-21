@@ -1123,6 +1123,15 @@
   <data name="Auto_MatrixWriteFailed" xml:space="preserve">
     <value>Writing to the machine failed — nothing was sent</value>
   </data>
+  <data name="Alarm_OfflineNoMachine" xml:space="preserve">
+    <value>Offline: there is no machine, the write was refused</value>
+  </data>
+  <data name="Nav_OfflineUnavailable" xml:space="preserve">
+    <value>Not available offline: this page needs the machine</value>
+  </data>
+  <data name="Top_OfflineMode" xml:space="preserve">
+    <value>Offline · programming</value>
+  </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>Aligned</value>
   </data>

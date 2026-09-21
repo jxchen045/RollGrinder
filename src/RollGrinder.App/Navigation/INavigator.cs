@@ -37,7 +37,7 @@ public interface INavigator
 /// <param name="SubViewKey">子视图资源键。</param>
 public sealed record NavigationRequest(
     NavigationRequestKind Kind,
-    PageKey Target = NavigationModel.HomeArea,
+    PageKey Target = NavigationModel.DefaultHomeArea,
     PageKey? ReturnTo = null,
     string? SubViewKey = null);
 

@@ -82,6 +82,9 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
     public override PageKey Key => PageKey.Records;
 
+    /// <summary>离线可用：记录都在数据库里，查与打印都不需要机床。</summary>
+    public override bool WorksOffline => true;
+
     public override string TitleResourceKey => "Page_Records";
 
     public override string MenuHintResourceKey => "Menu_RecordsHint";
