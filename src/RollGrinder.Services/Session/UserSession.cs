@@ -3,44 +3,65 @@ using RollGrinder.Contracts.Dtos;
 
 namespace RollGrinder.Services.Session;
 
-/// <summary>当前操作权限。顶栏显示，界面按它开放或收起功能。</summary>
+/// <summary>
+/// 当前登录状态。顶栏显示，界面按它开放或收起功能。
+///
+/// **没登录就什么都不给**：<see cref="HasAtLeast"/> 在签退状态下一律返回 false，
+/// 所以"未登录时按钮全灰"是一条规则决定的，不是每个页面各自记得去判断。
+/// </summary>
 public interface IUserSession
 {
-    /// <summary>当前权限。</summary>
+    /// <summary>登录了没有。</summary>
+    bool IsSignedIn { get; }
+
+    /// <summary>当前账号；没登录时为 null。</summary>
+    UserAccount? CurrentUser { get; }
+
+    /// <summary>当前权限；没登录时是最低级。</summary>
     UserRole CurrentRole { get; }
 
-    /// <summary>权限变化。</summary>
-    event EventHandler? RoleChanged;
+    /// <summary>登录状态变化（登录、签退、权限被改）。</summary>
+    event EventHandler? SessionChanged;
 
-    /// <summary>切换权限。口令校验由调用方负责。</summary>
-    void SetRole(UserRole role);
+    /// <summary>登录。口令校验由 <see cref="IUserDirectory"/> 负责，这里只记状态。</summary>
+    void SignIn(UserAccount account);
 
-    /// <summary>当前权限是否达到所需级别。</summary>
+    /// <summary>签退。</summary>
+    void SignOut();
+
+    /// <summary>当前登录状态是否达到所需级别。没登录一律不够。</summary>
     bool HasAtLeast(UserRole required);
 }
 
 /// <inheritdoc cref="IUserSession"/>
 public sealed class UserSession : IUserSession
 {
-    public UserSession(UserRole initialRole)
+    public event EventHandler? SessionChanged;
+
+    public bool IsSignedIn => CurrentUser is not null;
+
+    public UserAccount? CurrentUser { get; private set; }
+
+    public UserRole CurrentRole => CurrentUser?.Role ?? UserRole.Operator;
+
+    public void SignIn(UserAccount account)
     {
-        CurrentRole = initialRole;
+        ArgumentNullException.ThrowIfNull(account);
+
+        CurrentUser = account;
+        SessionChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public event EventHandler? RoleChanged;
-
-    public UserRole CurrentRole { get; private set; }
-
-    public void SetRole(UserRole role)
+    public void SignOut()
     {
-        if (CurrentRole == role)
+        if (CurrentUser is null)
         {
             return;
         }
 
-        CurrentRole = role;
-        RoleChanged?.Invoke(this, EventArgs.Empty);
+        CurrentUser = null;
+        SessionChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public bool HasAtLeast(UserRole required) => CurrentRole >= required;
+    public bool HasAtLeast(UserRole required) => IsSignedIn && CurrentRole >= required;
 }

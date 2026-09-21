@@ -1099,6 +1099,81 @@
   <data name="Records_ToLabel" xml:space="preserve">
     <value>To</value>
   </data>
+  <data name="Role_SignedOut" xml:space="preserve">
+    <value>Signed out</value>
+  </data>
+  <data name="SignIn_Confirm" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="SignIn_ConfirmPassword" xml:space="preserve">
+    <value>Confirm password</value>
+  </data>
+  <data name="SignIn_NewPassword" xml:space="preserve">
+    <value>New password</value>
+  </data>
+  <data name="SignIn_Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="SignIn_PasswordEmpty" xml:space="preserve">
+    <value>The password cannot be empty</value>
+  </data>
+  <data name="SignIn_PasswordMismatch" xml:space="preserve">
+    <value>The two passwords do not match</value>
+  </data>
+  <data name="SignIn_Rejected" xml:space="preserve">
+    <value>Wrong user name or password</value>
+  </data>
+  <data name="SignIn_SetPasswordFirst" xml:space="preserve">
+    <value>This account has no password yet — set one now</value>
+  </data>
+  <data name="SignIn_SignOut" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="SignIn_Title" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="SignIn_UserName" xml:space="preserve">
+    <value>User name</value>
+  </data>
+  <data name="Users_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Users_ColumnName" xml:space="preserve">
+    <value>User name</value>
+  </data>
+  <data name="Users_ColumnPasswordSet" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Users_ColumnRole" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="Users_Create" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Users_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Users_Manage" xml:space="preserve">
+    <value>Users</value>
+  </data>
+  <data name="Users_NewUser" xml:space="preserve">
+    <value>New account</value>
+  </data>
+  <data name="Users_PasswordHint" xml:space="preserve">
+    <value>Leave empty so the user sets it at first sign-in</value>
+  </data>
+  <data name="Users_PasswordNotSet" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="Users_PasswordSet" xml:space="preserve">
+    <value>Set</value>
+  </data>
+  <data name="Users_ResetPassword" xml:space="preserve">
+    <value>Clear password</value>
+  </data>
+  <data name="Users_Title" xml:space="preserve">
+    <value>User management</value>
+  </data>
   <data name="Role_Administrator" xml:space="preserve">
     <value>Administrator</value>
   </data>

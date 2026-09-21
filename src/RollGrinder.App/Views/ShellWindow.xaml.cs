@@ -30,7 +30,13 @@ public partial class ShellWindow : Window
         };
         this.timer.Tick += OnTick;
 
-        Loaded += (_, _) => this.timer.Start();
+        Loaded += async (_, _) =>
+        {
+            this.timer.Start();
+
+            // 把用户名列表拉进来，登录框的下拉才有东西可选。
+            await viewModel.InitializeAsync(System.Threading.CancellationToken.None);
+        };
         Closed += (_, _) =>
         {
             this.timer.Stop();
@@ -41,6 +47,22 @@ public partial class ShellWindow : Window
     }
 
     private void OnTick(object? sender, EventArgs e) => this.viewModel.Tick(DateTimeOffset.UtcNow);
+
+    /// <summary>
+    /// WPF 的 PasswordBox 不让绑 Password（绑了就会把明文留在依赖属性系统里），
+    /// 所以口令由这几个事件推进视图模型，用完即清。
+    /// </summary>
+    private void OnSignInPasswordChanged(object sender, RoutedEventArgs e) =>
+        this.viewModel.SignInPassword = ((System.Windows.Controls.PasswordBox)sender).Password;
+
+    private void OnNewPasswordChanged(object sender, RoutedEventArgs e) =>
+        this.viewModel.NewPassword = ((System.Windows.Controls.PasswordBox)sender).Password;
+
+    private void OnConfirmPasswordChanged(object sender, RoutedEventArgs e) =>
+        this.viewModel.ConfirmPassword = ((System.Windows.Controls.PasswordBox)sender).Password;
+
+    private void OnNewUserPasswordChanged(object sender, RoutedEventArgs e) =>
+        this.viewModel.NewUserPassword = ((System.Windows.Controls.PasswordBox)sender).Password;
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {

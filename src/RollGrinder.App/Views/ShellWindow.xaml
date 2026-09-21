@@ -118,11 +118,26 @@
                     </Border>
 
                     <Border Background="{StaticResource Brush.AccentDark}" Height="46" Padding="14,0" Margin="16,0,0,0">
-                        <TextBlock Text="{Binding RoleText}"
-                                   FontSize="17"
-                                   Foreground="{StaticResource Brush.OnAccent}"
-                                   VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding RoleText}"
+                                       FontSize="17"
+                                       Foreground="{StaticResource Brush.OnAccent}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding UserNameText}"
+                                       FontSize="17"
+                                       Foreground="{StaticResource Brush.OnAccent}"
+                                       VerticalAlignment="Center" Margin="10,0,0,0"
+                                       Visibility="{Binding IsSignedIn, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
                     </Border>
+
+                    <Button Content="{loc:Loc Users_Manage}" Command="{Binding OpenUserAdminCommand}"
+                            Style="{StaticResource SecondaryButton}" Height="46" Margin="10,0,0,0" Padding="14,0"
+                            Visibility="{Binding CanManageUsers, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Button Content="{loc:Loc SignIn_SignOut}" Command="{Binding SignOutCommand}"
+                            Style="{StaticResource SecondaryButton}" Height="46" Margin="10,0,0,0" Padding="14,0"
+                            Visibility="{Binding IsSignedIn, Converter={StaticResource BoolToVisibility}}" />
 
                     <TextBlock Text="{Binding ClockText}"
                                FontFamily="{StaticResource Font.Mono}"
@@ -325,6 +340,134 @@
                                     Style="{StaticResource DialogDangerButton}" />
                         </StackPanel>
                     </StackPanel>
+                </Border>
+
+                <!-- 登录：退不掉的浮层。没登录就什么都不给。 -->
+                <Border Background="#E6101418"
+                        Visibility="{Binding IsSignInOpen, Converter={StaticResource BoolToVisibility}}">
+                    <Border Style="{StaticResource Card}" Width="480"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <StackPanel Margin="28">
+                            <TextBlock Text="{loc:Loc SignIn_Title}" Style="{StaticResource Text.CardTitle}"
+                                       FontSize="24" Margin="0,0,0,20" />
+
+                            <TextBlock Text="{loc:Loc SignIn_UserName}" Style="{StaticResource Text.Label}" />
+                            <ComboBox ItemsSource="{Binding KnownUserNames}" Text="{Binding SignInUserName}"
+                                      IsEditable="True" Height="50" FontSize="18" Margin="0,8,0,16" />
+
+                            <!-- 常规登录 -->
+                            <StackPanel Visibility="{Binding IsNormalSignIn, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{loc:Loc SignIn_Password}" Style="{StaticResource Text.Label}" />
+                                <PasswordBox x:Name="SignInPasswordBox" PasswordChanged="OnSignInPasswordChanged"
+                                             Height="50" FontSize="18" Margin="0,8,0,16"
+                                             VerticalContentAlignment="Center" />
+                            </StackPanel>
+
+                            <!-- 首次登录：先设一个口令 -->
+                            <StackPanel Visibility="{Binding NeedsNewPassword, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{loc:Loc SignIn_NewPassword}" Style="{StaticResource Text.Label}" />
+                                <PasswordBox PasswordChanged="OnNewPasswordChanged"
+                                             Height="50" FontSize="18" Margin="0,8,0,16"
+                                             VerticalContentAlignment="Center" />
+                                <TextBlock Text="{loc:Loc SignIn_ConfirmPassword}" Style="{StaticResource Text.Label}" />
+                                <PasswordBox PasswordChanged="OnConfirmPasswordChanged"
+                                             Height="50" FontSize="18" Margin="0,8,0,16"
+                                             VerticalContentAlignment="Center" />
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding SignInMessage}" FontSize="16"
+                                       Foreground="{StaticResource Brush.WarningFill}" TextWrapping="Wrap"
+                                       Visibility="{Binding SignInMessage, Converter={StaticResource TextToVisibility}}"
+                                       Margin="0,0,0,16" />
+
+                            <Button Content="{loc:Loc SignIn_Confirm}" Command="{Binding SignInCommand}"
+                                    Style="{StaticResource PrimaryButton}" Height="56" IsDefault="True" />
+                        </StackPanel>
+                    </Border>
+                </Border>
+
+                <!-- 用户管理：管理员以上才开得出来 -->
+                <Border Background="#CC101418"
+                        Visibility="{Binding IsUserAdminOpen, Converter={StaticResource BoolToVisibility}}">
+                    <Border Style="{StaticResource Card}" Width="760" Height="560"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                                <TextBlock Text="{loc:Loc Users_Title}" Style="{StaticResource Text.CardTitle}" />
+                            </Border>
+
+                            <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}"
+                                    BorderThickness="0,1,0,0" Padding="14">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Users_NewUser}" Style="{StaticResource Text.Label}"
+                                               Margin="0,0,0,8" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="170" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0" Text="{Binding NewUserName, UpdateSourceTrigger=PropertyChanged}"
+                                                 Height="48" FontSize="17" Margin="0,0,8,0"
+                                                 VerticalContentAlignment="Center" />
+                                        <PasswordBox Grid.Column="1" PasswordChanged="OnNewUserPasswordChanged"
+                                                     Height="48" FontSize="17" Margin="0,0,8,0"
+                                                     VerticalContentAlignment="Center" />
+                                        <ComboBox Grid.Column="2" ItemsSource="{Binding AssignableRoles}"
+                                                  SelectedItem="{Binding NewUserRole}"
+                                                  Height="48" FontSize="17" Margin="0,0,8,0" />
+                                        <Button Grid.Column="3" Content="{loc:Loc Users_Create}"
+                                                Command="{Binding CreateUserCommand}"
+                                                Style="{StaticResource PrimaryButton}" Height="48" Width="100" />
+                                    </Grid>
+                                    <TextBlock Text="{loc:Loc Users_PasswordHint}" Style="{StaticResource Text.Label}"
+                                               Foreground="{StaticResource Brush.TextMuted}" Margin="0,8,0,0" />
+
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                                        <Button Content="{loc:Loc Users_ResetPassword}"
+                                                Command="{Binding ResetUserPasswordCommand}"
+                                                Style="{StaticResource SecondaryButton}" Height="52" Width="130"
+                                                Margin="0,0,10,0" />
+                                        <Button Content="{loc:Loc Users_Delete}" Command="{Binding DeleteUserCommand}"
+                                                Style="{StaticResource DialogDangerButton}" Height="52" Width="110"
+                                                Margin="0,0,10,0" />
+                                        <Button Content="{loc:Loc Users_Close}" Command="{Binding CloseUserAdminCommand}"
+                                                Style="{StaticResource SecondaryButton}" Height="52" Width="110" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <DataGrid ItemsSource="{Binding UserAccounts}" SelectedItem="{Binding SelectedUserAccount}"
+                                      AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                                      Margin="14,8" FontSize="16" RowHeight="44">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{loc:Loc Users_ColumnName}"
+                                                        Binding="{Binding UserName}" Width="*" />
+                                    <DataGridTextColumn Header="{loc:Loc Users_ColumnRole}"
+                                                        Binding="{Binding Role}" Width="180" />
+                                    <DataGridTemplateColumn Header="{loc:Loc Users_ColumnPasswordSet}" Width="120">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="{loc:Loc Users_PasswordSet}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding MustSetPassword}" Value="True">
+                                                                    <Setter Property="Text" Value="{loc:Loc Users_PasswordNotSet}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </Border>
                 </Border>
             </Grid>
         </Grid>

@@ -14,7 +14,7 @@ namespace RollGrinder.Contracts.Dtos;
 /// <param name="CompensationGain">补偿增益（0–1）：一次吸收多少比例的偏差。</param>
 /// <param name="CompensationSmoothingPoints">补偿平滑窗口点数（奇数）。</param>
 /// <param name="ProfileToleranceDiameterMicrometer">辊形验收公差（直径量 µm）。</param>
-/// <param name="DefaultRole">启动时的操作权限。</param>
+/// <param name="DefaultRole">用户管理里新建账号时预选的权限。启动权限由登录决定，不看这一项。</param>
 /// <param name="ManualPulseMs">手动动作脉冲命令的脉宽（ms）。</param>
 public sealed record HmiSettings(
     int SchemaVersion,

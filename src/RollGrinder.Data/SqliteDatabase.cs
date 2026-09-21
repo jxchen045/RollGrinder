@@ -213,6 +213,21 @@ public sealed class SqliteDatabase
 
         CREATE INDEX ix_program_modified ON program(modified_at_utc);
         """,
+
+        // 5：账号。口令只存 PBKDF2 的导出密钥与盐，库里没有明文。
+        // 迭代次数跟着每个口令走，将来调高了老口令照样验得动。
+        // password_hash 为 NULL 表示这个账号还没设过口令——首次启动种下的
+        // 管理账号就是这个状态，登录时先让人设一个再放行。
+        """
+        CREATE TABLE app_user (
+            user_name          TEXT PRIMARY KEY COLLATE NOCASE,
+            role               INTEGER NOT NULL,
+            password_hash      BLOB NULL,
+            password_salt      BLOB NULL,
+            iterations         INTEGER NOT NULL,
+            created_at_utc     TEXT NOT NULL
+        );
+        """,
     };
 
     private readonly string connectionString;

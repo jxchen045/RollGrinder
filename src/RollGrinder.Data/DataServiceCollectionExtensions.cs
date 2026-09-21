@@ -18,6 +18,7 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<IJobRepository, SqliteJobRepository>();
         services.AddSingleton<IRollProfileRepository, SqliteRollProfileRepository>();
         services.AddSingleton<IProgramRepository, SqliteProgramRepository>();
+        services.AddSingleton<IUserRepository, SqliteUserRepository>();
         services.AddSingleton<IGrindingRecordRepository, SqliteGrindingRecordRepository>();
         services.AddSingleton<IMeasurementRepository, SqliteMeasurementRepository>();
         services.AddSingleton<ICompensationRepository, SqliteCompensationRepository>();

@@ -25,7 +25,8 @@ public static class ServicesServiceCollectionExtensions
 
         services.AddSingleton(settings);
         services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<IUserSession>(new UserSession(settings.DefaultRole));
+        services.AddSingleton<IUserSession, UserSession>();
+        services.AddSingleton<IUserDirectory, UserDirectory>();
 
         services.AddSingleton<AlarmLog>(provider => new AlarmLog(
             settings.AlarmHistoryLimit,

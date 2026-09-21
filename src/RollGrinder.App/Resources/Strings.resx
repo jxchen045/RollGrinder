@@ -1099,6 +1099,81 @@
   <data name="Records_ToLabel" xml:space="preserve">
     <value>止</value>
   </data>
+  <data name="Role_SignedOut" xml:space="preserve">
+    <value>未登录</value>
+  </data>
+  <data name="SignIn_Confirm" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="SignIn_ConfirmPassword" xml:space="preserve">
+    <value>确认新密码</value>
+  </data>
+  <data name="SignIn_NewPassword" xml:space="preserve">
+    <value>新密码</value>
+  </data>
+  <data name="SignIn_Password" xml:space="preserve">
+    <value>密码</value>
+  </data>
+  <data name="SignIn_PasswordEmpty" xml:space="preserve">
+    <value>密码不能为空</value>
+  </data>
+  <data name="SignIn_PasswordMismatch" xml:space="preserve">
+    <value>两次输入的密码不一致</value>
+  </data>
+  <data name="SignIn_Rejected" xml:space="preserve">
+    <value>用户名或密码不对</value>
+  </data>
+  <data name="SignIn_SetPasswordFirst" xml:space="preserve">
+    <value>这个账号还没设过密码，先设一个</value>
+  </data>
+  <data name="SignIn_SignOut" xml:space="preserve">
+    <value>签退</value>
+  </data>
+  <data name="SignIn_Title" xml:space="preserve">
+    <value>登录</value>
+  </data>
+  <data name="SignIn_UserName" xml:space="preserve">
+    <value>用户名</value>
+  </data>
+  <data name="Users_Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="Users_ColumnName" xml:space="preserve">
+    <value>用户名</value>
+  </data>
+  <data name="Users_ColumnPasswordSet" xml:space="preserve">
+    <value>密码</value>
+  </data>
+  <data name="Users_ColumnRole" xml:space="preserve">
+    <value>权限</value>
+  </data>
+  <data name="Users_Create" xml:space="preserve">
+    <value>新建</value>
+  </data>
+  <data name="Users_Delete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="Users_Manage" xml:space="preserve">
+    <value>用户管理</value>
+  </data>
+  <data name="Users_NewUser" xml:space="preserve">
+    <value>新建账号</value>
+  </data>
+  <data name="Users_PasswordHint" xml:space="preserve">
+    <value>留空表示首次登录时由本人设置</value>
+  </data>
+  <data name="Users_PasswordNotSet" xml:space="preserve">
+    <value>未设</value>
+  </data>
+  <data name="Users_PasswordSet" xml:space="preserve">
+    <value>已设</value>
+  </data>
+  <data name="Users_ResetPassword" xml:space="preserve">
+    <value>清除密码</value>
+  </data>
+  <data name="Users_Title" xml:space="preserve">
+    <value>用户管理</value>
+  </data>
   <data name="Role_Administrator" xml:space="preserve">
     <value>管理员</value>
   </data>

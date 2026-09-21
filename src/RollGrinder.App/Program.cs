@@ -17,6 +17,7 @@ using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Data;
 using RollGrinder.Services;
+using RollGrinder.Services.Session;
 using Serilog;
 
 namespace RollGrinder.App;
@@ -75,6 +76,11 @@ public static class Program
 
             using IHost host = BuildHost(options, machine, tagMap, hmiSettings, localizer);
             host.Start();
+
+            // 库是空的就种一个制造商级账号，且**不带口令**——首次登录时由现场自己设一个。
+            // 出厂默认口令不会一直留在机器上。
+            host.Services.GetRequiredService<IUserDirectory>()
+                .EnsureSeedAccountAsync(CancellationToken.None).GetAwaiter().GetResult();
 
             var application = new App(host);
             application.InitializeComponent();
