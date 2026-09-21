@@ -20,6 +20,8 @@ using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Calibration;
+using RollGrinder.Services.Jobs;
+using RollGrinder.Services.Session;
 using RollGrinder.Services.Monitoring;
 
 namespace RollGrinder.App.ViewModels;
@@ -66,24 +68,59 @@ public sealed partial class MatrixColumnViewModel : ObservableObject
 /// <summary>参数矩阵里的一格。</summary>
 public sealed partial class MatrixCellViewModel : ObservableObject
 {
-    public MatrixCellViewModel(int stepOrder, string text, bool isApplicable)
+    private readonly string original;
+
+    public MatrixCellViewModel(
+        int stepOrder,
+        string parameterKey,
+        string text,
+        bool isApplicable,
+        bool isLiveEditable)
     {
         StepOrder = stepOrder;
-        Text = text;
+        ParameterKey = parameterKey;
         IsApplicable = isApplicable;
+        IsLiveEditable = isLiveEditable;
+        this.original = text;
+        this.text = text;
     }
 
     public int StepOrder { get; }
 
-    /// <summary>显示文本；这道工序没有这个参数时是空串。</summary>
-    public string Text { get; }
+    public string ParameterKey { get; }
+
+    /// <summary>显示/编辑文本；这道工序没有这个参数时是空串。</summary>
+    [ObservableProperty]
+    private string text;
 
     /// <summary>这道工序有没有这个参数。没有就留空——空格的含义不是"值为 0"。</summary>
     public bool IsApplicable { get; }
 
+    /// <summary>这个参数能不能在**正在跑的那道工序**上改。</summary>
+    public bool IsLiveEditable { get; }
+
     /// <summary>这一格所属的工序是不是正在跑的那一道。</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanEdit))]
     private StepRowState state = StepRowState.Pending;
+
+    /// <summary>
+    /// 这一格现在改不改得动。
+    ///
+    /// 已经磨完的工序不给改（改了也没用，还会让记录对不上实际磨的东西）；
+    /// 正在跑的那一道只给改标了可在线调整的参数；还没轮到的工序随便改。
+    /// </summary>
+    public bool CanEdit => IsApplicable && State switch
+    {
+        StepRowState.Done => false,
+        StepRowState.Current => IsLiveEditable,
+        _ => true,
+    };
+
+    /// <summary>改过还没下发：界面上标红，与 RGI 的做法一致。</summary>
+    public bool IsModified => !string.Equals(Text, this.original, StringComparison.Ordinal);
+
+    partial void OnTextChanged(string value) => OnPropertyChanged(nameof(IsModified));
 }
 
 /// <summary>参数矩阵里的一行：一个参数横着看过去。</summary>
@@ -173,6 +210,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly GrindingStepTypeRegistry stepTypes;
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly ICalibrationService calibration;
+    private readonly IStepParameterUpdateService stepUpdates;
+    private readonly IUserSession userSession;
 
     private readonly LiveValueViewModel probeA;
     private readonly LiveValueViewModel probeB;
@@ -196,12 +235,16 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         GrindingStepTypeRegistry stepTypes,
         RollProfileTypeRegistry profileTypes,
         ICalibrationService calibration,
+        IStepParameterUpdateService stepUpdates,
+        IUserSession userSession,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
         : base(alarms, localizer, navigator)
     {
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
+        this.stepUpdates = stepUpdates ?? throw new ArgumentNullException(nameof(stepUpdates));
+        this.userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -273,6 +316,161 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     /// <summary>矩阵里有东西可看没有。没装载作业时整块收起来。</summary>
     [ObservableProperty]
     private bool hasMatrix;
+
+    /// <summary>矩阵里有改过还没下发的格子。"保存参数"按它点亮。</summary>
+    [ObservableProperty]
+    private bool hasPendingEdits;
+
+    /// <summary>改参数的结果提示（下发了 / 为什么被挡）。</summary>
+    [ObservableProperty]
+    private string matrixMessage = string.Empty;
+
+    /// <summary>机床当前跑到第几道；0 表示还没开始。</summary>
+    private int currentStepOrder;
+
+    private void RefreshMatrixDirty() =>
+        HasPendingEdits = MatrixRows.Any(row => row.Cells.Any(cell => cell.IsModified));
+
+    /// <summary>
+    /// 把矩阵里改过的格子下发下去。
+    ///
+    /// 这不是一条实时通道：新值写进那一道工序的 R 参数，NC 在下一道次读取；
+    /// 上位机写完就脱手，被强制结束时 NC 拿最后收到的值把这支辊磨完（最高原则）。
+    /// 规则（哪一道能改、哪个参数能改、改完还站不站得住）全在
+    /// <see cref="IStepParameterUpdateService"/> 里，界面只负责把值收上来。
+    /// </summary>
+    [RelayCommand]
+    private async Task SaveMatrixAsync(CancellationToken cancellationToken)
+    {
+        if (this.activeJob is null || !HasPendingEdits)
+        {
+            return;
+        }
+
+        GrindingJob? edited = CollectEditedJob();
+        if (edited is null)
+        {
+            MatrixMessage = Localizer["Auto_MatrixValueInvalid"];
+            return;
+        }
+
+        try
+        {
+            StepUpdateResult result = await this.stepUpdates.UpdateAsync(
+                this.activeJob,
+                edited,
+                this.currentStepOrder,
+                this.userSession.CurrentUser?.UserName ?? string.Empty,
+                cancellationToken).ConfigureAwait(true);
+
+            if (!result.Succeeded)
+            {
+                MatrixMessage = Describe(result);
+                return;
+            }
+
+            this.activeJob = edited;
+            this.activePlans = edited.Steps
+                .Select(step => this.stepTypes.Get(step.StepTypeKey).CreatePlan(edited.Geometry, step.Parameters))
+                .ToArray();
+
+            BuildMatrix(edited);
+            UpdateMatrixState(this.currentStepOrder);
+            MatrixMessage = Localizer["Auto_MatrixSaved"];
+        }
+        catch (GatewayException ex)
+        {
+            Alarms.RaiseException(ex);
+            MatrixMessage = Localizer["Auto_MatrixWriteFailed"];
+        }
+    }
+
+    /// <summary>丢掉没下发的改动，回到机床里那一份。</summary>
+    [RelayCommand]
+    private void DiscardMatrixEdits()
+    {
+        if (this.activeJob is not null)
+        {
+            BuildMatrix(this.activeJob);
+            UpdateMatrixState(this.currentStepOrder);
+        }
+
+        MatrixMessage = string.Empty;
+    }
+
+    private string Describe(StepUpdateResult result) => result.Refusal switch
+    {
+        StepUpdateRefusal.NothingChanged => Localizer["Auto_MatrixNothingChanged"],
+        StepUpdateRefusal.NotJustParameters => Localizer["Auto_MatrixNotJustParameters"],
+        StepUpdateRefusal.StepAlreadyDone => Localizer["Auto_MatrixStepDone"],
+        StepUpdateRefusal.NotLiveEditable => Localizer.Format(
+            "Auto_MatrixNotLiveEditable",
+            string.Join("、", result.BlockedParameterKeys.Select(key => Localizer["Parameter_" + key]))),
+        StepUpdateRefusal.Invalid => Localizer.Format(
+            "Auto_MatrixInvalid",
+            string.Join("、", result.Violations.Select(violation => Localizer["Parameter_" + violation.ParameterKey]))),
+        _ => string.Empty,
+    };
+
+    /// <summary>把矩阵里的文本收成一份改过的作业；有格子填得不成立就返回 null。</summary>
+    private GrindingJob? CollectEditedJob()
+    {
+        GrindingJob job = this.activeJob!;
+        var steps = new List<GrindingJobStep>(job.Steps.Count);
+
+        foreach (GrindingJobStep step in job.Steps)
+        {
+            Core.Parameters.ParameterSet parameters = step.Parameters;
+            IGrindingStepType stepType = this.stepTypes.Get(step.StepTypeKey);
+
+            foreach (MatrixRowViewModel row in MatrixRows)
+            {
+                MatrixCellViewModel? cell = row.Cells.FirstOrDefault(candidate => candidate.StepOrder == step.Order);
+                if (cell is null || !cell.IsApplicable || !cell.IsModified)
+                {
+                    continue;
+                }
+
+                Core.Parameters.ParameterDescriptor? descriptor = stepType.Schema.Descriptors
+                    .FirstOrDefault(candidate => string.Equals(candidate.Key, cell.ParameterKey, StringComparison.Ordinal));
+                if (descriptor is null)
+                {
+                    continue;
+                }
+
+                Core.Parameters.ParameterValue? value = Parse(descriptor, cell.Text);
+                if (value is null)
+                {
+                    return null;
+                }
+
+                parameters = parameters.With(cell.ParameterKey, value);
+            }
+
+            steps.Add(step with { Parameters = parameters });
+        }
+
+        return job with { Steps = steps };
+    }
+
+    private static Core.Parameters.ParameterValue? Parse(
+        Core.Parameters.ParameterDescriptor descriptor,
+        string text)
+    {
+        switch (descriptor.Kind)
+        {
+            case Core.Parameters.ParameterValueKind.Number:
+                return double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out double parsed)
+                       || double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out parsed)
+                    ? Core.Parameters.ParameterValue.FromNumber(parsed)
+                    : null;
+
+            default:
+                // 开关与选项在矩阵里是只读的：一排分段按钮塞不进一个格子，
+                // 要改去工序编程页改。
+                return null;
+        }
+    }
 
     /// <summary>曲线数据（辊身坐标 mm，直径量 µm）。</summary>
     public IReadOnlyList<(double BodyPositionMm, double DiameterMicrometer)> CurvePoints { get; private set; } =
@@ -404,6 +602,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 : string.Empty;
         }
 
+        this.currentStepOrder = currentOrder;
         UpdateMatrixState(currentOrder);
         UpdateProgress(currentOrder, pass, totalPasses);
     }
@@ -565,12 +764,28 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 LabelOf(row.Descriptor),
                 UnitOf(row.Descriptor),
                 row.Cells
-                    .Select(cell => new MatrixCellViewModel(
-                        cell.StepOrder, Format(row.Descriptor, cell.Value), cell.IsApplicable))
+                    .Select(cell =>
+                    {
+                        var vm = new MatrixCellViewModel(
+                            cell.StepOrder,
+                            row.Descriptor.Key,
+                            Format(row.Descriptor, cell.Value),
+                            cell.IsApplicable,
+                            row.Descriptor.IsLiveEditable);
+                        vm.PropertyChanged += (_, e) =>
+                        {
+                            if (e.PropertyName == nameof(MatrixCellViewModel.IsModified))
+                            {
+                                RefreshMatrixDirty();
+                            }
+                        };
+                        return vm;
+                    })
                     .ToArray()));
         }
 
         HasMatrix = MatrixRows.Count > 0;
+        RefreshMatrixDirty();
     }
 
     private string LabelOf(Core.Parameters.ParameterDescriptor descriptor)

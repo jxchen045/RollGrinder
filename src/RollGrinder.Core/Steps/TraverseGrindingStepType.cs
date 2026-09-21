@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Units;
@@ -143,6 +144,36 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
                 values.GetNumber(StepParameterKeys.SpeedVariationPeriodSeconds));
     }
 
+    /// <summary>
+    /// 磨削进行当中，在**正在跑的那一道工序**上还能改的参数。
+    ///
+    /// 判据是"改了之后，NC 在下一道次按新值走就完事，不会在一道次中间造成突变"：
+    ///
+    /// - 拖板速度、两路进给、折返时间：电流大了、火花不对，就是要当场往下压一点；
+    /// - 道次、磨削量、光磨道次：都是终止条件，改了只影响还要走几道；
+    /// - 头架转速：变频驱动，下一道次按新值走；
+    /// - 变速三件套：颤振是磨到一半才出来的，不让当场调就只能停机。
+    ///
+    /// 砂轮线速度不在里面：132 kW 的主轴惯量大，磨削当中改就是带着切削长时间爬坡。
+    /// 在线测量也不在：一道工序磨了一半再把测量臂放下来，不是参数问题。
+    ///
+    /// 这只管"当前这一道"。**还没轮到的工序怎么改都行**——那跟重新编程没有区别。
+    /// </summary>
+    private static readonly HashSet<string> LiveEditableKeys = new(StringComparer.Ordinal)
+    {
+        StepParameterKeys.WorkpieceSpeedRpm,
+        StepParameterKeys.FeedMmPerMin,
+        StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin,
+        StepParameterKeys.InfeedPerPassDiameterMicrometer,
+        StepParameterKeys.PassCount,
+        StepParameterKeys.StockDiameterMicrometer,
+        StepParameterKeys.ReversalDwellSeconds,
+        StepParameterKeys.SparkOutPassCount,
+        StepParameterKeys.SpeedVariationTarget,
+        StepParameterKeys.SpeedVariationPercent,
+        StepParameterKeys.SpeedVariationPeriodSeconds,
+    };
+
     private static ParameterSchema BuildSchema(TraverseStepDefaults defaults)
     {
         var descriptors = new List<ParameterDescriptor>
@@ -228,6 +259,9 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
                 30.0),
         };
 
-        return new ParameterSchema(descriptors);
+        return new ParameterSchema(descriptors.Select(descriptor =>
+            LiveEditableKeys.Contains(descriptor.Key)
+                ? descriptor with { IsLiveEditable = true }
+                : descriptor));
     }
 }

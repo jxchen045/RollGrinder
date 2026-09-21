@@ -1090,6 +1090,39 @@
   <data name="Auto_MatrixParameterColumn" xml:space="preserve">
     <value>参数</value>
   </data>
+  <data name="Auto_MatrixDiscard" xml:space="preserve">
+    <value>放弃</value>
+  </data>
+  <data name="Auto_MatrixInvalid" xml:space="preserve">
+    <value>{0} 超出机床能力，没有下发</value>
+  </data>
+  <data name="Auto_MatrixNotJustParameters" xml:space="preserve">
+    <value>工序序列或辊形变了，请停机重新下发整支作业</value>
+  </data>
+  <data name="Auto_MatrixNotLiveEditable" xml:space="preserve">
+    <value>{0} 不能在正在跑的这道工序上改</value>
+  </data>
+  <data name="Auto_MatrixNothingChanged" xml:space="preserve">
+    <value>没有改动</value>
+  </data>
+  <data name="Auto_MatrixPendingHint" xml:space="preserve">
+    <value>改过的参数尚未下发。保存后写入 NC，下一道次按新值走；已磨完的工序改不动，正在跑的那一道只能改可在线调整的参数。</value>
+  </data>
+  <data name="Auto_MatrixSave" xml:space="preserve">
+    <value>保存参数</value>
+  </data>
+  <data name="Auto_MatrixSaved" xml:space="preserve">
+    <value>已下发，下一道次按新值走</value>
+  </data>
+  <data name="Auto_MatrixStepDone" xml:space="preserve">
+    <value>这道工序已经磨完，改不动了</value>
+  </data>
+  <data name="Auto_MatrixValueInvalid" xml:space="preserve">
+    <value>有格子填得不成立，先改对再保存</value>
+  </data>
+  <data name="Auto_MatrixWriteFailed" xml:space="preserve">
+    <value>写机床失败，参数没有下发</value>
+  </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>已对齐</value>
   </data>

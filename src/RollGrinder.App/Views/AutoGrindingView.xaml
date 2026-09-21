@@ -128,7 +128,30 @@
                             <TextBlock Text="{loc:Loc Auto_MatrixHeader}" Style="{StaticResource Text.CardTitle}" />
                             <TextBlock Text="{loc:Loc Auto_MatrixHint}" Style="{StaticResource Text.Label}"
                                        Margin="12,0,0,0" Foreground="{StaticResource Brush.TextMuted}" />
+                            <TextBlock Text="{Binding MatrixMessage}" FontSize="15" Margin="12,0,0,0"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       Foreground="{StaticResource Brush.WarningFill}"
+                                       Visibility="{Binding MatrixMessage, Converter={StaticResource TextToVisibility}}" />
                         </StackPanel>
+                    </Border>
+
+                    <!--
+                        改参数不是实时通道：新值写进那一道工序的 R 参数，NC 在下一道次读取。
+                        改过还没下发的格子标红，与 RGI 的做法一致。
+                    -->
+                    <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}"
+                            BorderThickness="0,1,0,0" Padding="14,10"
+                            Visibility="{Binding HasPendingEdits, Converter={StaticResource BoolToVisibility}}">
+                        <DockPanel>
+                            <TextBlock Text="{loc:Loc Auto_MatrixPendingHint}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" TextWrapping="Wrap" />
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="{loc:Loc Auto_MatrixDiscard}" Command="{Binding DiscardMatrixEditsCommand}"
+                                        Style="{StaticResource SecondaryButton}" Height="50" Width="110" Margin="10,0,10,0" />
+                                <Button Content="{loc:Loc Auto_MatrixSave}" Command="{Binding SaveMatrixCommand}"
+                                        Style="{StaticResource PrimaryButton}" Height="50" Width="130" />
+                            </StackPanel>
+                        </DockPanel>
                     </Border>
 
                     <TextBlock Text="{loc:Loc Auto_MatrixEmpty}"
@@ -196,15 +219,42 @@
                                                 </ItemsControl.ItemsPanel>
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Width="116" Height="40" Padding="8,0"
+                                                        <Border Width="116" Height="40"
                                                                 BorderBrush="{StaticResource Brush.Divider}"
                                                                 BorderThickness="0,0,1,1"
                                                                 Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
-                                                            <TextBlock Text="{Binding Text}"
-                                                                       FontFamily="{StaticResource Font.Mono}"
-                                                                       FontSize="16" VerticalAlignment="Center"
-                                                                       HorizontalAlignment="Right"
-                                                                       Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
+                                                            <Grid>
+                                                                <!-- 改不动的格子：只读文本 -->
+                                                                <TextBlock Text="{Binding Text}" Margin="8,0"
+                                                                           FontFamily="{StaticResource Font.Mono}"
+                                                                           FontSize="16" VerticalAlignment="Center"
+                                                                           HorizontalAlignment="Right"
+                                                                           Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}"
+                                                                           Visibility="{Binding CanEdit, Converter={StaticResource InverseBoolVisibility}}" />
+
+                                                                <!-- 改得动的格子：就地编辑，改过标红 -->
+                                                                <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                                                         FontFamily="{StaticResource Font.Mono}"
+                                                                         FontSize="16" BorderThickness="0"
+                                                                         Background="Transparent" Padding="8,0"
+                                                                         VerticalContentAlignment="Center"
+                                                                         HorizontalContentAlignment="Right"
+                                                                         Visibility="{Binding CanEdit, Converter={StaticResource BoolToVisibility}}">
+                                                                    <TextBox.Style>
+                                                                        <Style TargetType="TextBox">
+                                                                            <Setter Property="Foreground"
+                                                                                    Value="{Binding State, Converter={StaticResource StepStateToForeground}}" />
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsModified}" Value="True">
+                                                                                    <Setter Property="Foreground"
+                                                                                            Value="{StaticResource Brush.WarningFill}" />
+                                                                                    <Setter Property="FontWeight" Value="Bold" />
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBox.Style>
+                                                                </TextBox>
+                                                            </Grid>
                                                         </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>

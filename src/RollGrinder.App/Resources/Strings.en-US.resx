@@ -1090,6 +1090,39 @@
   <data name="Auto_MatrixParameterColumn" xml:space="preserve">
     <value>Parameter</value>
   </data>
+  <data name="Auto_MatrixDiscard" xml:space="preserve">
+    <value>Discard</value>
+  </data>
+  <data name="Auto_MatrixInvalid" xml:space="preserve">
+    <value>{0} is beyond the machine limits — nothing was sent</value>
+  </data>
+  <data name="Auto_MatrixNotJustParameters" xml:space="preserve">
+    <value>The step sequence or profile changed — stop and hand over the whole job again</value>
+  </data>
+  <data name="Auto_MatrixNotLiveEditable" xml:space="preserve">
+    <value>{0} cannot be changed on the running step</value>
+  </data>
+  <data name="Auto_MatrixNothingChanged" xml:space="preserve">
+    <value>Nothing changed</value>
+  </data>
+  <data name="Auto_MatrixPendingHint" xml:space="preserve">
+    <value>Edited parameters have not been sent yet. Saving writes them to the NC and they take effect on the next pass; finished steps cannot be edited, and the running step only accepts parameters marked live-adjustable.</value>
+  </data>
+  <data name="Auto_MatrixSave" xml:space="preserve">
+    <value>Save parameters</value>
+  </data>
+  <data name="Auto_MatrixSaved" xml:space="preserve">
+    <value>Sent — effective from the next pass</value>
+  </data>
+  <data name="Auto_MatrixStepDone" xml:space="preserve">
+    <value>That step has already finished</value>
+  </data>
+  <data name="Auto_MatrixValueInvalid" xml:space="preserve">
+    <value>A cell is not a valid value — fix it before saving</value>
+  </data>
+  <data name="Auto_MatrixWriteFailed" xml:space="preserve">
+    <value>Writing to the machine failed — nothing was sent</value>
+  </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>Aligned</value>
   </data>

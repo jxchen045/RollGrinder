@@ -95,7 +95,74 @@ public sealed class NcJobTranslator
 
         for (int i = 0; i < plans.Length; i++)
         {
-            GrindingStepPlan plan = plans[i];
+            AppendStep(writes, plans[i], i, timestampUtc);
+        }
+
+        // 程序步骤开关：NC 程序按它决定要不要走那几段辅助子程序。
+        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
+        {
+            AddBoolean(writes, MachineTagKeys.JobOption(option.Key), job.IsProgramOptionEnabled(option.Key), timestampUtc);
+        }
+
+        for (int i = 0; i < targetProfile.Points.Count; i++)
+        {
+            ProfilePoint point = targetProfile.Points[i];
+            AddNumber(writes, Indexed(MachineTagKeys.JobProfileBodyPositionMm, i), point.BodyPositionMm, timestampUtc);
+            AddNumber(writes, Indexed(MachineTagKeys.JobProfileRadiusOffsetMm, i), point.RadiusOffsetMm, timestampUtc);
+        }
+
+        // 必须最后一条：NC 见到它才认这组参数。
+        writes.Add(new TagWrite(
+            MachineTagKeys.JobParametersValid,
+            new TagValue(MachineTagKeys.JobParametersValid, TagDataType.Boolean, true, timestampUtc)));
+
+        return new NcDownload(writes, targetProfile, plans);
+    }
+
+    /// <summary>
+    /// 只把**一道工序**的参数翻译成写入，**不碰"参数有效"标志**。
+    ///
+    /// 磨削进行当中改参数走这一条：作业的身份没变，重新脉冲一次握手标志
+    /// 会让 NC 以为来了一份新作业。新值落在那一道的 R 参数上，
+    /// NC 在下一道次读取——上位机写完就脱手，不参与实时控制回路（最高原则）。
+    ///
+    /// &gt; **要 NC 侧确认的一条**：工序参数必须在每个道次开始时重读 R 参数，
+    /// &gt; 而不是在作业启动时latch 进局部变量——latch 了的话这里写进去也不起作用。
+    /// </summary>
+    /// <param name="job">改过参数之后的整支作业（用来重新展开计划）。</param>
+    /// <param name="stepOrder">要更新的工序序号，从 1 起。</param>
+    /// <param name="timestampUtc">时间戳。</param>
+    public IReadOnlyList<TagWrite> TranslateStepParameters(
+        GrindingJob job,
+        int stepOrder,
+        DateTimeOffset timestampUtc)
+    {
+        ArgumentNullException.ThrowIfNull(job);
+
+        int index = stepOrder - 1;
+        if (index < 0 || index >= job.Steps.Count)
+        {
+            throw new GatewayException($"Job '{job.JobId}' has no step {stepOrder}.");
+        }
+
+        int stepSlots = ArrayLength(MachineTagKeys.JobStepTypeCode);
+        if (index >= stepSlots)
+        {
+            throw new GatewayException(
+                $"Step {stepOrder} is beyond the {stepSlots} step slots tagmap.json provides.");
+        }
+
+        GrindingJobStep step = job.Steps[index];
+        GrindingStepPlan plan = this.stepTypes.Get(step.StepTypeKey).CreatePlan(job.Geometry, step.Parameters);
+
+        var writes = new List<TagWrite>();
+        AppendStep(writes, plan, index, timestampUtc);
+        return writes;
+    }
+
+    /// <summary>一道工序的全部参数写入。全量下发与单道更新共用这一份，免得两边漂移。</summary>
+    private void AppendStep(List<TagWrite> writes, GrindingStepPlan plan, int i, DateTimeOffset timestampUtc)
+    {
             AddInteger(writes, Indexed(MachineTagKeys.JobStepTypeCode, i), StepTypeCode(plan.StepTypeKey), timestampUtc);
             AddInteger(writes, Indexed(MachineTagKeys.JobStepPassCount, i), plan.PassCount, timestampUtc);
             AddNumber(writes, Indexed(MachineTagKeys.JobStepInfeedPerPassRadiusMm, i), plan.InfeedPerPassRadiusMm, timestampUtc);
@@ -148,27 +215,6 @@ public sealed class NcJobTranslator
                 Indexed(MachineTagKeys.JobStepSpeedVariationPeriodSeconds, i),
                 plan.SpeedVariation.PeriodSeconds,
                 timestampUtc);
-        }
-
-        // 程序步骤开关：NC 程序按它决定要不要走那几段辅助子程序。
-        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
-        {
-            AddBoolean(writes, MachineTagKeys.JobOption(option.Key), job.IsProgramOptionEnabled(option.Key), timestampUtc);
-        }
-
-        for (int i = 0; i < targetProfile.Points.Count; i++)
-        {
-            ProfilePoint point = targetProfile.Points[i];
-            AddNumber(writes, Indexed(MachineTagKeys.JobProfileBodyPositionMm, i), point.BodyPositionMm, timestampUtc);
-            AddNumber(writes, Indexed(MachineTagKeys.JobProfileRadiusOffsetMm, i), point.RadiusOffsetMm, timestampUtc);
-        }
-
-        // 必须最后一条：NC 见到它才认这组参数。
-        writes.Add(new TagWrite(
-            MachineTagKeys.JobParametersValid,
-            new TagValue(MachineTagKeys.JobParametersValid, TagDataType.Boolean, true, timestampUtc)));
-
-        return new NcDownload(writes, targetProfile, plans);
     }
 
     /// <summary>下发前检查必需的逻辑名是否都在 tagmap 里，返回缺失的键。</summary>

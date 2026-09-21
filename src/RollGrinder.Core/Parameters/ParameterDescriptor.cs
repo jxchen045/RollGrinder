@@ -27,6 +27,17 @@ public sealed record ParameterDescriptor(
     bool IsRequired = true,
     IReadOnlyList<string>? AllowedValues = null)
 {
+    /// <summary>
+    /// 这个参数能不能在**正在执行的那道工序**上改。
+    ///
+    /// 改了不是马上生效：新值写进 NC 的 R 参数，NC 在下一道次读取。
+    /// 上位机改完就脱手，被强制结束时 NC 拿最后收到的值把这支辊磨完（最高原则）。
+    ///
+    /// 只管"当前这一道"。**还没轮到的工序怎么改都行**——那跟重新编程没有区别。
+    /// 默认 false：一个参数要允许在磨削当中动，得有人想清楚为什么。
+    /// </summary>
+    public bool IsLiveEditable { get; init; }
+
     /// <summary>界面文案的资源键，约定为 "Parameter_" + Key。界面不得自行拼中文。</summary>
     public string ResourceKey => "Parameter_" + Key;
 

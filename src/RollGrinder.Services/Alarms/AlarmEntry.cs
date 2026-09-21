@@ -49,6 +49,9 @@ public static class AlarmCodes
     /// <summary>参数已下发但记录未入库。</summary>
     public const int HandoverNotArchived = 800021;
 
+    /// <summary>磨削进行当中改了工序参数。</summary>
+    public const int StepParametersUpdated = 800022;
+
     /// <summary>tagmap 缺少必需变量。</summary>
     public const int TagMissing = 800030;
 
