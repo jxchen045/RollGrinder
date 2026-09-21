@@ -109,6 +109,27 @@
       "unit": "mm"
     },
     {
+      "key": "job.control.endStepEarly",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit41\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "当前工序提前结束，进入下一道（脉冲，PLC 上升沿触发并自复位）"
+    },
+    {
+      "key": "job.control.jumpToStep",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit40\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "跳到 job.control.targetStepOrder 指定的工序（脉冲，PLC 上升沿触发并自复位）"
+    },
+    {
+      "key": "job.control.targetStepOrder",
+      "address": "ns=2;s=/Channel/Parameter/R[125]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "跳转目标工序号。先写这一项，再脉冲 job.control.jumpToStep"
+    },
+    {
       "key": "job.currentPass",
       "address": "ns=2;s=/Channel/Parameter/R[122]",
       "dataType": "Int32",

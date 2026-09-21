@@ -144,13 +144,22 @@ public sealed class MatrixRowViewModel
 /// <summary>工序序列里的一行。</summary>
 public sealed partial class SequenceRowViewModel : ObservableObject
 {
-    public SequenceRowViewModel(int order, string displayName, string durationText)
+    public SequenceRowViewModel(
+        int order, string displayName, string durationText, System.Windows.Input.ICommand jumpCommand)
     {
         OrderText = order.ToString("00", CultureInfo.InvariantCulture);
         Order = order;
         DisplayName = displayName;
         DurationText = durationText;
+        JumpCommand = jumpCommand ?? throw new ArgumentNullException(nameof(jumpCommand));
     }
+
+    /// <summary>"跳到此工序"。只在还没轮到的行上点得动。</summary>
+    public System.Windows.Input.ICommand JumpCommand { get; }
+
+    /// <summary>这一行能不能跳过去：只许往前，且机床得在跑。</summary>
+    [ObservableProperty]
+    private bool canJumpHere;
 
     public int Order { get; }
 
@@ -195,12 +204,25 @@ public enum CurveKind
     GrindingCurrent = 4,
 }
 
+/// <summary>要确认的流程动作。</summary>
+internal enum StepFlowAction
+{
+    /// <summary>跳到指定工序。</summary>
+    Jump = 0,
+
+    /// <summary>当前工序提前结束。</summary>
+    EndEarly = 1,
+}
+
 /// <summary>
 /// 自动磨削（主界面）。版面见 docs/design/B-Light-自动磨削.html。
 /// 只读取监视服务发布的快照与数据库里的作业，不直接碰网关。
 /// </summary>
 public sealed partial class AutoGrindingViewModel : PageViewModelBase
 {
+    /// <summary>流程动作第二下的等待窗口。与手动页的危险动作取同一个数。</summary>
+    private static readonly TimeSpan FlowConfirmationWindow = TimeSpan.FromSeconds(4.0);
+
     private readonly IMachineMonitor monitor;
     private readonly MachineDescription machine;
     private readonly HmiSettings settings;
@@ -211,6 +233,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly ICalibrationService calibration;
     private readonly IStepParameterUpdateService stepUpdates;
+    private readonly IStepFlowControlService stepFlow;
     private readonly IUserSession userSession;
 
     private readonly LiveValueViewModel probeA;
@@ -222,8 +245,20 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly LiveValueViewModel grindingCurrent;
     private readonly LiveValueViewModel currentPass;
 
+    private readonly FunctionKeyViewModel skipStepKey;
+    private readonly FunctionKeyViewModel endEarlyKey;
+
     private GrindingJob? activeJob;
     private IReadOnlyList<GrindingStepPlan> activePlans = Array.Empty<GrindingStepPlan>();
+
+    /// <summary>正等第二下确认的是哪一个流程动作；null 表示没有。</summary>
+    private StepFlowAction? pendingFlowAction;
+
+    /// <summary>第二下的截止时刻；过了就自动撤销。</summary>
+    private DateTimeOffset flowConfirmDeadlineUtc;
+
+    /// <summary>"跳到此工序"点的是哪一道（<see cref="StepFlowAction.Jump"/> 时有值）。</summary>
+    private int pendingJumpTargetOrder;
 
     public AutoGrindingViewModel(
         IMachineMonitor monitor,
@@ -236,6 +271,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         RollProfileTypeRegistry profileTypes,
         ICalibrationService calibration,
         IStepParameterUpdateService stepUpdates,
+        IStepFlowControlService stepFlow,
         IUserSession userSession,
         IStringLocalizer localizer,
         IAlarmSink alarms,
@@ -244,6 +280,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     {
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.stepUpdates = stepUpdates ?? throw new ArgumentNullException(nameof(stepUpdates));
+        this.stepFlow = stepFlow ?? throw new ArgumentNullException(nameof(stepFlow));
         this.userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
@@ -277,8 +314,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         {
             FunctionKeyViewModel.Placeholder("Fn_Start", localizer, () => NotImplementedYet("Fn_Start"), FunctionKeyKind.Start),
             FunctionKeyViewModel.Placeholder("Fn_Pause", localizer, () => NotImplementedYet("Fn_Pause")),
-            FunctionKeyViewModel.Placeholder("Fn_SkipStep", localizer, () => NotImplementedYet("Fn_SkipStep")),
-            FunctionKeyViewModel.Placeholder("Fn_EndEarly", localizer, () => NotImplementedYet("Fn_EndEarly")),
+            this.skipStepKey = new FunctionKeyViewModel(
+                "Fn_SkipStep", SkipStepCommand, localizer, FunctionKeyKind.Danger),
+            this.endEarlyKey = new FunctionKeyViewModel(
+                "Fn_EndEarly", EndStepEarlyCommand, localizer, FunctionKeyKind.Danger),
             FunctionKeyViewModel.Placeholder("Fn_Coolant", localizer, () => NotImplementedYet("Fn_Coolant")),
             // 补偿设置住在工序编程页：派过去，导航槽会显示"返回 自动磨削"。
             FunctionKeyViewModel.Placeholder(
@@ -554,7 +593,131 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         UpdateDiameters(snapshot);
         UpdateSequence(snapshot);
         UpdateCompensation(snapshot);
+        UpdateStepFlow(nowUtc);
     }
+
+    /// <summary>
+    /// 每一拍刷新流程控制：能不能按、待确认的到没到点。
+    /// 全按机床的当前快照算，不缓存判断——工序一变，按钮跟着变。
+    /// </summary>
+    private void UpdateStepFlow(DateTimeOffset nowUtc)
+    {
+        // 到点没按第二下就撤销：免得一分钟后误触被当成确认。
+        if (this.pendingFlowAction is not null && nowUtc > this.flowConfirmDeadlineUtc)
+        {
+            CancelFlowConfirmation();
+        }
+
+        bool canEndEarly = this.activeJob is not null && this.stepFlow.CanEndStepEarly(this.activeJob).Succeeded;
+        this.endEarlyKey.IsEnabled = canEndEarly;
+        this.skipStepKey.IsEnabled = this.activeJob is not null
+            && this.stepFlow.CanJumpTo(this.activeJob, CurrentStepOrder() + 1).Succeeded;
+
+        foreach (SequenceRowViewModel row in Sequence)
+        {
+            row.CanJumpHere = this.activeJob is not null
+                && this.stepFlow.CanJumpTo(this.activeJob, row.Order).Succeeded;
+        }
+    }
+
+    /// <summary>
+    /// 跳过当前工序：跳到下一道。
+    ///
+    /// 和手动页的危险动作一样要按两下——按错一下就少磨一道工序，
+    /// 而少磨的那一道再也补不回来（余量已经按计划分配掉了）。
+    /// </summary>
+    [RelayCommand]
+    private Task SkipStepAsync(CancellationToken cancellationToken) =>
+        RequestFlowAsync(StepFlowAction.Jump, CurrentStepOrder() + 1, cancellationToken);
+
+    /// <summary>跳到指定的某一道工序（工序序列里每行一个）。</summary>
+    [RelayCommand]
+    private Task JumpToStepAsync(SequenceRowViewModel row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        return RequestFlowAsync(StepFlowAction.Jump, row.Order, CancellationToken.None);
+    }
+
+    /// <summary>当前工序提前结束，进入下一道。</summary>
+    [RelayCommand]
+    private Task EndStepEarlyAsync(CancellationToken cancellationToken) =>
+        RequestFlowAsync(StepFlowAction.EndEarly, 0, cancellationToken);
+
+    /// <summary>
+    /// 流程动作的两段式：第一下只是把按钮改成"再按一次"，第二下才真发。
+    /// 中途按了别的流程键，前一个待确认的自动撤销——只留一个红按钮。
+    /// </summary>
+    private async Task RequestFlowAsync(StepFlowAction action, int targetOrder, CancellationToken cancellationToken)
+    {
+        if (this.activeJob is null)
+        {
+            Alarms.Raise(AlarmSeverity.Warning, "Auto_NoActiveJob", detail: null, code: AlarmCodes.Unspecified);
+            return;
+        }
+
+        // 先问服务能不能做：不能做就别让人按第二下，直接说为什么。
+        StepFlowResult permission = action == StepFlowAction.Jump
+            ? this.stepFlow.CanJumpTo(this.activeJob, targetOrder)
+            : this.stepFlow.CanEndStepEarly(this.activeJob);
+        if (!permission.Succeeded)
+        {
+            CancelFlowConfirmation();
+            Alarms.Raise(AlarmSeverity.Warning, permission.MessageResourceKey!, detail: null, code: AlarmCodes.Unspecified);
+            return;
+        }
+
+        bool isSameRequest = this.pendingFlowAction == action
+            && (action != StepFlowAction.Jump || this.pendingJumpTargetOrder == targetOrder);
+        if (!isSameRequest)
+        {
+            BeginFlowConfirmation(action, targetOrder);
+            return;
+        }
+
+        CancelFlowConfirmation();
+
+        string requestedBy = this.userSession.CurrentUser?.UserName ?? string.Empty;
+        await RunGuardedAsync(async token =>
+        {
+            StepFlowResult result = action == StepFlowAction.Jump
+                ? await this.stepFlow.JumpToStepAsync(this.activeJob!, targetOrder, requestedBy, token)
+                    .ConfigureAwait(true)
+                : await this.stepFlow.EndStepEarlyAsync(this.activeJob!, requestedBy, token).ConfigureAwait(true);
+
+            if (!result.Succeeded)
+            {
+                Alarms.Raise(
+                    AlarmSeverity.Warning, result.MessageResourceKey!, detail: null, code: AlarmCodes.Unspecified);
+            }
+        }, cancellationToken).ConfigureAwait(true);
+    }
+
+    private void BeginFlowConfirmation(StepFlowAction action, int targetOrder)
+    {
+        this.pendingFlowAction = action;
+        this.pendingJumpTargetOrder = targetOrder;
+        this.flowConfirmDeadlineUtc = DateTimeOffset.UtcNow + FlowConfirmationWindow;
+        UpdateFlowKeyLabels();
+    }
+
+    private void CancelFlowConfirmation()
+    {
+        this.pendingFlowAction = null;
+        this.pendingJumpTargetOrder = 0;
+        this.flowConfirmDeadlineUtc = default;
+        UpdateFlowKeyLabels();
+    }
+
+    private void UpdateFlowKeyLabels()
+    {
+        this.skipStepKey.LabelResourceKey =
+            this.pendingFlowAction == StepFlowAction.Jump ? "Fn_ConfirmAgain" : "Fn_SkipStep";
+        this.endEarlyKey.LabelResourceKey =
+            this.pendingFlowAction == StepFlowAction.EndEarly ? "Fn_ConfirmAgain" : "Fn_EndEarly";
+    }
+
+    private int CurrentStepOrder() =>
+        (int)(this.monitor.Current.GetNumberOrNull(MachineTagKeys.JobCurrentStepOrder) ?? 0);
 
     [RelayCommand]
     private void SelectCurve(CurveKind kind)
@@ -735,7 +898,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 Localizer["StepType_" + step.StepTypeKey],
                 duration > TimeSpan.Zero
                     ? Localizer.Format("Auto_StepDurationFormat", (int)duration.TotalMinutes)
-                    : string.Empty));
+                    : string.Empty,
+                JumpToStepCommand));
         }
 
         BuildMatrix(this.activeJob);

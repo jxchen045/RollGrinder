@@ -52,6 +52,12 @@ public static class AlarmCodes
     /// <summary>磨削进行当中改了工序参数。</summary>
     public const int StepParametersUpdated = 800022;
 
+    /// <summary>磨削当中跳到了另一道工序。</summary>
+    public const int StepJumped = 800023;
+
+    /// <summary>磨削当中把某一道工序提前结束了。</summary>
+    public const int StepEndedEarly = 800024;
+
     /// <summary>tagmap 缺少必需变量。</summary>
     public const int TagMissing = 800030;
 

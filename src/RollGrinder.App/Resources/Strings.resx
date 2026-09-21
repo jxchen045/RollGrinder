@@ -1768,4 +1768,34 @@
   <data name="Choice_pauseReason_other" xml:space="preserve">
     <value>其他</value>
   </data>
+  <data name="Alarm_StepFlowNeedsTagMapping" xml:space="preserve">
+    <value>工序跳转与提前结束尚未在变量映射中登记</value>
+  </data>
+  <data name="Alarm_StepFlowNeedsRunningJob" xml:space="preserve">
+    <value>机床当前没有在执行作业</value>
+  </data>
+  <data name="Alarm_StepJumpOutOfRange" xml:space="preserve">
+    <value>跳转目标超出本作业的工序范围</value>
+  </data>
+  <data name="Alarm_StepJumpBackwards" xml:space="preserve">
+    <value>只能向后跳转，不能回到已磨过的工序</value>
+  </data>
+  <data name="Alarm_StepJumped" xml:space="preserve">
+    <value>已跳转到指定工序</value>
+  </data>
+  <data name="Alarm_StepEndedEarly" xml:space="preserve">
+    <value>当前工序已提前结束</value>
+  </data>
+  <data name="Auto_JumpToStep" xml:space="preserve">
+    <value>跳到此工序</value>
+  </data>
+  <data name="Auto_EndStepEarly" xml:space="preserve">
+    <value>提前结束本工序</value>
+  </data>
+  <data name="Auto_StepFlowTitle" xml:space="preserve">
+    <value>工序流程</value>
+  </data>
+  <data name="Fn_ConfirmAgain" xml:space="preserve">
+    <value>再按一次确认</value>
+  </data>
 </root>

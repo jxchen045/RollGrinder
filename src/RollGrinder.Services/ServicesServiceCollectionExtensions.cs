@@ -30,6 +30,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<IUserDirectory, UserDirectory>();
         services.AddSingleton<ICalibrationService, CalibrationService>();
         services.AddSingleton<IStepParameterUpdateService, StepParameterUpdateService>();
+        services.AddSingleton<IStepFlowControlService, StepFlowControlService>();
 
         services.AddSingleton<AlarmLog>(provider => new AlarmLog(
             settings.AlarmHistoryLimit,

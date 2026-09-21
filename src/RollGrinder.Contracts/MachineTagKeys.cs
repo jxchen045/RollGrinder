@@ -124,6 +124,27 @@ public static class MachineTagKeys
     /// <summary>NC 正在执行第几道工序（从 1 开始）。</summary>
     public const string JobCurrentStepOrder = "job.currentStepOrder";
 
+    /// <summary>跳转目标工序号（上位机写，NC 在收到跳转脉冲时读）。</summary>
+    public const string JobControlTargetStepOrder = "job.control.targetStepOrder";
+
+    /// <summary>跳到指定工序的命令位（脉冲，PLC 上升沿触发并自复位）。</summary>
+    public const string JobControlJumpToStep = "job.control.jumpToStep";
+
+    /// <summary>当前工序提前结束的命令位（脉冲，PLC 上升沿触发并自复位）。</summary>
+    public const string JobControlEndStepEarly = "job.control.endStepEarly";
+
+    /// <summary>
+    /// 工序流程控制的命令位。跳转目标号是数值，不在这里。
+    ///
+    /// 这几位和手动动作一样是脉冲：上位机写 true → 等脉宽 → 写 false，
+    /// PLC 侧按上升沿触发并自行复位——上位机中途被杀，NC 也不会卡在一个按住的按钮上。
+    /// </summary>
+    public static System.Collections.Generic.IReadOnlyList<string> JobControlPulseKeys { get; } = new[]
+    {
+        JobControlJumpToStep,
+        JobControlEndStepEarly,
+    };
+
     /// <summary>当前工序的第几次走刀。</summary>
     public const string JobCurrentPass = "job.currentPass";
 

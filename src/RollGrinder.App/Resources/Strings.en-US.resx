@@ -1768,4 +1768,34 @@
   <data name="Choice_pauseReason_other" xml:space="preserve">
     <value>Other</value>
   </data>
+  <data name="Alarm_StepFlowNeedsTagMapping" xml:space="preserve">
+    <value>Step jump and early end are not mapped in the tag map</value>
+  </data>
+  <data name="Alarm_StepFlowNeedsRunningJob" xml:space="preserve">
+    <value>No job is currently running on the machine</value>
+  </data>
+  <data name="Alarm_StepJumpOutOfRange" xml:space="preserve">
+    <value>Jump target is outside this job's steps</value>
+  </data>
+  <data name="Alarm_StepJumpBackwards" xml:space="preserve">
+    <value>Jumps must go forward; finished steps cannot be redone</value>
+  </data>
+  <data name="Alarm_StepJumped" xml:space="preserve">
+    <value>Jumped to the selected step</value>
+  </data>
+  <data name="Alarm_StepEndedEarly" xml:space="preserve">
+    <value>The current step ended early</value>
+  </data>
+  <data name="Auto_JumpToStep" xml:space="preserve">
+    <value>Jump to step</value>
+  </data>
+  <data name="Auto_EndStepEarly" xml:space="preserve">
+    <value>End step early</value>
+  </data>
+  <data name="Auto_StepFlowTitle" xml:space="preserve">
+    <value>Step flow</value>
+  </data>
+  <data name="Fn_ConfirmAgain" xml:space="preserve">
+    <value>Press again</value>
+  </data>
 </root>
