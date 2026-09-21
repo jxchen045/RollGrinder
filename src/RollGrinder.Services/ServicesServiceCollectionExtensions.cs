@@ -29,6 +29,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<IUserSession, UserSession>();
         services.AddSingleton<IUserDirectory, UserDirectory>();
         services.AddSingleton<ICalibrationService, CalibrationService>();
+        services.AddSingleton<IWheelChangeService, WheelChangeService>();
         services.AddSingleton<IStepParameterUpdateService, StepParameterUpdateService>();
         services.AddSingleton<IStepFlowControlService, StepFlowControlService>();
 

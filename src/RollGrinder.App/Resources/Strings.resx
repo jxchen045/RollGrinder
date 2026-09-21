@@ -1060,9 +1060,6 @@
   <data name="Settings_NeedsAdministrator" xml:space="preserve">
     <value>权限不够，改不了标定值</value>
   </data>
-  <data name="Settings_NewWheelStaged" xml:space="preserve">
-    <value>已按新砂轮直径填入，按保存才生效</value>
-  </data>
   <data name="Settings_ReadOnlyHint" xml:space="preserve">
     <value>需要管理员权限才能修改</value>
   </data>
@@ -1929,5 +1926,59 @@
   </data>
   <data name="Report_CurveDeviation" xml:space="preserve">
     <value>实测偏差 (µm)</value>
+  </data>
+  <data name="SubView_WheelChange" xml:space="preserve">
+    <value>换砂轮</value>
+  </data>
+  <data name="WheelChange_Header" xml:space="preserve">
+    <value>换砂轮向导</value>
+  </data>
+  <data name="WheelChange_Next" xml:space="preserve">
+    <value>下一步</value>
+  </data>
+  <data name="WheelChange_Skip" xml:space="preserve">
+    <value>不修正，继续</value>
+  </data>
+  <data name="WheelChange_Cancel" xml:space="preserve">
+    <value>放弃</value>
+  </data>
+  <data name="WheelChange_ExpectedDiameter" xml:space="preserve">
+    <value>预期辊直径 (mm)</value>
+  </data>
+  <data name="WheelChange_MeasuredDiameter" xml:space="preserve">
+    <value>实测辊直径 (mm)</value>
+  </data>
+  <data name="WheelChange_NeedDiameter" xml:space="preserve">
+    <value>请先填新砂轮直径</value>
+  </data>
+  <data name="WheelChange_NeedTrialDiameters" xml:space="preserve">
+    <value>请填试磨的预期与实测直径</value>
+  </data>
+  <data name="WheelChange_Done" xml:space="preserve">
+    <value>换砂轮已完成，对刀方式已改回</value>
+  </data>
+  <data name="WheelChange_ResultFormat" xml:space="preserve">
+    <value>砂轮直径误差 {0:+0.000;-0.000;0.000} mm，修正为 {1:0.000} mm</value>
+  </data>
+  <data name="WheelChange_VerifyNote" xml:space="preserve">
+    <value>这个误差像不像砂轮直径的问题？对错刀、量错值、辊装歪了都会长成这样。不像就选“不修正，继续”。</value>
+  </data>
+  <data name="WheelChange_Hint_EnterNewWheel" xml:space="preserve">
+    <value>换上新砂轮，填下它的直径。厂家标称值即可——真实直径靠后面试磨那一刀反推。</value>
+  </data>
+  <data name="WheelChange_Hint_SwitchToManualTouch" xml:space="preserve">
+    <value>把对刀方式改成手动。自动对刀靠接触检测趋近，在直径还没标准的新砂轮上不可靠。</value>
+  </data>
+  <data name="WheelChange_Hint_TrialGrind" xml:space="preserve">
+    <value>手动对刀，试磨一刀，然后量一下辊直径。机床上的活由你来做，上位机只等结果。</value>
+  </data>
+  <data name="WheelChange_Hint_Verify" xml:space="preserve">
+    <value>按试磨结果反推出来的砂轮直径在下面。接受就按“下一步”。</value>
+  </data>
+  <data name="WheelChange_Hint_RestoreTouchMode" xml:space="preserve">
+    <value>按“下一步”把砂轮直径落库，并把对刀方式改回原来的样子。</value>
+  </data>
+  <data name="WheelChange_Hint_Done" xml:space="preserve">
+    <value>已完成。</value>
   </data>
 </root>

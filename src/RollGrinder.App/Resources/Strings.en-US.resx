@@ -1060,9 +1060,6 @@
   <data name="Settings_NeedsAdministrator" xml:space="preserve">
     <value>Not enough rights to change calibration</value>
   </data>
-  <data name="Settings_NewWheelStaged" xml:space="preserve">
-    <value>Filled in from the new-wheel diameter — press save to apply</value>
-  </data>
   <data name="Settings_ReadOnlyHint" xml:space="preserve">
     <value>Administrator rights required to edit</value>
   </data>
@@ -1929,5 +1926,59 @@
   </data>
   <data name="Report_CurveDeviation" xml:space="preserve">
     <value>Measured deviation (µm)</value>
+  </data>
+  <data name="SubView_WheelChange" xml:space="preserve">
+    <value>Wheel change</value>
+  </data>
+  <data name="WheelChange_Header" xml:space="preserve">
+    <value>Wheel change wizard</value>
+  </data>
+  <data name="WheelChange_Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="WheelChange_Skip" xml:space="preserve">
+    <value>Continue without correcting</value>
+  </data>
+  <data name="WheelChange_Cancel" xml:space="preserve">
+    <value>Abandon</value>
+  </data>
+  <data name="WheelChange_ExpectedDiameter" xml:space="preserve">
+    <value>Expected roll diameter (mm)</value>
+  </data>
+  <data name="WheelChange_MeasuredDiameter" xml:space="preserve">
+    <value>Measured roll diameter (mm)</value>
+  </data>
+  <data name="WheelChange_NeedDiameter" xml:space="preserve">
+    <value>Enter the new wheel diameter first</value>
+  </data>
+  <data name="WheelChange_NeedTrialDiameters" xml:space="preserve">
+    <value>Enter both the expected and the measured trial diameter</value>
+  </data>
+  <data name="WheelChange_Done" xml:space="preserve">
+    <value>Wheel change finished; the touch mode has been restored</value>
+  </data>
+  <data name="WheelChange_ResultFormat" xml:space="preserve">
+    <value>Wheel diameter error {0:+0.000;-0.000;0.000} mm, corrected to {1:0.000} mm</value>
+  </data>
+  <data name="WheelChange_VerifyNote" xml:space="preserve">
+    <value>Does this look like a wheel diameter error? A bad touch-off, a mis-read gauge or a badly mounted roll look the same. If it does not, choose “Continue without correcting”.</value>
+  </data>
+  <data name="WheelChange_Hint_EnterNewWheel" xml:space="preserve">
+    <value>Fit the new wheel and enter its diameter. The nominal figure will do — the trial cut below derives the real one.</value>
+  </data>
+  <data name="WheelChange_Hint_SwitchToManualTouch" xml:space="preserve">
+    <value>Switch the touch mode to manual. Automatic touch-off relies on contact detection, which is unreliable on a wheel whose diameter is not yet trusted.</value>
+  </data>
+  <data name="WheelChange_Hint_TrialGrind" xml:space="preserve">
+    <value>Touch off by hand, take a trial cut, then measure the roll diameter. You run the machine; the HMI just waits for the result.</value>
+  </data>
+  <data name="WheelChange_Hint_Verify" xml:space="preserve">
+    <value>The wheel diameter derived from the trial cut is below. Press Next to accept it.</value>
+  </data>
+  <data name="WheelChange_Hint_RestoreTouchMode" xml:space="preserve">
+    <value>Press Next to store the wheel diameter and restore the previous touch mode.</value>
+  </data>
+  <data name="WheelChange_Hint_Done" xml:space="preserve">
+    <value>Finished.</value>
   </data>
 </root>

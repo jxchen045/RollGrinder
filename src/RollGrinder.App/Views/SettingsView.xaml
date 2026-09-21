@@ -3,6 +3,46 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization">
     <Grid>
+        <Grid.Resources>
+            <!-- 换砂轮向导：开着时盖住本页根部内容，导航槽这时显示"返回 设置"。 -->
+            <Style x:Key="WheelChangePanel" TargetType="Border" BasedOn="{StaticResource Card}">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_WheelChange">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- 每一步只露出这一步要填的东西：多摆几个空格子只会让人填错 -->
+            <Style x:Key="WheelChangeEnterNewWheel" TargetType="StackPanel">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding WheelChangeStage}" Value="EnterNewWheel">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="WheelChangeTrial" TargetType="StackPanel">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding WheelChangeStage}" Value="TrialGrind">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="WheelChangeVerify" TargetType="StackPanel">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding WheelChangeStage}" Value="Verify">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Resources>
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="360" />
@@ -83,6 +123,65 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <!--
+            换砂轮向导：改手动对刀 → 手动对刀试磨 → 按实测反推砂轮直径 → 改回原来的对刀方式。
+            机床上的活由人做，这一页只记数、切对刀方式、算修正值。
+        -->
+        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource WheelChangePanel}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
+                    <TextBlock Text="{loc:Loc WheelChange_Header}" Style="{StaticResource Text.CardTitle}"
+                               VerticalAlignment="Center" />
+                </Border>
+
+                <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
+                        BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="20,14">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="{loc:Loc WheelChange_Next}" Command="{Binding WheelChangeNextCommand}"
+                                Style="{StaticResource PrimaryButton}" Height="48" Padding="28,0" Margin="0,0,10,0" />
+                        <Button Content="{loc:Loc WheelChange_Skip}" Command="{Binding SkipWheelCorrectionCommand}"
+                                Style="{StaticResource SecondaryButton}" Height="48" Padding="20,0" Margin="0,0,10,0" />
+                        <Button Content="{loc:Loc WheelChange_Cancel}" Command="{Binding CancelWheelChangeCommand}"
+                                Style="{StaticResource SecondaryButton}" Height="48" Padding="20,0" />
+                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.Label}"
+                                   VerticalAlignment="Center" Margin="20,0,0,0"
+                                   Foreground="{StaticResource Brush.WarningFill}" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Margin="24,20">
+                    <TextBlock Text="{Binding WheelChangeHint}" Style="{StaticResource Text.Body}"
+                               FontSize="19" TextWrapping="Wrap" Margin="0,0,0,20" />
+
+                    <StackPanel Style="{StaticResource WheelChangeEnterNewWheel}">
+                        <TextBlock Text="{loc:Loc Parameter_newWheelDiameterMm}" Style="{StaticResource Text.Label}" />
+                        <TextBox Text="{Binding NewWheelDiameterText, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource ValueTextBox}" Width="220" HorizontalAlignment="Left"
+                                 Margin="0,6,0,0" />
+                    </StackPanel>
+
+                    <StackPanel Style="{StaticResource WheelChangeTrial}">
+                        <TextBlock Text="{loc:Loc WheelChange_ExpectedDiameter}" Style="{StaticResource Text.Label}" />
+                        <TextBox Text="{Binding TrialExpectedDiameterText, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource ValueTextBox}" Width="220" HorizontalAlignment="Left"
+                                 Margin="0,6,0,16" />
+                        <TextBlock Text="{loc:Loc WheelChange_MeasuredDiameter}" Style="{StaticResource Text.Label}" />
+                        <TextBox Text="{Binding TrialMeasuredDiameterText, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource ValueTextBox}" Width="220" HorizontalAlignment="Left"
+                                 Margin="0,6,0,0" />
+                    </StackPanel>
+
+                    <StackPanel Style="{StaticResource WheelChangeVerify}">
+                        <TextBlock Text="{Binding WheelChangeResultText}" FontFamily="{StaticResource Font.Mono}"
+                                   FontSize="20" TextWrapping="Wrap"
+                                   Foreground="{StaticResource Brush.Accent}" />
+                        <TextBlock Text="{loc:Loc WheelChange_VerifyNote}" Style="{StaticResource Text.Label}"
+                                   TextWrapping="Wrap" Margin="0,12,0,0" />
+                    </StackPanel>
+                </StackPanel>
             </DockPanel>
         </Border>
     </Grid>
