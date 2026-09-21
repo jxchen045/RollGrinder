@@ -16,7 +16,7 @@ namespace RollGrinder.Sim;
 public sealed class SimulatedMachine
 {
     /// <summary>程序启动时假定的待磨余量（半径量 mm）。</summary>
-    public const double InitialStockRadiusMm = 0.30;
+    public const double InitialStockRadiusMm = RollSurfaceModel.InitialStockRadiusMm;
 
     /// <summary>磨削时的去除速度（半径量 mm/min）。</summary>
     public const double RemovalRateMmPerMinute = 0.06;
@@ -32,6 +32,10 @@ public sealed class SimulatedMachine
 
     /// <summary>下发进来的每道工序走刀次数，按工序下标（从 0 起）。</summary>
     private readonly Dictionary<int, int> stepPassCounts = new();
+
+    /// <summary>下发进来的辊形点列，按下标收，收齐一对就同步进辊面模型。</summary>
+    private readonly Dictionary<int, double> profilePositionsMm = new();
+    private readonly Dictionary<int, double> profileOffsetsMm = new();
     private readonly string? carriageAxisName;
     private readonly string? infeedAxisName;
     private readonly string? workpieceSpindleName;
@@ -50,6 +54,13 @@ public sealed class SimulatedMachine
     private int strokeVersion;
     private readonly double wheelDiameterMm = 890.24;
 
+    /// <summary>
+    /// 辊面模型：测径仪读到什么、电流多大，都从它来。
+    /// 这是让"无机床也能验收"说得过去的关键——辊面真的带着误差，磨削真的把它磨掉，
+    /// 机床真的留下一份可重复的系统性偏差，补偿收敛才有东西可验。
+    /// </summary>
+    private RollSurfaceModel surface;
+
     public SimulatedMachine(MachineDescription machine)
     {
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
@@ -63,7 +74,11 @@ public sealed class SimulatedMachine
         this.currentRadiusMm = this.targetRadiusMm;
         this.bodyLengthMm = machine.Workpiece.MinBodyLengthMm;
         this.feedMmPerMin = 1000.0;
+        this.surface = new RollSurfaceModel(this.bodyLengthMm, this.targetRadiusMm);
     }
+
+    /// <summary>当前这支辊的辊面，测试里直接拿它断言。</summary>
+    public RollSurfaceModel Surface => this.surface;
 
     /// <summary>当前通道状态。</summary>
     public NcChannelState ChannelState { get; private set; } = NcChannelState.Reset;
@@ -97,6 +112,25 @@ public sealed class SimulatedMachine
             string stateName = logicalName + ManualStateSuffix;
             this.writtenValues[stateName] = value with { Key = stateName };
             return;
+        }
+
+        // 辊形点列也是数组变量：记下来，磨出来的辊面才是"照着指令辊形磨的"，
+        // 而不是一根光溜溜的圆柱。补偿叠进来的那一份也在这里面。
+        if (TagKeySyntax.TrySplit(logicalName, out string profileKey, out int profileIndex))
+        {
+            if (string.Equals(profileKey, MachineTagKeys.JobProfileBodyPositionMm, StringComparison.Ordinal))
+            {
+                this.profilePositionsMm[profileIndex] = ToDouble(value.Raw) ?? 0.0;
+                SyncProfilePoint(profileIndex);
+                return;
+            }
+
+            if (string.Equals(profileKey, MachineTagKeys.JobProfileRadiusOffsetMm, StringComparison.Ordinal))
+            {
+                this.profileOffsetsMm[profileIndex] = ToDouble(value.Raw) ?? 0.0;
+                SyncProfilePoint(profileIndex);
+                return;
+            }
         }
 
         // 工序走刀次数是数组变量，下发时一条一条写进来：记下来，仿真才知道每道磨几刀。
@@ -179,9 +213,11 @@ public sealed class SimulatedMachine
             CompleteStroke();
         }
 
-        // 去除量按恒定速率逼近目标半径。
+        // 去除量按恒定速率逼近目标半径，同一份量也从辊面上磨掉——
+        // 磨到余量见底，辊面就落在「指令辊形 + 系统性偏差」上。
         double removalMm = RemovalRateMmPerMinute * minutes;
         this.currentRadiusMm = Math.Max(this.targetRadiusMm, this.currentRadiusMm - removalMm);
+        this.surface.Remove(removalMm);
 
         if (this.currentRadiusMm <= this.targetRadiusMm + double.Epsilon)
         {
@@ -205,7 +241,10 @@ public sealed class SimulatedMachine
 
         if (logicalName == MachineTagKeys.MeasuredDiameterMm)
         {
-            return UnitConversion.RadiusMmToDiameterMm(this.currentRadiusMm + Noise());
+            // 按**拖板当前位置**读辊面：测量服务是逐点扫的（读位置 + 读直径），
+            // 这里与位置无关的话，扫出来就是一根光溜溜的圆柱，误差曲线永远是平的。
+            return UnitConversion.RadiusMmToDiameterMm(
+                this.surface.MeanRadiusAtMm(this.carriagePositionMm) + Noise());
         }
 
         // 双测头：A、B 读数围绕实际半径偏差摆动，(A−B)/2 即对中偏差。
@@ -231,10 +270,10 @@ public sealed class SimulatedMachine
 
         if (logicalName == MachineTagKeys.GrindingCurrentA)
         {
-            // 空载约 6 A，磨削时随余量上升。
-            return ChannelState == NcChannelState.Running
-                ? 6.0 + (RemainingStockRadiusMm / InitialStockRadiusMm * 36.0)
-                : 0.0;
+            return this.surface.GrindingCurrentA(
+                RemovalRateMmPerMinute,
+                this.carriagePositionMm,
+                ChannelState == NcChannelState.Running);
         }
 
         if (logicalName == MachineTagKeys.JobCurrentStepOrder)
@@ -325,8 +364,25 @@ public sealed class SimulatedMachine
         }
     }
 
+    /// <summary>收齐一个下标上的位置与偏差之后，同步进辊面模型。</summary>
+    private void SyncProfilePoint(int index)
+    {
+        if (this.profilePositionsMm.TryGetValue(index, out double positionMm)
+            && this.profileOffsetsMm.TryGetValue(index, out double offsetMm))
+        {
+            this.surface.SetCommandedPoint(index, positionMm, offsetMm);
+        }
+    }
+
     private void StartProgram()
     {
+        // 新一支辊：辊面按当前几何重建，余量与来料误差回到进来时的样子。
+        this.surface = new RollSurfaceModel(this.bodyLengthMm, this.targetRadiusMm);
+        foreach (int index in this.profilePositionsMm.Keys)
+        {
+            SyncProfilePoint(index);
+        }
+
         this.currentRadiusMm = this.targetRadiusMm + InitialStockRadiusMm;
         this.carriagePositionMm = 0.0;
         this.carriageDirection = 1;
