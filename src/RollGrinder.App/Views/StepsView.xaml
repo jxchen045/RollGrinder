@@ -113,9 +113,40 @@
                             </Border>
                             <Border Style="{StaticResource ParameterCell}">
                                 <StackPanel>
+                                    <TextBlock Text="{loc:Loc Program_Name}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding ProgramName, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ParameterCell}">
+                                <StackPanel>
                                     <TextBlock Text="{loc:Loc Job_ProfileTypeLabel}" Style="{StaticResource Text.Label}" />
-                                    <ComboBox ItemsSource="{Binding ProfileTypeKeys}" SelectedItem="{Binding SelectedProfileTypeKey}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                                    <ComboBox ItemsSource="{Binding ProfileTypeKeys}" SelectedItem="{Binding SelectedProfileTypeKey}"
+                                              IsEnabled="{Binding CanEditInlineProfile}"
                                               Height="46" FontSize="18" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ParameterCell}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Steps_ProfileSource}" Style="{StaticResource Text.Label}" />
+                                    <DockPanel Margin="0,8,0,0">
+                                        <Button DockPanel.Dock="Right" Content="{loc:Loc Steps_ClearProfile}"
+                                                Command="{Binding ClearProfileSelectionCommand}"
+                                                Visibility="{Binding UsesLibraryProfile, Converter={StaticResource BoolToVisibility}}"
+                                                Style="{StaticResource SecondaryButton}" Height="46" Width="96" Margin="8,0,0,0" />
+                                        <TextBlock VerticalAlignment="Center" FontSize="17" TextTrimming="CharacterEllipsis">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="{loc:Loc Steps_ProfileInline}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding UsesLibraryProfile}" Value="True">
+                                                            <Setter Property="Text" Value="{Binding SelectedProfileName}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DockPanel>
                                 </StackPanel>
                             </Border>
                         </ItemsControl>
@@ -129,7 +160,18 @@
                         </Border>
                         <ItemsControl ItemsSource="{Binding ProfileParameters}"
                                       Background="{StaticResource Brush.GridLine}"
+                                      IsEnabled="{Binding CanEditInlineProfile}"
                                       ItemTemplate="{StaticResource ParameterCellTemplate}">
+                            <ItemsControl.Style>
+                                <Style TargetType="ItemsControl">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding UsesLibraryProfile}" Value="True">
+                                            <!-- 辊形来自库里，这一格压暗：留在原位，只是按不动。 -->
+                                            <Setter Property="Opacity" Value="0.35" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ItemsControl.Style>
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <UniformGrid Columns="4" />
@@ -255,5 +297,94 @@
                 </ItemsControl>
             </StackPanel>
         </ScrollViewer>
+
+        <!-- 程序库 -->
+        <Border Grid.ColumnSpan="2" Background="#CC101418"
+                Visibility="{Binding IsProgramLibraryOpen, Converter={StaticResource BoolToVisibility}}">
+            <Border Style="{StaticResource Card}" Width="720" Height="520"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Program_Library}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
+                                HorizontalAlignment="Right" Margin="14">
+                        <Button Content="{loc:Loc Program_LibraryOpen}" Command="{Binding LoadProgramCommand}"
+                                Style="{StaticResource PrimaryButton}" Height="52" Width="110" Margin="0,0,10,0" />
+                        <Button Content="{loc:Loc Program_LibraryDelete}" Command="{Binding DeleteProgramCommand}"
+                                Style="{StaticResource SecondaryButton}" Height="52" Width="110" Margin="0,0,10,0" />
+                        <Button Content="{loc:Loc Program_LibraryClose}" Command="{Binding CloseProgramLibraryCommand}"
+                                Style="{StaticResource SecondaryButton}" Height="52" Width="110" />
+                    </StackPanel>
+                    <TextBlock Text="{loc:Loc Program_LibraryEmpty}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Label}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ProgramLibraryEntries.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <DataGrid ItemsSource="{Binding ProgramLibraryEntries}" SelectedItem="{Binding SelectedProgramEntry}"
+                              AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                              Margin="14,8" FontSize="16" RowHeight="44">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{loc:Loc Program_ColumnName}" Binding="{Binding Name}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Program_ColumnSteps}" Binding="{Binding StepCount}" Width="90" />
+                            <DataGridTextColumn Header="{loc:Loc Program_ColumnModified}"
+                                                Binding="{Binding ModifiedAtUtc, StringFormat=yyyy-MM-dd HH:mm}" Width="170" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+        </Border>
+
+        <!-- 辊形库：在这里选一条辊形给本支作业用 -->
+        <Border Grid.ColumnSpan="2" Background="#CC101418"
+                Visibility="{Binding IsProfileLibraryOpen, Converter={StaticResource BoolToVisibility}}">
+            <Border Style="{StaticResource Card}" Width="720" Height="520"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Profile_Library}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
+                                HorizontalAlignment="Right" Margin="14">
+                        <Button Content="{loc:Loc Steps_UseThisProfile}" Command="{Binding UseProfileFromLibraryCommand}"
+                                Style="{StaticResource PrimaryButton}" Height="52" Width="110" Margin="0,0,10,0" />
+                        <Button Content="{loc:Loc Profile_LibraryClose}" Command="{Binding CloseProfileLibraryCommand}"
+                                Style="{StaticResource SecondaryButton}" Height="52" Width="110" />
+                    </StackPanel>
+                    <TextBlock Text="{loc:Loc Profile_LibraryEmpty}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Label}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ProfileLibraryEntries.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <DataGrid ItemsSource="{Binding ProfileLibraryEntries}" SelectedItem="{Binding SelectedProfileEntry}"
+                              AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                              Margin="14,8" FontSize="16" RowHeight="44">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{loc:Loc Profile_LibraryColumnName}" Binding="{Binding Name}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Profile_LibraryColumnType}" Binding="{Binding ProfileTypeKey}" Width="140" />
+                            <DataGridTextColumn Header="{loc:Loc Profile_LibraryColumnSegments}" Binding="{Binding SegmentCount}" Width="80" />
+                            <DataGridTextColumn Header="{loc:Loc Profile_LibraryColumnModified}"
+                                                Binding="{Binding ModifiedAtUtc, StringFormat=yyyy-MM-dd HH:mm}" Width="170" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+        </Border>
     </Grid>
 </UserControl>

@@ -17,6 +17,7 @@ using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Data;
 using RollGrinder.Services.Jobs;
 
 namespace RollGrinder.App.ViewModels;
@@ -246,6 +247,11 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly GrindingStepTypeRegistry stepTypes;
     private readonly IJobDownloadService downloadService;
+    private readonly IProgramRepository programs;
+    private readonly IRollProfileRepository profileLibrary;
+
+    /// <summary>从辊形库选中的那条辊形；没选（现编现用）时为 null。</summary>
+    private RollProfileDefinition? selectedProfileDefinition;
 
     /// <summary>进入本页时的程序快照，供"放弃修改"回退。</summary>
     private StepsSnapshot committed = StepsSnapshot.Empty;
@@ -257,6 +263,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
         RollProfileTypeRegistry profileTypes,
         GrindingStepTypeRegistry stepTypes,
         IJobDownloadService downloadService,
+        IProgramRepository programs,
+        IRollProfileRepository profileLibrary,
         MachineDescription machine,
         MachineCapability capability,
         HmiSettings settings,
@@ -269,6 +277,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
         this.stepTypes = stepTypes ?? throw new ArgumentNullException(nameof(stepTypes));
         this.downloadService = downloadService ?? throw new ArgumentNullException(nameof(downloadService));
+        this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
+        this.profileLibrary = profileLibrary ?? throw new ArgumentNullException(nameof(profileLibrary));
         ArgumentNullException.ThrowIfNull(machine);
 
         ProfileTypeKeys = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
@@ -304,17 +314,17 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
         SetFunctionKeys(new[]
         {
-            FunctionKeyViewModel.Placeholder("Fn_SaveProgram", localizer, () => NotImplementedYet("Fn_SaveProgram"), FunctionKeyKind.Primary, requiresEditable: true),
-            FunctionKeyViewModel.Placeholder("Fn_SaveAs", localizer, () => NotImplementedYet("Fn_SaveAs"), requiresEditable: true),
+            new FunctionKeyViewModel("Fn_SaveProgram", new AsyncRelayCommand(
+                () => SaveAsync(CancellationToken.None)), localizer, FunctionKeyKind.Primary, requiresEditable: true),
+            new FunctionKeyViewModel("Fn_SaveAs", SaveProgramAsCommand, localizer, requiresEditable: true),
 
             // 派去辊形编辑页选一个辊形，办完由导航槽送回本页。
-            FunctionKeyViewModel.Placeholder(
-                "Fn_SelectProfile", localizer, () => Navigator.StartTask(PageKey.Profile, PageKey.Steps)),
+            new FunctionKeyViewModel("Fn_SelectProfile", OpenProfileLibraryCommand, localizer),
             FunctionKeyViewModel.Placeholder("Fn_RollData", localizer, () => NotImplementedYet("Fn_RollData"), requiresEditable: true),
 
             // 下发是唯一的写机床通道；自动循环挂着程序时锁掉，免得把运行中的程序改了。
             new FunctionKeyViewModel("Fn_DownloadNc", DownloadCommand, localizer, requiresEditable: true),
-            FunctionKeyViewModel.Placeholder("Fn_ProgramLibrary", localizer, () => NotImplementedYet("Fn_ProgramLibrary")),
+            new FunctionKeyViewModel("Fn_ProgramLibrary", OpenProgramLibraryCommand, localizer),
             FunctionKeyViewModel.Placeholder(
                 "Fn_EnterAuto", localizer, () => Navigator.GoToArea(PageKey.AutoGrinding), FunctionKeyKind.Start),
         });
@@ -515,11 +525,18 @@ public sealed partial class StepsViewModel : PageViewModelBase
             return null;
         }
 
-        ParameterSet? profileParameters = Collect(ProfileParameters);
-        if (profileParameters is null)
+        // 辊形有两条来路：从辊形库选一条（多段叠加），或者在本页现编一条单曲线。
+        // 选了库里的就用库里的，并把来源记进作业——记录要记当时用的是哪一条。
+        CompositeRollProfile? libraryProfile = this.selectedProfileDefinition?.Profile;
+        ParameterSet? profileParameters = null;
+        if (libraryProfile is null)
         {
-            StatusResourceKey = "Job_ParametersInvalid";
-            return null;
+            profileParameters = Collect(ProfileParameters);
+            if (profileParameters is null)
+            {
+                StatusResourceKey = "Job_ParametersInvalid";
+                return null;
+            }
         }
 
         var steps = new List<GrindingJobStep>(Steps.Count);
@@ -535,15 +552,339 @@ public sealed partial class StepsViewModel : PageViewModelBase
             steps.Add(new GrindingJobStep(step.Order, step.StepTypeKey, stepParameters));
         }
 
-        return GrindingJob.Create(
-            JobId,
-            RollId,
-            RollGeometry.FromDiameter(bodyLengthMm, nominalDiameterMm),
-            SelectedProfileTypeKey,
-            profileParameters,
-            steps,
-            CollectProgramOptions());
+        RollGeometry geometry = RollGeometry.FromDiameter(bodyLengthMm, nominalDiameterMm);
+
+        GrindingJob job = libraryProfile is not null
+            ? GrindingJob.Create(JobId, RollId, geometry, libraryProfile, steps, CollectProgramOptions())
+            : GrindingJob.Create(
+                JobId, RollId, geometry, SelectedProfileTypeKey, profileParameters!, steps, CollectProgramOptions());
+
+        return job with
+        {
+            ProfileId = this.selectedProfileDefinition?.ProfileId,
+            ProfileName = this.selectedProfileDefinition?.Name,
+            ProgramId = ProgramId,
+            ProgramName = string.IsNullOrWhiteSpace(ProgramName) ? null : ProgramName.Trim(),
+        };
     }
+
+    // ── 程序库与辊形库 ────────────────────────────────────────────────────────
+    //
+    // 程序与辊形都是**可复用的模板**，作业只是"这支辊用哪条辊形、哪支程序"。
+    // 作业引用它们的时候复制一份快照，库里之后改了不会动已经磨过的那支辊的记录。
+
+    /// <summary>当前程序的名字，库里按这个名字找。</summary>
+    [ObservableProperty]
+    private string programName = string.Empty;
+
+    /// <summary>当前程序在库里的标识；还没存过就是 null。</summary>
+    [ObservableProperty]
+    private string? programId;
+
+    /// <summary>库里现有的程序。</summary>
+    public ObservableCollection<ProgramSummary> ProgramLibraryEntries { get; } = new();
+
+    [ObservableProperty]
+    private bool isProgramLibraryOpen;
+
+    [ObservableProperty]
+    private ProgramSummary? selectedProgramEntry;
+
+    /// <summary>库里现有的辊形。</summary>
+    public ObservableCollection<RollProfileSummary> ProfileLibraryEntries { get; } = new();
+
+    [ObservableProperty]
+    private bool isProfileLibraryOpen;
+
+    [ObservableProperty]
+    private RollProfileSummary? selectedProfileEntry;
+
+    /// <summary>
+    /// 这支作业用的辊形是从库里选的还是现编的。选了库里的，下面那个单曲线参数格就压暗——
+    /// 两边同时能改会让人搞不清最后下发的是哪一条。
+    /// </summary>
+    [ObservableProperty]
+    private bool usesLibraryProfile;
+
+    /// <summary>选中的辊形名，界面上显示；现编现用时是空的。</summary>
+    [ObservableProperty]
+    private string selectedProfileName = string.Empty;
+
+    /// <summary>
+    /// 本页那条现编的单曲线还能不能改：只读时不能，选了库里的辊形时也不能——
+    /// 两处同时能改会让人搞不清最后下发的是哪一条。
+    /// </summary>
+    public bool CanEditInlineProfile => !IsReadOnly && !UsesLibraryProfile;
+
+    partial void OnUsesLibraryProfileChanged(bool value) => OnPropertyChanged(nameof(CanEditInlineProfile));
+
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+
+        // IsReadOnly 在基类里，改不了它的 partial 钩子，只能在这里接一手。
+        if (e.PropertyName == nameof(IsReadOnly))
+        {
+            OnPropertyChanged(nameof(CanEditInlineProfile));
+        }
+    }
+
+    partial void OnProgramNameChanged(string value)
+    {
+        MarkEdited();
+        OnPropertyChanged(nameof(CanSave));
+    }
+
+    /// <summary>有名字才谈得上保存——没名字存进库里就找不回来了。</summary>
+    public override bool CanSave => !string.IsNullOrWhiteSpace(ProgramName);
+
+    /// <summary>
+    /// 把当前这支程序存回程序库。走页面基类的保存契约，
+    /// 所以"改了没存就想离开"那道拦截也会用到它。
+    /// </summary>
+    public override Task<bool> SaveAsync(CancellationToken cancellationToken) =>
+        StoreProgramAsync(ProgramId ?? NewProgramId(), cancellationToken);
+
+    /// <summary>另存一支新程序，库里原来那支不动。</summary>
+    [RelayCommand]
+    private Task SaveProgramAsAsync(CancellationToken cancellationToken) =>
+        StoreProgramAsync(NewProgramId(), cancellationToken);
+
+    private async Task<bool> StoreProgramAsync(string programId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(ProgramName))
+        {
+            Alarms.Raise(AlarmSeverity.Warning, "Program_NeedsName", code: AlarmCodes.DomainFailure);
+            return false;
+        }
+
+        var steps = new List<GrindingJobStep>(Steps.Count);
+        foreach (StepRowViewModel step in Steps)
+        {
+            ParameterSet? stepParameters = Collect(step.Parameters);
+            if (stepParameters is null)
+            {
+                StatusResourceKey = "Job_ParametersInvalid";
+                return false;
+            }
+
+            steps.Add(new GrindingJobStep(step.Order, step.StepTypeKey, stepParameters));
+        }
+
+        if (steps.Count == 0)
+        {
+            StatusResourceKey = "Job_NoSteps";
+            return false;
+        }
+
+        try
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            GrindingProgram? existing = ProgramId is null
+                ? null
+                : await this.programs.GetAsync(programId, cancellationToken).ConfigureAwait(true);
+
+            await this.programs.SaveAsync(
+                GrindingProgram.Create(programId, ProgramName.Trim(), steps, existing?.CreatedAtUtc ?? now, CollectProgramOptions())
+                    with { ModifiedAtUtc = now },
+                cancellationToken).ConfigureAwait(true);
+
+            ProgramId = programId;
+            Capture();
+            IsDirty = false;
+            Alarms.Raise(AlarmSeverity.Information, "Program_Saved", ProgramName, AlarmCodes.HandoverCompleted);
+            return true;
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+            return false;
+        }
+        catch (DomainException ex)
+        {
+            Alarms.RaiseException(ex);
+            return false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenProgramLibraryAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            IReadOnlyList<ProgramSummary> entries =
+                await this.programs.ListAsync(LibraryListLimit, cancellationToken).ConfigureAwait(true);
+
+            ProgramLibraryEntries.Clear();
+            foreach (ProgramSummary entry in entries)
+            {
+                ProgramLibraryEntries.Add(entry);
+            }
+
+            SelectedProgramEntry = ProgramLibraryEntries.FirstOrDefault();
+            IsProgramLibraryOpen = true;
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+        }
+    }
+
+    [RelayCommand]
+    private void CloseProgramLibrary() => IsProgramLibraryOpen = false;
+
+    /// <summary>把选中的那支程序调进编辑器，整串工序与开关一起换掉。</summary>
+    [RelayCommand]
+    private async Task LoadProgramAsync(CancellationToken cancellationToken)
+    {
+        if (SelectedProgramEntry is null)
+        {
+            return;
+        }
+
+        try
+        {
+            GrindingProgram? program = await this.programs
+                .GetAsync(SelectedProgramEntry.ProgramId, cancellationToken).ConfigureAwait(true);
+            if (program is null)
+            {
+                return;
+            }
+
+            ApplyProgram(program);
+            IsProgramLibraryOpen = false;
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+        }
+    }
+
+    private void ApplyProgram(GrindingProgram program)
+    {
+        this.suppressDirty = true;
+        try
+        {
+            ProgramId = program.ProgramId;
+            ProgramName = program.Name;
+
+            Steps.Clear();
+            foreach (GrindingJobStep step in program.Steps)
+            {
+                IGrindingStepType stepType = this.stepTypes.Get(step.StepTypeKey);
+                Steps.Add(Track(new StepRowViewModel(step.Order, stepType, step.Parameters, Localizer)));
+            }
+
+            foreach (ProgramOptionRowViewModel row in ProgramOptions)
+            {
+                row.IsOn = program.IsProgramOptionEnabled(row.Descriptor.Key);
+            }
+        }
+        finally
+        {
+            this.suppressDirty = false;
+        }
+
+        Capture();
+        IsDirty = false;
+        RefreshDurations();
+    }
+
+    [RelayCommand]
+    private async Task DeleteProgramAsync(CancellationToken cancellationToken)
+    {
+        if (SelectedProgramEntry is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await this.programs.DeleteAsync(SelectedProgramEntry.ProgramId, cancellationToken).ConfigureAwait(true);
+            if (string.Equals(ProgramId, SelectedProgramEntry.ProgramId, StringComparison.Ordinal))
+            {
+                // 编辑器里还开着它：工序留着，但它已经不在库里了，再存就是新的一支。
+                ProgramId = null;
+            }
+
+            await OpenProgramLibraryAsync(cancellationToken).ConfigureAwait(true);
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenProfileLibraryAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            IReadOnlyList<RollProfileSummary> entries =
+                await this.profileLibrary.ListAsync(LibraryListLimit, cancellationToken).ConfigureAwait(true);
+
+            ProfileLibraryEntries.Clear();
+            foreach (RollProfileSummary entry in entries)
+            {
+                ProfileLibraryEntries.Add(entry);
+            }
+
+            SelectedProfileEntry = ProfileLibraryEntries.FirstOrDefault();
+            IsProfileLibraryOpen = true;
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+        }
+    }
+
+    [RelayCommand]
+    private void CloseProfileLibrary() => IsProfileLibraryOpen = false;
+
+    /// <summary>选用库里的那条辊形。多段曲线就是这样进到作业里的。</summary>
+    [RelayCommand]
+    private async Task UseProfileFromLibraryAsync(CancellationToken cancellationToken)
+    {
+        if (SelectedProfileEntry is null)
+        {
+            return;
+        }
+
+        try
+        {
+            this.selectedProfileDefinition = await this.profileLibrary
+                .GetAsync(SelectedProfileEntry.ProfileId, cancellationToken).ConfigureAwait(true);
+            if (this.selectedProfileDefinition is null)
+            {
+                return;
+            }
+
+            UsesLibraryProfile = true;
+            SelectedProfileName = this.selectedProfileDefinition.Name;
+            IsProfileLibraryOpen = false;
+            MarkEdited();
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+        }
+    }
+
+    /// <summary>改回现编现用：下面那个单曲线参数格重新可用。</summary>
+    [RelayCommand]
+    private void ClearProfileSelection()
+    {
+        this.selectedProfileDefinition = null;
+        UsesLibraryProfile = false;
+        SelectedProfileName = string.Empty;
+        MarkEdited();
+    }
+
+    /// <summary>库面板一次列多少条。</summary>
+    private const int LibraryListLimit = 200;
+
+    private static string NewProgramId() =>
+        string.Create(CultureInfo.InvariantCulture, $"G{DateTimeOffset.Now:yyyyMMddHHmmss}");
 
     private ParameterSet CollectProgramOptions() => new(ProgramOptions.Select(row =>
         new KeyValuePair<string, ParameterValue>(

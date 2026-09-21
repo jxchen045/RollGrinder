@@ -12,8 +12,20 @@ namespace RollGrinder.Data;
 /// 轻量手写映射的公共部分：时间与参数的存取格式。
 /// 时间一律以 ISO 8601 往返格式存 UTC 文本，避免 SQLite 的时区歧义。
 /// </summary>
+/// <summary>
+/// 参数存在哪张表、属主列叫什么。作业与程序库的参数表结构一样，
+/// 只有这两处不同，所以读写共用一份代码。
+/// </summary>
+internal sealed record ParameterTable(string TableName, string OwnerColumn);
+
 internal static class SqlMapping
 {
+    /// <summary>作业的参数表与属主列。</summary>
+    public static ParameterTable JobParameters { get; } = new("job_parameter", "job_id");
+
+    /// <summary>程序库的参数表与属主列。约定与作业同一套：工序从 1 起，-1 是取舍开关。</summary>
+    public static ParameterTable ProgramParameters { get; } = new("program_parameter", "program_id");
+
     /// <summary>辊形参数在 job_parameter 里的 step_order 取值。</summary>
     public const int ProfileParameterStepOrder = 0;
 
@@ -43,21 +55,24 @@ internal static class SqlMapping
     public static async Task WriteParametersAsync(
         SqliteConnection connection,
         SqliteTransaction transaction,
-        string jobId,
+        string ownerId,
         int stepOrder,
         ParameterSet parameters,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ParameterTable? table = null)
     {
+        ParameterTable target = table ?? JobParameters;
+
         foreach (KeyValuePair<string, ParameterValue> pair in parameters.ToOrderedPairs())
         {
             await using SqliteCommand command = connection.CreateCommand();
             command.Transaction = transaction;
             command.CommandText =
-                """
-                INSERT INTO job_parameter (job_id, step_order, parameter_key, value_kind, value_text)
-                VALUES ($job, $step, $key, $kind, $value);
-                """;
-            AddParameter(command, "$job", jobId);
+                $"""
+                 INSERT INTO {target.TableName} ({target.OwnerColumn}, step_order, parameter_key, value_kind, value_text)
+                 VALUES ($job, $step, $key, $kind, $value);
+                 """;
+            AddParameter(command, "$job", ownerId);
             AddParameter(command, "$step", stepOrder);
             AddParameter(command, "$key", pair.Key);
             AddParameter(command, "$kind", (int)pair.Value.Kind);
@@ -68,20 +83,22 @@ internal static class SqlMapping
 
     public static async Task<Dictionary<int, ParameterSet>> ReadParametersAsync(
         SqliteConnection connection,
-        string jobId,
-        CancellationToken cancellationToken)
+        string ownerId,
+        CancellationToken cancellationToken,
+        ParameterTable? table = null)
     {
+        ParameterTable target = table ?? JobParameters;
         var byStep = new Dictionary<int, List<KeyValuePair<string, ParameterValue>>>();
 
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
-            """
-            SELECT step_order, parameter_key, value_kind, value_text
-            FROM job_parameter
-            WHERE job_id = $job
-            ORDER BY step_order, parameter_key;
-            """;
-        AddParameter(command, "$job", jobId);
+            $"""
+             SELECT step_order, parameter_key, value_kind, value_text
+             FROM {target.TableName}
+             WHERE {target.OwnerColumn} = $job
+             ORDER BY step_order, parameter_key;
+             """;
+        AddParameter(command, "$job", ownerId);
 
         await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))

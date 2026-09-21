@@ -35,8 +35,9 @@ public sealed class SqliteJobRepository : IJobRepository
             transaction,
             """
             INSERT INTO job (job_id, roll_id, profile_type_key, body_length_mm, nominal_radius_mm, state,
-                             created_at_utc, profile_id, profile_name)
-            VALUES ($job, $roll, $profile, $length, $radius, $state, $created, $profileId, $profileName)
+                             created_at_utc, profile_id, profile_name, program_id, program_name)
+            VALUES ($job, $roll, $profile, $length, $radius, $state, $created,
+                    $profileId, $profileName, $programId, $programName)
             ON CONFLICT(job_id) DO UPDATE SET
                 roll_id = excluded.roll_id,
                 profile_type_key = excluded.profile_type_key,
@@ -44,7 +45,9 @@ public sealed class SqliteJobRepository : IJobRepository
                 nominal_radius_mm = excluded.nominal_radius_mm,
                 state = excluded.state,
                 profile_id = excluded.profile_id,
-                profile_name = excluded.profile_name;
+                profile_name = excluded.profile_name,
+                program_id = excluded.program_id,
+                program_name = excluded.program_name;
             """,
             cancellationToken,
             command =>
@@ -56,6 +59,8 @@ public sealed class SqliteJobRepository : IJobRepository
                 SqlMapping.AddParameter(command, "$profile", job.ProfileTypeKey);
                 SqlMapping.AddParameter(command, "$profileId", job.ProfileId);
                 SqlMapping.AddParameter(command, "$profileName", job.ProfileName);
+                SqlMapping.AddParameter(command, "$programId", job.ProgramId);
+                SqlMapping.AddParameter(command, "$programName", job.ProgramName);
                 SqlMapping.AddParameter(command, "$length", job.Geometry.BodyLengthMm);
                 SqlMapping.AddParameter(command, "$radius", job.Geometry.NominalRadiusMm);
                 SqlMapping.AddParameter(command, "$state", (int)state);
@@ -106,6 +111,8 @@ public sealed class SqliteJobRepository : IJobRepository
         string profileTypeKey;
         string? profileId;
         string? profileName;
+        string? programId;
+        string? programName;
         RollGeometry geometry;
         JobState state;
 
@@ -114,7 +121,7 @@ public sealed class SqliteJobRepository : IJobRepository
             command.CommandText =
                 """
                 SELECT roll_id, profile_type_key, body_length_mm, nominal_radius_mm, state,
-                       profile_id, profile_name
+                       profile_id, profile_name, program_id, program_name
                 FROM job WHERE job_id = $job;
                 """;
             SqlMapping.AddParameter(command, "$job", jobId);
@@ -131,6 +138,8 @@ public sealed class SqliteJobRepository : IJobRepository
             state = (JobState)reader.GetInt32(4);
             profileId = reader.IsDBNull(5) ? null : reader.GetString(5);
             profileName = reader.IsDBNull(6) ? null : reader.GetString(6);
+            programId = reader.IsDBNull(7) ? null : reader.GetString(7);
+            programName = reader.IsDBNull(8) ? null : reader.GetString(8);
         }
 
         CompositeRollProfile? storedProfile = await ProfileSegmentMapping
@@ -174,6 +183,8 @@ public sealed class SqliteJobRepository : IJobRepository
         {
             ProfileId = profileId,
             ProfileName = profileName,
+            ProgramId = programId,
+            ProgramName = programName,
         };
         return (job, state);
     }

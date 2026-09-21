@@ -177,6 +177,42 @@ public sealed class SqliteDatabase
 
         CREATE INDEX ix_roll_profile_modified ON roll_profile(modified_at_utc);
         """,
+
+        // 4：程序库。程序是可复用的模板（一串工序 + 整支程序的取舍开关），
+        // 作业引用它的时候把工序复制成快照存进 job_step / job_parameter——
+        // 库里之后改了程序，已经磨过的那支辊的记录不会跟着变。
+        //
+        // program_parameter 的 step_order 与 job_parameter 同一套约定：
+        // 工序从 1 起，-1 是整支程序的取舍开关。
+        """
+        ALTER TABLE job ADD COLUMN program_id TEXT NULL;
+        ALTER TABLE job ADD COLUMN program_name TEXT NULL;
+
+        CREATE TABLE program (
+            program_id         TEXT PRIMARY KEY,
+            name               TEXT NOT NULL,
+            created_at_utc     TEXT NOT NULL,
+            modified_at_utc    TEXT NOT NULL
+        );
+
+        CREATE TABLE program_step (
+            program_id         TEXT NOT NULL REFERENCES program(program_id) ON DELETE CASCADE,
+            step_order         INTEGER NOT NULL,
+            step_type_key      TEXT NOT NULL,
+            PRIMARY KEY (program_id, step_order)
+        );
+
+        CREATE TABLE program_parameter (
+            program_id         TEXT NOT NULL REFERENCES program(program_id) ON DELETE CASCADE,
+            step_order         INTEGER NOT NULL,
+            parameter_key      TEXT NOT NULL,
+            value_kind         INTEGER NOT NULL,
+            value_text         TEXT NOT NULL,
+            PRIMARY KEY (program_id, step_order, parameter_key)
+        );
+
+        CREATE INDEX ix_program_modified ON program(modified_at_utc);
+        """,
     };
 
     private readonly string connectionString;

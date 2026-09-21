@@ -937,6 +937,54 @@
   <data name="Profile_SegmentTo" xml:space="preserve">
     <value>Segment to</value>
   </data>
+  <data name="Program_ColumnModified" xml:space="preserve">
+    <value>Modified</value>
+  </data>
+  <data name="Program_ColumnName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Program_ColumnSteps" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="Program_Library" xml:space="preserve">
+    <value>Program library</value>
+  </data>
+  <data name="Program_LibraryClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Program_LibraryDelete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Program_LibraryEmpty" xml:space="preserve">
+    <value>The library is empty</value>
+  </data>
+  <data name="Program_LibraryOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Program_Name" xml:space="preserve">
+    <value>Program name</value>
+  </data>
+  <data name="Program_NeedsName" xml:space="preserve">
+    <value>Name the program before saving it to the library</value>
+  </data>
+  <data name="Program_Saved" xml:space="preserve">
+    <value>Program saved to the library</value>
+  </data>
+  <data name="Steps_ClearProfile" xml:space="preserve">
+    <value>Edit here instead</value>
+  </data>
+  <data name="Steps_ProfileFromLibrary" xml:space="preserve">
+    <value>From library</value>
+  </data>
+  <data name="Steps_ProfileInline" xml:space="preserve">
+    <value>Edited here</value>
+  </data>
+  <data name="Steps_ProfileSource" xml:space="preserve">
+    <value>Profile source</value>
+  </data>
+  <data name="Steps_UseThisProfile" xml:space="preserve">
+    <value>Use</value>
+  </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>Aligned</value>
   </data>

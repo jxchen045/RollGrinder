@@ -25,7 +25,7 @@ public sealed record GrindingJobStep(int Order, string StepTypeKey, ParameterSet
 /// <param name="RollId">辊件标识。</param>
 /// <param name="Geometry">辊件几何。</param>
 /// <param name="Profile">目标辊形（多段叠加）。</param>
-/// <param name="Steps">工序序列，按 Order 升序。</param>
+/// <param name="Steps">工序序列，按 Order 升序。同样是**快照**：从程序库调出来时复制一份。</param>
 /// <param name="ProgramOptions">程序步骤开关（自动磨削前的取舍），见 <see cref="ProgramOptionCatalog"/>。</param>
 public sealed record GrindingJob(
     string JobId,
@@ -40,6 +40,12 @@ public sealed record GrindingJob(
 
     /// <summary>调出来时那条辊形叫什么。库里改了名也不影响这里——记录要记当时的名字。</summary>
     public string? ProfileName { get; init; }
+
+    /// <summary>这支作业的工序来自程序库的哪一支；现编现用时为 null。只作追溯，不参与计算。</summary>
+    public string? ProgramId { get; init; }
+
+    /// <summary>调出来时那支程序叫什么。同上，记录要记当时的名字。</summary>
+    public string? ProgramName { get; init; }
 
     /// <summary>
     /// 主辊形（第一段）的曲线类型键。列表显示与旧库的 <c>job.profile_type_key</c> 列用它，

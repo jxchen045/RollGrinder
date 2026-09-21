@@ -937,6 +937,54 @@
   <data name="Profile_SegmentTo" xml:space="preserve">
     <value>区间终点</value>
   </data>
+  <data name="Program_ColumnModified" xml:space="preserve">
+    <value>修改时间</value>
+  </data>
+  <data name="Program_ColumnName" xml:space="preserve">
+    <value>程序名</value>
+  </data>
+  <data name="Program_ColumnSteps" xml:space="preserve">
+    <value>工序数</value>
+  </data>
+  <data name="Program_Library" xml:space="preserve">
+    <value>程序库</value>
+  </data>
+  <data name="Program_LibraryClose" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="Program_LibraryDelete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="Program_LibraryEmpty" xml:space="preserve">
+    <value>库里还没有程序</value>
+  </data>
+  <data name="Program_LibraryOpen" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="Program_Name" xml:space="preserve">
+    <value>程序名</value>
+  </data>
+  <data name="Program_NeedsName" xml:space="preserve">
+    <value>程序要先起个名字才能存进库里</value>
+  </data>
+  <data name="Program_Saved" xml:space="preserve">
+    <value>程序已存入库</value>
+  </data>
+  <data name="Steps_ClearProfile" xml:space="preserve">
+    <value>改回现编</value>
+  </data>
+  <data name="Steps_ProfileFromLibrary" xml:space="preserve">
+    <value>选自辊形库</value>
+  </data>
+  <data name="Steps_ProfileInline" xml:space="preserve">
+    <value>本页现编</value>
+  </data>
+  <data name="Steps_ProfileSource" xml:space="preserve">
+    <value>辊形来源</value>
+  </data>
+  <data name="Steps_UseThisProfile" xml:space="preserve">
+    <value>选用</value>
+  </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>已对齐</value>
   </data>
