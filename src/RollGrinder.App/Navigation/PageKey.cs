@@ -1,6 +1,6 @@
 namespace RollGrinder.App.Navigation;
 
-/// <summary>六个主界面。底部功能条按当前页给出不同的 8 个键。</summary>
+/// <summary>七个主界面。底部功能条按当前页给出不同的 8 个键。</summary>
 public enum PageKey
 {
     /// <summary>自动磨削（主界面）。</summary>
@@ -20,4 +20,7 @@ public enum PageKey
 
     /// <summary>诊断。</summary>
     Diagnostics = 5,
+
+    /// <summary>设置：现场标定值。</summary>
+    Settings = 6,
 }

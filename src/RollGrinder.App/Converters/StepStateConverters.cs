@@ -109,7 +109,7 @@ public sealed class FunctionKeyStyleConverter : IValueConverter
 public sealed class LocalizeConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        value is string key ? Localization.LocalizationScope.Current[key] : string.Empty;
+        value is string key && key.Length > 0 ? Localization.LocalizationScope.Current[key] : string.Empty;
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();

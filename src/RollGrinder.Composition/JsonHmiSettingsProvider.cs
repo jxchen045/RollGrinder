@@ -64,10 +64,6 @@ public static class JsonHmiSettingsProvider
             settings.CompensationSmoothingPoints >= 1 && settings.CompensationSmoothingPoints % 2 == 1,
             path,
             nameof(settings.CompensationSmoothingPoints));
-        Require(
-            settings.ProfileToleranceDiameterMicrometer is > 0.0 and <= 1000.0,
-            path,
-            nameof(settings.ProfileToleranceDiameterMicrometer));
     }
 
     private static void Require(bool condition, string path, string field)

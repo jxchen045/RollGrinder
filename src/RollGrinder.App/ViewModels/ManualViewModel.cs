@@ -14,6 +14,7 @@ using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core.Compensation;
 using RollGrinder.Core.Units;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Calibration;
 using RollGrinder.Services.Manual;
 using RollGrinder.Services.Measurement;
 using RollGrinder.Services.Monitoring;
@@ -101,6 +102,7 @@ public sealed partial class ManualViewModel : PageViewModelBase
     private readonly IMeasurementService measurementService;
     private readonly IManualCommandService commands;
     private readonly MachineDescription machine;
+    private readonly ICalibrationService calibration;
     private readonly HmiSettings settings;
 
     private DateTimeOffset feedbackExpiryUtc;
@@ -111,11 +113,13 @@ public sealed partial class ManualViewModel : PageViewModelBase
         IManualCommandService commands,
         MachineDescription machine,
         HmiSettings settings,
+        ICalibrationService calibration,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
         : base(alarms, localizer, navigator)
     {
+        this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.measurementService = measurementService ?? throw new ArgumentNullException(nameof(measurementService));
         this.commands = commands ?? throw new ArgumentNullException(nameof(commands));
@@ -298,7 +302,9 @@ public sealed partial class ManualViewModel : PageViewModelBase
 
         double differenceMm = UnitConversion.RadiusMmToDiameterMm(
             head.Point.MeasuredRadiusMm - tail.Point.MeasuredRadiusMm);
-        double toleranceMm = UnitConversion.MicrometerToMm(this.settings.ProfileToleranceDiameterMicrometer);
+        // 头架侧与尾架侧的差值是**安装误差**，按对中公差卡，不是辊形公差。
+        double toleranceMm = UnitConversion.MicrometerToMm(
+            this.calibration.Current.CentringToleranceMicrometer);
 
         if (Math.Abs(differenceMm) <= toleranceMm)
         {

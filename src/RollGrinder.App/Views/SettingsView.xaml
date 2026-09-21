@@ -1,0 +1,89 @@
+<UserControl x:Class="RollGrinder.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:RollGrinder.App.Localization">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="360" />
+        </Grid.ColumnDefinitions>
+
+        <!-- 标定值：参数格由 MachineCalibration.Schema 生成 -->
+        <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                    <DockPanel>
+                        <TextBlock Text="{loc:Loc Settings_CalibrationHeader}" Style="{StaticResource Text.CardTitle}" />
+                        <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Text="{loc:Loc Settings_ReadOnlyHint}" Style="{StaticResource Text.Label}"
+                                   Foreground="{StaticResource Brush.WarningFill}"
+                                   Visibility="{Binding CanEdit, Converter={StaticResource InverseBool}}" />
+                    </DockPanel>
+                </Border>
+
+                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}"
+                        BorderThickness="0,1,0,0" Padding="14">
+                    <DockPanel>
+                        <TextBlock Text="{loc:Loc Settings_WheelWear}" Style="{StaticResource Text.Label}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding WheelWearText}" FontFamily="{StaticResource Font.Mono}"
+                                   FontSize="18" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Text="{Binding StatusResourceKey, Converter={StaticResource LocalizeConverter}}"
+                                   FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
+                    </DockPanel>
+                </Border>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Values}"
+                                  Background="{StaticResource Brush.GridLine}"
+                                  IsEnabled="{Binding CanEdit}"
+                                  ItemTemplate="{StaticResource ParameterCellTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- 改动记录：换砂轮是要追溯的事 -->
+        <Border Grid.Column="1" Style="{StaticResource Card}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                    <TextBlock Text="{loc:Loc Settings_AuditHeader}" Style="{StaticResource Text.CardTitle}" />
+                </Border>
+
+                <TextBlock Text="{loc:Loc Settings_AuditEmpty}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"
+                           Margin="20" FontSize="16">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Label}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Audit.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <ItemsControl ItemsSource="{Binding Audit}" Margin="14,8">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,0,0,10">
+                                <TextBlock Text="{Binding Label}" FontSize="16" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}"
+                                           FontSize="15" HorizontalAlignment="Right"
+                                           Foreground="{StaticResource Brush.TextSecondary}" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

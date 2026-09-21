@@ -25,7 +25,7 @@ public sealed class MachineMonitorTests
         new WorkpieceLimits(100.0, 5000.0, 100.0, 1000.0, 1000.0),
             new Dictionary<string, int>());
 
-    private static readonly HmiSettings Settings = new(1, "zh-CN", 100, 8, 101, 300, 365, 500, 0.7, 5, 5.0, UserRole.Operator);
+    private static readonly HmiSettings Settings = new(1, "zh-CN", 100, 8, 101, 300, 365, 500, 0.7, 5, UserRole.Operator);
 
     private sealed class ScriptedGateway : IMachineGateway
     {

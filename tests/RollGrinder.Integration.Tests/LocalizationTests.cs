@@ -8,6 +8,7 @@ using System.Xml.Linq;
 using FluentAssertions;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
+using RollGrinder.Core.Calibration;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
@@ -157,6 +158,74 @@ public sealed class LocalizationTests
             declared.Should().Contain(StepParameterKeys.WheelSurfaceSpeedMPerSec, stepType.Key);
             declared.Should().Contain(StepParameterKeys.ReversalDwellSeconds, stepType.Key);
         }
+    }
+
+    [Fact]
+    public void Every_calibration_value_has_a_label_and_every_option_has_one_too()
+    {
+        // 设置页的参数格完全由 schema 生成，缺一条文案现场就看到 wheelDiameterMm 这种原始键。
+        foreach (ParameterDescriptor descriptor in MachineCalibration.Schema.Descriptors)
+        {
+            NeutralKeys.Should().Contain(descriptor.ResourceKey, $"标定值 {descriptor.Key} 需要界面文案");
+
+            foreach (string option in descriptor.AllowedValues ?? Array.Empty<string>())
+            {
+                NeutralKeys.Should().Contain(descriptor.ChoiceResourceKey(option));
+            }
+        }
+    }
+
+    [Fact]
+    public void Every_unit_that_a_built_in_parameter_uses_has_a_label()
+    {
+        IEnumerable<ParameterDescriptor> descriptors = MachineCalibration.Schema.Descriptors
+            .Concat(AllStepTypes().SelectMany(type => type.Schema.Descriptors));
+
+        foreach (ParameterUnit unit in descriptors.Select(descriptor => descriptor.Unit).Distinct())
+        {
+            NeutralKeys.Should().Contain("Unit_" + unit, $"单位 {unit} 需要界面文案");
+        }
+    }
+
+    /// <summary>
+    /// XAML 里的 {StaticResource X} 是**运行期**才解析的：键写错了编译照过，
+    /// 到现场才崩。这里把所有 XAML 扫一遍，逐个对着 Themes 里声明的键核。
+    /// </summary>
+    [Fact]
+    public void Every_static_resource_key_used_in_xaml_is_declared()
+    {
+        string appDirectory = Path.Combine(RepositoryLayout.Root, "src", "RollGrinder.App");
+        var declared = new HashSet<string>(StringComparer.Ordinal);
+        var used = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        var declarationPattern = new Regex(@"x:Key=""([^""]+)""", RegexOptions.Compiled);
+        var usagePattern = new Regex(@"\{StaticResource\s+([^}\s,]+)", RegexOptions.Compiled);
+
+        foreach (string file in Directory.EnumerateFiles(appDirectory, "*.xaml", SearchOption.AllDirectories))
+        {
+            string text = File.ReadAllText(file);
+            foreach (Match match in declarationPattern.Matches(text))
+            {
+                declared.Add(match.Groups[1].Value);
+            }
+
+            foreach (Match match in usagePattern.Matches(text))
+            {
+                used[match.Groups[1].Value] = Path.GetFileName(file);
+            }
+        }
+
+        used.Should().NotBeEmpty();
+
+        // WPF 自带的系统键不在我们的主题里声明，排掉。
+        string[] missing = used.Keys
+            .Where(key => !declared.Contains(key) && !key.StartsWith("{x:Static", StringComparison.Ordinal))
+            .OrderBy(key => key, StringComparer.Ordinal)
+            .ToArray();
+
+        missing.Should().BeEmpty(
+            "这些键在 XAML 里被引用但没有声明，运行期才会炸：" +
+            string.Join(", ", missing.Select(key => $"{key}（{used[key]}）")));
     }
 
     [Fact]

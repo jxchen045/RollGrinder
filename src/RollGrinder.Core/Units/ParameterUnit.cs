@@ -37,4 +37,7 @@ public enum ParameterUnit
 
     /// <summary>百分比（变速幅度）。</summary>
     Percent = 10,
+
+    /// <summary>安培（磨削电流、短行程电流）。</summary>
+    Ampere = 11,
 }

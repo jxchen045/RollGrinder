@@ -11,7 +11,7 @@ namespace RollGrinder.App.Views;
 /// 与机床数据到达频率解耦；每一拍只驱动当前页。
 ///
 /// 键盘映射对应操作面板的软键：F1–F8 = 底部八格（第 8 格是导航槽），
-/// Esc = 退一级 / 收浮层，Ctrl+1…6 = 直接切区域。
+/// Esc = 退一级 / 收浮层，Ctrl+1…7 = 直接切区域。
 /// </summary>
 public partial class ShellWindow : Window
 {
@@ -82,7 +82,7 @@ public partial class ShellWindow : Window
         }
 
         if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control
-            && e.Key is >= Key.D1 and <= Key.D6)
+            && e.Key is >= Key.D1 and <= Key.D7)
         {
             int index = e.Key - Key.D1;
             if (index < this.viewModel.AreaMenuItems.Count)

@@ -17,6 +17,7 @@ using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Data;
 using RollGrinder.Services;
+using RollGrinder.Services.Calibration;
 using RollGrinder.Services.Session;
 using Serilog;
 
@@ -81,6 +82,11 @@ public static class Program
             // 出厂默认口令不会一直留在机器上。
             host.Services.GetRequiredService<IUserDirectory>()
                 .EnsureSeedAccountAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+            // 现场标定值：库里一条都没有也照样起得来，取全套默认值，
+            // 但默认值不是机床数字——装机时必须在设置页里逐项标定。
+            host.Services.GetRequiredService<ICalibrationService>()
+                .LoadAsync(CancellationToken.None).GetAwaiter().GetResult();
 
             var application = new App(host);
             application.InitializeComponent();
@@ -156,6 +162,7 @@ public static class Program
         builder.Services.AddSingleton<PageViewModelBase, RecordsViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, ManualViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, DiagnosticsViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, SettingsViewModel>();
 
         builder.Services.AddSingleton<ShellViewModel>();
         builder.Services.AddSingleton<ShellWindow>();

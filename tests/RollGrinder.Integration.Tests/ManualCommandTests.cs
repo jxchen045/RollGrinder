@@ -129,7 +129,7 @@ public sealed class ManualCommandTests
     }
 
     private static HmiSettings Settings(int pulseMs = 1) => new(
-        1, "zh-CN", 200, 8, 201, 600, 365, 200, 0.6, 5, 5.0, UserRole.Operator, pulseMs);
+        1, "zh-CN", 200, 8, 201, 600, 365, 200, 0.6, 5, UserRole.Operator, pulseMs);
 
     private static ManualCommandService CreateService(
         RecordingGateway gateway,

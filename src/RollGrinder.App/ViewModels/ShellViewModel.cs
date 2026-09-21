@@ -43,6 +43,7 @@ public sealed partial class ShellViewModel : ViewModelBase
         PageKey.Manual,
         PageKey.Records,
         PageKey.Diagnostics,
+        PageKey.Settings,
     };
 
     private readonly IAlarmLog alarmLog;

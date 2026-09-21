@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Calibration;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
 using RollGrinder.Nc;
@@ -27,6 +28,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IUserSession, UserSession>();
         services.AddSingleton<IUserDirectory, UserDirectory>();
+        services.AddSingleton<ICalibrationService, CalibrationService>();
 
         services.AddSingleton<AlarmLog>(provider => new AlarmLog(
             settings.AlarmHistoryLimit,

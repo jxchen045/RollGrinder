@@ -228,6 +228,18 @@ public sealed class SqliteDatabase
             created_at_utc     TEXT NOT NULL
         );
         """,
+
+        // 6：现场标定值。与 machine.json 描述的机床固有能力分开——
+        // 这些换一次砂轮就变，现场要在界面上改，还要记谁在什么时候改的。
+        """
+        CREATE TABLE machine_calibration (
+            parameter_key      TEXT PRIMARY KEY,
+            value_kind         INTEGER NOT NULL,
+            value_text         TEXT NOT NULL,
+            changed_at_utc     TEXT NOT NULL,
+            changed_by         TEXT NOT NULL
+        );
+        """,
     };
 
     private readonly string connectionString;

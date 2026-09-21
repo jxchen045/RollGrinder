@@ -985,6 +985,102 @@
   <data name="Steps_UseThisProfile" xml:space="preserve">
     <value>选用</value>
   </data>
+  <data name="Choice_touchMode_automatic" xml:space="preserve">
+    <value>自动</value>
+  </data>
+  <data name="Choice_touchMode_manual" xml:space="preserve">
+    <value>手动</value>
+  </data>
+  <data name="Fn_NewWheel" xml:space="preserve">
+    <value>换新砂轮</value>
+  </data>
+  <data name="Fn_ReloadSettings" xml:space="preserve">
+    <value>重新读取</value>
+  </data>
+  <data name="Fn_SaveSettings" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Menu_SettingsHint" xml:space="preserve">
+    <value>现场标定值：砂轮、探头、对刀、公差</value>
+  </data>
+  <data name="Page_Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Parameter_centringToleranceMicrometer" xml:space="preserve">
+    <value>对中公差</value>
+  </data>
+  <data name="Parameter_dresserOffsetMm" xml:space="preserve">
+    <value>金刚笔位置偏移</value>
+  </data>
+  <data name="Parameter_dresserReferenceOffsetMm" xml:space="preserve">
+    <value>金刚笔基准块偏移</value>
+  </data>
+  <data name="Parameter_newWheelDiameterMm" xml:space="preserve">
+    <value>新砂轮直径</value>
+  </data>
+  <data name="Parameter_probeBToWheelCentreMm" xml:space="preserve">
+    <value>B 探头距砂轮中心</value>
+  </data>
+  <data name="Parameter_probeBToWheelSurfaceMm" xml:space="preserve">
+    <value>B 探头距砂轮表面</value>
+  </data>
+  <data name="Parameter_profileToleranceMicrometer" xml:space="preserve">
+    <value>辊形公差</value>
+  </data>
+  <data name="Parameter_referenceDiscDiameterMm" xml:space="preserve">
+    <value>基准盘直径</value>
+  </data>
+  <data name="Parameter_referenceDiscOffsetMm" xml:space="preserve">
+    <value>基准盘位置偏移</value>
+  </data>
+  <data name="Parameter_roundnessToleranceMicrometer" xml:space="preserve">
+    <value>圆度公差</value>
+  </data>
+  <data name="Parameter_shortStrokeCurrentA" xml:space="preserve">
+    <value>短行程电流</value>
+  </data>
+  <data name="Parameter_touchMode" xml:space="preserve">
+    <value>对刀方式</value>
+  </data>
+  <data name="Parameter_touchOffsetMm" xml:space="preserve">
+    <value>对刀偏移</value>
+  </data>
+  <data name="Parameter_wheelDiameterMm" xml:space="preserve">
+    <value>当前砂轮直径</value>
+  </data>
+  <data name="Parameter_wheelWidthMm" xml:space="preserve">
+    <value>砂轮宽度</value>
+  </data>
+  <data name="Settings_AuditEmpty" xml:space="preserve">
+    <value>还没有改动记录。装机后请逐项标定——默认值不是这台机床的数字。</value>
+  </data>
+  <data name="Settings_AuditHeader" xml:space="preserve">
+    <value>改动记录</value>
+  </data>
+  <data name="Settings_CalibrationHeader" xml:space="preserve">
+    <value>现场标定值</value>
+  </data>
+  <data name="Settings_NeedsAdministrator" xml:space="preserve">
+    <value>权限不够，改不了标定值</value>
+  </data>
+  <data name="Settings_NewWheelStaged" xml:space="preserve">
+    <value>已按新砂轮直径填入，按保存才生效</value>
+  </data>
+  <data name="Settings_ReadOnlyHint" xml:space="preserve">
+    <value>需要管理员权限才能修改</value>
+  </data>
+  <data name="Settings_Saved" xml:space="preserve">
+    <value>标定值已保存</value>
+  </data>
+  <data name="Settings_ValueInvalid" xml:space="preserve">
+    <value>有取值不合法，先改对再保存</value>
+  </data>
+  <data name="Settings_WheelWear" xml:space="preserve">
+    <value>砂轮已磨去</value>
+  </data>
+  <data name="Unit_Ampere" xml:space="preserve">
+    <value>A</value>
+  </data>
   <data name="Profile_Aligned" xml:space="preserve">
     <value>已对齐</value>
   </data>

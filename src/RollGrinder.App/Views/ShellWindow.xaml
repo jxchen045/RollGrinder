@@ -28,6 +28,9 @@
         <DataTemplate DataType="{x:Type vm:ManualViewModel}">
             <views:ManualView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:DiagnosticsViewModel}">
             <views:DiagnosticsView />
         </DataTemplate>

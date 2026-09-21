@@ -19,6 +19,7 @@ using RollGrinder.Core.Units;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Calibration;
 using RollGrinder.Services.Monitoring;
 
 namespace RollGrinder.App.ViewModels;
@@ -107,6 +108,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly IMeasurementRepository measurements;
     private readonly GrindingStepTypeRegistry stepTypes;
     private readonly RollProfileTypeRegistry profileTypes;
+    private readonly ICalibrationService calibration;
 
     private readonly LiveValueViewModel probeA;
     private readonly LiveValueViewModel probeB;
@@ -129,11 +131,13 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         IMeasurementRepository measurements,
         GrindingStepTypeRegistry stepTypes,
         RollProfileTypeRegistry profileTypes,
+        ICalibrationService calibration,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
         : base(alarms, localizer, navigator)
     {
+        this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -159,8 +163,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             this.wheelDiameter, this.grindingCurrent, this.currentPass,
         };
 
-        ToleranceText = localizer.Format(
-            "Auto_ToleranceFormat", settings.ProfileToleranceDiameterMicrometer);
+        RefreshTolerance();
+        calibration.Changed += (_, _) => RefreshTolerance();
 
         SetFunctionKeys(new[]
         {
@@ -488,6 +492,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     /// </summary>
     private RollProfile TargetProfile() => this.activeJob!.Profile.Compose(
         this.activeJob.Geometry, this.profileTypes, this.settings.ProfileSampleCount);
+
+    /// <summary>公差是现场标定值，设置页上改完这里跟着变。</summary>
+    private void RefreshTolerance() => ToleranceText = Localizer.Format(
+        "Auto_ToleranceFormat", this.calibration.Current.ProfileToleranceMicrometer);
 
     private void BuildReferenceCurve()
     {

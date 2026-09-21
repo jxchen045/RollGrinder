@@ -17,6 +17,7 @@ using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Calibration;
 using RollGrinder.Data;
 using RollGrinder.Services.Jobs;
 
@@ -249,6 +250,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private readonly IJobDownloadService downloadService;
     private readonly IProgramRepository programs;
     private readonly IRollProfileRepository profileLibrary;
+    private readonly ICalibrationService calibration;
 
     /// <summary>从辊形库选中的那条辊形；没选（现编现用）时为 null。</summary>
     private RollProfileDefinition? selectedProfileDefinition;
@@ -265,6 +267,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         IJobDownloadService downloadService,
         IProgramRepository programs,
         IRollProfileRepository profileLibrary,
+        ICalibrationService calibration,
         MachineDescription machine,
         MachineCapability capability,
         HmiSettings settings,
@@ -279,6 +282,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.downloadService = downloadService ?? throw new ArgumentNullException(nameof(downloadService));
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
         this.profileLibrary = profileLibrary ?? throw new ArgumentNullException(nameof(profileLibrary));
+        this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         ArgumentNullException.ThrowIfNull(machine);
 
         ProfileTypeKeys = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
@@ -311,6 +315,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
 
         BuildCompensationSettings(settings, machine);
+
+        // 公差是现场标定值，设置页上随时能改——改完这张卡片要跟着变。
+        calibration.Changed += (_, _) => BuildCompensationSettings(settings, machine);
 
         SetFunctionKeys(new[]
         {
@@ -1081,6 +1088,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     private void BuildCompensationSettings(HmiSettings settings, MachineDescription machine)
     {
+        CompensationSettings.Clear();
         CompensationSettings.Add(new LabelValueViewModel(
             "Comp_Gain", settings.CompensationGain.ToString("F2", CultureInfo.CurrentCulture), Localizer));
         CompensationSettings.Add(new LabelValueViewModel(
@@ -1095,7 +1103,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
             Localizer));
         CompensationSettings.Add(new LabelValueViewModel(
             "Comp_Tolerance",
-            settings.ProfileToleranceDiameterMicrometer.ToString("F1", CultureInfo.CurrentCulture),
+            this.calibration.Current.ProfileToleranceMicrometer.ToString("F1", CultureInfo.CurrentCulture),
             Localizer));
         CompensationSettings.Add(new LabelValueViewModel(
             "Comp_MaxInfeed",
