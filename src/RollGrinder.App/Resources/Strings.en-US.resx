@@ -1192,9 +1192,6 @@
   <data name="Profile_ValidationHeader" xml:space="preserve">
     <value>Validation</value>
   </data>
-  <data name="Records_CurveNote" xml:space="preserve">
-    <value>The before/after profile, 36-point roundness and compensation convergence charts need the corresponding measuring channels wired up first.</value>
-  </data>
   <data name="Records_DeviationColumn" xml:space="preserve">
     <value>Worst deviation (µm)</value>
   </data>
@@ -2070,5 +2067,23 @@
   </data>
   <data name="Metric_CompensationIterations" xml:space="preserve">
     <value>Compensation iterations</value>
+  </data>
+  <data name="Curve_BeforeAfter" xml:space="preserve">
+    <value>Before / after profile</value>
+  </data>
+  <data name="Curve_Convergence" xml:space="preserve">
+    <value>Compensation convergence</value>
+  </data>
+  <data name="Curve_BeforeGrinding" xml:space="preserve">
+    <value>Before</value>
+  </data>
+  <data name="Curve_AfterGrinding" xml:space="preserve">
+    <value>After</value>
+  </data>
+  <data name="Curve_Deviation" xml:space="preserve">
+    <value>Deviation</value>
+  </data>
+  <data name="Records_CurveNoData" xml:space="preserve">
+    <value>This roll has no data of this kind</value>
   </data>
 </root>

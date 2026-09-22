@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core.Compensation;
+using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Profiles;
 
 using RollGrinder.Core.Units;
@@ -62,6 +63,13 @@ public interface IRecordService
     /// <see cref="GrindingOutcome.Empty"/>——界面上一排 "--"，而不是一屏错误。
     /// </summary>
     Task<GrindingOutcome> LoadOutcomeAsync(string recordId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 一条记录的某一张曲线。没有数据时返回空曲线，界面照实说，
+    /// 不画一条编出来的线。
+    /// </summary>
+    Task<RecordCurve> LoadCurveAsync(
+        string recordId, RecordCurveKind kind, CancellationToken cancellationToken);
 
     /// <summary>给一条记录收尾。</summary>
     Task FinishAsync(string recordId, JobState state, string? note, CancellationToken cancellationToken);
@@ -209,6 +217,178 @@ public sealed class RecordService : IRecordService
             roundnessMeasurement,
             target,
             await this.compensations.CountByJobAsync(record.JobId, cancellationToken).ConfigureAwait(false));
+    }
+
+    public async Task<RecordCurve> LoadCurveAsync(
+        string recordId, RecordCurveKind kind, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
+
+        GrindingRecord? record = await this.records.GetAsync(recordId, cancellationToken).ConfigureAwait(false);
+        if (record is null)
+        {
+            return RecordCurve.Empty(kind);
+        }
+
+        return kind switch
+        {
+            RecordCurveKind.BeforeAfterProfile =>
+                await BeforeAfterCurveAsync(record.JobId, cancellationToken).ConfigureAwait(false),
+            RecordCurveKind.Deviation =>
+                await DeviationCurveAsync(record.JobId, cancellationToken).ConfigureAwait(false),
+            RecordCurveKind.Roundness =>
+                await RoundnessCurveAsync(record.JobId, cancellationToken).ConfigureAwait(false),
+            RecordCurveKind.CompensationConvergence =>
+                await ConvergenceCurveAsync(record.JobId, cancellationToken).ConfigureAwait(false),
+            _ => RecordCurve.Empty(kind),
+        };
+    }
+
+    /// <summary>
+    /// 磨前 / 磨后辊形：两条线叠着画。
+    ///
+    /// 纵坐标是**相对公称半径的偏差**（直径量 µm）而不是绝对直径——
+    /// 两条相差不到一毫米的线画在 800 mm 的量程上，肉眼看就是重合的。
+    /// </summary>
+    private async Task<RecordCurve> BeforeAfterCurveAsync(string jobId, CancellationToken cancellationToken)
+    {
+        (Core.Steps.GrindingJob Job, JobState State)? stored = await this.jobs
+            .GetAsync(jobId, cancellationToken).ConfigureAwait(false);
+        if (stored is null)
+        {
+            return RecordCurve.Empty(RecordCurveKind.BeforeAfterProfile);
+        }
+
+        double nominalRadiusMm = stored.Value.Job.Geometry.NominalRadiusMm;
+        var series = new List<RecordCurveSeries>();
+
+        MeasurementRecord? pre = await this.measurements
+            .GetLatestByStageAsync(jobId, MeasurementStage.PreGrind, cancellationToken).ConfigureAwait(false);
+        if (pre is not null)
+        {
+            series.Add(new RecordCurveSeries("Curve_BeforeGrinding", Offsets(pre, nominalRadiusMm)));
+        }
+
+        MeasurementRecord? post = await this.measurements
+            .GetLatestByStageAsync(jobId, MeasurementStage.PostGrind, cancellationToken).ConfigureAwait(false);
+        post ??= await this.measurements.GetLatestByJobAsync(jobId, cancellationToken).ConfigureAwait(false);
+        if (post is not null)
+        {
+            series.Add(new RecordCurveSeries("Curve_AfterGrinding", Offsets(post, nominalRadiusMm)));
+        }
+
+        return new RecordCurve(
+            RecordCurveKind.BeforeAfterProfile, series, "Unit_Millimeter", "Unit_Micrometer");
+    }
+
+    /// <summary>误差曲线：磨后实测相对目标辊形。</summary>
+    private async Task<RecordCurve> DeviationCurveAsync(string jobId, CancellationToken cancellationToken)
+    {
+        (Core.Steps.GrindingJob Job, JobState State)? stored = await this.jobs
+            .GetAsync(jobId, cancellationToken).ConfigureAwait(false);
+        MeasurementRecord? post = await this.measurements
+            .GetLatestByStageAsync(jobId, MeasurementStage.PostGrind, cancellationToken).ConfigureAwait(false);
+        post ??= await this.measurements.GetLatestByJobAsync(jobId, cancellationToken).ConfigureAwait(false);
+
+        if (stored is null || post is null)
+        {
+            return RecordCurve.Empty(RecordCurveKind.Deviation);
+        }
+
+        Core.Geometry.RollProfile target = stored.Value.Job.Profile.Compose(
+            stored.Value.Job.Geometry, this.profileTypes, this.settings.ProfileSampleCount);
+        Core.Geometry.RollProfile deviation = CompensationCalculator.ComputeDeviation(
+            post.Profile, target, stored.Value.Job.Geometry);
+
+        var points = new List<(double, double)>(deviation.Points.Count);
+        foreach (ProfilePoint point in deviation.Points)
+        {
+            points.Add((point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)));
+        }
+
+        return new RecordCurve(
+            RecordCurveKind.Deviation,
+            new[] { new RecordCurveSeries("Curve_Deviation", points) },
+            "Unit_Millimeter",
+            "Unit_Micrometer");
+    }
+
+    /// <summary>圆度：各截面的圆度与偏心，两条线。</summary>
+    private async Task<RecordCurve> RoundnessCurveAsync(string jobId, CancellationToken cancellationToken)
+    {
+        RoundnessMeasurement? measurement = await this.roundness
+            .GetLatestByJobAsync(jobId, cancellationToken).ConfigureAwait(false);
+        if (measurement is null || measurement.Points.Count == 0)
+        {
+            return RecordCurve.Empty(RecordCurveKind.Roundness);
+        }
+
+        var roundnessPoints = new List<(double, double)>(measurement.Points.Count);
+        var eccentricityPoints = new List<(double, double)>(measurement.Points.Count);
+        foreach (RoundnessPoint point in measurement.Points)
+        {
+            roundnessPoints.Add((point.BodyPositionMm, point.RoundnessMicrometer));
+            eccentricityPoints.Add((point.BodyPositionMm, point.EccentricityMicrometer));
+        }
+
+        return new RecordCurve(
+            RecordCurveKind.Roundness,
+            new[]
+            {
+                new RecordCurveSeries("Curve_Roundness", roundnessPoints),
+                new RecordCurveSeries("Curve_Eccentricity", eccentricityPoints),
+            },
+            "Unit_Millimeter",
+            "Unit_Micrometer");
+    }
+
+    /// <summary>
+    /// 补偿收敛过程：第几次迭代 → 那一次补偿量的最大值（直径量 µm）。
+    ///
+    /// 看的是它有没有在往下走。补偿量越补越小，说明这一支在收敛；
+    /// 一直不降就是补错了方向，那时候该停下来查而不是接着补。
+    /// </summary>
+    private async Task<RecordCurve> ConvergenceCurveAsync(string jobId, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<CompensationRecord> history = await this.compensations
+            .ListByJobAsync(jobId, 200, cancellationToken).ConfigureAwait(false);
+        if (history.Count == 0)
+        {
+            return RecordCurve.Empty(RecordCurveKind.CompensationConvergence);
+        }
+
+        var points = new List<(double, double)>(history.Count);
+        for (int i = 0; i < history.Count; i++)
+        {
+            double worst = 0.0;
+            foreach (ProfilePoint point in history[i].Points)
+            {
+                worst = Math.Max(worst, Math.Abs(UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)));
+            }
+
+            points.Add((i + 1, worst));
+        }
+
+        return new RecordCurve(
+            RecordCurveKind.CompensationConvergence,
+            new[] { new RecordCurveSeries("Curve_Convergence", points) },
+            "Unit_Count",
+            "Unit_Micrometer");
+    }
+
+    /// <summary>实测点列换成"相对公称半径的偏差"（直径量 µm）。</summary>
+    private static IReadOnlyList<(double X, double Y)> Offsets(
+        MeasurementRecord measurement, double nominalRadiusMm)
+    {
+        var points = new List<(double, double)>(measurement.Profile.Points.Count);
+        foreach (MeasurementPoint point in measurement.Profile.Points)
+        {
+            points.Add((
+                point.BodyPositionMm,
+                UnitConversion.RadiusMmToDiameterMicrometer(point.MeasuredRadiusMm - nominalRadiusMm)));
+        }
+
+        return points;
     }
 
     public async Task FinishAsync(

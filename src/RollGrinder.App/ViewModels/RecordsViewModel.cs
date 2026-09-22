@@ -132,6 +132,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
         // 先摆一屏 "--"：指标要查库，别让格子在读完之前是空的。
         ShowOutcome(GrindingOutcome.Empty);
+        RefreshCurve();
         _ = RunGuardedAsync(async token =>
         {
             GrindingOutcome outcome = await this.recordService
@@ -194,6 +195,62 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
     /// <summary>算不出来时格子里写什么。</summary>
     private const string Dash = "--";
+
+    /// <summary>当前这张曲线。界面拿它去画；没有数据时 HasData 为 false。</summary>
+    public RecordCurve Curve { get; private set; } = RecordCurve.Empty(RecordCurveKind.BeforeAfterProfile);
+
+    /// <summary>曲线换了，界面该重画。</summary>
+    public event EventHandler? CurveChanged;
+
+    [ObservableProperty]
+    private RecordCurveKind selectedCurve = RecordCurveKind.BeforeAfterProfile;
+
+    /// <summary>没有数据时写在图上的那句话。</summary>
+    [ObservableProperty]
+    private string curveEmptyText = string.Empty;
+
+    /// <summary>有没有画得出来的线。</summary>
+    [ObservableProperty]
+    private bool curveHasData;
+
+    [RelayCommand]
+    private void SelectCurve(RecordCurveKind kind)
+    {
+        SelectedCurve = kind;
+        RefreshCurve();
+    }
+
+    private void RefreshCurve()
+    {
+        RecordRowViewModel? selected = SelectedRecord;
+        if (selected is null)
+        {
+            Curve = RecordCurve.Empty(SelectedCurve);
+            CurveHasData = false;
+            CurveEmptyText = Localizer["Records_NoSelection"];
+            CurveChanged?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
+        _ = RunGuardedAsync(async token =>
+        {
+            RecordCurve curve = await this.recordService
+                .LoadCurveAsync(selected.RecordId, SelectedCurve, token).ConfigureAwait(true);
+
+            // 读的过程中人可能已经点了别的记录或别的曲线。
+            if (!ReferenceEquals(SelectedRecord, selected) || curve.Kind != SelectedCurve)
+            {
+                return;
+            }
+
+            Curve = curve;
+            CurveHasData = curve.HasData;
+
+            // 这支辊没有这项数据就照实说，不画一条编出来的线。
+            CurveEmptyText = curve.HasData ? string.Empty : Localizer["Records_CurveNoData"];
+            CurveChanged?.Invoke(this, EventArgs.Empty);
+        }, CancellationToken.None);
+    }
 
     [RelayCommand]
     public Task QueryAsync(CancellationToken cancellationToken) =>

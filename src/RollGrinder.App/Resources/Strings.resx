@@ -1192,9 +1192,6 @@
   <data name="Profile_ValidationHeader" xml:space="preserve">
     <value>校验</value>
   </data>
-  <data name="Records_CurveNote" xml:space="preserve">
-    <value>磨前/磨后辊形、圆度 36 点与补偿收敛过程这三张图，需要机床侧对应的测量通道先接进来；接通后在这里按设计稿补上。</value>
-  </data>
   <data name="Records_DeviationColumn" xml:space="preserve">
     <value>最大偏差 (µm)</value>
   </data>
@@ -2070,5 +2067,23 @@
   </data>
   <data name="Metric_CompensationIterations" xml:space="preserve">
     <value>补偿迭代次数</value>
+  </data>
+  <data name="Curve_BeforeAfter" xml:space="preserve">
+    <value>磨前 / 磨后辊形</value>
+  </data>
+  <data name="Curve_Convergence" xml:space="preserve">
+    <value>补偿收敛过程</value>
+  </data>
+  <data name="Curve_BeforeGrinding" xml:space="preserve">
+    <value>磨前</value>
+  </data>
+  <data name="Curve_AfterGrinding" xml:space="preserve">
+    <value>磨后</value>
+  </data>
+  <data name="Curve_Deviation" xml:space="preserve">
+    <value>误差</value>
+  </data>
+  <data name="Records_CurveNoData" xml:space="preserve">
+    <value>这支辊没有这项数据</value>
   </data>
 </root>

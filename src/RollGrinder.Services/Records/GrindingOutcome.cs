@@ -9,6 +9,54 @@ using RollGrinder.Data.Model;
 
 namespace RollGrinder.Services.Records;
 
+/// <summary>记录页上可切换的四条曲线，对应设计稿 B-Records 下半屏。</summary>
+public enum RecordCurveKind
+{
+    /// <summary>磨前 / 磨后辊形：两条线叠着看这一趟磨掉了什么。</summary>
+    BeforeAfterProfile = 0,
+
+    /// <summary>误差曲线：磨后实测相对目标。</summary>
+    Deviation = 1,
+
+    /// <summary>圆度：各截面的圆度与偏心。</summary>
+    Roundness = 2,
+
+    /// <summary>补偿收敛过程：每一次迭代的最差偏差，看它有没有在往下走。</summary>
+    CompensationConvergence = 3,
+}
+
+/// <summary>
+/// 记录页上的一条曲线。
+/// </summary>
+/// <param name="LabelResourceKey">这条线叫什么。一张图上可能画两条（磨前/磨后）。</param>
+/// <param name="Points">点列。横坐标的含义随曲线变，纵坐标由 <see cref="RecordCurve.ValueUnitResourceKey"/> 标。</param>
+public sealed record RecordCurveSeries(
+    string LabelResourceKey, IReadOnlyList<(double X, double Y)> Points);
+
+/// <summary>
+/// 一张记录曲线图：一条或几条线，外加两根轴的标题。
+///
+/// 与结果指标一样，是**算出来的**，不另存一份。没有数据时 <see cref="Series"/>
+/// 为空，界面照实说"这支辊没有这项数据"——不画一条编出来的线。
+/// </summary>
+/// <param name="Kind">哪一条曲线。</param>
+/// <param name="Series">线。空表示这支辊没有这项数据。</param>
+/// <param name="AxisUnitResourceKey">横轴单位的文案键。</param>
+/// <param name="ValueUnitResourceKey">纵轴单位的文案键。</param>
+public sealed record RecordCurve(
+    RecordCurveKind Kind,
+    IReadOnlyList<RecordCurveSeries> Series,
+    string AxisUnitResourceKey,
+    string ValueUnitResourceKey)
+{
+    /// <summary>这支辊没有这项数据。</summary>
+    public static RecordCurve Empty(RecordCurveKind kind) =>
+        new(kind, Array.Empty<RecordCurveSeries>(), "Unit_Millimeter", "Unit_Micrometer");
+
+    /// <summary>有没有画得出来的线。</summary>
+    public bool HasData => Series.Count > 0 && Series.Any(series => series.Points.Count >= 2);
+}
+
 /// <summary>
 /// 一支辊磨完之后的结果指标，对应设计稿 B-Records 的"磨削结果"那 12 项。
 ///

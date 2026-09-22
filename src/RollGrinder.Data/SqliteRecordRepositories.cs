@@ -377,6 +377,61 @@ public sealed class SqliteCompensationRepository : ICompensationRepository
         return new CompensationRecord(compensationId, jobId, createdAt, measurementId, points);
     }
 
+    public async Task<IReadOnlyList<CompensationRecord>> ListByJobAsync(
+        string jobId, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(jobId);
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        var headers = new List<(string Id, DateTimeOffset CreatedAt, string? MeasurementId)>();
+        await using (SqliteCommand command = connection.CreateCommand())
+        {
+            // 从早到晚：收敛曲线的横坐标是"第几次迭代"，倒着取就把曲线画反了。
+            command.CommandText =
+                """
+                SELECT compensation_id, created_at_utc, measurement_id
+                FROM compensation WHERE job_id = $job
+                ORDER BY created_at_utc LIMIT $limit;
+                """;
+            SqlMapping.AddParameter(command, "$job", jobId);
+            SqlMapping.AddParameter(command, "$limit", limit);
+
+            await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                headers.Add((
+                    reader.GetString(0),
+                    SqlMapping.ToTimestamp(reader.GetString(1)),
+                    reader.IsDBNull(2) ? null : reader.GetString(2)));
+            }
+        }
+
+        var compensations = new List<CompensationRecord>(headers.Count);
+        foreach ((string id, DateTimeOffset createdAt, string? measurementId) in headers)
+        {
+            var points = new List<ProfilePoint>();
+            await using SqliteCommand command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT body_position_mm, offset_radius_mm
+                FROM compensation_point WHERE compensation_id = $id
+                ORDER BY body_position_mm;
+                """;
+            SqlMapping.AddParameter(command, "$id", id);
+
+            await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                points.Add(new ProfilePoint(reader.GetDouble(0), reader.GetDouble(1)));
+            }
+
+            compensations.Add(new CompensationRecord(id, jobId, createdAt, measurementId, points));
+        }
+
+        return compensations;
+    }
+
     public async Task<int> CountByJobAsync(string jobId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(jobId);
