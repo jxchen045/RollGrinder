@@ -2026,4 +2026,10 @@
   <data name="Unit_Revolution" xml:space="preserve">
     <value>rev</value>
   </data>
+  <data name="Alarm_MachineAlarm" xml:space="preserve">
+    <value>Machine alarm</value>
+  </data>
+  <data name="Alarm_MachineAlarmCleared" xml:space="preserve">
+    <value>Machine alarm cleared</value>
+  </data>
 </root>

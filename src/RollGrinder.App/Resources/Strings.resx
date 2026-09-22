@@ -2026,4 +2026,10 @@
   <data name="Unit_Revolution" xml:space="preserve">
     <value>转</value>
   </data>
+  <data name="Alarm_MachineAlarm" xml:space="preserve">
+    <value>机床报警</value>
+  </data>
+  <data name="Alarm_MachineAlarmCleared" xml:space="preserve">
+    <value>机床报警已复位</value>
+  </data>
 </root>

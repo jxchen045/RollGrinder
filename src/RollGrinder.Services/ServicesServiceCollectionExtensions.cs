@@ -56,12 +56,17 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<ICentringService, CentringService>();
         services.AddSingleton<IManualCommandService, ManualCommandService>();
         services.AddSingleton<ISurfaceTraceService, SurfaceTraceService>();
+
+
         services.AddSingleton<ICompensationService, CompensationService>();
         services.AddSingleton<IRecordService, RecordService>();
         services.AddSingleton<IReportService, ReportService>();
         services.AddSingleton<IReportPrintQueue, ReportPrintQueue>();
 
         services.AddHostedService<MachineMonitorHostedService>();
+
+        // 机床报警搬运工：没有别的入口，靠宿主启动它订上监视器。
+        services.AddHostedService<MachineAlarmWatcher>();
         services.AddHostedService<AlarmArchiveHostedService>();
 
         return services;

@@ -180,6 +180,30 @@ public static class MachineTagKeys
     /// <summary>当前工序的总走刀次数。</summary>
     public const string JobTotalPasses = "job.totalPasses";
 
+    /// <summary>
+    /// 上位机一次最多跟多少条机床报警。
+    ///
+    /// 机床上同时挂着的报警通常只有几条，但报警一来常常是一串。
+    /// 8 条够看清"最先炸的是哪一条"；再多的话，现场该去看 Operate 的报警画面，
+    /// 那才是机床报警的正主，上位机这一份是为了让人不必来回切屏。
+    /// </summary>
+    public const int MachineAlarmSlots = 8;
+
+    /// <summary>当前挂着的机床报警条数。</summary>
+    public const string MachineAlarmCount = "machine.alarm.count";
+
+    /// <summary>机床报警号数组。号段由机床定：NC &lt; 500000，PLC ≥ 500000。</summary>
+    public const string MachineAlarmNumber = "machine.alarm.number";
+
+    /// <summary>机床报警文本数组。没映射就只显示号——现场按号查手册。</summary>
+    public const string MachineAlarmText = "machine.alarm.text";
+
+    /// <summary>第 <paramref name="index"/> 条机床报警的号。</summary>
+    public static string MachineAlarmNumberAt(int index) => TagKeySyntax.Indexed(MachineAlarmNumber, index);
+
+    /// <summary>第 <paramref name="index"/> 条机床报警的文本。</summary>
+    public static string MachineAlarmTextAt(int index) => TagKeySyntax.Indexed(MachineAlarmText, index);
+
     /// <summary>A 测头读数（mm）。</summary>
     public const string MeasureProbeAMm = "measure.probeAMm";
 
@@ -258,7 +282,15 @@ public static class MachineTagKeys
             CompensationStrokeVersion,
             CompensationRealtimeOffsetMm,
             CompensationDegradationLevel,
+            MachineAlarmCount,
         };
+
+        // 机床报警：号与文本各一组。没映射的读不到，界面上就只有上位机自己的报警。
+        for (int i = 0; i < MachineAlarmSlots; i++)
+        {
+            keys.Add(MachineAlarmNumberAt(i));
+            keys.Add(MachineAlarmTextAt(i));
+        }
 
         // 保持型手动动作的状态回读：界面要按它点亮"冷却水开着"这类指示。
         // 逻辑名在这里出现，物理地址在 tagmap.json 里——没映射就读不到，界面显示"--"。

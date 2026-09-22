@@ -424,6 +424,31 @@
       "access": "Read"
     },
     {
+      "key": "machine.alarm.count",
+      "address": "ns=2;s=/Nck/Alarm/activeCount",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "当前挂着的机床报警条数"
+    },
+    {
+      "key": "machine.alarm.number",
+      "address": "ns=2;s=/Nck/Alarm/number[{index}]",
+      "dataType": "Int32",
+      "access": "Read",
+      "arrayLength": 8,
+      "indexOffset": 1,
+      "description": "机床报警号数组。NC < 500000，PLC ≥ 500000，其中 ≥ 700040 是一般故障"
+    },
+    {
+      "key": "machine.alarm.text",
+      "address": "ns=2;s=/Nck/Alarm/textIndex[{index}]",
+      "dataType": "String",
+      "access": "Read",
+      "arrayLength": 8,
+      "indexOffset": 1,
+      "description": "机床报警文本数组。没映射就只显示号——现场按号查手册"
+    },
+    {
       "key": "machine.channelState",
       "address": "ns=2;s=/Channel/State/chanStatus",
       "dataType": "Int32",
