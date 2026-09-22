@@ -95,7 +95,7 @@ public sealed class NcJobTranslator
 
         for (int i = 0; i < plans.Length; i++)
         {
-            AppendStep(writes, plans[i], i, timestampUtc);
+            AppendStep(writes, job.Steps[i], plans[i], i, timestampUtc);
         }
 
         // 程序步骤开关：NC 程序按它决定要不要走那几段辅助子程序。
@@ -156,12 +156,17 @@ public sealed class NcJobTranslator
         GrindingStepPlan plan = this.stepTypes.Get(step.StepTypeKey).CreatePlan(job.Geometry, step.Parameters);
 
         var writes = new List<TagWrite>();
-        AppendStep(writes, plan, index, timestampUtc);
+        AppendStep(writes, step, plan, index, timestampUtc);
         return writes;
     }
 
     /// <summary>一道工序的全部参数写入。全量下发与单道更新共用这一份，免得两边漂移。</summary>
-    private void AppendStep(List<TagWrite> writes, GrindingStepPlan plan, int i, DateTimeOffset timestampUtc)
+    private void AppendStep(
+        List<TagWrite> writes,
+        GrindingJobStep step,
+        GrindingStepPlan plan,
+        int i,
+        DateTimeOffset timestampUtc)
     {
             AddInteger(writes, Indexed(MachineTagKeys.JobStepTypeCode, i), StepTypeCode(plan.StepTypeKey), timestampUtc);
             AddInteger(writes, Indexed(MachineTagKeys.JobStepPassCount, i), plan.PassCount, timestampUtc);
@@ -215,6 +220,75 @@ public sealed class NcJobTranslator
                 Indexed(MachineTagKeys.JobStepSpeedVariationPeriodRevolutions, i),
                 plan.SpeedVariation.PeriodRevolutions,
                 timestampUtc);
+
+        AppendStepExtras(writes, step, i, timestampUtc);
+    }
+
+    /// <summary>
+    /// 工序专属参数：只有某一类工序才有的量（倒角几何、修整道次、探伤螺距、
+    /// 圆度采样格）按约定顺序摆进扁平数组，含义由同一槽位的工序类型码决定。
+    ///
+    /// **顺序就是协议。** 这里只按工序类型声明的顺序摆，不做任何解释；
+    /// 怎么读是 NC 那一类工序的子程序的事。
+    ///
+    /// 没声明专属参数的工序类型，整块留空——不清零：同一槽位上一支辊留下的
+    /// 值由 NC 按类型码判断该不该读，清零反而要多写 8 条没人看的数。
+    /// </summary>
+    private void AppendStepExtras(
+        List<TagWrite> writes, GrindingJobStep step, int i, DateTimeOffset timestampUtc)
+    {
+        IGrindingStepType stepType = this.stepTypes.Get(step.StepTypeKey);
+        IReadOnlyList<string> keys = stepType.NcExtraParameterKeys;
+        if (keys.Count == 0)
+        {
+            return;
+        }
+
+        if (keys.Count > MachineTagKeys.JobStepExtraCount)
+        {
+            throw new GatewayException(
+                $"Step type '{step.StepTypeKey}' declares {keys.Count} extra parameters but only "
+                + $"{MachineTagKeys.JobStepExtraCount} slots exist per step.");
+        }
+
+        ParameterSet values = stepType.Schema.ApplyDefaults(step.Parameters);
+        for (int k = 0; k < keys.Count; k++)
+        {
+            AddNumber(writes, MachineTagKeys.JobStepExtraAt(i, k), NumericValue(stepType, values, keys[k]), timestampUtc);
+        }
+    }
+
+    /// <summary>
+    /// 把一个参数值折成 NC 能收的数：数值原样，开关 0/1，
+    /// 选项按它在声明顺序里的位置（倒角类型的 0 斜坡 / 1 圆弧就是这么来的）。
+    /// </summary>
+    private static double NumericValue(IGrindingStepType stepType, ParameterSet values, string key)
+    {
+        ParameterDescriptor descriptor = stepType.Schema.Get(key);
+
+        return descriptor.Kind switch
+        {
+            ParameterValueKind.Number => values.GetNumber(key),
+            ParameterValueKind.Boolean => values.GetBoolean(key) ? 1.0 : 0.0,
+            ParameterValueKind.Choice => IndexOfChoice(descriptor, values.GetChoice(key)),
+            var other => throw new GatewayException($"Parameter '{key}' has unsupported kind {other}."),
+        };
+    }
+
+    private static double IndexOfChoice(ParameterDescriptor descriptor, string choice)
+    {
+        IReadOnlyList<string> options = descriptor.AllowedValues
+            ?? throw new GatewayException($"Choice parameter '{descriptor.Key}' declares no options.");
+
+        for (int i = 0; i < options.Count; i++)
+        {
+            if (string.Equals(options[i], choice, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        throw new GatewayException($"Choice parameter '{descriptor.Key}' has no option '{choice}'.");
     }
 
     /// <summary>下发前检查必需的逻辑名是否都在 tagmap 里，返回缺失的键。</summary>

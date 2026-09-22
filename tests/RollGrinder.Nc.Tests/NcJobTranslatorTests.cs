@@ -34,6 +34,7 @@ public sealed class NcJobTranslatorTests
             [StepTypeKeys.Finish] = 2,
             [StepTypeKeys.SparkOut] = 3,
             [StepTypeKeys.Measure] = 4,
+            [StepTypeKeys.Chamfer] = 5,
         });
 
     private static NcJobTranslator CreateTranslator(ITagMap tagMap, MachineDescription? machine = null) => new(
@@ -41,6 +42,7 @@ public sealed class NcJobTranslatorTests
         new GrindingStepTypeRegistry(new IGrindingStepType[]
         {
             new RoughGrindingStepType(), new FinishGrindingStepType(), new SparkOutStepType(), new MeasureStepType(),
+            new ChamferStepType(),
         }),
         tagMap,
         machine ?? CreateMachine());
@@ -66,6 +68,78 @@ public sealed class NcJobTranslatorTests
         Convert.ToDouble(
             download.Writes.Single(write => write.LogicalName == logicalName).Value.Raw,
             System.Globalization.CultureInfo.InvariantCulture);
+
+    [Fact]
+    public void A_chamfer_hands_its_geometry_over_in_the_extras_block()
+    {
+        // 倒角几何先前根本没下发：NC 收不到长度与高度，只能按自己的默认值倒。
+        GrindingJob job = GrindingJob.Create(
+            "J-chamfer",
+            "R-1",
+            RollGeometry.FromDiameter(2000.0, 650.0),
+            ProfileTypeKeys.Cylindrical,
+            new CylindricalProfileType().Schema.CreateDefaults(),
+            new[]
+            {
+                new GrindingJobStep(
+                    1,
+                    StepTypeKeys.Chamfer,
+                    new ChamferStepType().Schema.CreateDefaults()
+                        .With(StepParameterKeys.ChamferLength1Mm, ParameterValue.FromNumber(6.0))
+                        .With(StepParameterKeys.ChamferHeight1Mm, ParameterValue.FromNumber(2.5))
+                        .With(StepParameterKeys.ChamferLength2Mm, ParameterValue.FromNumber(3.0))
+                        .With(StepParameterKeys.ChamferHeight2Mm, ParameterValue.FromNumber(1.0))
+                        .With(StepParameterKeys.ChamferKind, ParameterValue.FromChoice(ChamferKindChoices.Arc))),
+            });
+
+        NcDownload download = CreateTranslator(FakeTagMap.Complete()).Translate(job, null, 21, Now);
+
+        // 顺序就是协议：长度1、高度1、长度2、高度2、类型。
+        NumberOf(download, MachineTagKeys.JobStepExtraAt(0, 0)).Should().Be(6.0);
+        NumberOf(download, MachineTagKeys.JobStepExtraAt(0, 1)).Should().Be(2.5);
+        NumberOf(download, MachineTagKeys.JobStepExtraAt(0, 2)).Should().Be(3.0);
+        NumberOf(download, MachineTagKeys.JobStepExtraAt(0, 3)).Should().Be(1.0);
+
+        // 选项按声明顺序折成序号：斜坡 0、圆弧 1，与实机的倒角类型代码一致。
+        NumberOf(download, MachineTagKeys.JobStepExtraAt(0, 4)).Should().Be(1.0);
+    }
+
+    [Fact]
+    public void A_step_type_without_extras_writes_none()
+    {
+        // 没声明专属参数的工序整块留空，不写 8 条没人看的 0。
+        NcDownload download = CreateTranslator(FakeTagMap.Complete()).Translate(CreateJob(), null, 21, Now);
+
+        download.Writes.Should().NotContain(write =>
+            write.LogicalName.StartsWith(MachineTagKeys.JobStepExtra, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Each_step_gets_its_own_segment_of_the_extras_block()
+    {
+        // 第 n 道的第 i 项在下标 n*8+i：段与段不能叠在一起。
+        GrindingJob job = GrindingJob.Create(
+            "J-two",
+            "R-1",
+            RollGeometry.FromDiameter(2000.0, 650.0),
+            ProfileTypeKeys.Cylindrical,
+            new CylindricalProfileType().Schema.CreateDefaults(),
+            new[]
+            {
+                new GrindingJobStep(1, StepTypeKeys.Rough, new RoughGrindingStepType().Schema.CreateDefaults()),
+                new GrindingJobStep(
+                    2,
+                    StepTypeKeys.Chamfer,
+                    new ChamferStepType().Schema.CreateDefaults()
+                        .With(StepParameterKeys.ChamferLength1Mm, ParameterValue.FromNumber(7.0))),
+            });
+
+        NcDownload download = CreateTranslator(FakeTagMap.Complete()).Translate(job, null, 21, Now);
+
+        NumberOf(download, MachineTagKeys.JobStepExtraAt(1, 0)).Should().Be(7.0);
+        download.Writes.Should().NotContain(write =>
+            write.LogicalName == MachineTagKeys.JobStepExtraAt(0, 0));
+    }
 
     [Fact]
     public void Handover_flag_is_the_very_last_write()

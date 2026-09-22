@@ -112,6 +112,35 @@ public static class MachineTagKeys
     /// <summary>工序变速周期数组（头架转数）。实机这一项的单位是"次"，不是秒。</summary>
     public const string JobStepSpeedVariationPeriodRevolutions = "job.step.speedVariationPeriodRevolutions";
 
+    /// <summary>
+    /// 每道工序的**工序专属参数**个数。上位机与 NC 必须对上这个数——
+    /// 它决定了下面那个扁平数组怎么切段。
+    ///
+    /// 各类工序共有的量（道次、进给、转速……）各有各的数组；
+    /// 只有某一类工序才有的量（倒角几何、修整道次、探伤螺距、圆度采样格）
+    /// 挤在这一块里按位置排，含义由同一槽位的 <see cref="JobStepTypeCode"/> 决定，
+    /// NC 那一类工序的子程序照约定的顺序读。
+    ///
+    /// 8 是按目前最长的一类（倒角 5 项）留了余量。改这个数要两边一起改。
+    /// </summary>
+    public const int JobStepExtraCount = 8;
+
+    /// <summary>
+    /// 工序专属参数数组（扁平）。第 stepIndex 道工序的第 i 项在下标
+    /// <c>stepIndex * JobStepExtraCount + i</c> 上。
+    /// </summary>
+    public const string JobStepExtra = "job.step.extra";
+
+    /// <summary>第 <paramref name="stepIndex"/> 道工序第 <paramref name="extraIndex"/> 项的逻辑名。</summary>
+    public static string JobStepExtraAt(int stepIndex, int extraIndex)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(stepIndex);
+        ArgumentOutOfRangeException.ThrowIfNegative(extraIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(extraIndex, JobStepExtraCount);
+
+        return TagKeySyntax.Indexed(JobStepExtra, (stepIndex * JobStepExtraCount) + extraIndex);
+    }
+
     /// <summary>辊形曲线的点数。</summary>
     public const string JobProfilePointCount = "job.profile.pointCount";
 

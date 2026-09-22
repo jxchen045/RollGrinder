@@ -258,6 +258,15 @@
       "indexOffset": 780
     },
     {
+      "key": "job.step.extra",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "arrayLength": 128,
+      "indexOffset": 1000,
+      "description": "工序专属参数（扁平）：第 n 道工序的第 i 项在下标 n*8+i。含义由同槽位的 job.step.typeCode 决定"
+    },
+    {
       "key": "job.step.feedMmPerMin",
       "address": "ns=2;s=/Channel/Parameter/R[{index}]",
       "dataType": "Double",

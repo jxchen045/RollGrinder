@@ -75,6 +75,7 @@ internal sealed class FakeTagMap : ITagMap
         Array(MachineTagKeys.JobStepSpeedVariationTarget, TagDataType.Int32, stepSlots),
         Array(MachineTagKeys.JobStepSpeedVariationPercent, TagDataType.Double, stepSlots),
         Array(MachineTagKeys.JobStepSpeedVariationPeriodRevolutions, TagDataType.Double, stepSlots),
+        Array(MachineTagKeys.JobStepExtra, TagDataType.Double, stepSlots * MachineTagKeys.JobStepExtraCount),
         Array(MachineTagKeys.JobProfileBodyPositionMm, TagDataType.Double, profileSlots),
         Array(MachineTagKeys.JobProfileRadiusOffsetMm, TagDataType.Double, profileSlots),
     }));

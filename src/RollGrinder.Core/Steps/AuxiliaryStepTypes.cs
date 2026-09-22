@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Units;
@@ -68,6 +69,17 @@ public sealed class WheelDressStepType : IGrindingStepType
     public string SlotKey => StepSlotKeys.ChamferOrDress;
 
     public string Key => StepTypeKeys.WheelDress;
+
+    /// <summary>
+    /// 修整走这三项：单刀切深（半径量 mm）、道次、走刀速度。
+    /// 线速度已经由执行计划带走，不重复占一格。
+    /// </summary>
+    public IReadOnlyList<string> NcExtraParameterKeys { get; } = new[]
+    {
+        StepParameterKeys.DressInfeedRadiusMicrometer,
+        StepParameterKeys.DressPassCount,
+        StepParameterKeys.DressFeedMmPerMin,
+    };
 
     /// <summary>没有修整装置就没法修砂轮。</summary>
     public string? RequiredOptionKey => MachineOptionKeys.WheelDresser;
@@ -155,6 +167,19 @@ public sealed class ChamferStepType : IGrindingStepType
 
     public string Key => StepTypeKeys.Chamfer;
 
+    /// <summary>
+    /// 倒角走五项，顺序与实机"轧辊数据"里那五格一致：
+    /// 长度1、高度1、长度2、高度2、类型（0 斜坡 / 1 圆弧）。
+    /// </summary>
+    public IReadOnlyList<string> NcExtraParameterKeys { get; } = new[]
+    {
+        StepParameterKeys.ChamferLength1Mm,
+        StepParameterKeys.ChamferHeight1Mm,
+        StepParameterKeys.ChamferLength2Mm,
+        StepParameterKeys.ChamferHeight2Mm,
+        StepParameterKeys.ChamferKind,
+    };
+
     public ParameterSchema Schema { get; } = new(new[]
     {
         // 两段长度/高度 + 形状，与实机的"轧辊数据"里那五项一一对应。
@@ -216,6 +241,14 @@ public sealed class ChamferStepType : IGrindingStepType
 public sealed class EddyCurrentStepType : IGrindingStepType
 {
     public string Key => StepTypeKeys.EddyCurrent;
+
+    /// <summary>
+    /// 探伤走一项：扫查螺距。转速与由它算出的拖板速度已经在执行计划里。
+    /// </summary>
+    public IReadOnlyList<string> NcExtraParameterKeys { get; } = new[]
+    {
+        StepParameterKeys.ScanPitchMm,
+    };
 
     /// <summary>没有探伤器就别把这道工序编进程序。</summary>
     public string? RequiredOptionKey => MachineOptionKeys.EddyCurrentTester;
@@ -311,6 +344,13 @@ public sealed class SparkOutStepType : IGrindingStepType
 public sealed class RoundnessStepType : IGrindingStepType
 {
     public string Key => StepTypeKeys.Roundness;
+
+    /// <summary>圆度走两项：测几个截面、每转取几个点。</summary>
+    public IReadOnlyList<string> NcExtraParameterKeys { get; } = new[]
+    {
+        StepParameterKeys.RoundnessSectionCount,
+        StepParameterKeys.RoundnessPointsPerRevolution,
+    };
 
     public string? RequiredOptionKey => null;
 
