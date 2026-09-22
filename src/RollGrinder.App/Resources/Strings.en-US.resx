@@ -2149,4 +2149,52 @@
   <data name="Diag_BackupWritten" xml:space="preserve">
     <value>Backup written</value>
   </data>
+  <data name="Profile_PointsGenerated" xml:space="preserve">
+    <value>Point list generated</value>
+  </data>
+  <data name="Profile_PointsImported" xml:space="preserve">
+    <value>Reference point list imported</value>
+  </data>
+  <data name="Profile_PointsNotUsable" xml:space="preserve">
+    <value>Fewer than two points could be read from this file</value>
+  </data>
+  <data name="Profile_ReferenceDeviationFormat" xml:space="preserve">
+    <value>Up to {0:F1} µm from the reference</value>
+  </data>
+  <data name="SubView_RollData" xml:space="preserve">
+    <value>Roll data</value>
+  </data>
+  <data name="Steps_RollDataHeader" xml:space="preserve">
+    <value>Roll data (properties of this roll itself)</value>
+  </data>
+  <data name="Steps_SaveRollData" xml:space="preserve">
+    <value>Save roll data</value>
+  </data>
+  <data name="Steps_RollIdMissing" xml:space="preserve">
+    <value>Enter the roll identifier first</value>
+  </data>
+  <data name="Steps_RollDataSaved" xml:space="preserve">
+    <value>Roll data saved</value>
+  </data>
+  <data name="RollData_GrindStart" xml:space="preserve">
+    <value>Grind start position (mm)</value>
+  </data>
+  <data name="RollData_CurveLength" xml:space="preserve">
+    <value>Curve length (mm)</value>
+  </data>
+  <data name="RollData_CurveTolerance" xml:space="preserve">
+    <value>Curve tolerance (µm)</value>
+  </data>
+  <data name="RollData_NetWeight" xml:space="preserve">
+    <value>Roll net weight (kg)</value>
+  </data>
+  <data name="RollData_HeadBoxWeight" xml:space="preserve">
+    <value>Head-end box weight (kg)</value>
+  </data>
+  <data name="RollData_TailBoxWeight" xml:space="preserve">
+    <value>Tail-end box weight (kg)</value>
+  </data>
+  <data name="RollData_TotalWeight" xml:space="preserve">
+    <value>Total lifting weight (kg)</value>
+  </data>
 </root>

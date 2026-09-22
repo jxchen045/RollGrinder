@@ -26,14 +26,32 @@ public sealed class SqliteRollRepository : IRollRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            INSERT INTO roll (roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc)
-            VALUES ($id, $code, $length, $radius, $material, $created)
+            INSERT INTO roll (
+                roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc,
+                grind_start_position_mm, curve_length_mm, curve_tolerance_um,
+                net_weight_kg, head_box_weight_kg, tail_box_weight_kg)
+            VALUES (
+                $id, $code, $length, $radius, $material, $created,
+                $grindStart, $curveLength, $curveTolerance,
+                $netWeight, $headBoxWeight, $tailBoxWeight)
             ON CONFLICT(roll_id) DO UPDATE SET
                 code = excluded.code,
                 body_length_mm = excluded.body_length_mm,
                 nominal_radius_mm = excluded.nominal_radius_mm,
-                material = excluded.material;
+                material = excluded.material,
+                grind_start_position_mm = excluded.grind_start_position_mm,
+                curve_length_mm = excluded.curve_length_mm,
+                curve_tolerance_um = excluded.curve_tolerance_um,
+                net_weight_kg = excluded.net_weight_kg,
+                head_box_weight_kg = excluded.head_box_weight_kg,
+                tail_box_weight_kg = excluded.tail_box_weight_kg;
             """;
+        SqlMapping.AddParameter(command, "$grindStart", roll.Data.GrindStartPositionMm);
+        SqlMapping.AddParameter(command, "$curveLength", roll.Data.CurveLengthMm);
+        SqlMapping.AddParameter(command, "$curveTolerance", roll.Data.CurveToleranceMicrometer);
+        SqlMapping.AddParameter(command, "$netWeight", roll.Data.NetWeightKg);
+        SqlMapping.AddParameter(command, "$headBoxWeight", roll.Data.HeadBoxWeightKg);
+        SqlMapping.AddParameter(command, "$tailBoxWeight", roll.Data.TailBoxWeightKg);
         SqlMapping.AddParameter(command, "$id", roll.RollId);
         SqlMapping.AddParameter(command, "$code", roll.Code);
         SqlMapping.AddParameter(command, "$length", roll.Geometry.BodyLengthMm);
@@ -52,7 +70,9 @@ public sealed class SqliteRollRepository : IRollRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc
+            SELECT roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc,
+                   grind_start_position_mm, curve_length_mm, curve_tolerance_um,
+                   net_weight_kg, head_box_weight_kg, tail_box_weight_kg
             FROM roll WHERE roll_id = $id;
             """;
         SqlMapping.AddParameter(command, "$id", rollId);
@@ -67,7 +87,9 @@ public sealed class SqliteRollRepository : IRollRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc
+            SELECT roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc,
+                   grind_start_position_mm, curve_length_mm, curve_tolerance_um,
+                   net_weight_kg, head_box_weight_kg, tail_box_weight_kg
             FROM roll ORDER BY created_at_utc DESC LIMIT $limit;
             """;
         SqlMapping.AddParameter(command, "$limit", limit);
@@ -87,5 +109,18 @@ public sealed class SqliteRollRepository : IRollRepository
         reader.GetString(1),
         RollGeometry.Create(reader.GetDouble(2), reader.GetDouble(3)),
         reader.IsDBNull(4) ? null : reader.GetString(4),
-        SqlMapping.ToTimestamp(reader.GetString(5)));
+        SqlMapping.ToTimestamp(reader.GetString(5)))
+    {
+        Data = new RollDataSheet(
+            Nullable(reader, 6),
+            Nullable(reader, 7),
+            Nullable(reader, 8),
+            Nullable(reader, 9),
+            Nullable(reader, 10),
+            Nullable(reader, 11)),
+    };
+
+    /// <summary>没登记的那几项读回来仍然是"没登记"，不是 0。</summary>
+    private static double? Nullable(SqliteDataReader reader, int ordinal) =>
+        reader.IsDBNull(ordinal) ? null : reader.GetDouble(ordinal);
 }

@@ -4,6 +4,18 @@
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              xmlns:views="clr-namespace:RollGrinder.App.Views">
     <Grid>
+        <Grid.Resources>
+            <!-- 轧辊数据子视图：这支辊本身的登记项，与工艺参数分开 -->
+            <Style x:Key="RollDataPanel" TargetType="Border" BasedOn="{StaticResource Card}">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_RollData">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Resources>
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="360" />
             <ColumnDefinition Width="*" />
@@ -403,5 +415,43 @@
                 </DockPanel>
             </Border>
         </Border>
-    </Grid>
+    
+        <Border Grid.Column="0" Grid.ColumnSpan="3" Style="{StaticResource RollDataPanel}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
+                    <TextBlock Text="{loc:Loc Steps_RollDataHeader}" Style="{StaticResource Text.CardTitle}"
+                               VerticalAlignment="Center" />
+                </Border>
+
+                <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
+                        BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="20,14">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="{loc:Loc Steps_SaveRollData}" Command="{Binding SaveRollDataCommand}"
+                                Style="{StaticResource PrimaryButton}" Height="46" Padding="24,0" />
+                        <TextBlock Text="{loc:Loc RollData_TotalWeight}" Style="{StaticResource Text.Label}"
+                                   VerticalAlignment="Center" Margin="24,0,8,0" />
+                        <TextBlock Text="{Binding TotalWeightText}" FontFamily="{StaticResource Font.Mono}"
+                                   FontSize="18" VerticalAlignment="Center"
+                                   Foreground="{StaticResource Brush.Accent}" />
+                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.Label}"
+                                   VerticalAlignment="Center" Margin="24,0,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding RollData}" Margin="20,16">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,0,0,12">
+                                <TextBlock Text="{Binding Label}" Width="240" FontSize="17"
+                                           VerticalAlignment="Center" />
+                                <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource ValueTextBox}" Width="200"
+                                         HorizontalAlignment="Left" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+</Grid>
 </UserControl>

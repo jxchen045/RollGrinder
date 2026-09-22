@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
+using System.Text;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -102,8 +104,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
                 () => SaveAsync(CancellationToken.None)), localizer, FunctionKeyKind.Primary, requiresEditable: true),
             new FunctionKeyViewModel("Fn_SaveAs", SaveAsCommand, localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_NewSegment", InsertSegmentCommand, localizer, requiresEditable: true),
-            FunctionKeyViewModel.Placeholder("Fn_ImportPoints", localizer, () => NotImplementedYet("Fn_ImportPoints"), requiresEditable: true),
-            FunctionKeyViewModel.Placeholder("Fn_GeneratePoints", localizer, () => NotImplementedYet("Fn_GeneratePoints"), requiresEditable: true),
+            // 两个键都要选文件，对话框在视图里；这里只负责触发与收结果。
+            new FunctionKeyViewModel("Fn_ImportPoints", RequestImportPointsCommand, localizer),
+            new FunctionKeyViewModel("Fn_GeneratePoints", RequestGeneratePointsCommand, localizer),
             new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
             new FunctionKeyViewModel("Fn_ProfileLibrary", OpenLibraryCommand, localizer),
         });
@@ -138,6 +141,159 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         Array.Empty<(double, double)>();
 
     public event EventHandler? PreviewChanged;
+
+    /// <summary>
+    /// 导进来的对照点列（辊身坐标 mm，直径量 mm）。
+    ///
+    /// 只作**对照**，不改这条辊形：上一版辊形、现场量出来的曲线、别人给的
+    /// 一张表，拿进来跟当前设计叠着看。要改还是去改曲线段的参数——
+    /// 点列一旦能直接变成辊形，这条辊形就再也说不清是按什么算出来的。
+    /// </summary>
+    public IReadOnlyList<(double BodyPositionMm, double DiameterMm)> ReferencePoints { get; private set; } =
+        Array.Empty<(double, double)>();
+
+    /// <summary>界面要导入点列时触发；路径由视图选。</summary>
+    public event EventHandler? ImportPointsRequested;
+
+    /// <summary>界面要导出点列时触发；路径由视图选。</summary>
+    public event EventHandler? GeneratePointsRequested;
+
+    /// <summary>对照点列与当前设计差得最多的地方（直径量 µm）；没导入时为空。</summary>
+    [ObservableProperty]
+    private string referenceDeviationText = string.Empty;
+
+    /// <summary>最近一个动作的结果提示。</summary>
+    [ObservableProperty]
+    private string statusResourceKey = string.Empty;
+
+    /// <summary>提示文字。资源键为空时不显示。</summary>
+    public string StatusText => string.IsNullOrEmpty(StatusResourceKey) ? string.Empty : Localizer[StatusResourceKey];
+
+    partial void OnStatusResourceKeyChanged(string value) => OnPropertyChanged(nameof(StatusText));
+
+    [RelayCommand]
+    private void RequestImportPoints() => ImportPointsRequested?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
+    private void RequestGeneratePoints() => GeneratePointsRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>
+    /// 按当前合成曲线生成点列并写成 CSV。
+    ///
+    /// 点数就是下发用的采样点数——生成出来的这一份和真正下发给 NC 的
+    /// 是同一条线，不是另算一遍。
+    /// </summary>
+    public Task GeneratePointsAsync(string filePath, CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            var text = new StringBuilder();
+            text.AppendLine("bodyPositionMm,diameterOffsetMicrometer");
+            foreach ((double positionMm, double diameterMm) in ComposedPoints)
+            {
+                text.AppendLine(string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"{positionMm:F3},{UnitConversion.MmToMicrometer(diameterMm):F2}"));
+            }
+
+            await File.WriteAllTextAsync(filePath, text.ToString(), new UTF8Encoding(true), token)
+                .ConfigureAwait(true);
+
+            StatusResourceKey = "Profile_PointsGenerated";
+        }, cancellationToken);
+
+    /// <summary>读一份 CSV 点列作为对照线。</summary>
+    public Task ImportPointsAsync(string filePath, CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            var points = new List<(double, double)>();
+            foreach (string line in await File.ReadAllLinesAsync(filePath, token).ConfigureAwait(true))
+            {
+                if (TryParsePoint(line, out (double, double) point))
+                {
+                    points.Add(point);
+                }
+            }
+
+            if (points.Count < 2)
+            {
+                // 一两个点连不成一条线；读错了文件该说出来，而不是画半条。
+                StatusResourceKey = "Profile_PointsNotUsable";
+                return;
+            }
+
+            points.Sort((left, right) => left.Item1.CompareTo(right.Item1));
+            ReferencePoints = points;
+            RefreshReferenceDeviation();
+            StatusResourceKey = "Profile_PointsImported";
+            PreviewChanged?.Invoke(this, EventArgs.Empty);
+        }, cancellationToken);
+
+    /// <summary>
+    /// 一行 CSV → 一个点。表头与空行跳过；解析不了的行也跳过——
+    /// 现场的表常常带着注释与单位行，为这个整份不读太不划算。
+    /// </summary>
+    private static bool TryParsePoint(string line, out (double BodyPositionMm, double DiameterMm) point)
+    {
+        point = default;
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return false;
+        }
+
+        string[] parts = line.Split(',', ';', '\t');
+        if (parts.Length < 2
+            || !double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double positionMm)
+            || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double micrometer))
+        {
+            return false;
+        }
+
+        point = (positionMm, UnitConversion.MicrometerToMm(micrometer));
+        return true;
+    }
+
+    /// <summary>对照线与当前设计差得最多的地方。看的就是这个数。</summary>
+    private void RefreshReferenceDeviation()
+    {
+        if (ReferencePoints.Count == 0 || ComposedPoints.Count < 2)
+        {
+            ReferenceDeviationText = string.Empty;
+            return;
+        }
+
+        double worst = 0.0;
+        foreach ((double positionMm, double diameterMm) in ReferencePoints)
+        {
+            worst = Math.Max(worst, Math.Abs(diameterMm - InterpolateComposed(positionMm)));
+        }
+
+        ReferenceDeviationText = Localizer.Format(
+            "Profile_ReferenceDeviationFormat", UnitConversion.MmToMicrometer(worst));
+    }
+
+    /// <summary>当前设计在某个辊身位置上的值（直径量 mm），线性插值。</summary>
+    private double InterpolateComposed(double bodyPositionMm)
+    {
+        IReadOnlyList<(double Position, double Diameter)> points = ComposedPoints;
+        if (bodyPositionMm <= points[0].Position)
+        {
+            return points[0].Diameter;
+        }
+
+        for (int i = 1; i < points.Count; i++)
+        {
+            if (bodyPositionMm > points[i].Position)
+            {
+                continue;
+            }
+
+            double span = points[i].Position - points[i - 1].Position;
+            double t = span <= 0.0 ? 0.0 : (bodyPositionMm - points[i - 1].Position) / span;
+            return points[i - 1].Diameter + (t * (points[i].Diameter - points[i - 1].Diameter));
+        }
+
+        return points[^1].Diameter;
+    }
 
     [ObservableProperty]
     private SegmentRowViewModel? selectedSegment;
@@ -567,6 +723,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             MainPoints = Array.Empty<(double, double)>();
         }
 
+        RefreshReferenceDeviation();
         PreviewChanged?.Invoke(this, EventArgs.Empty);
     }
 

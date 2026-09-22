@@ -16,7 +16,47 @@ public sealed record RollRecord(
     string Code,
     RollGeometry Geometry,
     string? Material,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc)
+{
+    /// <summary>
+    /// 实机"轧辊数据"屏上那几项里，属于**这支辊本身**的部分。
+    ///
+    /// 全部可空：现场不一定每支辊都登记得齐，逼着填只会让人乱填一个数，
+    /// 而一个乱填的重量会让中心架托瓦按错的压力顶上去。
+    /// </summary>
+    public RollDataSheet Data { get; init; } = RollDataSheet.Empty;
+}
+
+/// <summary>
+/// 一支辊的登记数据。与几何（长度、直径）分开：几何是算辊形要用的，
+/// 这些是吊装、找正、验收要用的。
+/// </summary>
+/// <param name="GrindStartPositionMm">启磨点坐标（mm，辊身坐标）。</param>
+/// <param name="CurveLengthMm">曲线长度（mm）：辊形作用在辊身的哪一段上。</param>
+/// <param name="CurveToleranceMicrometer">曲线允许误差（直径量 µm）。</param>
+/// <param name="NetWeightKg">轧辊净重（kg）。</param>
+/// <param name="HeadBoxWeightKg">头架端轴承箱重（kg）。</param>
+/// <param name="TailBoxWeightKg">尾架端轴承箱重（kg）。</param>
+public sealed record RollDataSheet(
+    double? GrindStartPositionMm,
+    double? CurveLengthMm,
+    double? CurveToleranceMicrometer,
+    double? NetWeightKg,
+    double? HeadBoxWeightKg,
+    double? TailBoxWeightKg)
+{
+    /// <summary>一项都没登记。</summary>
+    public static RollDataSheet Empty { get; } = new(null, null, null, null, null, null);
+
+    /// <summary>
+    /// 吊装总重：净重加两个轴承箱。缺一项就算不出来——
+    /// 少算一个轴承箱会让人按偏轻的重量挂吊具。
+    /// </summary>
+    public double? TotalWeightKg =>
+        NetWeightKg is double net && HeadBoxWeightKg is double head && TailBoxWeightKg is double tail
+            ? net + head + tail
+            : null;
+}
 
 /// <summary>作业状态。</summary>
 public enum JobState

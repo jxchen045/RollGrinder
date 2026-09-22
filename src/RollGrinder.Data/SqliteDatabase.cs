@@ -272,6 +272,20 @@ public sealed class SqliteDatabase
 
         CREATE INDEX ix_roundness_job ON roundness_measurement(job_id);
         """,
+
+        // 8：轧辊数据。实机"轧辊数据"屏上的那几项里，先前只存了长度与直径。
+        //
+        // 补上的都是**这支辊本身的属性**，不是工艺参数：起磨点在哪、曲线作用
+        // 在哪一段、允许差多少、三个重量（吊装与中心架托瓦压力要按重量定）。
+        // 全部可空——现场不一定每支辊都登记得齐，逼着填只会让人乱填一个数。
+        """
+        ALTER TABLE roll ADD COLUMN grind_start_position_mm REAL NULL;
+        ALTER TABLE roll ADD COLUMN curve_length_mm         REAL NULL;
+        ALTER TABLE roll ADD COLUMN curve_tolerance_um      REAL NULL;
+        ALTER TABLE roll ADD COLUMN net_weight_kg           REAL NULL;
+        ALTER TABLE roll ADD COLUMN head_box_weight_kg      REAL NULL;
+        ALTER TABLE roll ADD COLUMN tail_box_weight_kg      REAL NULL;
+        """,
     };
 
     private readonly string connectionString;

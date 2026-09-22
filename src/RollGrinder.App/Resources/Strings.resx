@@ -2149,4 +2149,52 @@
   <data name="Diag_BackupWritten" xml:space="preserve">
     <value>备份已写出</value>
   </data>
+  <data name="Profile_PointsGenerated" xml:space="preserve">
+    <value>点列已生成</value>
+  </data>
+  <data name="Profile_PointsImported" xml:space="preserve">
+    <value>对照点列已导入</value>
+  </data>
+  <data name="Profile_PointsNotUsable" xml:space="preserve">
+    <value>这份文件里读不出两个以上的点</value>
+  </data>
+  <data name="Profile_ReferenceDeviationFormat" xml:space="preserve">
+    <value>与对照线最大相差 {0:F1} µm</value>
+  </data>
+  <data name="SubView_RollData" xml:space="preserve">
+    <value>轧辊数据</value>
+  </data>
+  <data name="Steps_RollDataHeader" xml:space="preserve">
+    <value>轧辊数据（这支辊本身的登记项）</value>
+  </data>
+  <data name="Steps_SaveRollData" xml:space="preserve">
+    <value>保存轧辊数据</value>
+  </data>
+  <data name="Steps_RollIdMissing" xml:space="preserve">
+    <value>请先填辊件标识</value>
+  </data>
+  <data name="Steps_RollDataSaved" xml:space="preserve">
+    <value>轧辊数据已保存</value>
+  </data>
+  <data name="RollData_GrindStart" xml:space="preserve">
+    <value>启磨点坐标 (mm)</value>
+  </data>
+  <data name="RollData_CurveLength" xml:space="preserve">
+    <value>曲线长度 (mm)</value>
+  </data>
+  <data name="RollData_CurveTolerance" xml:space="preserve">
+    <value>曲线允许误差 (µm)</value>
+  </data>
+  <data name="RollData_NetWeight" xml:space="preserve">
+    <value>轧辊净重 (kg)</value>
+  </data>
+  <data name="RollData_HeadBoxWeight" xml:space="preserve">
+    <value>头架端箱重 (kg)</value>
+  </data>
+  <data name="RollData_TailBoxWeight" xml:space="preserve">
+    <value>尾架端箱重 (kg)</value>
+  </data>
+  <data name="RollData_TotalWeight" xml:space="preserve">
+    <value>吊装总重 (kg)</value>
+  </data>
 </root>

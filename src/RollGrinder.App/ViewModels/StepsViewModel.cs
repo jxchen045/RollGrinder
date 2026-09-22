@@ -19,6 +19,7 @@ using RollGrinder.Core.Steps;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Calibration;
 using RollGrinder.Data;
+using RollGrinder.Data.Model;
 using RollGrinder.Services.Jobs;
 
 namespace RollGrinder.App.ViewModels;
@@ -261,6 +262,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private readonly GrindingStepTypeRegistry stepTypes;
     private readonly IJobDownloadService downloadService;
     private readonly IProgramRepository programs;
+    private readonly IRollRepository rolls;
     private readonly IRollProfileRepository profileLibrary;
     private readonly ICalibrationService calibration;
 
@@ -278,6 +280,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         GrindingStepTypeRegistry stepTypes,
         IJobDownloadService downloadService,
         IProgramRepository programs,
+        IRollRepository rolls,
         IRollProfileRepository profileLibrary,
         ICalibrationService calibration,
         MachineDescription machine,
@@ -293,6 +296,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.stepTypes = stepTypes ?? throw new ArgumentNullException(nameof(stepTypes));
         this.downloadService = downloadService ?? throw new ArgumentNullException(nameof(downloadService));
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
+        this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.profileLibrary = profileLibrary ?? throw new ArgumentNullException(nameof(profileLibrary));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         ArgumentNullException.ThrowIfNull(machine);
@@ -343,7 +347,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
             // 派去辊形编辑页选一个辊形，办完由导航槽送回本页。
             new FunctionKeyViewModel("Fn_SelectProfile", OpenProfileLibraryCommand, localizer),
-            FunctionKeyViewModel.Placeholder("Fn_RollData", localizer, () => NotImplementedYet("Fn_RollData"), requiresEditable: true),
+            new FunctionKeyViewModel("Fn_RollData", OpenRollDataCommand, localizer, requiresEditable: true),
 
             // 下发是唯一的写机床通道；自动循环挂着程序时锁掉，免得把运行中的程序改了。
             new FunctionKeyViewModel("Fn_DownloadNc", DownloadCommand, localizer, requiresEditable: true),
@@ -351,6 +355,115 @@ public sealed partial class StepsViewModel : PageViewModelBase
             FunctionKeyViewModel.Placeholder(
                 "Fn_EnterAuto", localizer, () => Navigator.GoToArea(PageKey.AutoGrinding), FunctionKeyKind.Start),
         });
+    }
+
+    /// <summary>轧辊数据子视图的资源键，同时用作面包屑文案。</summary>
+    public const string RollDataSubView = "SubView_RollData";
+
+    /// <summary>
+    /// 轧辊数据：实机"轧辊数据"屏上属于这支辊本身的那几项。
+    ///
+    /// 与几何（长度、直径）分开：几何是算辊形要用的，这些是吊装、找正、
+    /// 验收要用的。全部可空——现场不一定每支辊都登记得齐，逼着填只会让人
+    /// 乱填一个数，而一个乱填的重量会让中心架托瓦按错的压力顶上去。
+    /// </summary>
+    public ObservableCollection<RollDataRowViewModel> RollData { get; } = new();
+
+    /// <summary>吊装总重那一行；缺一项就是 "--"。</summary>
+    [ObservableProperty]
+    private string totalWeightText = "--";
+
+    [RelayCommand]
+    private Task OpenRollDataAsync(CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            if (string.IsNullOrWhiteSpace(RollId))
+            {
+                StatusResourceKey = "Steps_RollIdMissing";
+                return;
+            }
+
+            RollRecord? roll = await this.rolls.GetAsync(RollId, token).ConfigureAwait(true);
+            ShowRollData(roll?.Data ?? RollDataSheet.Empty);
+            Navigator.OpenSubView(RollDataSubView);
+        }, cancellationToken);
+
+    /// <summary>把轧辊数据存回辊件档案。辊件不存在时先建一条。</summary>
+    [RelayCommand]
+    private Task SaveRollDataAsync(CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            if (string.IsNullOrWhiteSpace(RollId))
+            {
+                StatusResourceKey = "Steps_RollIdMissing";
+                return;
+            }
+
+            RollRecord? existing = await this.rolls.GetAsync(RollId, token).ConfigureAwait(true);
+            if (existing is null && !TryParseDouble(BodyLengthMmText, out _))
+            {
+                // 辊件还不存在时要用界面上的几何新建一条；几何填得不对就先别建。
+                StatusResourceKey = "Job_GeometryInvalid";
+                return;
+            }
+
+            RollRecord roll = existing ?? new RollRecord(
+                RollId,
+                RollId,
+                RollGeometry.FromDiameter(
+                    ParseOrZero(BodyLengthMmText), ParseOrZero(NominalDiameterMmText)),
+                null,
+                DateTimeOffset.UtcNow);
+
+            await this.rolls.UpsertAsync(roll with { Data = ReadRollData() }, token).ConfigureAwait(true);
+            StatusResourceKey = "Steps_RollDataSaved";
+        }, cancellationToken);
+
+    private void ShowRollData(RollDataSheet sheet)
+    {
+        RollData.Clear();
+        Add("RollData_GrindStart", sheet.GrindStartPositionMm, "F1");
+        Add("RollData_CurveLength", sheet.CurveLengthMm, "F1");
+        Add("RollData_CurveTolerance", sheet.CurveToleranceMicrometer, "F1");
+        Add("RollData_NetWeight", sheet.NetWeightKg, "F0");
+        Add("RollData_HeadBoxWeight", sheet.HeadBoxWeightKg, "F0");
+        Add("RollData_TailBoxWeight", sheet.TailBoxWeightKg, "F0");
+
+        TotalWeightText = sheet.TotalWeightKg is double total
+            ? total.ToString("F0", CultureInfo.CurrentCulture)
+            : "--";
+
+        void Add(string key, double? value, string format) =>
+            RollData.Add(new RollDataRowViewModel(
+                key,
+                Localizer[key],
+                value is null ? string.Empty : value.Value.ToString(format, CultureInfo.CurrentCulture)));
+    }
+
+    private static double ParseOrZero(string text) =>
+        TryParseDouble(text, out double value) ? value : 0.0;
+
+    private RollDataSheet ReadRollData() => new(
+        Read("RollData_GrindStart"),
+        Read("RollData_CurveLength"),
+        Read("RollData_CurveTolerance"),
+        Read("RollData_NetWeight"),
+        Read("RollData_HeadBoxWeight"),
+        Read("RollData_TailBoxWeight"));
+
+    /// <summary>
+    /// 空格子读回来仍然是"没登记"，不是 0——存一个 0 会让人以为量过了。
+    /// </summary>
+    private double? Read(string key)
+    {
+        RollDataRowViewModel? row = RollData
+            .FirstOrDefault(candidate => string.Equals(candidate.Key, key, StringComparison.Ordinal));
+
+        return row is null || string.IsNullOrWhiteSpace(row.Text)
+            ? null
+            : double.TryParse(row.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double value)
+                ? value
+                : null;
     }
 
     public override PageKey Key => PageKey.Steps;
