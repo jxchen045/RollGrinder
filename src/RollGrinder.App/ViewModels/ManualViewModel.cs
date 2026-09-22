@@ -117,6 +117,7 @@ public sealed partial class ManualViewModel : PageViewModelBase
     private readonly MachineDescription machine;
     private readonly ICalibrationService calibration;
     private readonly ICentringService centring;
+    private readonly IAlarmLog alarmLog;
     private readonly HmiSettings settings;
 
     private DateTimeOffset feedbackExpiryUtc;
@@ -129,6 +130,7 @@ public sealed partial class ManualViewModel : PageViewModelBase
         HmiSettings settings,
         ICalibrationService calibration,
         ICentringService centring,
+        IAlarmLog alarmLog,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
@@ -136,6 +138,7 @@ public sealed partial class ManualViewModel : PageViewModelBase
     {
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.centring = centring ?? throw new ArgumentNullException(nameof(centring));
+        this.alarmLog = alarmLog ?? throw new ArgumentNullException(nameof(alarmLog));
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.measurementService = measurementService ?? throw new ArgumentNullException(nameof(measurementService));
         this.commands = commands ?? throw new ArgumentNullException(nameof(commands));
@@ -158,18 +161,26 @@ public sealed partial class ManualViewModel : PageViewModelBase
         MeasuringArmActions = BuildActions(ManualCommandCatalog.MeasuringArm);
         TailstockActions = BuildActions(ManualCommandCatalog.Tailstock);
         OtherActions = BuildActions(ManualCommandCatalog.Other);
+
+        // 辅助循环不进按钮矩阵，挂在功能键上——它们是"跑一段程序"，
+        // 不是"动一下某个机构"。走的仍是同一套脉冲与门禁。
+        CycleActions = BuildActions(ManualCommandCatalog.Cycles);
         RefreshActionAvailability();
 
         SetFunctionKeys(new[]
         {
-            FunctionKeyViewModel.Placeholder("Fn_ManualGrinding", localizer, () => NotImplementedYet("Fn_ManualGrinding"), FunctionKeyKind.Primary),
-            FunctionKeyViewModel.Placeholder("Fn_CalibrateDatum", localizer, () => NotImplementedYet("Fn_CalibrateDatum")),
-            FunctionKeyViewModel.Placeholder("Fn_WheelDress", localizer, () => NotImplementedYet("Fn_WheelDress")),
-            FunctionKeyViewModel.Placeholder("Fn_RollAlign", localizer, () => NotImplementedYet("Fn_RollAlign")),
-            FunctionKeyViewModel.Placeholder("Fn_ReferencePoint", localizer, () => NotImplementedYet("Fn_ReferencePoint")),
+            // 五个辅助循环。按下去是**请求**：上位机不在使能链里，
+            // 真正让不让动由 PLC 的互锁说了算。会切削的那几个要按两下。
+            CycleKey("Fn_ManualGrinding", "cycle.manualGrinding", FunctionKeyKind.Primary),
+            CycleKey("Fn_CalibrateDatum", "cycle.calibrateDatum"),
+            CycleKey("Fn_WheelDress", "cycle.wheelDress"),
+            CycleKey("Fn_RollAlign", "cycle.rollAlign"),
+            CycleKey("Fn_ReferencePoint", "cycle.referencePoint"),
             FunctionKeyViewModel.Placeholder(
                 "Fn_Diagnostics", localizer, () => Navigator.StartTask(PageKey.Diagnostics, PageKey.Manual)),
-            FunctionKeyViewModel.Placeholder("Fn_HmiReset", localizer, () => NotImplementedYet("Fn_HmiReset"), FunctionKeyKind.Danger),
+            // HMI 复位只动上位机自己：清报警表。机床那边一个字都不写——
+            // 机床的复位在操作面板上，不该被一个界面按钮代劳。
+            new FunctionKeyViewModel("Fn_HmiReset", ResetHmiCommand, localizer, FunctionKeyKind.Danger),
         });
     }
 
@@ -192,8 +203,11 @@ public sealed partial class ManualViewModel : PageViewModelBase
     public ObservableCollection<MachineActionViewModel> OtherActions { get; }
 
     /// <summary>三组按钮的合集，刷新状态时遍历它。</summary>
+    /// <summary>辅助循环：手动磨削、基准标定、砂轮修整、辊对中、回参考点。</summary>
+    public ObservableCollection<MachineActionViewModel> CycleActions { get; }
+
     private IEnumerable<MachineActionViewModel> AllActions =>
-        MeasuringArmActions.Concat(TailstockActions).Concat(OtherActions);
+        MeasuringArmActions.Concat(TailstockActions).Concat(OtherActions).Concat(CycleActions);
 
     /// <summary>最近一个动作的"已发出"提示，停留几秒后自己消失。</summary>
     [ObservableProperty]
@@ -398,6 +412,30 @@ public sealed partial class ManualViewModel : PageViewModelBase
             axis.IsPresent && string.Equals(axis.Role, MachineAxisRoles.WorkpieceSpindle, StringComparison.Ordinal));
 
         return spindle is null ? null : snapshot.GetNumberOrNull(MachineTagKeys.AxisActualSpeedRpm(spindle.Name));
+    }
+
+    /// <summary>把一个辅助循环包成功能键：按键与动作对象是同一个，门禁也就一套。</summary>
+    private FunctionKeyViewModel CycleKey(
+        string labelResourceKey, string commandKey, FunctionKeyKind kind = FunctionKeyKind.Normal)
+    {
+        MachineActionViewModel action = CycleActions
+            .First(candidate => string.Equals(candidate.Descriptor.Key, commandKey, StringComparison.Ordinal));
+
+        return new FunctionKeyViewModel(labelResourceKey, action.Command, Localizer, kind);
+    }
+
+    /// <summary>
+    /// HMI 复位：清掉上位机自己的报警表。
+    ///
+    /// **不碰机床。** 机床报警要在机床上复位，机床的使能链也不归上位机管；
+    /// 这个键解决的是"上位机这边显示卡住了"，不是"机床出故障了"。
+    /// </summary>
+    [RelayCommand]
+    private void ResetHmi()
+    {
+        this.alarmLog.Clear();
+        LastActionText = Localizer["Manual_HmiReset"];
+        this.feedbackExpiryUtc = DateTimeOffset.UtcNow + FeedbackWindow;
     }
 
     private ObservableCollection<MachineActionViewModel> BuildActions(

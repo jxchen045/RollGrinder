@@ -151,13 +151,16 @@ public sealed class ManualCommandTests
     [Fact]
     public void The_catalogue_matches_the_machines_io()
     {
-        // 按 MK84160 电气原理图核对后的三组按钮：8 + 4 + 15 = 27。
+        // 按 MK84160 电气原理图核对后的三组**按钮**：8 + 4 + 15 = 27。
         // 尾架那一组从 6 减到 4——图纸上只有前进/后退，没有夹紧/放松；
         // 其他那一组从 12 加到 15——头架拆成正转/反转，软着陆拆成两侧各一对升降。
         ManualCommandCatalog.MeasuringArm.Should().HaveCount(8);
         ManualCommandCatalog.Tailstock.Should().HaveCount(4);
         ManualCommandCatalog.Other.Should().HaveCount(15);
-        ManualCommandCatalog.All.Should().HaveCount(27);
+        // 外加五个辅助循环。它们不进按钮矩阵——是"跑一段程序"而不是"动一下某个
+        // 机构"，所以挂在功能键上，但走的是同一套脉冲与门禁，也归 All 管。
+        ManualCommandCatalog.Cycles.Should().HaveCount(5);
+        ManualCommandCatalog.All.Should().HaveCount(32);
 
         ManualCommandCatalog.All.Select(command => command.Key).Should().OnlyHaveUniqueItems();
     }
@@ -263,6 +266,9 @@ public sealed class ManualCommandTests
             // 会让辊子失去支承、或者会把辊子落到托瓦上的动作。
             "quill.retract", "tailstock.backward", "driver.retract",
             "softLanding.headstock.down", "softLanding.tailstock.down", "axes.home",
+
+            // 会切削或让各轴走全行程的循环。辊对中只是测量，不必按两下。
+            "cycle.manualGrinding", "cycle.calibrateDatum", "cycle.wheelDress", "cycle.referencePoint",
         });
     }
 

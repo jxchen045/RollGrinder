@@ -163,6 +163,17 @@ public static class MachineTagKeys
     public const string JobControlEndStepEarly = "job.control.endStepEarly";
 
     /// <summary>
+    /// NC 循环启动请求（脉冲）。
+    ///
+    /// **是请求不是命令。** 上位机不在任何一条使能链里（见机床硬件评估 §5），
+    /// 能不能动由 PLC 的互锁说了算；这一位只是把"操作工想开始了"告诉它。
+    /// </summary>
+    public const string JobControlCycleStart = "job.control.cycleStart";
+
+    /// <summary>进给保持请求（脉冲）。同样是请求。</summary>
+    public const string JobControlFeedHold = "job.control.feedHold";
+
+    /// <summary>
     /// 工序流程控制的命令位。跳转目标号是数值，不在这里。
     ///
     /// 这几位和手动动作一样是脉冲：上位机写 true → 等脉宽 → 写 false，
@@ -172,6 +183,8 @@ public static class MachineTagKeys
     {
         JobControlJumpToStep,
         JobControlEndStepEarly,
+        JobControlCycleStart,
+        JobControlFeedHold,
     };
 
     /// <summary>当前工序的第几次走刀。</summary>

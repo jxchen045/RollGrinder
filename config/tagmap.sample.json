@@ -109,11 +109,25 @@
       "unit": "mm"
     },
     {
+      "key": "job.control.cycleStart",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit42\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "NC 循环启动请求（脉冲）。上位机不在使能链里，能不能动由 PLC 互锁说了算"
+    },
+    {
       "key": "job.control.endStepEarly",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit41\"",
       "dataType": "Boolean",
       "access": "ReadWrite",
       "description": "当前工序提前结束，进入下一道（脉冲，PLC 上升沿触发并自复位）"
+    },
+    {
+      "key": "job.control.feedHold",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit43\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "进给保持请求（脉冲）"
     },
     {
       "key": "job.control.jumpToStep",
@@ -502,6 +516,41 @@
       "dataType": "Boolean",
       "access": "Read",
       "description": "状态回读"
+    },
+    {
+      "key": "manual.cycle.calibrateDatum",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit51\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "基准标定循环（脉冲）"
+    },
+    {
+      "key": "manual.cycle.manualGrinding",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit50\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "手动磨削循环（脉冲）"
+    },
+    {
+      "key": "manual.cycle.referencePoint",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit54\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "各轴回参考点（脉冲）"
+    },
+    {
+      "key": "manual.cycle.rollAlign",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit53\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "辊对中循环（脉冲）"
+    },
+    {
+      "key": "manual.cycle.wheelDress",
+      "address": "ns=3;s=\"HMI_Cmd\".\"bit52\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "砂轮修整循环（脉冲）"
     },
     {
       "key": "manual.driver.extend",

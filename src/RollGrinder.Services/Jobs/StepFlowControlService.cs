@@ -43,7 +43,8 @@ public sealed record StepFlowResult(bool Succeeded, StepFlowRefusal Refusal, str
     /// <summary>已发出。</summary>
     public static StepFlowResult Sent { get; } = new(true, StepFlowRefusal.None, null);
 
-    internal static StepFlowResult Refused(StepFlowRefusal refusal, string resourceKey) =>
+    /// <summary>被挡下来了，附带一句为什么。</summary>
+    public static StepFlowResult Refused(StepFlowRefusal refusal, string resourceKey) =>
         new(false, refusal, resourceKey);
 }
 
@@ -76,6 +77,20 @@ public interface IStepFlowControlService
     /// <summary>把当前这一道提前结束，进入下一道。</summary>
     Task<StepFlowResult> EndStepEarlyAsync(
         GrindingJob job, string requestedBy, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 请 NC 启动循环。
+    ///
+    /// **是请求不是命令。** 上位机不在任何一条使能链里（见机床硬件评估 §5），
+    /// 能不能动由 PLC 的互锁说了算；这一下只是把"操作工想开始了"告诉它。
+    /// </summary>
+    Task<StepFlowResult> RequestCycleStartAsync(string requestedBy, CancellationToken cancellationToken);
+
+    /// <summary>请 NC 进给保持。同样是请求。</summary>
+    Task<StepFlowResult> RequestFeedHoldAsync(string requestedBy, CancellationToken cancellationToken);
+
+    /// <summary>这两个请求位在 tagmap 里登记了吗。</summary>
+    bool CanRequestCycleControl { get; }
 }
 
 /// <inheritdoc cref="IStepFlowControlService"/>
@@ -104,6 +119,12 @@ public sealed class StepFlowControlService : IStepFlowControlService
 
     /// <summary>已提前结束（提示级）。</summary>
     public const string EndedEarlyResourceKey = "Alarm_StepEndedEarly";
+
+    /// <summary>已请求循环启动（提示级）。</summary>
+    public const string CycleStartResourceKey = "Alarm_CycleStartRequested";
+
+    /// <summary>已请求进给保持（提示级）。</summary>
+    public const string FeedHoldResourceKey = "Alarm_FeedHoldRequested";
 
     private readonly IMachineGateway gateway;
     private readonly IMachineMonitor monitor;
@@ -229,6 +250,48 @@ public sealed class StepFlowControlService : IStepFlowControlService
             $"{requestedBy}: {currentStepOrder}",
             AlarmCodes.StepEndedEarly);
 
+        return StepFlowResult.Sent;
+    }
+
+    public bool CanRequestCycleControl =>
+        this.tagMap.TryResolve(MachineTagKeys.JobControlCycleStart, out _)
+        && this.tagMap.TryResolve(MachineTagKeys.JobControlFeedHold, out _);
+
+    public Task<StepFlowResult> RequestCycleStartAsync(string requestedBy, CancellationToken cancellationToken) =>
+        RequestAsync(MachineTagKeys.JobControlCycleStart, CycleStartResourceKey, requestedBy, cancellationToken);
+
+    public Task<StepFlowResult> RequestFeedHoldAsync(string requestedBy, CancellationToken cancellationToken) =>
+        RequestAsync(MachineTagKeys.JobControlFeedHold, FeedHoldResourceKey, requestedBy, cancellationToken);
+
+    /// <summary>
+    /// 循环启动 / 进给保持共用这一段：脉冲一下就完事。
+    ///
+    /// 与跳转不同，这两下**不看有没有在跑作业**——想启动的时候本来就还没在跑，
+    /// 而想保持的时候更不该被"读不到工序号"挡住。
+    /// </summary>
+    private async Task<StepFlowResult> RequestAsync(
+        string logicalName, string resourceKey, string requestedBy, CancellationToken cancellationToken)
+    {
+        if (!this.tagMap.TryResolve(logicalName, out _))
+        {
+            return StepFlowResult.Refused(StepFlowRefusal.NotMapped, NotMappedResourceKey);
+        }
+
+        if (this.monitor.Current.ConnectionState != GatewayConnectionState.Connected)
+        {
+            return StepFlowResult.Refused(StepFlowRefusal.Disconnected, DisconnectedResourceKey);
+        }
+
+        try
+        {
+            await PulseAsync(logicalName, cancellationToken).ConfigureAwait(false);
+        }
+        catch (GatewayException ex)
+        {
+            return await FailedAsync(logicalName, ex).ConfigureAwait(false);
+        }
+
+        this.alarms.Raise(AlarmSeverity.Information, resourceKey, requestedBy, AlarmCodes.StepJumped);
         return StepFlowResult.Sent;
     }
 

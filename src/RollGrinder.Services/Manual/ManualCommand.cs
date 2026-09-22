@@ -178,8 +178,45 @@ public static class ManualCommandCatalog
     };
 
     /// <summary>全部 27 个动作。</summary>
+    /// <summary>
+    /// 辅助循环：按一下让 NC 跑一段事先编好的循环。
+    ///
+    /// 与上面那三组不同——那三组是"动一下某个机构"，这几个是"跑一段程序"。
+    /// 所以它们不在按钮矩阵里，而是挂在功能键上；机制完全一样：脉冲命令位，
+    /// PLC 上升沿触发并自复位，自动循环挂着程序时不给按。
+    ///
+    /// **上位机不在使能链里**（见机床硬件评估 §5）：这几下都只是**请求**，
+    /// 真正让不让动由 PLC 的互锁说了算。
+    /// </summary>
+    public static IReadOnlyList<ManualCommandDescriptor> Cycles { get; } = new[]
+    {
+        // 会切削，所以要按两下。
+        new ManualCommandDescriptor("cycle.manualGrinding", ManualCommandKind.Pulse, RequiresConfirmation: true)
+        {
+            ResourceKey = "Action_ManualGrinding",
+        },
+        new ManualCommandDescriptor("cycle.calibrateDatum", ManualCommandKind.Pulse, RequiresConfirmation: true)
+        {
+            ResourceKey = "Action_CalibrateDatum",
+        },
+        new ManualCommandDescriptor("cycle.wheelDress", ManualCommandKind.Pulse, RequiresConfirmation: true)
+        {
+            ResourceKey = "Action_WheelDressCycle",
+        },
+        new ManualCommandDescriptor("cycle.rollAlign", ManualCommandKind.Pulse)
+        {
+            ResourceKey = "Action_RollAlign",
+        },
+
+        // 回参考点会让各轴走起来，而且走的是全行程。
+        new ManualCommandDescriptor("cycle.referencePoint", ManualCommandKind.Pulse, RequiresConfirmation: true)
+        {
+            ResourceKey = "Action_ReferencePoint",
+        },
+    };
+
     public static IReadOnlyList<ManualCommandDescriptor> All { get; } =
-        MeasuringArm.Concat(Tailstock).Concat(Other).ToArray();
+        MeasuringArm.Concat(Tailstock).Concat(Other).Concat(Cycles).ToArray();
 
     /// <summary>需要回读状态的保持型动作。</summary>
     public static IReadOnlyList<ManualCommandDescriptor> Toggles { get; } =

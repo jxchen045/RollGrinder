@@ -2197,4 +2197,28 @@
   <data name="RollData_TotalWeight" xml:space="preserve">
     <value>Total lifting weight (kg)</value>
   </data>
+  <data name="Action_ManualGrinding" xml:space="preserve">
+    <value>Manual grinding</value>
+  </data>
+  <data name="Action_CalibrateDatum" xml:space="preserve">
+    <value>Datum calibration</value>
+  </data>
+  <data name="Action_WheelDressCycle" xml:space="preserve">
+    <value>Wheel dressing</value>
+  </data>
+  <data name="Action_RollAlign" xml:space="preserve">
+    <value>Roll alignment</value>
+  </data>
+  <data name="Action_ReferencePoint" xml:space="preserve">
+    <value>Home axes</value>
+  </data>
+  <data name="Manual_HmiReset" xml:space="preserve">
+    <value>HMI alarm list cleared</value>
+  </data>
+  <data name="Alarm_CycleStartRequested" xml:space="preserve">
+    <value>Cycle start requested</value>
+  </data>
+  <data name="Alarm_FeedHoldRequested" xml:space="preserve">
+    <value>Feed hold requested</value>
+  </data>
 </root>

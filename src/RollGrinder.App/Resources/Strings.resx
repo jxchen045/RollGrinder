@@ -2197,4 +2197,28 @@
   <data name="RollData_TotalWeight" xml:space="preserve">
     <value>吊装总重 (kg)</value>
   </data>
+  <data name="Action_ManualGrinding" xml:space="preserve">
+    <value>手动磨削</value>
+  </data>
+  <data name="Action_CalibrateDatum" xml:space="preserve">
+    <value>基准标定</value>
+  </data>
+  <data name="Action_WheelDressCycle" xml:space="preserve">
+    <value>砂轮修整</value>
+  </data>
+  <data name="Action_RollAlign" xml:space="preserve">
+    <value>辊对中</value>
+  </data>
+  <data name="Action_ReferencePoint" xml:space="preserve">
+    <value>回参考点</value>
+  </data>
+  <data name="Manual_HmiReset" xml:space="preserve">
+    <value>上位机报警已清空</value>
+  </data>
+  <data name="Alarm_CycleStartRequested" xml:space="preserve">
+    <value>已请求循环启动</value>
+  </data>
+  <data name="Alarm_FeedHoldRequested" xml:space="preserve">
+    <value>已请求进给保持</value>
+  </data>
 </root>

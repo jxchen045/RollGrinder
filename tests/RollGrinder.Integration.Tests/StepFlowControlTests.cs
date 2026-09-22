@@ -130,6 +130,8 @@ public sealed class StepFlowControlTests
         MachineTagKeys.JobControlTargetStepOrder,
         MachineTagKeys.JobControlJumpToStep,
         MachineTagKeys.JobControlEndStepEarly,
+        MachineTagKeys.JobControlCycleStart,
+        MachineTagKeys.JobControlFeedHold,
     };
 
     private static HmiSettings Settings() => new(
@@ -302,6 +304,58 @@ public sealed class StepFlowControlTests
         alarms.Entries.Select(entry => entry.Code).Should()
             .Equal(AlarmCodes.StepJumped, AlarmCodes.StepEndedEarly);
         alarms.Entries.Should().OnlyContain(entry => entry.Severity == AlarmSeverity.Information);
+    }
+
+    [Fact]
+    public async Task Cycle_start_is_a_request_not_a_command()
+    {
+        // 上位机不在任何一条使能链里：这一下只是把"操作工想开始了"告诉 PLC，
+        // 能不能动由它的互锁说了算。所以这里只守"确实脉冲了一下"。
+        var gateway = new RecordingGateway();
+        StepFlowControlService service = CreateService(
+            gateway,
+            SnapshotAtStep(0),
+            new RecordingAlarms(),
+            new[] { MachineTagKeys.JobControlCycleStart, MachineTagKeys.JobControlFeedHold });
+
+        StepFlowResult result = await service.RequestCycleStartAsync("wang", CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        gateway.Writes.Should().Equal(new (string, object?)[]
+        {
+            (MachineTagKeys.JobControlCycleStart, true),
+            (MachineTagKeys.JobControlCycleStart, false),
+        });
+    }
+
+    [Fact]
+    public async Task Feed_hold_works_even_when_no_job_is_running()
+    {
+        // 想保持的时候更不该被"读不到工序号"挡住。
+        var gateway = new RecordingGateway();
+        StepFlowControlService service = CreateService(
+            gateway,
+            SnapshotAtStep(0),
+            new RecordingAlarms(),
+            new[] { MachineTagKeys.JobControlCycleStart, MachineTagKeys.JobControlFeedHold });
+
+        StepFlowResult result = await service.RequestFeedHoldAsync("wang", CancellationToken.None);
+
+        result.Succeeded.Should().BeTrue();
+        gateway.Writes.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task An_unmapped_cycle_bit_refuses_instead_of_pretending()
+    {
+        var gateway = new RecordingGateway();
+        StepFlowControlService service = CreateService(
+            gateway, SnapshotAtStep(1), new RecordingAlarms(), Array.Empty<string>());
+
+        service.CanRequestCycleControl.Should().BeFalse();
+        (await service.RequestCycleStartAsync("wang", CancellationToken.None))
+            .Refusal.Should().Be(StepFlowRefusal.NotMapped);
+        gateway.Writes.Should().BeEmpty();
     }
 
     [Fact]
