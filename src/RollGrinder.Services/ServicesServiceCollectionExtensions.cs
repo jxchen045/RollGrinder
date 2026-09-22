@@ -67,6 +67,9 @@ public static class ServicesServiceCollectionExtensions
 
         // 机床报警搬运工：没有别的入口，靠宿主启动它订上监视器。
         services.AddHostedService<MachineAlarmWatcher>();
+
+        // 测量工序走完就把那一趟的读数存成一次测量；同样没有别的入口。
+        services.AddHostedService<MeasurementCaptureService>();
         services.AddHostedService<AlarmArchiveHostedService>();
 
         return services;

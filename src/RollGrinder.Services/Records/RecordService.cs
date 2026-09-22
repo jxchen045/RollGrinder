@@ -12,6 +12,8 @@ using RollGrinder.Data;
 using RollGrinder.Core.Steps;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Calibration;
+using RollGrinder.Services.Monitoring;
 
 namespace RollGrinder.Services.Records;
 
@@ -72,11 +74,20 @@ public sealed class RecordService : IRecordService
     /// <summary>报表出不来的资源键。记录已经收尾了，只是没打出来。</summary>
     public const string ReportNotPrintedResourceKey = "Alarm_ReportNotPrinted";
 
+    /// <summary>圆度没存下来的资源键。</summary>
+    public const string RoundnessNotArchivedResourceKey = "Alarm_RoundnessNotArchived";
+
+    /// <summary>圆度记录的来源标记：沿辊身收来的，不是人工量的。</summary>
+    public const string RoundnessSource = "trace";
+
     private readonly IGrindingRecordRepository records;
     private readonly IJobRepository jobs;
     private readonly IRollRepository rolls;
     private readonly IMeasurementRepository measurements;
     private readonly IAlarmRepository alarms;
+    private readonly IRoundnessRepository roundness;
+    private readonly ISurfaceTraceService traces;
+    private readonly ICalibrationService calibration;
     private readonly IReportService reports;
     private readonly IReportPrintQueue printQueue;
     private readonly IAlarmSink alarmSink;
@@ -89,6 +100,9 @@ public sealed class RecordService : IRecordService
         IRollRepository rolls,
         IMeasurementRepository measurements,
         IAlarmRepository alarms,
+        IRoundnessRepository roundness,
+        ISurfaceTraceService traces,
+        ICalibrationService calibration,
         IReportService reports,
         IReportPrintQueue printQueue,
         IAlarmSink alarmSink,
@@ -100,6 +114,9 @@ public sealed class RecordService : IRecordService
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.measurements = measurements ?? throw new ArgumentNullException(nameof(measurements));
         this.alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
+        this.roundness = roundness ?? throw new ArgumentNullException(nameof(roundness));
+        this.traces = traces ?? throw new ArgumentNullException(nameof(traces));
+        this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.reports = reports ?? throw new ArgumentNullException(nameof(reports));
         this.printQueue = printQueue ?? throw new ArgumentNullException(nameof(printQueue));
         this.alarmSink = alarmSink ?? throw new ArgumentNullException(nameof(alarmSink));
@@ -144,11 +161,81 @@ public sealed class RecordService : IRecordService
     public async Task FinishAsync(
         string recordId, JobState state, string? note, CancellationToken cancellationToken)
     {
+        // 收尾时把两样东西定格下来：砂轮有多大、圆度与偏心量成什么样。
+        // 都是"过了这一刻就再也取不到"的量——砂轮明天就小了，
+        // 轨迹下一支辊一上来就清了。
         await this.records
-            .FinishAsync(recordId, this.timeProvider.GetUtcNow(), state, note, cancellationToken)
+            .FinishAsync(
+                recordId,
+                this.timeProvider.GetUtcNow(),
+                state,
+                note,
+                this.calibration.Current.WheelDiameterMm,
+                cancellationToken)
             .ConfigureAwait(false);
 
+        await SaveRoundnessAsync(recordId, cancellationToken).ConfigureAwait(false);
         await QueuePostGrindReportAsync(recordId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 把这一支辊收到的圆度与偏心轨迹存下来。
+    ///
+    /// 轨迹是按位置攒在内存里的，换一支辊就清掉——不存下来，记录页上的
+    /// 圆度误差与同轴度永远是空的。一个点都没收到就不建空记录：
+    /// "没量过"与"量了是 0"是两回事。
+    /// </summary>
+    private async Task SaveRoundnessAsync(string recordId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            GrindingRecord? record = await this.records.GetAsync(recordId, cancellationToken).ConfigureAwait(false);
+            if (record is null)
+            {
+                return;
+            }
+
+            IReadOnlyList<SurfaceTracePoint> roundness = this.traces.Trace(SurfaceTraceKind.Roundness);
+            IReadOnlyList<SurfaceTracePoint> eccentricity = this.traces.Trace(SurfaceTraceKind.Eccentricity);
+            if (roundness.Count == 0 && eccentricity.Count == 0)
+            {
+                return;
+            }
+
+            // 两条轨迹按位置对齐：同一个格子上收到的两个数才算同一个截面。
+            var byPosition = new SortedDictionary<double, (double Roundness, double Eccentricity)>();
+            foreach (SurfaceTracePoint point in roundness)
+            {
+                byPosition[point.BodyPositionMm] = (point.Value, 0.0);
+            }
+
+            foreach (SurfaceTracePoint point in eccentricity)
+            {
+                byPosition.TryGetValue(point.BodyPositionMm, out (double Roundness, double Eccentricity) existing);
+                byPosition[point.BodyPositionMm] = (existing.Roundness, point.Value);
+            }
+
+            var points = new List<RoundnessPoint>(byPosition.Count);
+            foreach (KeyValuePair<double, (double Roundness, double Eccentricity)> pair in byPosition)
+            {
+                points.Add(new RoundnessPoint(pair.Key, pair.Value.Roundness, pair.Value.Eccentricity));
+            }
+
+            await this.roundness.AddAsync(
+                new RoundnessMeasurement(
+                    Guid.NewGuid().ToString("N"),
+                    record.JobId,
+                    this.timeProvider.GetUtcNow(),
+                    RoundnessSource,
+                    points),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is DataStoreException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            // 记录已经收尾了，圆度没存下来不该把它退回去。
+            this.alarmSink.Raise(
+                AlarmSeverity.Warning, RoundnessNotArchivedResourceKey, ex.Message, AlarmCodes.HandoverNotArchived);
+        }
     }
 
     /// <summary>

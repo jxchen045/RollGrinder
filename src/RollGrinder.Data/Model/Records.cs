@@ -47,7 +47,16 @@ public sealed record GrindingRecord(
     DateTimeOffset StartedAtUtc,
     DateTimeOffset? FinishedAtUtc,
     JobState State,
-    string? Note);
+    string? Note)
+{
+    /// <summary>
+    /// 收尾时砂轮有多大（mm）。null 表示那一次没记下来。
+    ///
+    /// 砂轮天天在磨小，标定值里的"当前砂轮直径"只是此刻的值；
+    /// 事后回头查这支辊是用多大的砂轮磨的，只能靠当时记下来。
+    /// </summary>
+    public double? WheelDiameterMm { get; init; }
+}
 
 /// <summary>一次测量。</summary>
 /// <param name="MeasurementId">测量标识。</param>
@@ -60,7 +69,55 @@ public sealed record MeasurementRecord(
     string JobId,
     DateTimeOffset RecordedAtUtc,
     string Source,
-    MeasuredProfile Profile);
+    MeasuredProfile Profile)
+{
+    /// <summary>
+    /// 这一次是磨前、磨中还是磨后量的。
+    ///
+    /// 光有 <see cref="Source"/> 分不出来："gauge" 磨前磨后都是同一个测头。
+    /// 而磨前直径、锥度这些指标全靠这一项才算得出来。
+    /// </summary>
+    public MeasurementStage Stage { get; init; } = MeasurementStage.PostGrind;
+}
+
+/// <summary>一次测量是在什么时候量的。</summary>
+public enum MeasurementStage
+{
+    /// <summary>磨前：来料什么样。</summary>
+    PreGrind = 0,
+
+    /// <summary>磨中：某一道工序之后的中间测量，用来算行程间补偿。</summary>
+    InProcess = 1,
+
+    /// <summary>磨后：磨成了什么样。默认是它——补偿与报表看的都是这一份。</summary>
+    PostGrind = 2,
+}
+
+/// <summary>圆度测量上的一个点：一个辊身位置上的圆度与偏心。</summary>
+/// <param name="BodyPositionMm">辊身坐标（mm）。</param>
+/// <param name="RoundnessMicrometer">圆度（µm，峰谷值）。</param>
+/// <param name="EccentricityMicrometer">偏心量（µm，全跳动）。</param>
+public sealed record RoundnessPoint(
+    double BodyPositionMm, double RoundnessMicrometer, double EccentricityMicrometer);
+
+/// <summary>
+/// 一次圆度测量。
+///
+/// 与辊形测量分开存：辊形测量一个位置上是一个半径，圆度测量一个位置上是
+/// 圆度与偏心两个数，量的也不是同一件事（一个沿轴线扫，一个绕圆周扫）。
+/// 塞进同一张表会让"这一行到底是什么"变成要靠 source 猜。
+/// </summary>
+/// <param name="RoundnessId">测量标识。</param>
+/// <param name="JobId">作业标识。</param>
+/// <param name="RecordedAtUtc">测量时刻。</param>
+/// <param name="Source">来源，例如测量通道名。</param>
+/// <param name="Points">各个截面上的读数，按辊身坐标从小到大。</param>
+public sealed record RoundnessMeasurement(
+    string RoundnessId,
+    string JobId,
+    DateTimeOffset RecordedAtUtc,
+    string Source,
+    IReadOnlyList<RoundnessPoint> Points);
 
 /// <summary>一次补偿。</summary>
 /// <param name="CompensationId">补偿标识。</param>

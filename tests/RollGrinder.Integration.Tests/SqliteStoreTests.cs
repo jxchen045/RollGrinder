@@ -203,7 +203,7 @@ public sealed class SqliteStoreTests : IDisposable
         DateTimeOffset start = DateTimeOffset.UnixEpoch.AddHours(1);
 
         await records.AddAsync(new GrindingRecord("G-1", "J-1", start, null, JobState.Handed, null), CancellationToken.None);
-        await records.FinishAsync("G-1", start.AddHours(2), JobState.Completed, "ok", CancellationToken.None);
+        await records.FinishAsync("G-1", start.AddHours(2), JobState.Completed, "ok", 889.76, CancellationToken.None);
 
         GrindingRecord? loaded = await records.GetAsync("G-1", CancellationToken.None);
         loaded!.FinishedAtUtc.Should().Be(start.AddHours(2));

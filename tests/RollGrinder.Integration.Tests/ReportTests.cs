@@ -92,7 +92,7 @@ public sealed class ReportTests : IDisposable
         await records.AddAsync(
             new GrindingRecord(RecordId, JobId, Started, null, JobState.Handed, null), CancellationToken.None);
         await records.FinishAsync(
-            RecordId, Started.AddHours(3.0), JobState.Completed, "试磨", CancellationToken.None);
+            RecordId, Started.AddHours(3.0), JobState.Completed, "试磨", 889.76, CancellationToken.None);
 
         if (!withMeasurement)
         {

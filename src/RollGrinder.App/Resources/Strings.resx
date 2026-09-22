@@ -2032,4 +2032,10 @@
   <data name="Alarm_MachineAlarmCleared" xml:space="preserve">
     <value>机床报警已复位</value>
   </data>
+  <data name="Alarm_RoundnessNotArchived" xml:space="preserve">
+    <value>圆度数据未能入库，磨削记录不受影响</value>
+  </data>
+  <data name="Alarm_MeasurementNotArchived" xml:space="preserve">
+    <value>测量数据未能入库，磨削不受影响</value>
+  </data>
 </root>

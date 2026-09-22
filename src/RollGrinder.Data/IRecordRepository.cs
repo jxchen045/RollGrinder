@@ -11,11 +11,16 @@ public interface IGrindingRecordRepository
 {
     Task AddAsync(GrindingRecord record, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// 给一条记录收尾。<paramref name="wheelDiameterMm"/> 为 null 时保留原值——
+    /// 收尾可能被重来一次，不该把已经记下的砂轮直径抹成空。
+    /// </summary>
     Task FinishAsync(
         string recordId,
         DateTimeOffset finishedAtUtc,
         JobState state,
         string? note,
+        double? wheelDiameterMm,
         CancellationToken cancellationToken);
 
     Task<GrindingRecord?> GetAsync(string recordId, CancellationToken cancellationToken);
@@ -37,7 +42,21 @@ public interface IMeasurementRepository
 
     Task<MeasurementRecord?> GetLatestByJobAsync(string jobId, CancellationToken cancellationToken);
 
+    /// <summary>取某支作业某个阶段最近一次测量。磨前直径、锥度这些指标靠它分得清是哪一次。</summary>
+    Task<MeasurementRecord?> GetLatestByStageAsync(
+        string jobId, MeasurementStage stage, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<MeasurementRecord>> ListByJobAsync(string jobId, int limit, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// 圆度测量。与辊形测量分开：一个沿轴线扫出半径，一个绕圆周扫出圆度与偏心。
+/// </summary>
+public interface IRoundnessRepository
+{
+    Task AddAsync(RoundnessMeasurement measurement, CancellationToken cancellationToken);
+
+    Task<RoundnessMeasurement?> GetLatestByJobAsync(string jobId, CancellationToken cancellationToken);
 }
 
 /// <summary>补偿结果。</summary>

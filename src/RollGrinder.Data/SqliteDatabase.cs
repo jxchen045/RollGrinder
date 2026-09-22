@@ -240,6 +240,38 @@ public sealed class SqliteDatabase
             changed_by         TEXT NOT NULL
         );
         """,
+
+        // 7：记录页那 12 项指标的数据底座。
+        //
+        // 三件事：
+        // - 测量分磨前 / 磨中 / 磨后。先前只有一个 source，分不出"这一次是磨前
+        //   量的还是磨后量的"，磨前直径与锥度因此根本算不出来；
+        // - 圆度与偏心单独存一张表。它们是沿辊身一个位置一个数，与辊形测量的
+        //   半径不是一回事，塞进同一张表会让"这一行到底是什么"变得要靠 source 猜；
+        // - 记录上留一格砂轮直径。砂轮天天在磨小，事后回头查这支辊是用多大的
+        //   砂轮磨的，只能靠当时记下来。
+        """
+        ALTER TABLE measurement ADD COLUMN stage INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE grinding_record ADD COLUMN wheel_diameter_mm REAL NULL;
+
+        CREATE TABLE roundness_measurement (
+            roundness_id       TEXT PRIMARY KEY,
+            job_id             TEXT NOT NULL REFERENCES job(job_id) ON DELETE CASCADE,
+            recorded_at_utc    TEXT NOT NULL,
+            source             TEXT NOT NULL
+        );
+
+        CREATE TABLE roundness_point (
+            roundness_id           TEXT NOT NULL
+                                   REFERENCES roundness_measurement(roundness_id) ON DELETE CASCADE,
+            body_position_mm       REAL NOT NULL,
+            roundness_micrometer   REAL NOT NULL,
+            eccentricity_micrometer REAL NOT NULL,
+            PRIMARY KEY (roundness_id, body_position_mm)
+        );
+
+        CREATE INDEX ix_roundness_job ON roundness_measurement(job_id);
+        """,
     };
 
     private readonly string connectionString;

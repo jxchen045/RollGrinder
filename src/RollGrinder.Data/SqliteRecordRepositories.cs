@@ -46,6 +46,7 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         DateTimeOffset finishedAtUtc,
         JobState state,
         string? note,
+        double? wheelDiameterMm,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
@@ -55,12 +56,16 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         command.CommandText =
             """
             UPDATE grinding_record
-            SET finished_at_utc = $finished, state = $state, note = COALESCE($note, note)
+            SET finished_at_utc = $finished,
+                state = $state,
+                note = COALESCE($note, note),
+                wheel_diameter_mm = COALESCE($wheel, wheel_diameter_mm)
             WHERE record_id = $id;
             """;
         SqlMapping.AddParameter(command, "$finished", SqlMapping.ToText(finishedAtUtc));
         SqlMapping.AddParameter(command, "$state", (int)state);
         SqlMapping.AddParameter(command, "$note", note);
+        SqlMapping.AddParameter(command, "$wheel", wheelDiameterMm);
         SqlMapping.AddParameter(command, "$id", recordId);
 
         if (await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 0)
@@ -75,7 +80,7 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT record_id, job_id, started_at_utc, finished_at_utc, state, note
+            SELECT record_id, job_id, started_at_utc, finished_at_utc, state, note, wheel_diameter_mm
             FROM grinding_record WHERE record_id = $id;
             """;
         SqlMapping.AddParameter(command, "$id", recordId);
@@ -94,7 +99,7 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT record_id, job_id, started_at_utc, finished_at_utc, state, note
+            SELECT record_id, job_id, started_at_utc, finished_at_utc, state, note, wheel_diameter_mm
             FROM grinding_record
             WHERE started_at_utc >= $from AND started_at_utc <= $to
             ORDER BY started_at_utc DESC
@@ -130,7 +135,10 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         SqlMapping.ToTimestamp(reader.GetString(2)),
         reader.IsDBNull(3) ? null : SqlMapping.ToTimestamp(reader.GetString(3)),
         (JobState)reader.GetInt32(4),
-        reader.IsDBNull(5) ? null : reader.GetString(5));
+        reader.IsDBNull(5) ? null : reader.GetString(5))
+    {
+        WheelDiameterMm = reader.IsDBNull(6) ? null : reader.GetDouble(6),
+    };
 }
 
 /// <summary>测量结果的 SQLite 实现。</summary>
@@ -156,13 +164,14 @@ public sealed class SqliteMeasurementRepository : IMeasurementRepository
             command.Transaction = transaction;
             command.CommandText =
                 """
-                INSERT INTO measurement (measurement_id, job_id, recorded_at_utc, source)
-                VALUES ($id, $job, $recorded, $source);
+                INSERT INTO measurement (measurement_id, job_id, recorded_at_utc, source, stage)
+                VALUES ($id, $job, $recorded, $source, $stage);
                 """;
             SqlMapping.AddParameter(command, "$id", measurement.MeasurementId);
             SqlMapping.AddParameter(command, "$job", measurement.JobId);
             SqlMapping.AddParameter(command, "$recorded", SqlMapping.ToText(measurement.RecordedAtUtc));
             SqlMapping.AddParameter(command, "$source", measurement.Source);
+            SqlMapping.AddParameter(command, "$stage", (int)measurement.Stage);
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -190,18 +199,37 @@ public sealed class SqliteMeasurementRepository : IMeasurementRepository
         return measurements.Count > 0 ? measurements[0] : null;
     }
 
+    public async Task<MeasurementRecord?> GetLatestByStageAsync(
+        string jobId, MeasurementStage stage, CancellationToken cancellationToken)
+    {
+        // 一支辊上磨前磨后各量一次，中间测量可能好几次——条数不多，
+        // 取回来在内存里挑比在 SQL 里再写一条按阶段过滤的查询省事，也不会走样。
+        IReadOnlyList<MeasurementRecord> all = await ListByJobAsync(jobId, 100, cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (MeasurementRecord measurement in all)
+        {
+            if (measurement.Stage == stage)
+            {
+                return measurement;
+            }
+        }
+
+        return null;
+    }
+
     public async Task<IReadOnlyList<MeasurementRecord>> ListByJobAsync(string jobId, int limit, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(jobId);
 
         await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-        var headers = new List<(string Id, DateTimeOffset RecordedAt, string Source)>();
+        var headers = new List<(string Id, DateTimeOffset RecordedAt, string Source, MeasurementStage Stage)>();
         await using (SqliteCommand command = connection.CreateCommand())
         {
             command.CommandText =
                 """
-                SELECT measurement_id, recorded_at_utc, source
+                SELECT measurement_id, recorded_at_utc, source, stage
                 FROM measurement WHERE job_id = $job
                 ORDER BY recorded_at_utc DESC LIMIT $limit;
                 """;
@@ -211,12 +239,16 @@ public sealed class SqliteMeasurementRepository : IMeasurementRepository
             await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                headers.Add((reader.GetString(0), SqlMapping.ToTimestamp(reader.GetString(1)), reader.GetString(2)));
+                headers.Add((
+                    reader.GetString(0),
+                    SqlMapping.ToTimestamp(reader.GetString(1)),
+                    reader.GetString(2),
+                    (MeasurementStage)reader.GetInt32(3)));
             }
         }
 
         var measurements = new List<MeasurementRecord>(headers.Count);
-        foreach ((string id, DateTimeOffset recordedAt, string source) in headers)
+        foreach ((string id, DateTimeOffset recordedAt, string source, MeasurementStage stage) in headers)
         {
             var points = new List<MeasurementPoint>();
             await using SqliteCommand command = connection.CreateCommand();
@@ -234,7 +266,8 @@ public sealed class SqliteMeasurementRepository : IMeasurementRepository
                 points.Add(new MeasurementPoint(reader.GetDouble(0), reader.GetDouble(1)));
             }
 
-            measurements.Add(new MeasurementRecord(id, jobId, recordedAt, source, new MeasuredProfile(points)));
+            measurements.Add(
+                new MeasurementRecord(id, jobId, recordedAt, source, new MeasuredProfile(points)) { Stage = stage });
         }
 
         return measurements;

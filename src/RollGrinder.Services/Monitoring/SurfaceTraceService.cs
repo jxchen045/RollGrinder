@@ -17,6 +17,14 @@ public enum SurfaceTraceKind
 
     /// <summary>磨削电流（A）。</summary>
     GrindingCurrent = 2,
+
+    /// <summary>
+    /// 测得的直径（mm）。
+    ///
+    /// 与前三个不同：这一条不是画曲线用的，是**测量工序扫过之后攒成一次测量**
+    /// 存进库里的原料。测量臂沿辊身走一趟，这条轨迹就是那一趟的读数。
+    /// </summary>
+    Diameter = 3,
 }
 
 /// <summary>轨迹上的一个点。</summary>
@@ -44,6 +52,14 @@ public interface ISurfaceTraceService
 
     /// <summary>换了一支辊：清空并按新的辊身长度重新划格。</summary>
     void Reset(double bodyLengthMm);
+
+    /// <summary>
+    /// 只清掉某一类的轨迹，辊身长度不变。
+    ///
+    /// 直径轨迹用得到：一次测量扫完存进库之后就该清空，
+    /// 不然下一次测量会把上一趟没走到的格子当成这一趟的数。
+    /// </summary>
+    void Clear(SurfaceTraceKind kind);
 }
 
 /// <inheritdoc cref="ISurfaceTraceService"/>
@@ -51,7 +67,8 @@ public sealed class SurfaceTraceService : ISurfaceTraceService
 {
     private static readonly SurfaceTraceKind[] AllKinds =
     {
-        SurfaceTraceKind.Roundness, SurfaceTraceKind.Eccentricity, SurfaceTraceKind.GrindingCurrent,
+        SurfaceTraceKind.Roundness, SurfaceTraceKind.Eccentricity,
+        SurfaceTraceKind.GrindingCurrent, SurfaceTraceKind.Diameter,
     };
 
     private readonly ITagMap tagMap;
@@ -87,6 +104,7 @@ public sealed class SurfaceTraceService : ISurfaceTraceService
         SurfaceTraceKind.Roundness => MachineTagKeys.MeasureRoundnessMicrometer,
         SurfaceTraceKind.Eccentricity => MachineTagKeys.MeasureEccentricityMicrometer,
         SurfaceTraceKind.GrindingCurrent => MachineTagKeys.GrindingCurrentA,
+        SurfaceTraceKind.Diameter => MachineTagKeys.MeasuredDiameterMm,
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 
@@ -112,6 +130,14 @@ public sealed class SurfaceTraceService : ISurfaceTraceService
             }
 
             return points;
+        }
+    }
+
+    public void Clear(SurfaceTraceKind kind)
+    {
+        lock (this.gate)
+        {
+            Array.Clear(this.bins[kind]);
         }
     }
 

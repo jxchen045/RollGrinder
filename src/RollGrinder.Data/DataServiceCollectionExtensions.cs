@@ -22,6 +22,7 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<ICalibrationRepository, SqliteCalibrationRepository>();
         services.AddSingleton<IGrindingRecordRepository, SqliteGrindingRecordRepository>();
         services.AddSingleton<IMeasurementRepository, SqliteMeasurementRepository>();
+        services.AddSingleton<IRoundnessRepository, SqliteRoundnessRepository>();
         services.AddSingleton<ICompensationRepository, SqliteCompensationRepository>();
         services.AddSingleton<IAlarmRepository, SqliteAlarmRepository>();
 

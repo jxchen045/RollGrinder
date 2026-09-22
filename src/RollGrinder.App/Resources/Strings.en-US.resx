@@ -2032,4 +2032,10 @@
   <data name="Alarm_MachineAlarmCleared" xml:space="preserve">
     <value>Machine alarm cleared</value>
   </data>
+  <data name="Alarm_RoundnessNotArchived" xml:space="preserve">
+    <value>Roundness data was not archived; the grinding record is unaffected</value>
+  </data>
+  <data name="Alarm_MeasurementNotArchived" xml:space="preserve">
+    <value>Measurement data was not archived; grinding is unaffected</value>
+  </data>
 </root>
