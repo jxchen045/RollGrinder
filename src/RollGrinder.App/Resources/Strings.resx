@@ -2038,4 +2038,37 @@
   <data name="Alarm_MeasurementNotArchived" xml:space="preserve">
     <value>测量数据未能入库，磨削不受影响</value>
   </data>
+  <data name="Metric_PreDiameterHead" xml:space="preserve">
+    <value>磨前直径 头架侧</value>
+  </data>
+  <data name="Metric_PreDiameterTail" xml:space="preserve">
+    <value>磨前直径 尾座侧</value>
+  </data>
+  <data name="Metric_PostDiameterHead" xml:space="preserve">
+    <value>磨后直径 头架侧</value>
+  </data>
+  <data name="Metric_PostDiameterTail" xml:space="preserve">
+    <value>磨后直径 尾座侧</value>
+  </data>
+  <data name="Metric_Taper" xml:space="preserve">
+    <value>锥度</value>
+  </data>
+  <data name="Metric_ProfileRms" xml:space="preserve">
+    <value>辊形误差 RMS</value>
+  </data>
+  <data name="Metric_Roundness" xml:space="preserve">
+    <value>圆度误差</value>
+  </data>
+  <data name="Metric_Concentricity" xml:space="preserve">
+    <value>同轴度</value>
+  </data>
+  <data name="Metric_ActualCrown" xml:space="preserve">
+    <value>实际凸度</value>
+  </data>
+  <data name="Metric_WheelDiameter" xml:space="preserve">
+    <value>砂轮磨后直径</value>
+  </data>
+  <data name="Metric_CompensationIterations" xml:space="preserve">
+    <value>补偿迭代次数</value>
+  </data>
 </root>

@@ -2038,4 +2038,37 @@
   <data name="Alarm_MeasurementNotArchived" xml:space="preserve">
     <value>Measurement data was not archived; grinding is unaffected</value>
   </data>
+  <data name="Metric_PreDiameterHead" xml:space="preserve">
+    <value>Pre-grind dia. head side</value>
+  </data>
+  <data name="Metric_PreDiameterTail" xml:space="preserve">
+    <value>Pre-grind dia. tail side</value>
+  </data>
+  <data name="Metric_PostDiameterHead" xml:space="preserve">
+    <value>Post-grind dia. head side</value>
+  </data>
+  <data name="Metric_PostDiameterTail" xml:space="preserve">
+    <value>Post-grind dia. tail side</value>
+  </data>
+  <data name="Metric_Taper" xml:space="preserve">
+    <value>Taper</value>
+  </data>
+  <data name="Metric_ProfileRms" xml:space="preserve">
+    <value>Profile error RMS</value>
+  </data>
+  <data name="Metric_Roundness" xml:space="preserve">
+    <value>Roundness error</value>
+  </data>
+  <data name="Metric_Concentricity" xml:space="preserve">
+    <value>Concentricity</value>
+  </data>
+  <data name="Metric_ActualCrown" xml:space="preserve">
+    <value>Actual crown</value>
+  </data>
+  <data name="Metric_WheelDiameter" xml:space="preserve">
+    <value>Wheel dia. after grinding</value>
+  </data>
+  <data name="Metric_CompensationIterations" xml:space="preserve">
+    <value>Compensation iterations</value>
+  </data>
 </root>

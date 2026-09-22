@@ -65,6 +65,9 @@ public interface ICompensationRepository
     Task AddAsync(CompensationRecord compensation, CancellationToken cancellationToken);
 
     Task<CompensationRecord?> GetLatestByJobAsync(string jobId, CancellationToken cancellationToken);
+
+    /// <summary>这支作业迭代了几次补偿。记录页的"补偿迭代次数"就是它。</summary>
+    Task<int> CountByJobAsync(string jobId, CancellationToken cancellationToken);
 }
 
 /// <summary>报警归档。</summary>

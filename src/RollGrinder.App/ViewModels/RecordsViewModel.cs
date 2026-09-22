@@ -130,13 +130,70 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             return;
         }
 
-        Metrics.Add(new LabelValueViewModel("Metric_RollCode", value.RollCode, Localizer));
-        Metrics.Add(new LabelValueViewModel("Metric_Profile", value.ProfileTypeText, Localizer));
-        Metrics.Add(new LabelValueViewModel("Metric_State", value.StateText, Localizer));
-        Metrics.Add(new LabelValueViewModel("Metric_Started", value.StartedText, Localizer));
-        Metrics.Add(new LabelValueViewModel("Metric_Duration", value.DurationText, Localizer));
-        Metrics.Add(new LabelValueViewModel("Metric_WorstDeviation", value.WorstDeviationText, Localizer));
+        // 先摆一屏 "--"：指标要查库，别让格子在读完之前是空的。
+        ShowOutcome(GrindingOutcome.Empty);
+        _ = RunGuardedAsync(async token =>
+        {
+            GrindingOutcome outcome = await this.recordService
+                .LoadOutcomeAsync(value.RecordId, token).ConfigureAwait(true);
+
+            // 读的过程中人可能已经点了别的记录，那就别把旧结果摆上去。
+            if (ReferenceEquals(SelectedRecord, value))
+            {
+                ShowOutcome(outcome);
+            }
+        }, CancellationToken.None);
     }
+
+    /// <summary>
+    /// 设计稿 B-Records 的"磨削结果"那 12 项，顺序照设计稿。
+    ///
+    /// 每一项算不出来就是 "--"：**"没量过"与"量出来是 0"是两回事**，
+    /// 填一个 0 会让人以为这支辊量过了。
+    /// </summary>
+    private void ShowOutcome(GrindingOutcome outcome)
+    {
+        Metrics.Clear();
+
+        Add("Metric_PreDiameterHead", outcome.PreGrindDiameterHeadMm, "F3");
+        Add("Metric_PreDiameterTail", outcome.PreGrindDiameterTailMm, "F3");
+        Add("Metric_PostDiameterHead", outcome.PostGrindDiameterHeadMm, "F3");
+        Add("Metric_PostDiameterTail", outcome.PostGrindDiameterTailMm, "F3");
+        Add("Metric_Taper", outcome.TaperMm, "F3", showSign: true);
+        Add("Metric_ProfileRms", outcome.ProfileRmsMicrometer, "F1");
+        Add("Metric_Roundness", outcome.RoundnessMicrometer, "F1");
+        Add("Metric_Concentricity", outcome.ConcentricityMicrometer, "F1");
+        Add("Metric_ActualCrown", outcome.ActualCrownMm, "F4", showSign: true);
+        Add("Metric_WheelDiameter", outcome.WheelDiameterMm, "F2");
+
+        Metrics.Add(new LabelValueViewModel(
+            "Metric_Duration",
+            outcome.Duration is TimeSpan duration
+                ? duration.ToString(@"hh\:mm", CultureInfo.InvariantCulture)
+                : Dash,
+            Localizer));
+
+        Metrics.Add(new LabelValueViewModel(
+            "Metric_CompensationIterations",
+            outcome.CompensationIterations.ToString(CultureInfo.CurrentCulture),
+            Localizer));
+
+        void Add(string labelResourceKey, double? value, string format, bool showSign = false)
+        {
+            string text = value is null
+                ? Dash
+                : value.Value.ToString(format, CultureInfo.CurrentCulture);
+            if (showSign && value is double number && number >= 0.0)
+            {
+                text = "+" + text;
+            }
+
+            Metrics.Add(new LabelValueViewModel(labelResourceKey, text, Localizer));
+        }
+    }
+
+    /// <summary>算不出来时格子里写什么。</summary>
+    private const string Dash = "--";
 
     [RelayCommand]
     public Task QueryAsync(CancellationToken cancellationToken) =>

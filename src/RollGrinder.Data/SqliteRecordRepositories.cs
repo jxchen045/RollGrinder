@@ -376,6 +376,19 @@ public sealed class SqliteCompensationRepository : ICompensationRepository
 
         return new CompensationRecord(compensationId, jobId, createdAt, measurementId, points);
     }
+
+    public async Task<int> CountByJobAsync(string jobId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(jobId);
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM compensation WHERE job_id = $job;";
+        SqlMapping.AddParameter(command, "$job", jobId);
+
+        object? count = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        return count is null ? 0 : Convert.ToInt32(count, System.Globalization.CultureInfo.InvariantCulture);
+    }
 }
 
 /// <summary>报警归档的 SQLite 实现。</summary>

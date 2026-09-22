@@ -7,6 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core.Compensation;
+using RollGrinder.Core.Profiles;
+
 using RollGrinder.Core.Units;
 using RollGrinder.Data;
 using RollGrinder.Core.Steps;
@@ -55,6 +57,12 @@ public interface IRecordService
         int limit,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// 一条记录的结果指标（设计稿那 12 项）。记录不存在时返回
+    /// <see cref="GrindingOutcome.Empty"/>——界面上一排 "--"，而不是一屏错误。
+    /// </summary>
+    Task<GrindingOutcome> LoadOutcomeAsync(string recordId, CancellationToken cancellationToken);
+
     /// <summary>给一条记录收尾。</summary>
     Task FinishAsync(string recordId, JobState state, string? note, CancellationToken cancellationToken);
 
@@ -86,6 +94,8 @@ public sealed class RecordService : IRecordService
     private readonly IMeasurementRepository measurements;
     private readonly IAlarmRepository alarms;
     private readonly IRoundnessRepository roundness;
+    private readonly ICompensationRepository compensations;
+    private readonly RollProfileTypeRegistry profileTypes;
     private readonly ISurfaceTraceService traces;
     private readonly ICalibrationService calibration;
     private readonly IReportService reports;
@@ -101,6 +111,8 @@ public sealed class RecordService : IRecordService
         IMeasurementRepository measurements,
         IAlarmRepository alarms,
         IRoundnessRepository roundness,
+        ICompensationRepository compensations,
+        RollProfileTypeRegistry profileTypes,
         ISurfaceTraceService traces,
         ICalibrationService calibration,
         IReportService reports,
@@ -115,6 +127,8 @@ public sealed class RecordService : IRecordService
         this.measurements = measurements ?? throw new ArgumentNullException(nameof(measurements));
         this.alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
         this.roundness = roundness ?? throw new ArgumentNullException(nameof(roundness));
+        this.compensations = compensations ?? throw new ArgumentNullException(nameof(compensations));
+        this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
         this.traces = traces ?? throw new ArgumentNullException(nameof(traces));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.reports = reports ?? throw new ArgumentNullException(nameof(reports));
@@ -156,6 +170,45 @@ public sealed class RecordService : IRecordService
         }
 
         return views;
+    }
+
+    public async Task<GrindingOutcome> LoadOutcomeAsync(string recordId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
+
+        GrindingRecord? record = await this.records.GetAsync(recordId, cancellationToken).ConfigureAwait(false);
+        if (record is null)
+        {
+            return GrindingOutcome.Empty;
+        }
+
+        (Core.Steps.GrindingJob Job, JobState State)? stored = await this.jobs
+            .GetAsync(record.JobId, cancellationToken).ConfigureAwait(false);
+
+        MeasurementRecord? preGrind = await this.measurements
+            .GetLatestByStageAsync(record.JobId, MeasurementStage.PreGrind, cancellationToken).ConfigureAwait(false);
+        MeasurementRecord? postGrind = await this.measurements
+            .GetLatestByStageAsync(record.JobId, MeasurementStage.PostGrind, cancellationToken).ConfigureAwait(false);
+        RoundnessMeasurement? roundnessMeasurement = await this.roundness
+            .GetLatestByJobAsync(record.JobId, cancellationToken).ConfigureAwait(false);
+
+        // 磨后测量可能还没分阶段存过（旧记录），退回到"最近一次"。
+        postGrind ??= await this.measurements
+            .GetLatestByJobAsync(record.JobId, cancellationToken).ConfigureAwait(false);
+
+        Core.Geometry.RollProfile? target = stored is null
+            ? null
+            : stored.Value.Job.Profile.Compose(
+                stored.Value.Job.Geometry, this.profileTypes, this.settings.ProfileSampleCount);
+
+        return GrindingOutcome.Create(
+            record,
+            stored?.Job.Geometry,
+            preGrind,
+            postGrind,
+            roundnessMeasurement,
+            target,
+            await this.compensations.CountByJobAsync(record.JobId, cancellationToken).ConfigureAwait(false));
     }
 
     public async Task FinishAsync(
