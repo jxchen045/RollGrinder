@@ -59,6 +59,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<ICompensationService, CompensationService>();
         services.AddSingleton<IRecordService, RecordService>();
         services.AddSingleton<IReportService, ReportService>();
+        services.AddSingleton<IReportPrintQueue, ReportPrintQueue>();
 
         services.AddHostedService<MachineMonitorHostedService>();
         services.AddHostedService<AlarmArchiveHostedService>();

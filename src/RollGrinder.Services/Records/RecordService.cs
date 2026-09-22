@@ -9,7 +9,9 @@ using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core.Compensation;
 using RollGrinder.Core.Units;
 using RollGrinder.Data;
+using RollGrinder.Core.Steps;
 using RollGrinder.Data.Model;
+using RollGrinder.Services.Alarms;
 
 namespace RollGrinder.Services.Records;
 
@@ -67,11 +69,17 @@ public interface IRecordService
 /// <inheritdoc cref="IRecordService"/>
 public sealed class RecordService : IRecordService
 {
+    /// <summary>报表出不来的资源键。记录已经收尾了，只是没打出来。</summary>
+    public const string ReportNotPrintedResourceKey = "Alarm_ReportNotPrinted";
+
     private readonly IGrindingRecordRepository records;
     private readonly IJobRepository jobs;
     private readonly IRollRepository rolls;
     private readonly IMeasurementRepository measurements;
     private readonly IAlarmRepository alarms;
+    private readonly IReportService reports;
+    private readonly IReportPrintQueue printQueue;
+    private readonly IAlarmSink alarmSink;
     private readonly HmiSettings settings;
     private readonly TimeProvider timeProvider;
 
@@ -81,6 +89,9 @@ public sealed class RecordService : IRecordService
         IRollRepository rolls,
         IMeasurementRepository measurements,
         IAlarmRepository alarms,
+        IReportService reports,
+        IReportPrintQueue printQueue,
+        IAlarmSink alarmSink,
         HmiSettings settings,
         TimeProvider timeProvider)
     {
@@ -89,6 +100,9 @@ public sealed class RecordService : IRecordService
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.measurements = measurements ?? throw new ArgumentNullException(nameof(measurements));
         this.alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
+        this.reports = reports ?? throw new ArgumentNullException(nameof(reports));
+        this.printQueue = printQueue ?? throw new ArgumentNullException(nameof(printQueue));
+        this.alarmSink = alarmSink ?? throw new ArgumentNullException(nameof(alarmSink));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
     }
@@ -127,8 +141,52 @@ public sealed class RecordService : IRecordService
         return views;
     }
 
-    public Task FinishAsync(string recordId, JobState state, string? note, CancellationToken cancellationToken) =>
-        this.records.FinishAsync(recordId, this.timeProvider.GetUtcNow(), state, note, cancellationToken);
+    public async Task FinishAsync(
+        string recordId, JobState state, string? note, CancellationToken cancellationToken)
+    {
+        await this.records
+            .FinishAsync(recordId, this.timeProvider.GetUtcNow(), state, note, cancellationToken)
+            .ConfigureAwait(false);
+
+        await QueuePostGrindReportAsync(recordId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 勾了"打印磨后数据"就出一张磨削报告交给界面去打。
+    ///
+    /// 收尾本身已经落库了，所以这一步出不来也不回滚：报表打不出来不该
+    /// 让一条磨完的记录变成没收尾的。打不成只报一条提示级报警。
+    /// </summary>
+    private async Task QueuePostGrindReportAsync(string recordId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            GrindingRecord? record = await this.records.GetAsync(recordId, cancellationToken).ConfigureAwait(false);
+            if (record is null)
+            {
+                return;
+            }
+
+            (Core.Steps.GrindingJob Job, JobState State)? job = await this.jobs
+                .GetAsync(record.JobId, cancellationToken).ConfigureAwait(false);
+            if (job?.Job.IsProgramOptionEnabled(ProgramOptionKeys.PrintPostGrindData) != true)
+            {
+                return;
+            }
+
+            GrindingReport? report = await this.reports
+                .BuildAsync(recordId, ReportKind.PostGrind, cancellationToken).ConfigureAwait(false);
+            if (report is not null)
+            {
+                this.printQueue.Enqueue(report);
+            }
+        }
+        catch (Exception ex) when (ex is DataStoreException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            this.alarmSink.Raise(
+                AlarmSeverity.Warning, ReportNotPrintedResourceKey, ex.Message, AlarmCodes.ReportNotPrinted);
+        }
+    }
 
     public async Task ExportCsvAsync(
         IReadOnlyList<GrindingRecordView> exported,

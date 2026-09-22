@@ -12,6 +12,7 @@ using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Nc;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Records;
 
 namespace RollGrinder.Services.Jobs;
 
@@ -49,6 +50,9 @@ public sealed class JobDownloadService : IJobDownloadService
     /// <summary>下发后归档失败的资源键：NC 已拿到参数，只是记录没落库。</summary>
     public const string HandoverNotArchivedResourceKey = "Alarm_HandoverNotArchived";
 
+    /// <summary>报表出不来的资源键。参数已经在 NC 手里，这支辊照磨。</summary>
+    public const string ReportNotPrintedResourceKey = "Alarm_ReportNotPrinted";
+
     private readonly IMachineGateway gateway;
     private readonly GrindingJobValidator validator;
     private readonly NcJobTranslator translator;
@@ -58,6 +62,8 @@ public sealed class JobDownloadService : IJobDownloadService
     private readonly IJobRepository jobs;
     private readonly IGrindingRecordRepository records;
     private readonly ICompensationRepository compensations;
+    private readonly IReportService reports;
+    private readonly IReportPrintQueue printQueue;
     private readonly IAlarmSink alarms;
     private readonly TimeProvider timeProvider;
 
@@ -71,6 +77,8 @@ public sealed class JobDownloadService : IJobDownloadService
         IJobRepository jobs,
         IGrindingRecordRepository records,
         ICompensationRepository compensations,
+        IReportService reports,
+        IReportPrintQueue printQueue,
         IAlarmSink alarms,
         TimeProvider timeProvider)
     {
@@ -83,6 +91,8 @@ public sealed class JobDownloadService : IJobDownloadService
         this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         this.records = records ?? throw new ArgumentNullException(nameof(records));
         this.compensations = compensations ?? throw new ArgumentNullException(nameof(compensations));
+        this.reports = reports ?? throw new ArgumentNullException(nameof(reports));
+        this.printQueue = printQueue ?? throw new ArgumentNullException(nameof(printQueue));
         this.alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
         this.timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
     }
@@ -128,7 +138,40 @@ public sealed class JobDownloadService : IJobDownloadService
         }
 
         this.alarms.Raise(AlarmSeverity.Information, HandoverCompletedResourceKey, job.JobId, AlarmCodes.HandoverCompleted);
+
+        await QueuePreGrindReportAsync(job, recordId, cancellationToken).ConfigureAwait(false);
+
         return new JobDownloadResult(true, Array.Empty<ParameterViolation>(), Array.Empty<string>(), recordId, download.Writes.Count);
+    }
+
+    /// <summary>
+    /// 勾了"打印磨前数据"就出一张磨前工艺单交给界面去打。
+    ///
+    /// 放在最后，而且出不来也不让下发失败：参数已经在 NC 手里，这支辊照磨，
+    /// 没纸没墨不是停机的理由（最高原则）。打不成只报一条提示级报警。
+    /// </summary>
+    private async Task QueuePreGrindReportAsync(
+        GrindingJob job, string recordId, CancellationToken cancellationToken)
+    {
+        if (!job.IsProgramOptionEnabled(ProgramOptionKeys.PrintPreGrindData))
+        {
+            return;
+        }
+
+        try
+        {
+            GrindingReport? report = await this.reports
+                .BuildAsync(recordId, ReportKind.PreGrind, cancellationToken).ConfigureAwait(false);
+            if (report is not null)
+            {
+                this.printQueue.Enqueue(report);
+            }
+        }
+        catch (Exception ex) when (ex is DataStoreException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            this.alarms.Raise(
+                AlarmSeverity.Warning, ReportNotPrintedResourceKey, ex.Message, AlarmCodes.ReportNotPrinted);
+        }
     }
 
     private async Task<RollProfile?> LoadCompensationAsync(string jobId, CancellationToken cancellationToken)

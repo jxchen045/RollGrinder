@@ -860,9 +860,9 @@ public sealed class GrindingJobValidatorTests
     }
 
     [Fact]
-    public void The_catalogue_holds_the_eight_switches_from_the_design_sheet()
+    public void The_catalogue_holds_the_ten_switches_the_machine_has()
     {
-        ProgramOptionCatalog.All.Should().HaveCount(8);
+        ProgramOptionCatalog.All.Should().HaveCount(10);
         ProgramOptionCatalog.All.Select(option => option.Key).Should().Equal(
             ProgramOptionKeys.PreGrindMeasure,
             ProgramOptionKeys.MountingErrorMeasure,
@@ -871,10 +871,18 @@ public sealed class GrindingJobValidatorTests
             ProgramOptionKeys.WheelAutoApproach,
             ProgramOptionKeys.InProcessMeasure,
             ProgramOptionKeys.PostGrindMeasure,
-            ProgramOptionKeys.EddyCurrentTest);
+            ProgramOptionKeys.EddyCurrentTest,
+            ProgramOptionKeys.PrintPreGrindData,
+            ProgramOptionKeys.PrintPostGrindData);
 
-        ProgramOptionCatalog.All.Should().OnlyContain(option => option.HasRequirement,
-            "八个开关都有前置条件，否则就不该做成可关的开关");
+        // 机床侧的那八个都有前置条件，否则就不该做成可关的开关。
+        ProgramOptionCatalog.All.Where(option => !option.IsHmiSide).Should()
+            .OnlyContain(option => option.HasRequirement);
+
+        // 打印这两项的前置条件是"有没有接打印机"，那不是机床能力，
+        // machine.json 也不描述它——所以它们没有前置条件，勾上打不出来时如实报警。
+        ProgramOptionCatalog.All.Where(option => option.IsHmiSide).Select(option => option.Key).Should()
+            .Equal(ProgramOptionKeys.PrintPreGrindData, ProgramOptionKeys.PrintPostGrindData);
     }
 
     [Fact]
@@ -887,7 +895,7 @@ public sealed class GrindingJobValidatorTests
         GrindingJob withDefaults = GrindingJob.Create(
             job.JobId, job.RollId, job.Geometry, job.Profile, job.Steps);
 
-        withDefaults.ProgramOptions.Count.Should().Be(8);
+        withDefaults.ProgramOptions.Count.Should().Be(10);
         foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
         {
             withDefaults.IsProgramOptionEnabled(option.Key).Should().Be(option.DefaultEnabled);

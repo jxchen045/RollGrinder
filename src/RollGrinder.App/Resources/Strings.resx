@@ -2014,4 +2014,16 @@
   <data name="StepSlot_Independent" xml:space="preserve">
     <value>不占槽</value>
   </data>
+  <data name="Parameter_printPreGrindData" xml:space="preserve">
+    <value>打印磨前数据</value>
+  </data>
+  <data name="Parameter_printPostGrindData" xml:space="preserve">
+    <value>打印磨后数据</value>
+  </data>
+  <data name="Alarm_ReportNotPrinted" xml:space="preserve">
+    <value>报表没能出表，磨削不受影响</value>
+  </data>
+  <data name="Alarm_ReportPrintFailed" xml:space="preserve">
+    <value>报表打印失败，磨削不受影响</value>
+  </data>
 </root>

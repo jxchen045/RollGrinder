@@ -386,6 +386,13 @@ public sealed class LocalizationTests
 
         foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All)
         {
+            if (option.IsHmiSide)
+            {
+                // 打印这两项由上位机做（打印机挂在工控机上），NC 不必知道。
+                // 机床真要这一位的话在自己的 tagmap 里加就是，下发时会带上。
+                continue;
+            }
+
             keys.Should().Contain(MachineTagKeys.JobOption(option.Key), $"开关 {option.Key} 需要一个下发变量");
         }
     }

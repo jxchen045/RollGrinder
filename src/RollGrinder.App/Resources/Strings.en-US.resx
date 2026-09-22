@@ -2014,4 +2014,16 @@
   <data name="StepSlot_Independent" xml:space="preserve">
     <value>Outside the slots</value>
   </data>
+  <data name="Parameter_printPreGrindData" xml:space="preserve">
+    <value>Print pre-grind data</value>
+  </data>
+  <data name="Parameter_printPostGrindData" xml:space="preserve">
+    <value>Print post-grind data</value>
+  </data>
+  <data name="Alarm_ReportNotPrinted" xml:space="preserve">
+    <value>The report could not be produced; grinding is unaffected</value>
+  </data>
+  <data name="Alarm_ReportPrintFailed" xml:space="preserve">
+    <value>The report could not be printed; grinding is unaffected</value>
+  </data>
 </root>

@@ -16,12 +16,17 @@ namespace RollGrinder.Core.Steps;
 /// <param name="RequiredMachineOption">需要的选装装置（machine.json 的 options），null 表示不需要。</param>
 /// <param name="RequiredAxisRole">需要的轴角色（machine.json 的 axes[].role），null 表示不需要。</param>
 /// <param name="RequiresDiameterMeasurement">是否需要直径测量通道。</param>
+/// <param name="IsHmiSide">
+/// 这件事由上位机做，不是 NC 走的子程序（打印就是：打印机挂在工控机上）。
+/// 开关照样跟着作业走、照样下发（机床映射了就能看见），但真正做事的是上位机。
+/// </param>
 public sealed record ProgramOptionDescriptor(
     string Key,
     bool DefaultEnabled,
     string? RequiredMachineOption = null,
     string? RequiredAxisRole = null,
-    bool RequiresDiameterMeasurement = false)
+    bool RequiresDiameterMeasurement = false,
+    bool IsHmiSide = false)
 {
     /// <summary>界面文案的资源键，与参数共用 "Parameter_" 前缀。</summary>
     public string ResourceKey => "Parameter_" + Key;
@@ -57,6 +62,12 @@ public static class ProgramOptionKeys
 
     /// <summary>涡流探伤。</summary>
     public const string EddyCurrentTest = "eddyCurrentTest";
+
+    /// <summary>下发之后打一张磨前工艺单。</summary>
+    public const string PrintPreGrindData = "printPreGrindData";
+
+    /// <summary>收尾之后打一张磨削报告。</summary>
+    public const string PrintPostGrindData = "printPostGrindData";
 }
 
 /// <summary>
@@ -65,7 +76,7 @@ public static class ProgramOptionKeys
 /// </summary>
 public static class ProgramOptionCatalog
 {
-    /// <summary>八个开关。</summary>
+    /// <summary>十个开关，与实机的程序步骤一一对应。</summary>
     public static IReadOnlyList<ProgramOptionDescriptor> All { get; } = new[]
     {
         new ProgramOptionDescriptor(
@@ -101,9 +112,17 @@ public static class ProgramOptionCatalog
             ProgramOptionKeys.EddyCurrentTest,
             DefaultEnabled: false,
             RequiredMachineOption: MachineOptionKeys.EddyCurrentTester),
+
+        // 打印默认关着：要有纸有墨、要有人去拿。现场要打，勾上就是。
+        // 这两件事由上位机做（打印机挂在工控机上），不是 NC 走的子程序。
+        new ProgramOptionDescriptor(
+            ProgramOptionKeys.PrintPreGrindData, DefaultEnabled: false, IsHmiSide: true),
+
+        new ProgramOptionDescriptor(
+            ProgramOptionKeys.PrintPostGrindData, DefaultEnabled: false, IsHmiSide: true),
     };
 
-    /// <summary>八个开关的参数定义。持久化、校验与默认值都走它，和工艺参数同一套机制。</summary>
+    /// <summary>十个开关的参数定义。持久化、校验与默认值都走它，和工艺参数同一套机制。</summary>
     public static ParameterSchema Schema { get; } = new(
         All.Select(option => ParameterDescriptor.Boolean(option.Key, option.DefaultEnabled)));
 

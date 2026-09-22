@@ -58,6 +58,9 @@ public static class AlarmCodes
     /// <summary>磨削当中把某一道工序提前结束了。</summary>
     public const int StepEndedEarly = 800024;
 
+    /// <summary>报表没出来（打印是顺带做的，不影响磨削）。</summary>
+    public const int ReportNotPrinted = 800025;
+
     /// <summary>tagmap 缺少必需变量。</summary>
     public const int TagMissing = 800030;
 
