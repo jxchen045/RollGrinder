@@ -15,7 +15,6 @@
     <ProjectReference Include="..\..\src\RollGrinder.Data\RollGrinder.Data.csproj" />
     <ProjectReference Include="..\..\src\RollGrinder.Device\RollGrinder.Device.csproj" />
     <ProjectReference Include="..\..\src\RollGrinder.Contracts\RollGrinder.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\RollGrinder.Device\RollGrinder.Device.csproj" />
   </ItemGroup>
 
   <ItemGroup>

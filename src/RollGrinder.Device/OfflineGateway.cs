@@ -17,7 +17,7 @@ namespace RollGrinder.Device;
 /// 这样"离线时不该发生的写入"会在开发期就炸出来，而不是悄悄写进一个假机床里，
 /// 等接上真机床才发现某个页面一直在偷偷下发。
 /// </summary>
-public sealed class OfflineGateway : IMachineGateway
+internal sealed class OfflineGateway : IMachineGateway
 {
     /// <summary>拒绝写入时的说明，界面按它取文案。</summary>
     public const string RefusalResourceKey = "Alarm_OfflineNoMachine";
