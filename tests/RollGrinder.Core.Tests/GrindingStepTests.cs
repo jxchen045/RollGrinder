@@ -236,6 +236,69 @@ public sealed class GrindingStepTests
         plan.RequiresMeasurement.Should().BeTrue();
     }
 
+    /// <summary>
+    /// Core 里的全部工序类型。反射枚举而不是手写名单——手写的名单会忘记更新。
+    /// </summary>
+    private static IGrindingStepType[] AllStepTypes() =>
+        typeof(IGrindingStepType).Assembly.GetTypes()
+            .Where(type => type is { IsAbstract: false, IsPublic: true }
+                && typeof(IGrindingStepType).IsAssignableFrom(type))
+            .Select(type => (IGrindingStepType)Activator.CreateInstance(type)!)
+            .OrderBy(stepType => stepType.Key, StringComparer.Ordinal)
+            .ToArray();
+
+    [Fact]
+    public void Every_step_type_lands_in_a_known_slot()
+    {
+        // 槽只作界面分组，但一个拼错的槽键会让那道工序从下拉里"消失"到一个孤零零的组里。
+        foreach (IGrindingStepType stepType in AllStepTypes())
+        {
+            StepSlotKeys.IsKnown(stepType.SlotKey).Should()
+                .BeTrue($"{stepType.Key} 的槽 {stepType.SlotKey} 不是内置的那六个之一");
+        }
+    }
+
+    [Fact]
+    public void The_five_machine_slots_are_all_filled()
+    {
+        // 实机屏幕上是固定 5 个槽。哪个槽一个工序都没有，操作工打开就是一个空组，
+        // 会以为这台机床做不了那一档工艺。
+        string[] filled = AllStepTypes().Select(stepType => stepType.SlotKey).Distinct().ToArray();
+
+        filled.Should().Contain(new[]
+        {
+            StepSlotKeys.Rough, StepSlotKeys.SemiFinish, StepSlotKeys.Finish,
+            StepSlotKeys.SuperFinish, StepSlotKeys.ChamferOrDress,
+        });
+    }
+
+    [Fact]
+    public void Marker_and_measurement_steps_do_not_take_up_a_slot()
+    {
+        // 实机上探伤就是独立于 5 个槽的一道工序；测量、标记与暂停本来也不是"磨"。
+        IGrindingStepType[] outside =
+        {
+            new StartStepType(), new EndStepType(), new MeasureStepType(),
+            new RoundnessStepType(), new PauseStepType(), new EddyCurrentStepType(),
+        };
+
+        outside.Should().OnlyContain(stepType => stepType.SlotKey == StepSlotKeys.Independent);
+    }
+
+    [Fact]
+    public void The_slots_come_out_in_the_order_the_machine_screen_shows_them()
+    {
+        // 按字母序排的话粗磨会跟在精磨后面，和操作工脑子里的顺序对不上。
+        StepSlotKeys.OrderOf(StepSlotKeys.Rough).Should().BeLessThan(StepSlotKeys.OrderOf(StepSlotKeys.SemiFinish));
+        StepSlotKeys.OrderOf(StepSlotKeys.SemiFinish).Should().BeLessThan(StepSlotKeys.OrderOf(StepSlotKeys.Finish));
+        StepSlotKeys.OrderOf(StepSlotKeys.Finish).Should().BeLessThan(StepSlotKeys.OrderOf(StepSlotKeys.SuperFinish));
+        StepSlotKeys.OrderOf(StepSlotKeys.SuperFinish).Should()
+            .BeLessThan(StepSlotKeys.OrderOf(StepSlotKeys.ChamferOrDress));
+
+        // 不占槽的那一组排在最后：它不是一档工艺。
+        StepSlotKeys.Ordered.Should().EndWith(StepSlotKeys.Independent);
+    }
+
     [Fact]
     public void The_chamfer_is_two_segments_and_a_shape_like_the_machine_says()
     {

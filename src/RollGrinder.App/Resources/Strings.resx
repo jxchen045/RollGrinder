@@ -1996,4 +1996,22 @@
   <data name="Choice_chamferKind_arc" xml:space="preserve">
     <value>圆弧</value>
   </data>
+  <data name="StepSlot_Rough" xml:space="preserve">
+    <value>粗磨</value>
+  </data>
+  <data name="StepSlot_SemiFinish" xml:space="preserve">
+    <value>半精磨</value>
+  </data>
+  <data name="StepSlot_Finish" xml:space="preserve">
+    <value>精磨</value>
+  </data>
+  <data name="StepSlot_SuperFinish" xml:space="preserve">
+    <value>超精磨</value>
+  </data>
+  <data name="StepSlot_ChamferOrDress" xml:space="preserve">
+    <value>倒角或修整砂轮</value>
+  </data>
+  <data name="StepSlot_Independent" xml:space="preserve">
+    <value>不占槽</value>
+  </data>
 </root>

@@ -75,6 +75,15 @@ public sealed record TraverseStepDefaults
 /// </summary>
 public abstract class TraverseGrindingStepType : IGrindingStepType
 {
+    /// <summary>
+    /// 界面上归到哪个工序槽，子类各自 override。
+    ///
+    /// 这里必须由**基类**声明：接口上的 <c>SlotKey</c> 是默认实现，
+    /// 而接口是在基类上实现的——子类再写一个同名属性只是把它藏起来，
+    /// 按接口调用时拿到的仍然是默认值。
+    /// </summary>
+    public virtual string SlotKey => StepSlotKeys.Independent;
+
     private readonly TraverseStepDefaults defaults;
 
     protected TraverseGrindingStepType(string key, TraverseStepDefaults defaults)

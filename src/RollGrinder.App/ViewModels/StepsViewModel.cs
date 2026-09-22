@@ -116,12 +116,24 @@ public sealed class StepTypeOptionViewModel
         Key = stepType.Key;
         IsAvailable = isAvailable;
         RequiredOptionKey = stepType.RequiredOptionKey;
+        SlotKey = stepType.SlotKey;
+        SlotOrder = StepSlotKeys.OrderOf(stepType.SlotKey);
+        SlotName = localizer[StepSlotKeys.ResourceKeyOf(stepType.SlotKey)];
 
         string name = localizer["StepType_" + stepType.Key];
         DisplayName = isAvailable ? name : name + localizer["Steps_StepTypeNotAvailable"];
     }
 
     public string Key { get; }
+
+    /// <summary>界面上归到哪个工序槽。</summary>
+    public string SlotKey { get; }
+
+    /// <summary>槽的呈现顺序，就是实机屏幕上的顺序。</summary>
+    public int SlotOrder { get; }
+
+    /// <summary>槽名，下拉里的分组头写它。</summary>
+    public string SlotName { get; }
 
     public string DisplayName { get; }
 
@@ -286,8 +298,12 @@ public sealed partial class StepsViewModel : PageViewModelBase
         ArgumentNullException.ThrowIfNull(machine);
 
         ProfileTypeKeys = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
+        // 按槽排序，让下拉里的分组按实机屏幕上的顺序出现——
+        // 不排的话粗磨会跟在精磨后面，和操作工脑子里的顺序对不上。
         StepTypeOptions = new ObservableCollection<StepTypeOptionViewModel>(
-            stepTypes.All.Select(type => new StepTypeOptionViewModel(type, capability.Supports(type), localizer)));
+            stepTypes.All
+                .Select(type => new StepTypeOptionViewModel(type, capability.Supports(type), localizer))
+                .OrderBy(option => option.SlotOrder));
 
         this.bodyLengthMmText = machine.Workpiece.MinBodyLengthMm.ToString("F1", CultureInfo.InvariantCulture);
         this.nominalDiameterMmText = machine.Workpiece.MinDiameterMm.ToString("F1", CultureInfo.InvariantCulture);

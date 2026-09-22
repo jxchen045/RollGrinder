@@ -21,6 +21,14 @@ public interface IGrindingStepType
     /// </summary>
     string? RequiredOptionKey => null;
 
+    /// <summary>
+    /// 界面上归到哪个工序槽（<see cref="StepSlotKeys"/>）。
+    ///
+    /// 只影响选工序时的分组呈现，不参与计算也不下发。默认是"不占槽"：
+    /// 一道工序要占掉实机的某个槽，得有人想清楚它属于哪一档工艺。
+    /// </summary>
+    string SlotKey => StepSlotKeys.Independent;
+
     /// <summary>把参数展开成执行计划（半径量 mm）。</summary>
     GrindingStepPlan CreatePlan(RollGeometry geometry, ParameterSet parameters);
 }

@@ -1996,4 +1996,22 @@
   <data name="Choice_chamferKind_arc" xml:space="preserve">
     <value>Arc</value>
   </data>
+  <data name="StepSlot_Rough" xml:space="preserve">
+    <value>Rough</value>
+  </data>
+  <data name="StepSlot_SemiFinish" xml:space="preserve">
+    <value>Semi-finish</value>
+  </data>
+  <data name="StepSlot_Finish" xml:space="preserve">
+    <value>Finish</value>
+  </data>
+  <data name="StepSlot_SuperFinish" xml:space="preserve">
+    <value>Super-finish</value>
+  </data>
+  <data name="StepSlot_ChamferOrDress" xml:space="preserve">
+    <value>Chamfer or wheel dress</value>
+  </data>
+  <data name="StepSlot_Independent" xml:space="preserve">
+    <value>Outside the slots</value>
+  </data>
 </root>

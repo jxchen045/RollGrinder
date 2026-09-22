@@ -11,6 +11,9 @@ namespace RollGrinder.Core.Steps;
 /// </summary>
 public abstract class MarkerStepType : IGrindingStepType
 {
+    /// <summary>标记不是一档工艺，不占槽。与纵磨基类同理，必须由基类声明。</summary>
+    public virtual string SlotKey => StepSlotKeys.Independent;
+
     protected MarkerStepType(string key)
     {
         Key = key ?? throw new ArgumentNullException(nameof(key));
@@ -61,6 +64,9 @@ public sealed class EndStepType : MarkerStepType
 /// </summary>
 public sealed class WheelDressStepType : IGrindingStepType
 {
+    /// <summary>实机上倒角与修整砂轮共用第 5 槽。</summary>
+    public string SlotKey => StepSlotKeys.ChamferOrDress;
+
     public string Key => StepTypeKeys.WheelDress;
 
     /// <summary>没有修整装置就没法修砂轮。</summary>
@@ -144,6 +150,9 @@ public sealed class MeasureStepType : IGrindingStepType
 /// </summary>
 public sealed class ChamferStepType : IGrindingStepType
 {
+    /// <summary>实机上倒角与修整砂轮共用第 5 槽。</summary>
+    public string SlotKey => StepSlotKeys.ChamferOrDress;
+
     public string Key => StepTypeKeys.Chamfer;
 
     public ParameterSchema Schema { get; } = new(new[]
@@ -249,6 +258,9 @@ public sealed class EddyCurrentStepType : IGrindingStepType
 /// <summary>无火花光磨：只走行程不进给，消除弹性变形。</summary>
 public sealed class SparkOutStepType : IGrindingStepType
 {
+    /// <summary>光磨是精磨的收尾，不是另一档工艺。</summary>
+    public string SlotKey => StepSlotKeys.Finish;
+
     public string Key => StepTypeKeys.SparkOut;
 
     public ParameterSchema Schema { get; } = new(new[]

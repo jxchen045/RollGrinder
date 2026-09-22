@@ -16,9 +16,26 @@
                 </Border>
 
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
-                    <ComboBox ItemsSource="{Binding StepTypeOptions}" SelectedItem="{Binding SelectedStepType}"
+                    <!--
+                        按实机的 5 个工序槽分组呈现（外加不占槽的探伤/测量/标记/暂停）。
+                        内部仍然是任意排序的若干种工序类型，槽只是分组——
+                        操作工在实机上按这 5 个槽想事情，选工序时照这个分组看。
+                    -->
+                    <ComboBox x:Name="StepTypePicker" SelectedItem="{Binding SelectedStepType}"
                               DisplayMemberPath="DisplayName" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                              Width="190" Height="46" FontSize="17" Margin="0,0,8,0" />
+                              Width="190" Height="46" FontSize="17" Margin="0,0,8,0">
+                        <ComboBox.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold"
+                                                   Padding="6,6,6,2"
+                                                   Foreground="{StaticResource Brush.TextSecondary}" />
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ComboBox.GroupStyle>
+                    </ComboBox>
                     <Button Content="{loc:Loc Steps_AddStep}" Command="{Binding AddStepCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource SecondaryButton}" Height="46" Width="80" Margin="0,0,8,0" />
                     <Button Content="{loc:Loc Steps_NewJob}" Command="{Binding NewJobCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"

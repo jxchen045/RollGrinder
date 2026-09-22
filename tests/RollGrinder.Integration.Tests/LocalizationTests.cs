@@ -118,6 +118,16 @@ public sealed class LocalizationTests
     }
 
     [Fact]
+    public void Every_step_slot_has_a_label()
+    {
+        // 槽名是选工序下拉里的分组头。缺一条，下拉里就是一个 "!StepSlot_xxx!" 的组。
+        foreach (string slotKey in StepSlotKeys.Ordered)
+        {
+            NeutralKeys.Should().Contain(StepSlotKeys.ResourceKeyOf(slotKey));
+        }
+    }
+
+    [Fact]
     public void Every_choice_option_has_a_label()
     {
         // 选项参数渲染成分段按钮，按钮上的字就是这些键——缺一个，现场按钮上就是 "!Choice_xxx!"。

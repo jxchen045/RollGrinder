@@ -7,6 +7,9 @@ namespace RollGrinder.Core.Steps;
 /// </summary>
 public sealed class ShortStrokeStepType : TraverseGrindingStepType
 {
+    /// <summary>短行程是粗磨之前把辊面走顺的那一下，实机上就在粗磨槽里。</summary>
+    public override string SlotKey => StepSlotKeys.Rough;
+
     public ShortStrokeStepType()
         : base(StepTypeKeys.ShortStroke, new TraverseStepDefaults
         {
@@ -38,6 +41,8 @@ public sealed class ShortStrokeStepType : TraverseGrindingStepType
 /// </summary>
 public sealed class RoughGrindingStepType : TraverseGrindingStepType
 {
+    public override string SlotKey => StepSlotKeys.Rough;
+
     public RoughGrindingStepType()
         : base(StepTypeKeys.Rough, new TraverseStepDefaults
         {
@@ -68,6 +73,8 @@ public sealed class RoughGrindingStepType : TraverseGrindingStepType
 /// </summary>
 public sealed class SemiFinishGrindingStepType : TraverseGrindingStepType
 {
+    public override string SlotKey => StepSlotKeys.SemiFinish;
+
     public SemiFinishGrindingStepType()
         : base(StepTypeKeys.SemiFinish, new TraverseStepDefaults
         {
@@ -99,6 +106,8 @@ public sealed class SemiFinishGrindingStepType : TraverseGrindingStepType
 /// </summary>
 public sealed class FinishGrindingStepType : TraverseGrindingStepType
 {
+    public override string SlotKey => StepSlotKeys.Finish;
+
     public FinishGrindingStepType()
         : base(StepTypeKeys.Finish, new TraverseStepDefaults
         {
@@ -129,6 +138,8 @@ public sealed class FinishGrindingStepType : TraverseGrindingStepType
 /// </summary>
 public sealed class PolishStepType : TraverseGrindingStepType
 {
+    public override string SlotKey => StepSlotKeys.SuperFinish;
+
     public PolishStepType()
         : base(StepTypeKeys.Polish, new TraverseStepDefaults
         {
