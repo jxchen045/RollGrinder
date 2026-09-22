@@ -32,7 +32,7 @@ public enum ParameterUnit
     /// <summary>微米每分钟（连续进给，直径量）。</summary>
     MicrometerPerMinute = 8,
 
-    /// <summary>秒（折返停顿、变速周期）。</summary>
+    /// <summary>秒（折返停顿）。</summary>
     Second = 9,
 
     /// <summary>百分比（变速幅度）。</summary>
@@ -40,4 +40,7 @@ public enum ParameterUnit
 
     /// <summary>安培（磨削电流、短行程电流）。</summary>
     Ampere = 11,
+
+    /// <summary>转（变速周期）。实机的变速周期按头架转数计，不按秒。</summary>
+    Revolution = 12,
 }

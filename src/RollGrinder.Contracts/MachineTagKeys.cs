@@ -103,14 +103,14 @@ public static class MachineTagKeys
     /// <summary>工序在线测量开关数组。</summary>
     public const string JobStepInProcessMeasurement = "job.step.inProcessMeasurement";
 
-    /// <summary>工序变速作用对象数组（0 关 / 1 轧辊 / 2 砂轮 / 3 两者）。</summary>
+    /// <summary>工序变速作用对象数组（0 关 / 1 轧辊）。实机只有头架变速。</summary>
     public const string JobStepSpeedVariationTarget = "job.step.speedVariationTarget";
 
     /// <summary>工序变速幅度数组（±%）。</summary>
     public const string JobStepSpeedVariationPercent = "job.step.speedVariationPercent";
 
-    /// <summary>工序变速周期数组（s）。</summary>
-    public const string JobStepSpeedVariationPeriodSeconds = "job.step.speedVariationPeriodSeconds";
+    /// <summary>工序变速周期数组（头架转数）。实机这一项的单位是"次"，不是秒。</summary>
+    public const string JobStepSpeedVariationPeriodRevolutions = "job.step.speedVariationPeriodRevolutions";
 
     /// <summary>辊形曲线的点数。</summary>
     public const string JobProfilePointCount = "job.profile.pointCount";

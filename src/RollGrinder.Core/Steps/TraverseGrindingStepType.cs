@@ -59,7 +59,7 @@ public sealed record TraverseStepDefaults
     public double MaxSpeedVariationPercent { get; init; } = 20.0;
 
     /// <summary>变速周期（s）。</summary>
-    public double SpeedVariationPeriodSeconds { get; init; } = 5.0;
+    public double SpeedVariationPeriodRevolutions { get; init; } = 5.0;
 
     /// <summary>本工序结束后是否需要测量。</summary>
     public bool RequiresMeasurement { get; init; }
@@ -140,8 +140,6 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
         {
             SpeedVariationChoices.Off => SpeedVariationTarget.Off,
             SpeedVariationChoices.Workpiece => SpeedVariationTarget.Workpiece,
-            SpeedVariationChoices.Wheel => SpeedVariationTarget.Wheel,
-            SpeedVariationChoices.Both => SpeedVariationTarget.Both,
             var other => throw new DomainException($"Unknown speed variation target '{other}'."),
         };
 
@@ -150,7 +148,7 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
             : new SpeedVariation(
                 target,
                 values.GetNumber(StepParameterKeys.SpeedVariationPercent),
-                values.GetNumber(StepParameterKeys.SpeedVariationPeriodSeconds));
+                values.GetNumber(StepParameterKeys.SpeedVariationPeriodRevolutions));
     }
 
     /// <summary>
@@ -180,7 +178,7 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
         StepParameterKeys.SparkOutPassCount,
         StepParameterKeys.SpeedVariationTarget,
         StepParameterKeys.SpeedVariationPercent,
-        StepParameterKeys.SpeedVariationPeriodSeconds,
+        StepParameterKeys.SpeedVariationPeriodRevolutions,
     };
 
     private static ParameterSchema BuildSchema(TraverseStepDefaults defaults)
@@ -246,13 +244,7 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
                 defaults.InProcessMeasurement),
             ParameterDescriptor.Choice(
                 StepParameterKeys.SpeedVariationTarget,
-                new[]
-                {
-                    SpeedVariationChoices.Off,
-                    SpeedVariationChoices.Workpiece,
-                    SpeedVariationChoices.Wheel,
-                    SpeedVariationChoices.Both,
-                },
+                new[] { SpeedVariationChoices.Off, SpeedVariationChoices.Workpiece },
                 defaults.SpeedVariationTarget),
             ParameterDescriptor.Number(
                 StepParameterKeys.SpeedVariationPercent,
@@ -261,9 +253,9 @@ public abstract class TraverseGrindingStepType : IGrindingStepType
                 0.0,
                 defaults.MaxSpeedVariationPercent),
             ParameterDescriptor.Number(
-                StepParameterKeys.SpeedVariationPeriodSeconds,
-                ParameterUnit.Second,
-                defaults.SpeedVariationPeriodSeconds,
+                StepParameterKeys.SpeedVariationPeriodRevolutions,
+                ParameterUnit.Revolution,
+                defaults.SpeedVariationPeriodRevolutions,
                 1.0,
                 30.0),
         };

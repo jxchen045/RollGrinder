@@ -27,7 +27,7 @@ public sealed class ShortStrokeStepType : TraverseGrindingStepType
             InProcessMeasurement = false,
             SpeedVariationTarget = SpeedVariationChoices.Workpiece,
             SpeedVariationPercent = 8.0,
-            SpeedVariationPeriodSeconds = 5.0,
+            SpeedVariationPeriodRevolutions = 5.0,
             RequiresMeasurement = false,
         })
     {
@@ -60,7 +60,7 @@ public sealed class RoughGrindingStepType : TraverseGrindingStepType
             InProcessMeasurement = false,
             SpeedVariationTarget = SpeedVariationChoices.Workpiece,
             SpeedVariationPercent = 8.0,
-            SpeedVariationPeriodSeconds = 5.0,
+            SpeedVariationPeriodRevolutions = 5.0,
             RequiresMeasurement = false,
         })
     {
@@ -92,7 +92,7 @@ public sealed class SemiFinishGrindingStepType : TraverseGrindingStepType
             InProcessMeasurement = true,
             SpeedVariationTarget = SpeedVariationChoices.Workpiece,
             SpeedVariationPercent = 8.0,
-            SpeedVariationPeriodSeconds = 5.0,
+            SpeedVariationPeriodRevolutions = 5.0,
             RequiresMeasurement = false,
         })
     {
@@ -126,7 +126,7 @@ public sealed class FinishGrindingStepType : TraverseGrindingStepType
             SpeedVariationTarget = SpeedVariationChoices.Workpiece,
             SpeedVariationPercent = 5.0,
             MaxSpeedVariationPercent = 10.0,
-            SpeedVariationPeriodSeconds = 8.0,
+            SpeedVariationPeriodRevolutions = 8.0,
             RequiresMeasurement = true,
         })
     {
@@ -158,7 +158,7 @@ public sealed class PolishStepType : TraverseGrindingStepType
             SpeedVariationTarget = SpeedVariationChoices.Workpiece,
             SpeedVariationPercent = 5.0,
             MaxSpeedVariationPercent = 10.0,
-            SpeedVariationPeriodSeconds = 8.0,
+            SpeedVariationPeriodRevolutions = 8.0,
             RequiresMeasurement = false,
         })
     {

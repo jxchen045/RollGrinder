@@ -50,8 +50,10 @@ public static class StepParameterKeys
     /// <summary>变速幅度（±%）。</summary>
     public const string SpeedVariationPercent = "speedVariationPercent";
 
-    /// <summary>变速周期（s）。</summary>
-    public const string SpeedVariationPeriodSeconds = "speedVariationPeriodSeconds";
+    /// <summary>
+    /// 变速周期（头架转数）。**不是秒**——实机上这一项的单位就是"次"。
+    /// </summary>
+    public const string SpeedVariationPeriodRevolutions = "speedVariationPeriodRevolutions";
 
     /// <summary>沿辊身的测点数（测量工序）。</summary>
     public const string MeasurePointCount = "measurePointCount";
@@ -132,7 +134,7 @@ public static class PauseReasonChoices
 public static class SpeedVariationChoices
 {
     public const string Off = "off";
+
+    /// <summary>头架（工件）转速。实机只有这一种作用对象。</summary>
     public const string Workpiece = "workpiece";
-    public const string Wheel = "wheel";
-    public const string Both = "both";
 }

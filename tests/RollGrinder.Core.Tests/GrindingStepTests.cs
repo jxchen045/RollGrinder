@@ -150,9 +150,9 @@ public sealed class GrindingStepTests
 
         plan.SpeedVariation.Target.Should().Be(SpeedVariationTarget.Workpiece);
         plan.SpeedVariation.AffectsWorkpiece.Should().BeTrue();
-        plan.SpeedVariation.AffectsWheel.Should().BeFalse();
+        plan.SpeedVariation.Target.Should().Be(SpeedVariationTarget.Workpiece, "实机只有头架变速");
         plan.SpeedVariation.AmplitudePercent.Should().Be(8.0);
-        plan.SpeedVariation.PeriodSeconds.Should().BeGreaterThan(0.0, "只给幅度不给周期，变速下发不了");
+        plan.SpeedVariation.PeriodRevolutions.Should().BeGreaterThan(0.0, "只给幅度不给周期，变速下发不了");
         plan.SpeedVariation.PeakOf(100.0).Should().BeApproximately(108.0, 1e-9);
         plan.SpeedVariation.TroughOf(100.0).Should().BeApproximately(92.0, 1e-9);
     }
@@ -652,15 +652,10 @@ public sealed class GrindingJobValidatorTests
             MaxWheelSurfaceSpeedMPerSec = 33.0,
         };
 
-        // 线速度 32 本身在窗口内，但砂轮变速 ±8% 的峰值是 34.56——超了。
         ParameterSet overrides = new ParameterSet(new[]
         {
             new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
-                StepParameterKeys.WheelSurfaceSpeedMPerSec, ParameterValue.FromNumber(32.0)),
-            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
-                StepParameterKeys.SpeedVariationTarget, ParameterValue.FromChoice(SpeedVariationChoices.Wheel)),
-            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
-                StepParameterKeys.SpeedVariationPercent, ParameterValue.FromNumber(8.0)),
+                StepParameterKeys.WheelSurfaceSpeedMPerSec, ParameterValue.FromNumber(35.0)),
         });
 
         ParameterValidationResult result = CreateValidator().Validate(CreateJob(overrides), bounded);
@@ -668,6 +663,53 @@ public sealed class GrindingJobValidatorTests
         result.Violations.Should().Contain(violation =>
             violation.ParameterKey == StepParameterKeys.WheelSurfaceSpeedMPerSec
             && violation.Kind == ParameterViolationKind.ExceedsMachineLimit);
+    }
+
+    [Fact]
+    public void Speed_variation_does_not_move_the_wheel_surface_speed()
+    {
+        // 变速只作用在头架转速上（实机就这一种），砂轮线速度是个定值。
+        // 先前按"砂轮也会变速"给线速度上下放了一圈，把窗口内的值判成超限。
+        MachineCapability bounded = Capability with
+        {
+            MinWheelSurfaceSpeedMPerSec = 18.0,
+            MaxWheelSurfaceSpeedMPerSec = 33.0,
+        };
+
+        ParameterSet overrides = new ParameterSet(new[]
+        {
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                StepParameterKeys.WheelSurfaceSpeedMPerSec, ParameterValue.FromNumber(32.0)),
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                StepParameterKeys.SpeedVariationTarget, ParameterValue.FromChoice(SpeedVariationChoices.Workpiece)),
+            new System.Collections.Generic.KeyValuePair<string, ParameterValue>(
+                StepParameterKeys.SpeedVariationPercent, ParameterValue.FromNumber(8.0)),
+        });
+
+        ParameterValidationResult result = CreateValidator().Validate(CreateJob(overrides), bounded);
+
+        result.Violations.Should().NotContain(violation =>
+            violation.ParameterKey == StepParameterKeys.WheelSurfaceSpeedMPerSec);
+    }
+
+    [Fact]
+    public void The_only_speed_variation_target_is_the_headstock()
+    {
+        // 机床做不到的事不该出现在下拉里，否则操作工会以为是软件没接通。
+        ParameterDescriptor target = new RoughGrindingStepType().Schema
+            .Get(StepParameterKeys.SpeedVariationTarget);
+
+        target.AllowedValues.Should().Equal(new[] { SpeedVariationChoices.Off, SpeedVariationChoices.Workpiece });
+    }
+
+    [Fact]
+    public void The_speed_variation_period_is_counted_in_revolutions()
+    {
+        // 实机上这一项的单位是"次"。按秒算的话，头架转速一改，
+        // 打散波纹的效果就跟着变了，而变速本来就是跟着转速走的。
+        new RoughGrindingStepType().Schema
+            .Get(StepParameterKeys.SpeedVariationPeriodRevolutions)
+            .Unit.Should().Be(ParameterUnit.Revolution);
     }
 
     [Fact]

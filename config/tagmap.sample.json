@@ -334,13 +334,13 @@
       "indexOffset": 900
     },
     {
-      "key": "job.step.speedVariationPeriodSeconds",
+      "key": "job.step.speedVariationPeriodRevolutions",
       "address": "ns=2;s=/Channel/Parameter/R[{index}]",
       "dataType": "Double",
       "access": "ReadWrite",
-      "unit": "s",
+      "unit": "r",
       "arrayLength": 16,
-      "description": "变速周期",
+      "description": "变速周期（头架转数）。实机这一项的单位是\"次\"，不是秒",
       "indexOffset": 920
     },
     {

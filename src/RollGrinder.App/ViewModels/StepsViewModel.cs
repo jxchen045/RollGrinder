@@ -70,7 +70,7 @@ public sealed partial class StepRowViewModel : ObservableObject
         string? variation = ValueOf(StepParameterKeys.SpeedVariationTarget);
         bool isVarying = variation is null || variation != SpeedVariationChoices.Off;
         SetApplicable(StepParameterKeys.SpeedVariationPercent, isVarying);
-        SetApplicable(StepParameterKeys.SpeedVariationPeriodSeconds, isVarying);
+        SetApplicable(StepParameterKeys.SpeedVariationPeriodRevolutions, isVarying);
     }
 
     private string? ValueOf(string key) =>

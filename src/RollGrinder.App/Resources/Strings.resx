@@ -1573,14 +1573,8 @@
   <data name="SubView_TagMonitor" xml:space="preserve">
     <value>变量监视</value>
   </data>
-  <data name="Choice_speedVariationTarget_both" xml:space="preserve">
-    <value>两者</value>
-  </data>
   <data name="Choice_speedVariationTarget_off" xml:space="preserve">
     <value>关闭</value>
-  </data>
-  <data name="Choice_speedVariationTarget_wheel" xml:space="preserve">
-    <value>砂轮</value>
   </data>
   <data name="Choice_speedVariationTarget_workpiece" xml:space="preserve">
     <value>轧辊</value>
@@ -1609,7 +1603,7 @@
   <data name="Parameter_speedVariationPercent" xml:space="preserve">
     <value>变速幅度</value>
   </data>
-  <data name="Parameter_speedVariationPeriodSeconds" xml:space="preserve">
+  <data name="Parameter_speedVariationPeriodRevolutions" xml:space="preserve">
     <value>变速周期</value>
   </data>
   <data name="Parameter_speedVariationTarget" xml:space="preserve">
@@ -2028,5 +2022,8 @@
   </data>
   <data name="AxisRole_MeasuringCarriage" xml:space="preserve">
     <value>测量架</value>
+  </data>
+  <data name="Unit_Revolution" xml:space="preserve">
+    <value>转</value>
   </data>
 </root>

@@ -272,7 +272,7 @@ public sealed class StepParameterUpdateTests : IDisposable
             StepParameterKeys.SparkOutPassCount,
             StepParameterKeys.SpeedVariationTarget,
             StepParameterKeys.SpeedVariationPercent,
-            StepParameterKeys.SpeedVariationPeriodSeconds,
+            StepParameterKeys.SpeedVariationPeriodRevolutions,
         });
 
         live.Should().NotContain(StepParameterKeys.WheelSurfaceSpeedMPerSec, "砂轮主轴惯量大，不给磨削当中改");

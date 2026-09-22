@@ -1573,14 +1573,8 @@
   <data name="SubView_TagMonitor" xml:space="preserve">
     <value>Tag monitor</value>
   </data>
-  <data name="Choice_speedVariationTarget_both" xml:space="preserve">
-    <value>Both</value>
-  </data>
   <data name="Choice_speedVariationTarget_off" xml:space="preserve">
     <value>Off</value>
-  </data>
-  <data name="Choice_speedVariationTarget_wheel" xml:space="preserve">
-    <value>Wheel</value>
   </data>
   <data name="Choice_speedVariationTarget_workpiece" xml:space="preserve">
     <value>Roll</value>
@@ -1609,8 +1603,8 @@
   <data name="Parameter_speedVariationPercent" xml:space="preserve">
     <value>Variation amplitude</value>
   </data>
-  <data name="Parameter_speedVariationPeriodSeconds" xml:space="preserve">
-    <value>Variation period</value>
+  <data name="Parameter_speedVariationPeriodRevolutions" xml:space="preserve">
+    <value>Speed variation period</value>
   </data>
   <data name="Parameter_speedVariationTarget" xml:space="preserve">
     <value>Speed variation</value>
@@ -2028,5 +2022,8 @@
   </data>
   <data name="AxisRole_MeasuringCarriage" xml:space="preserve">
     <value>Measuring carriage</value>
+  </data>
+  <data name="Unit_Revolution" xml:space="preserve">
+    <value>rev</value>
   </data>
 </root>

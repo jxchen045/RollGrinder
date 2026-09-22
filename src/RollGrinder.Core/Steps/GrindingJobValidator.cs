@@ -238,12 +238,10 @@ public sealed class GrindingJobValidator
             yield break;
         }
 
-        double peak = plan.SpeedVariation.AffectsWheel
-            ? plan.SpeedVariation.PeakOf(plan.WheelSurfaceSpeedMPerSec)
-            : plan.WheelSurfaceSpeedMPerSec;
-        double trough = plan.SpeedVariation.AffectsWheel
-            ? plan.SpeedVariation.TroughOf(plan.WheelSurfaceSpeedMPerSec)
-            : plan.WheelSurfaceSpeedMPerSec;
+        // 变速只作用在头架转速上（实机就这一种），砂轮线速度因此是个定值，
+        // 峰谷就是它本身——不必再按变速幅度上下放一圈。
+        double peak = plan.WheelSurfaceSpeedMPerSec;
+        double trough = plan.WheelSurfaceSpeedMPerSec;
 
         if (capability.MaxWheelSurfaceSpeedMPerSec is double maximum && peak > maximum)
         {

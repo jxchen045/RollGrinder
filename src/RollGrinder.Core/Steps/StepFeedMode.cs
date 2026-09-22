@@ -29,14 +29,14 @@ public enum SpeedVariationTarget
     /// <summary>不变速。精磨末段与测量时必须用这个，转速要稳。</summary>
     Off = 0,
 
-    /// <summary>轧辊（工件 / 头架）转速。打散工件表面的再生波纹，默认选它。</summary>
+    /// <summary>
+    /// 轧辊（工件 / 头架）转速。打散工件表面的再生波纹。
+    ///
+    /// 实机（MK84160）只有这一种：说明书上写的是"头架变速幅度 / 头架变速周期"。
+    /// 先前还列了"砂轮"与"两者"两个选项，是按通用磨床假设加的——
+    /// 机床做不到的事不该出现在下拉里，否则操作工会以为是软件没接通。
+    /// </summary>
     Workpiece = 1,
-
-    /// <summary>砂轮转速。打散砂轮自身的再生波纹；会同步改变线速度，幅度要保守。</summary>
-    Wheel = 2,
-
-    /// <summary>两者同时变速。</summary>
-    Both = 3,
 }
 
 /// <summary>
@@ -44,17 +44,19 @@ public enum SpeedVariationTarget
 /// </summary>
 /// <param name="Target">作用对象。</param>
 /// <param name="AmplitudePercent">幅度（±%）。</param>
-/// <param name="PeriodSeconds">周期（s）。</param>
-public sealed record SpeedVariation(SpeedVariationTarget Target, double AmplitudePercent, double PeriodSeconds)
+/// <param name="PeriodRevolutions">
+/// 周期（头架转数）。**不是秒**——实机上这一项的单位就是"次"，
+/// 即每转多少圈完成一个变速周期。按秒算的话，头架转速一改，
+/// 打散波纹的效果就跟着变了，而变速本来就是跟着转速走的。
+/// </param>
+public sealed record SpeedVariation(
+    SpeedVariationTarget Target, double AmplitudePercent, double PeriodRevolutions)
 {
     /// <summary>不变速。</summary>
     public static SpeedVariation Off { get; } = new(SpeedVariationTarget.Off, 0.0, 0.0);
 
-    /// <summary>是否作用在工件转速上。</summary>
-    public bool AffectsWorkpiece => Target is SpeedVariationTarget.Workpiece or SpeedVariationTarget.Both;
-
-    /// <summary>是否作用在砂轮转速上。</summary>
-    public bool AffectsWheel => Target is SpeedVariationTarget.Wheel or SpeedVariationTarget.Both;
+    /// <summary>是否作用在工件转速上。实机只有这一种作用对象。</summary>
+    public bool AffectsWorkpiece => Target is SpeedVariationTarget.Workpiece;
 
     /// <summary>某个转速在变速下能达到的峰值。限幅校验按峰值算，不按设定值算。</summary>
     public double PeakOf(double setpoint) => setpoint * (1.0 + (AmplitudePercent / 100.0));

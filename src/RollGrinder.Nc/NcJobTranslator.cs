@@ -212,8 +212,8 @@ public sealed class NcJobTranslator
                 timestampUtc);
             AddNumber(
                 writes,
-                Indexed(MachineTagKeys.JobStepSpeedVariationPeriodSeconds, i),
-                plan.SpeedVariation.PeriodSeconds,
+                Indexed(MachineTagKeys.JobStepSpeedVariationPeriodRevolutions, i),
+                plan.SpeedVariation.PeriodRevolutions,
                 timestampUtc);
     }
 

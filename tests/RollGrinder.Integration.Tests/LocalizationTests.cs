@@ -169,7 +169,7 @@ public sealed class LocalizationTests
             declared.Should().Contain(StepParameterKeys.InfeedPerPassDiameterMicrometer, stepType.Key);
             declared.Should().Contain(StepParameterKeys.SpeedVariationTarget, stepType.Key);
             declared.Should().Contain(StepParameterKeys.SpeedVariationPercent, stepType.Key);
-            declared.Should().Contain(StepParameterKeys.SpeedVariationPeriodSeconds, stepType.Key);
+            declared.Should().Contain(StepParameterKeys.SpeedVariationPeriodRevolutions, stepType.Key);
             declared.Should().Contain(StepParameterKeys.WheelSurfaceSpeedMPerSec, stepType.Key);
             declared.Should().Contain(StepParameterKeys.ReversalDwellSeconds, stepType.Key);
         }

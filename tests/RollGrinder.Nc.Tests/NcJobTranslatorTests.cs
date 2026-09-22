@@ -310,7 +310,7 @@ public sealed class NcJobTranslatorTests
         NumberAt(download, MachineTagKeys.JobStepSpeedVariationTarget, rough)
             .Should().Be((double)(int)SpeedVariationTarget.Workpiece, "变速默认作用在轧辊转速上");
         NumberAt(download, MachineTagKeys.JobStepSpeedVariationPercent, rough).Should().BeGreaterThan(0.0);
-        NumberAt(download, MachineTagKeys.JobStepSpeedVariationPeriodSeconds, rough)
+        NumberAt(download, MachineTagKeys.JobStepSpeedVariationPeriodRevolutions, rough)
             .Should().BeGreaterThan(0.0, "只给幅度不给周期，机床没法生成这条正弦曲线");
 
         // 光磨不变速：转速在这一段必须稳。
