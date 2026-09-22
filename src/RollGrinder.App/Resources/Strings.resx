@@ -142,9 +142,6 @@
   <data name="Alarm_ActionNeedsTagMapping" xml:space="preserve">
     <value>该动作需要在 tagmap.json 中登记命令变量</value>
   </data>
-  <data name="Alarm_ActionNotWiredYet" xml:space="preserve">
-    <value>该功能尚未接通</value>
-  </data>
   <data name="Alarm_ConnectionLost" xml:space="preserve">
     <value>与机床的连接中断</value>
   </data>

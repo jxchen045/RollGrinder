@@ -136,10 +136,6 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// <summary>标记本页已保存/已同步。</summary>
     protected void MarkClean() => IsDirty = false;
 
-    /// <summary>尚未接通的动作：按下去登记一条提示级报警，而不是假装成功。</summary>
-    protected void NotImplementedYet(string labelResourceKey) =>
-        Alarms.Raise(AlarmSeverity.Information, "Alarm_ActionNotWiredYet", Localizer[labelResourceKey]);
-
     partial void OnIsReadOnlyChanged(bool value) => ApplyKeyEnablement();
 
     private void ApplyKeyEnablement()

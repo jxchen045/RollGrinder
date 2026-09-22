@@ -150,7 +150,7 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
             new FunctionKeyViewModel("Fn_ExportSnapshot", RequestSnapshotExportCommand, localizer, FunctionKeyKind.Primary),
             new FunctionKeyViewModel("Fn_RunLog", OpenRunLogCommand, localizer),
             // 二级子视图：打开后导航槽变成"返回 诊断"。
-            FunctionKeyViewModel.Placeholder("Fn_TagMonitor", localizer, () => Navigator.OpenSubView(TagMonitorSubView)),
+            FunctionKeyViewModel.ForAction("Fn_TagMonitor", localizer, () => Navigator.OpenSubView(TagMonitorSubView)),
             new FunctionKeyViewModel("Fn_MachineConfig", OpenMachineConfigCommand, localizer),
             new FunctionKeyViewModel("Fn_TagMapping", OpenTagMappingCommand, localizer),
             new FunctionKeyViewModel("Fn_AuditLog", OpenAuditLogCommand, localizer),

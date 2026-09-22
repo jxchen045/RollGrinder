@@ -46,8 +46,13 @@ public sealed partial class FunctionKeyViewModel : ObservableObject
         RequiresEditable = requiresEditable;
     }
 
-    /// <summary>用一个还没实现的动作占位：键照常显示，按下去只是提示尚未接通。</summary>
-    public static FunctionKeyViewModel Placeholder(
+    /// <summary>
+    /// 用一个普通动作做一个键。
+    ///
+    /// （曾经叫 Placeholder：那时候还有一批键没接通，按下去只是提示。
+    /// 现在一个都不剩了，留着那个名字只会让人以为这些键是假的。）
+    /// </summary>
+    public static FunctionKeyViewModel ForAction(
         string labelResourceKey,
         IStringLocalizer localizer,
         Action onPressed,

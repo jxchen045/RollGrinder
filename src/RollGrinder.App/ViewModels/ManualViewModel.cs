@@ -176,7 +176,7 @@ public sealed partial class ManualViewModel : PageViewModelBase
             CycleKey("Fn_WheelDress", "cycle.wheelDress"),
             CycleKey("Fn_RollAlign", "cycle.rollAlign"),
             CycleKey("Fn_ReferencePoint", "cycle.referencePoint"),
-            FunctionKeyViewModel.Placeholder(
+            FunctionKeyViewModel.ForAction(
                 "Fn_Diagnostics", localizer, () => Navigator.StartTask(PageKey.Diagnostics, PageKey.Manual)),
             // HMI 复位只动上位机自己：清报警表。机床那边一个字都不写——
             // 机床的复位在操作面板上，不该被一个界面按钮代劳。

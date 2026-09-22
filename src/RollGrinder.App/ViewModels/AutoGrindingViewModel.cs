@@ -336,9 +336,9 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             // 不该为此切到手动页去。
             new FunctionKeyViewModel("Fn_Coolant", ToggleCoolantCommand, localizer),
             // 补偿设置住在工序编程页：派过去，导航槽会显示"返回 自动磨削"。
-            FunctionKeyViewModel.Placeholder(
+            FunctionKeyViewModel.ForAction(
                 "Fn_CompensationSettings", localizer, () => Navigator.StartTask(PageKey.Steps, PageKey.AutoGrinding)),
-            FunctionKeyViewModel.Placeholder("Fn_Records", localizer, () => Navigator.GoToArea(PageKey.Records)),
+            FunctionKeyViewModel.ForAction("Fn_Records", localizer, () => Navigator.GoToArea(PageKey.Records)),
         });
     }
 

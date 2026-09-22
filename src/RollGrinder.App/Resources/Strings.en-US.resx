@@ -142,9 +142,6 @@
   <data name="Alarm_ActionNeedsTagMapping" xml:space="preserve">
     <value>This action needs a command tag in tagmap.json</value>
   </data>
-  <data name="Alarm_ActionNotWiredYet" xml:space="preserve">
-    <value>This function is not wired up yet</value>
-  </data>
   <data name="Alarm_ConnectionLost" xml:space="preserve">
     <value>Connection to the machine was lost</value>
   </data>

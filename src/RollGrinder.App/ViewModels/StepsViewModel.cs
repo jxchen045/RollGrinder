@@ -352,7 +352,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
             // 下发是唯一的写机床通道；自动循环挂着程序时锁掉，免得把运行中的程序改了。
             new FunctionKeyViewModel("Fn_DownloadNc", DownloadCommand, localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_ProgramLibrary", OpenProgramLibraryCommand, localizer),
-            FunctionKeyViewModel.Placeholder(
+            FunctionKeyViewModel.ForAction(
                 "Fn_EnterAuto", localizer, () => Navigator.GoToArea(PageKey.AutoGrinding), FunctionKeyKind.Start),
         });
     }
