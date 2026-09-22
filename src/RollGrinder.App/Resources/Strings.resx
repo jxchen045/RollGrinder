@@ -2086,4 +2086,37 @@
   <data name="Records_CurveNoData" xml:space="preserve">
     <value>这支辊没有这项数据</value>
   </data>
+  <data name="SubView_RollLedger" xml:space="preserve">
+    <value>轧辊台账</value>
+  </data>
+  <data name="Records_LedgerHeader" xml:space="preserve">
+    <value>轧辊台账</value>
+  </data>
+  <data name="Records_LedgerEmpty" xml:space="preserve">
+    <value>还没有辊件档案</value>
+  </data>
+  <data name="Records_DailySummaryFormat" xml:space="preserve">
+    <value>本日：开 {0} 支，合格 {1} 支，合格率 {2}，累计 {3} h</value>
+  </data>
+  <data name="Records_MonthlySummaryFormat" xml:space="preserve">
+    <value>本月：开 {0} 支，合格 {1} 支，合格率 {2}，累计 {3} h</value>
+  </data>
+  <data name="Ledger_Code" xml:space="preserve">
+    <value>辊号</value>
+  </data>
+  <data name="Ledger_Diameter" xml:space="preserve">
+    <value>直径 (mm)</value>
+  </data>
+  <data name="Ledger_BodyLength" xml:space="preserve">
+    <value>辊身 (mm)</value>
+  </data>
+  <data name="Ledger_Material" xml:space="preserve">
+    <value>材质</value>
+  </data>
+  <data name="Ledger_GrindCount" xml:space="preserve">
+    <value>磨削次数</value>
+  </data>
+  <data name="Ledger_LastGround" xml:space="preserve">
+    <value>最近一次</value>
+  </data>
 </root>

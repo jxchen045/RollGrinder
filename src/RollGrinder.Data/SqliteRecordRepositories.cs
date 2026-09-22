@@ -129,6 +129,37 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<GrindingRecord>> QueryByRollAsync(
+        string rollId, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rollId);
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+
+        // 辊号挂在作业上，记录只指向作业，所以得连一次。
+        command.CommandText =
+            """
+            SELECT r.record_id, r.job_id, r.started_at_utc, r.finished_at_utc, r.state, r.note, r.wheel_diameter_mm
+            FROM grinding_record r
+            JOIN job j ON j.job_id = r.job_id
+            WHERE j.roll_id = $roll
+            ORDER BY r.started_at_utc DESC
+            LIMIT $limit;
+            """;
+        SqlMapping.AddParameter(command, "$roll", rollId);
+        SqlMapping.AddParameter(command, "$limit", limit);
+
+        var records = new List<GrindingRecord>();
+        await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            records.Add(Map(reader));
+        }
+
+        return records;
+    }
+
     private static GrindingRecord Map(SqliteDataReader reader) => new(
         reader.GetString(0),
         reader.GetString(1),

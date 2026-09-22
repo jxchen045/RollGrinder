@@ -80,6 +80,16 @@ public interface IRecordService
         string filePath,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// 一段时间的汇总：磨了几支、合格几支、总时长。日报与月报都是它，
+    /// 差别只在取的是哪一段时间——不必为"日"与"月"各写一份。
+    /// </summary>
+    Task<GrindingSummary> SummariseAsync(
+        DateTimeOffset fromUtc, DateTimeOffset toUtc, CancellationToken cancellationToken);
+
+    /// <summary>轧辊台账：每支辊磨过几次、最近一次什么时候。</summary>
+    Task<IReadOnlyList<RollLedgerRow>> LoadLedgerAsync(int limit, CancellationToken cancellationToken);
+
     /// <summary>按 hmi.json 的保留天数清理过期记录与报警，返回删除条数。</summary>
     Task<int> PurgeExpiredAsync(CancellationToken cancellationToken);
 }
@@ -544,6 +554,72 @@ public sealed class RecordService : IRecordService
 
         await File.WriteAllTextAsync(filePath, text.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true), cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    public async Task<GrindingSummary> SummariseAsync(
+        DateTimeOffset fromUtc, DateTimeOffset toUtc, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<GrindingRecordView> views = await QueryAsync(fromUtc, toUtc, 5000, cancellationToken)
+            .ConfigureAwait(false);
+
+        var byRoll = new Dictionary<string, int>(StringComparer.Ordinal);
+        int completed = 0;
+        TimeSpan total = TimeSpan.Zero;
+
+        foreach (GrindingRecordView view in views)
+        {
+            if (view.State == JobState.Completed)
+            {
+                completed++;
+            }
+
+            if (view.Duration is TimeSpan duration)
+            {
+                total += duration;
+            }
+
+            if (!string.IsNullOrEmpty(view.RollCode))
+            {
+                byRoll.TryGetValue(view.RollCode, out int count);
+                byRoll[view.RollCode] = count + 1;
+            }
+        }
+
+        return new GrindingSummary(fromUtc, toUtc, views.Count, completed, total, byRoll.Count);
+    }
+
+    public async Task<IReadOnlyList<RollLedgerRow>> LoadLedgerAsync(int limit, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<RollRecord> all = await this.rolls.ListAsync(limit, cancellationToken).ConfigureAwait(false);
+
+        var rows = new List<RollLedgerRow>(all.Count);
+        foreach (RollRecord roll in all)
+        {
+            // 台账关心的是"这支辊被磨过几次、上次什么时候"，不是每一次的细节。
+            IReadOnlyList<GrindingRecord> history = await this.records
+                .QueryByRollAsync(roll.RollId, limit, cancellationToken).ConfigureAwait(false);
+
+            DateTimeOffset? last = null;
+            foreach (GrindingRecord record in history)
+            {
+                DateTimeOffset at = record.FinishedAtUtc ?? record.StartedAtUtc;
+                if (last is null || at > last)
+                {
+                    last = at;
+                }
+            }
+
+            rows.Add(new RollLedgerRow(
+                roll.RollId,
+                roll.Code,
+                roll.Geometry.NominalDiameterMm,
+                roll.Geometry.BodyLengthMm,
+                roll.Material,
+                history.Count,
+                last));
+        }
+
+        return rows;
     }
 
     public async Task<int> PurgeExpiredAsync(CancellationToken cancellationToken)

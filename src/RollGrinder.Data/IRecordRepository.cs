@@ -31,6 +31,10 @@ public interface IGrindingRecordRepository
         int limit,
         CancellationToken cancellationToken);
 
+    /// <summary>某支辊的磨削历史，最近的在前。轧辊台账用它数"磨过几次"。</summary>
+    Task<IReadOnlyList<GrindingRecord>> QueryByRollAsync(
+        string rollId, int limit, CancellationToken cancellationToken);
+
     /// <summary>删除早于给定时刻的记录，返回删除条数。</summary>
     Task<int> PurgeOlderThanAsync(DateTimeOffset thresholdUtc, CancellationToken cancellationToken);
 }

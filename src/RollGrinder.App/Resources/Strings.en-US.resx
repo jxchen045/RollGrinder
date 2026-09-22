@@ -2086,4 +2086,37 @@
   <data name="Records_CurveNoData" xml:space="preserve">
     <value>This roll has no data of this kind</value>
   </data>
+  <data name="SubView_RollLedger" xml:space="preserve">
+    <value>Roll ledger</value>
+  </data>
+  <data name="Records_LedgerHeader" xml:space="preserve">
+    <value>Roll ledger</value>
+  </data>
+  <data name="Records_LedgerEmpty" xml:space="preserve">
+    <value>No rolls on file yet</value>
+  </data>
+  <data name="Records_DailySummaryFormat" xml:space="preserve">
+    <value>Today: {0} started, {1} completed, {2} pass rate, {3} h total</value>
+  </data>
+  <data name="Records_MonthlySummaryFormat" xml:space="preserve">
+    <value>This month: {0} started, {1} completed, {2} pass rate, {3} h total</value>
+  </data>
+  <data name="Ledger_Code" xml:space="preserve">
+    <value>Roll code</value>
+  </data>
+  <data name="Ledger_Diameter" xml:space="preserve">
+    <value>Diameter (mm)</value>
+  </data>
+  <data name="Ledger_BodyLength" xml:space="preserve">
+    <value>Body (mm)</value>
+  </data>
+  <data name="Ledger_Material" xml:space="preserve">
+    <value>Material</value>
+  </data>
+  <data name="Ledger_GrindCount" xml:space="preserve">
+    <value>Grinds</value>
+  </data>
+  <data name="Ledger_LastGround" xml:space="preserve">
+    <value>Last ground</value>
+  </data>
 </root>

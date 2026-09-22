@@ -36,6 +36,7 @@ public partial class RecordsView : UserControl
         {
             this.viewModel.ReportChanged += OnReportChanged;
             this.viewModel.CurveChanged += OnCurveChanged;
+            this.viewModel.ExportRequested += OnExportRequested;
         }
     }
 
@@ -47,6 +48,7 @@ public partial class RecordsView : UserControl
         {
             this.viewModel.ReportChanged -= OnReportChanged;
             this.viewModel.CurveChanged -= OnCurveChanged;
+            this.viewModel.ExportRequested -= OnExportRequested;
         }
     }
 
@@ -128,6 +130,9 @@ public partial class RecordsView : UserControl
 
         dialog.PrintDocument(paginator.DocumentPaginator, document.Name);
     }
+
+    /// <summary>功能键上的"导出"与页面上的按钮走同一条路。</summary>
+    private void OnExportRequested(object? sender, EventArgs e) => OnExportClick(this, new RoutedEventArgs());
 
     private async void OnExportClick(object sender, RoutedEventArgs e)
     {

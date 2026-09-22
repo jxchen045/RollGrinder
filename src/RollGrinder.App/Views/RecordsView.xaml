@@ -7,6 +7,16 @@
     <Grid>
         <Grid.Resources>
             <!-- 报表预览子视图：开着时盖住本页根部内容，导航槽这时显示"返回 磨削记录"。 -->
+            <!-- 轧辊台账子视图 -->
+            <Style x:Key="LedgerPanel" TargetType="Border" BasedOn="{StaticResource Card}">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_RollLedger">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
             <Style x:Key="ReportPanel" TargetType="Border" BasedOn="{StaticResource Card}">
                 <Setter Property="Visibility" Value="Collapsed" />
                 <Style.Triggers>
@@ -37,11 +47,19 @@
 
                 <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
                         BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,12">
-                    <DockPanel>
-                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.Label}" FontSize="16" />
-                        <TextBlock Text="{Binding SummaryText}" Style="{StaticResource Text.Label}" FontSize="16"
-                                   HorizontalAlignment="Right" />
-                    </DockPanel>
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.Label}" FontSize="16" />
+                            <TextBlock Text="{Binding SummaryText}" Style="{StaticResource Text.Label}" FontSize="16"
+                                       HorizontalAlignment="Right" />
+                        </DockPanel>
+
+                        <!-- 日报 / 月报那一行；没按过就不占地方 -->
+                        <TextBlock Text="{Binding SummaryLineText}" Style="{StaticResource Text.Label}" FontSize="16"
+                                   Margin="0,8,0,0" TextWrapping="Wrap"
+                                   Foreground="{StaticResource Brush.Accent}"
+                                   Visibility="{Binding SummaryLineText, Converter={StaticResource TextToVisibility}}" />
+                    </StackPanel>
                 </Border>
 
                 <ListBox ItemsSource="{Binding Records}" SelectedItem="{Binding SelectedRecord}"
@@ -159,6 +177,28 @@
                 </DockPanel>
             </Border>
         </Grid>
+
+        <!-- 轧辊台账：每支辊磨过几次、上次什么时候 -->
+        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource LedgerPanel}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
+                    <TextBlock Text="{loc:Loc Records_LedgerHeader}" Style="{StaticResource Text.CardTitle}"
+                               VerticalAlignment="Center" />
+                </Border>
+                <DataGrid ItemsSource="{Binding Ledger}" AutoGenerateColumns="False" IsReadOnly="True"
+                          HeadersVisibility="Column" Margin="12" FontSize="16"
+                          Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Divider}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="{loc:Loc Ledger_Code}" Binding="{Binding Code}" Width="*" />
+                        <DataGridTextColumn Header="{loc:Loc Ledger_Diameter}" Binding="{Binding DiameterText}" Width="*" />
+                        <DataGridTextColumn Header="{loc:Loc Ledger_BodyLength}" Binding="{Binding BodyLengthText}" Width="*" />
+                        <DataGridTextColumn Header="{loc:Loc Ledger_Material}" Binding="{Binding MaterialText}" Width="*" />
+                        <DataGridTextColumn Header="{loc:Loc Ledger_GrindCount}" Binding="{Binding GrindCountText}" Width="*" />
+                        <DataGridTextColumn Header="{loc:Loc Ledger_LastGround}" Binding="{Binding LastGroundText}" Width="1.6*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
 
         <!--
             报表预览：纸上是什么样，这里就是什么样（同一份 FlowDocument），

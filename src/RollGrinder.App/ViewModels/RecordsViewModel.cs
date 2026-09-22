@@ -75,11 +75,13 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         {
             new FunctionKeyViewModel("Fn_OpenRecord", QueryCommand, localizer, FunctionKeyKind.Primary),
             new FunctionKeyViewModel("Fn_PreGrindReport", PreviewPreGrindReportCommand, localizer),
-            FunctionKeyViewModel.Placeholder("Fn_DailyReport", localizer, () => NotImplementedYet("Fn_DailyReport")),
-            FunctionKeyViewModel.Placeholder("Fn_MonthlyReport", localizer, () => NotImplementedYet("Fn_MonthlyReport")),
-            FunctionKeyViewModel.Placeholder("Fn_ExportExcel", localizer, () => NotImplementedYet("Fn_ExportExcel")),
+            new FunctionKeyViewModel("Fn_DailyReport", ShowDailySummaryCommand, localizer),
+            new FunctionKeyViewModel("Fn_MonthlyReport", ShowMonthlySummaryCommand, localizer),
+
+            // 导出要挑一个文件路径，对话框在视图里；这个键只是把范围定好再交给它。
+            new FunctionKeyViewModel("Fn_ExportExcel", RequestExportCommand, localizer),
             new FunctionKeyViewModel("Fn_Print", PreviewPostGrindReportCommand, localizer),
-            FunctionKeyViewModel.Placeholder("Fn_RollLedger", localizer, () => NotImplementedYet("Fn_RollLedger")),
+            new FunctionKeyViewModel("Fn_RollLedger", OpenLedgerCommand, localizer),
         });
     }
 
@@ -293,6 +295,81 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
     /// <summary>报表预览子视图的资源键，同时用作面包屑文案。</summary>
     public const string ReportSubView = "SubView_Report";
+
+    /// <summary>轧辊台账子视图的资源键。</summary>
+    public const string LedgerSubView = "SubView_RollLedger";
+
+    /// <summary>轧辊台账的行。</summary>
+    public ObservableCollection<RollLedgerRowViewModel> Ledger { get; } = new();
+
+    /// <summary>日报 / 月报的那一行汇总。</summary>
+    [ObservableProperty]
+    private string summaryLineText = string.Empty;
+
+    /// <summary>界面要导出时触发；路径由视图选。</summary>
+    public event EventHandler? ExportRequested;
+
+    /// <summary>今天磨了什么。</summary>
+    [RelayCommand]
+    private Task ShowDailySummaryAsync(CancellationToken cancellationToken) =>
+        SummariseAsync(DateTime.Today, DateTime.Today, "Records_DailySummaryFormat", cancellationToken);
+
+    /// <summary>这个月磨了什么。</summary>
+    [RelayCommand]
+    private Task ShowMonthlySummaryAsync(CancellationToken cancellationToken)
+    {
+        DateTime first = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+        return SummariseAsync(first, first.AddMonths(1).AddDays(-1), "Records_MonthlySummaryFormat", cancellationToken);
+    }
+
+    /// <summary>
+    /// 汇总一段时间。日报与月报是同一件事，差别只在取哪一段——
+    /// 顺带把列表的日期范围也设成那一段，让人看得见汇总说的是哪些记录。
+    /// </summary>
+    private Task SummariseAsync(
+        DateTime from, DateTime to, string formatResourceKey, CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            FromDate = from;
+            ToDate = to;
+            await QueryAsync(token).ConfigureAwait(true);
+
+            GrindingSummary summary = await this.recordService.SummariseAsync(
+                new DateTimeOffset(from.Date, TimeSpan.Zero),
+                new DateTimeOffset(to.Date.AddDays(1), TimeSpan.Zero),
+                token).ConfigureAwait(true);
+
+            // 一支都没磨时合格率是"--"不是 0%：
+            // "这段时间没干活"与"干了活全不合格"是两回事。
+            SummaryLineText = Localizer.Format(
+                formatResourceKey,
+                summary.TotalCount,
+                summary.CompletedCount,
+                summary.CompletionRate is double rate
+                    ? rate.ToString("P1", CultureInfo.CurrentCulture)
+                    : Dash,
+                summary.TotalDuration.TotalHours.ToString("F1", CultureInfo.CurrentCulture));
+        }, cancellationToken);
+
+    /// <summary>打开轧辊台账。</summary>
+    [RelayCommand]
+    private Task OpenLedgerAsync(CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            Ledger.Clear();
+            foreach (RollLedgerRow row in await this.recordService
+                .LoadLedgerAsync(500, token).ConfigureAwait(true))
+            {
+                Ledger.Add(new RollLedgerRowViewModel(row));
+            }
+
+            StatusResourceKey = Ledger.Count == 0 ? "Records_LedgerEmpty" : string.Empty;
+            Navigator.OpenSubView(LedgerSubView);
+        }, cancellationToken);
+
+    /// <summary>导出：路径由视图上的文件对话框选。</summary>
+    [RelayCommand]
+    private void RequestExport() => ExportRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>
     /// 预览里那张报表。界面层拿它排版、打印；没有选中记录时为 null。
