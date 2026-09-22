@@ -74,14 +74,42 @@ public static class StepParameterKeys
     /// <summary>修整走刀速度（mm/min）。</summary>
     public const string DressFeedMmPerMin = "dressFeedMmPerMin";
 
-    /// <summary>倒角宽度（mm，沿辊身方向）。</summary>
-    public const string ChamferWidthMm = "chamferWidthMm";
+    /// <summary>
+    /// 倒角第一段长度（mm，沿辊身方向）。
+    ///
+    /// 实机的倒角是**两段**加一个形状：长度1/高度1、长度2/高度2、类型。
+    /// 这比"宽度 + 角度"能表达的多——两段可以不等，做出台阶式或先缓后陡的端部；
+    /// 而"宽度 + 角度"只能描述一条直线，实机上根本填不进去。
+    /// </summary>
+    public const string ChamferLength1Mm = "chamferLength1Mm";
 
-    /// <summary>倒角角度（°）。</summary>
-    public const string ChamferAngleDegree = "chamferAngleDegree";
+    /// <summary>倒角第一段高度（mm，半径方向）。</summary>
+    public const string ChamferHeight1Mm = "chamferHeight1Mm";
+
+    /// <summary>倒角第二段长度（mm，沿辊身方向）。0 表示只有一段。</summary>
+    public const string ChamferLength2Mm = "chamferLength2Mm";
+
+    /// <summary>倒角第二段高度（mm，半径方向）。</summary>
+    public const string ChamferHeight2Mm = "chamferHeight2Mm";
+
+    /// <summary>倒角形状：斜坡（实机代码 0）或圆弧（实机代码 1）。</summary>
+    public const string ChamferKind = "chamferKind";
 
     /// <summary>探伤扫查螺距（mm/转）。</summary>
     public const string ScanPitchMm = "scanPitchMm";
+}
+
+/// <summary>
+/// 倒角形状的选项键。实机只有这两种：说明书上的"倒角类型 0 斜坡 / 1 圆弧"。
+/// 顺序就是实机代码的顺序，下发时按索引转成 0 / 1。
+/// </summary>
+public static class ChamferKindChoices
+{
+    /// <summary>斜坡（实机代码 0）：一条直线过渡。</summary>
+    public const string Ramp = "ramp";
+
+    /// <summary>圆弧（实机代码 1）：一段圆弧过渡。</summary>
+    public const string Arc = "arc";
 }
 
 /// <summary>暂停原因参数的选项键。</summary>

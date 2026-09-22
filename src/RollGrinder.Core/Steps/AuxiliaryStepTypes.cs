@@ -148,10 +148,20 @@ public sealed class ChamferStepType : IGrindingStepType
 
     public ParameterSchema Schema { get; } = new(new[]
     {
+        // 两段长度/高度 + 形状，与实机的"轧辊数据"里那五项一一对应。
+        // 第二段长度填 0 就是只有一段——不必另设一个"要不要第二段"的开关。
         ParameterDescriptor.Number(
-            StepParameterKeys.ChamferWidthMm, ParameterUnit.Millimeter, 5.0, 0.5, 100.0),
+            StepParameterKeys.ChamferLength1Mm, ParameterUnit.Millimeter, 5.0, 0.0, 100.0),
         ParameterDescriptor.Number(
-            StepParameterKeys.ChamferAngleDegree, ParameterUnit.Degree, 30.0, 1.0, 89.0),
+            StepParameterKeys.ChamferHeight1Mm, ParameterUnit.Millimeter, 2.0, 0.0, 50.0),
+        ParameterDescriptor.Number(
+            StepParameterKeys.ChamferLength2Mm, ParameterUnit.Millimeter, 0.0, 0.0, 100.0),
+        ParameterDescriptor.Number(
+            StepParameterKeys.ChamferHeight2Mm, ParameterUnit.Millimeter, 0.0, 0.0, 50.0),
+        ParameterDescriptor.Choice(
+            StepParameterKeys.ChamferKind,
+            new[] { ChamferKindChoices.Ramp, ChamferKindChoices.Arc },
+            ChamferKindChoices.Ramp),
         ParameterDescriptor.Number(
             StepParameterKeys.WheelSurfaceSpeedMPerSec, ParameterUnit.MeterPerSecond, 28.0, 5.0, 80.0),
         ParameterDescriptor.Number(
@@ -180,6 +190,11 @@ public sealed class ChamferStepType : IGrindingStepType
             RequiresMeasurement: false)
         {
             // 倒角走的是端部轮廓，不是辊身的径向去除量。
+            //
+            // 注意：两段长度/高度与形状目前**没有**进 R 参数下发——
+            // 执行计划只带各类工序共有的那几个量，工序专属参数（倒角几何、
+            // 修整道次、探伤螺距、圆度采样格）都还没有约定好的 R 参数块。
+            // 这是一处系统性的缺口，要和 NC 侧一起定，见机床硬件评估 P1。
             WheelSurfaceSpeedMPerSec = values.GetNumber(StepParameterKeys.WheelSurfaceSpeedMPerSec),
         };
     }

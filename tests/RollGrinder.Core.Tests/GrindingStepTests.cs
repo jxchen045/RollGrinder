@@ -237,6 +237,35 @@ public sealed class GrindingStepTests
     }
 
     [Fact]
+    public void The_chamfer_is_two_segments_and_a_shape_like_the_machine_says()
+    {
+        // 实机的"轧辊数据"里倒角是 长度1/高度1/长度2/高度2/类型 五项。
+        // 先前的"宽度 + 角度"只能描述一条直线，实机上根本填不进去。
+        ParameterSchema schema = new ChamferStepType().Schema;
+
+        schema.Descriptors.Select(descriptor => descriptor.Key).Should().Contain(new[]
+        {
+            StepParameterKeys.ChamferLength1Mm, StepParameterKeys.ChamferHeight1Mm,
+            StepParameterKeys.ChamferLength2Mm, StepParameterKeys.ChamferHeight2Mm,
+            StepParameterKeys.ChamferKind,
+        });
+
+        // 实机的倒角类型只有 0 斜坡 / 1 圆弧，顺序就是实机代码的顺序。
+        schema.Get(StepParameterKeys.ChamferKind).AllowedValues.Should()
+            .Equal(new[] { ChamferKindChoices.Ramp, ChamferKindChoices.Arc });
+    }
+
+    [Fact]
+    public void A_single_segment_chamfer_is_the_second_length_left_at_zero()
+    {
+        // 不另设"要不要第二段"的开关：第二段长度填 0 就是只有一段。
+        ParameterSet defaults = new ChamferStepType().Schema.CreateDefaults();
+
+        defaults.GetNumber(StepParameterKeys.ChamferLength2Mm).Should().Be(0.0);
+        defaults.GetNumber(StepParameterKeys.ChamferLength1Mm).Should().BePositive();
+    }
+
+    [Fact]
     public void Roundness_step_spins_the_roll_in_place_without_the_wheel()
     {
         // 圆度是停在一个截面上绕圈量 r(θ)：拖板不走、砂轮不转、转速必须稳。

@@ -1585,12 +1585,6 @@
   <data name="Choice_speedVariationTarget_workpiece" xml:space="preserve">
     <value>轧辊</value>
   </data>
-  <data name="Parameter_chamferAngleDegree" xml:space="preserve">
-    <value>倒角角度</value>
-  </data>
-  <data name="Parameter_chamferWidthMm" xml:space="preserve">
-    <value>倒角宽度</value>
-  </data>
   <data name="Parameter_continuousInfeedDiameterMicrometerPerMin" xml:space="preserve">
     <value>连续进给</value>
   </data>
@@ -1980,5 +1974,26 @@
   </data>
   <data name="WheelChange_Hint_Done" xml:space="preserve">
     <value>已完成。</value>
+  </data>
+  <data name="Parameter_chamferLength1Mm" xml:space="preserve">
+    <value>倒角长度 1</value>
+  </data>
+  <data name="Parameter_chamferHeight1Mm" xml:space="preserve">
+    <value>倒角高度 1</value>
+  </data>
+  <data name="Parameter_chamferLength2Mm" xml:space="preserve">
+    <value>倒角长度 2</value>
+  </data>
+  <data name="Parameter_chamferHeight2Mm" xml:space="preserve">
+    <value>倒角高度 2</value>
+  </data>
+  <data name="Parameter_chamferKind" xml:space="preserve">
+    <value>倒角类型</value>
+  </data>
+  <data name="Choice_chamferKind_ramp" xml:space="preserve">
+    <value>斜坡</value>
+  </data>
+  <data name="Choice_chamferKind_arc" xml:space="preserve">
+    <value>圆弧</value>
   </data>
 </root>
