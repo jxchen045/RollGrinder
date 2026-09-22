@@ -400,8 +400,8 @@ public sealed class LocalizationTests
     [Fact]
     public void The_domain_and_the_contracts_agree_on_axis_role_names()
     {
-        // 领域层不引用 Contracts，所以 CrownAdjust 这个角色名在两边各写了一次。
-        MachineAxisRoleNames.CrownAdjust.Should().Be(MachineAxisRoles.CrownAdjust);
+        // 领域层不引用 Contracts，所以 RollProfile 这个角色名在两边各写了一次。
+        MachineAxisRoleNames.RollProfile.Should().Be(MachineAxisRoles.RollProfile);
     }
 
     [Fact]

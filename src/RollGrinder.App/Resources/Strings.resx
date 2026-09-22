@@ -235,8 +235,8 @@
   <data name="AxisRole_Carriage" xml:space="preserve">
     <value>Z 拖板</value>
   </data>
-  <data name="AxisRole_CrownAdjust" xml:space="preserve">
-    <value>U 中高</value>
+  <data name="AxisRole_RollProfile" xml:space="preserve">
+    <value>辊形轴</value>
   </data>
   <data name="AxisRole_InfeedRadius" xml:space="preserve">
     <value>X 磨架</value>
@@ -2025,5 +2025,8 @@
   </data>
   <data name="Alarm_ReportPrintFailed" xml:space="preserve">
     <value>报表打印失败，磨削不受影响</value>
+  </data>
+  <data name="AxisRole_MeasuringCarriage" xml:space="preserve">
+    <value>测量架</value>
   </data>
 </root>

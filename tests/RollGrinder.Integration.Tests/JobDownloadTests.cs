@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -28,11 +29,19 @@ public sealed class JobDownloadTests : IDisposable
 {
     private readonly TempWorkspace workspace = new();
 
+    /// <summary>装配之前改一改现场配置；null 表示照样例原样用。</summary>
+    private Func<AppOptions, Task>? patchConfiguration;
+
     private async Task<ServiceProvider> BuildAsync(params string[] extraArgs)
     {
         string[] args = new[] { "--gateway", "sim" }.Concat(extraArgs).ToArray();
         AppOptions options = AppOptions.Parse(args, this.workspace.Root);
         await ConfigBootstrapper.EnsureConfigurationAsync(options, this.workspace.CreateSampleDirectory(), CancellationToken.None);
+
+        if (this.patchConfiguration is not null)
+        {
+            await this.patchConfiguration(options);
+        }
 
         var configProvider = new JsonMachineConfigProvider(options);
         MachineDescription machine = await configProvider.GetMachineAsync(CancellationToken.None);
@@ -48,6 +57,20 @@ public sealed class JobDownloadTests : IDisposable
         services.AddDataStore(options);
         services.AddApplicationServices(settings);
         return services.BuildServiceProvider();
+    }
+
+    /// <summary>
+    /// 把现场配置里某个选装装置关掉，模拟"这台机床没装这件东西"。
+    ///
+    /// 样例配置是按 MK84160 实机写的，该装的都装了——所以"装置缺失"这条规则
+    /// 得自己造一台缺装置的机床来试，而不是指望样例里正好有一项是 false。
+    /// </summary>
+    private async Task RemoveMachineOptionAsync(AppOptions options, string optionKey)
+    {
+        string path = options.MachineConfigFilePath;
+        JsonNode machine = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+        machine["options"]![optionKey] = false;
+        await File.WriteAllTextAsync(path, machine.ToJsonString());
     }
 
     private static GrindingJob CreateJob(string jobId = "J-1", double crownDiameterMicrometer = 120.0)
@@ -156,7 +179,10 @@ public sealed class JobDownloadTests : IDisposable
     [Fact]
     public async Task A_step_the_machine_is_not_equipped_for_is_refused_and_writes_nothing()
     {
-        // config/machine.sample.json 里 hasEddyCurrentTester = false。
+        // 造一台没装探伤仪的机床：实机是装了的，但这条规则本身与哪台机床无关。
+        this.patchConfiguration = options =>
+            RemoveMachineOptionAsync(options, MachineOptionKeys.EddyCurrentTester);
+
         await using ServiceProvider services = await BuildAsync();
         IMachineGateway gateway = services.GetRequiredService<IMachineGateway>();
         await gateway.ConnectAsync(CancellationToken.None);
@@ -222,11 +248,20 @@ public sealed class JobDownloadTests : IDisposable
         await using ServiceProvider services = await BuildAsync();
         MachineCapability capability = services.GetRequiredService<MachineCapability>();
 
+        // 样例配置按 MK84160 实机写：原理图确认探伤仪 -E44 实装。
         capability.InstalledOptions.Should().Contain(MachineOptionKeys.WheelDresser);
-        capability.InstalledOptions.Should().NotContain(MachineOptionKeys.EddyCurrentTester);
+        capability.InstalledOptions.Should().Contain(MachineOptionKeys.EddyCurrentTester);
         capability.CanMeasureDiameter.Should().BeTrue("样例机床装了测径仪");
         capability.Supports(new WheelDressStepType()).Should().BeTrue();
-        capability.Supports(new EddyCurrentStepType()).Should().BeFalse();
+        capability.Supports(new EddyCurrentStepType()).Should().BeTrue();
+
+        // 实机 6 个进给轴 + 2 个主轴；砂轮摆角实机没有。
+        capability.AvailableAxisRoles.Should().Contain(new[]
+        {
+            MachineAxisRoleNames.RollProfile, MachineAxisRoles.MeasuringCarriage,
+            MachineAxisRoles.InfeedRadius, MachineAxisRoles.Carriage,
+        });
+        capability.AvailableAxisRoles.Should().NotContain(MachineAxisRoles.WheelSwivel);
     }
 
     [Fact]

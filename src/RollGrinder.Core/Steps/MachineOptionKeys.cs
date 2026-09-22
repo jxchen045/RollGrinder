@@ -30,8 +30,8 @@ public static class MachineOptionKeys
 /// </summary>
 public static class MachineAxisRoleNames
 {
-    /// <summary>中高调整轴（补偿执行轴）。</summary>
-    public const string CrownAdjust = "CrownAdjust";
+    /// <summary>辊形执行轴（实机的 U 轴）。领域层不引用 Contracts，所以这个名字两边各写一次。</summary>
+    public const string RollProfile = "RollProfile";
 }
 
 /// <summary>测量量的逻辑名，对应 machine.json 的 measurementChannels[].quantity。</summary>

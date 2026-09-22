@@ -235,8 +235,8 @@
   <data name="AxisRole_Carriage" xml:space="preserve">
     <value>Z carriage</value>
   </data>
-  <data name="AxisRole_CrownAdjust" xml:space="preserve">
-    <value>U crown</value>
+  <data name="AxisRole_RollProfile" xml:space="preserve">
+    <value>Roll profile axis</value>
   </data>
   <data name="AxisRole_InfeedRadius" xml:space="preserve">
     <value>X infeed</value>
@@ -2025,5 +2025,8 @@
   </data>
   <data name="Alarm_ReportPrintFailed" xml:space="preserve">
     <value>The report could not be printed; grinding is unaffected</value>
+  </data>
+  <data name="AxisRole_MeasuringCarriage" xml:space="preserve">
+    <value>Measuring carriage</value>
   </data>
 </root>

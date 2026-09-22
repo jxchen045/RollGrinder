@@ -422,7 +422,7 @@ public sealed class GrindingJobValidatorTests
         },
         AvailableAxisRoles = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal)
         {
-            MachineAxisRoleNames.CrownAdjust,
+            MachineAxisRoleNames.RollProfile,
         },
         AvailableMeasurements = new System.Collections.Generic.HashSet<string>(System.StringComparer.Ordinal)
         {

@@ -54,7 +54,7 @@ public sealed partial class SegmentRowViewModel : ObservableObject
 public sealed partial class ProfileViewModel : PageViewModelBase
 {
     /// <summary>中高轴（补偿执行轴）在 machine.json 里的 role。</summary>
-    public const string CrownAxisRole = "CrownAdjust";
+    public const string CrownAxisRole = "RollProfile";
 
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly MachineDescription machine;

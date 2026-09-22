@@ -90,7 +90,7 @@ public static class ProgramOptionCatalog
         new ProgramOptionDescriptor(
             ProgramOptionKeys.AxisFeedForward,
             DefaultEnabled: true,
-            RequiredAxisRole: MachineAxisRoleNames.CrownAdjust),
+            RequiredAxisRole: MachineAxisRoleNames.RollProfile),
 
         new ProgramOptionDescriptor(
             ProgramOptionKeys.U1AutoLevel,
