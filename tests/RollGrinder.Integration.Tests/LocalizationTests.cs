@@ -117,6 +117,49 @@ public sealed class LocalizationTests
         }
     }
 
+    /// <summary>
+    /// 代码里按"前缀 + 键"拼出来的那些资源键。整串在源码里搜不到，
+    /// 所以死文案检查要放过它们——各自另有守卫盯着它们齐不齐。
+    /// </summary>
+    private static readonly string[] ComposedPrefixes =
+    {
+        "StepType_", "ProfileType_", "Parameter_", "Choice_", "Unit_", "AxisRole_",
+        "JobState_", "StepSlot_", "Option_", "Role_", "Severity_", "Violation_",
+        "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_",
+    };
+
+    [Fact]
+    public void No_resource_key_is_left_behind_by_code_that_no_longer_exists()
+    {
+        // 死文案不会让界面出错，但两份 resx 要一直同步，翻译的时候也要一条条看过去。
+        // 攒着攒着就没人分得清哪条还在用——所以让测试来数。
+        // 扫整个 src：文案键不只在界面层出现——服务层把自己那些
+        // "…ResourceKey" 常量也定在身边，报警条上显示的就是它们。
+        string sourceRoot = Path.Combine(RepositoryLayout.Root, "src");
+
+        var sources = new System.Text.StringBuilder();
+        foreach (string file in Directory.EnumerateFiles(sourceRoot, "*.*", SearchOption.AllDirectories))
+        {
+            if (file.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                || file.Contains(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                || (!file.EndsWith(".cs", StringComparison.Ordinal) && !file.EndsWith(".xaml", StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
+            sources.Append(File.ReadAllText(file));
+        }
+
+        string all = sources.ToString();
+        string[] dead = NeutralKeys
+            .Where(key => !ComposedPrefixes.Any(prefix => key.StartsWith(prefix, StringComparison.Ordinal)))
+            .Where(key => !all.Contains(key, StringComparison.Ordinal))
+            .OrderBy(key => key, StringComparer.Ordinal)
+            .ToArray();
+
+        dead.Should().BeEmpty("这些文案已经没有代码在用了");
+    }
+
     [Fact]
     public void Every_step_slot_has_a_label()
     {

@@ -262,7 +262,7 @@ public sealed class NavigationTests
             "Menu_AutoGrindingHint", "Menu_StepsHint", "Menu_ProfileHint",
             "Menu_ManualHint", "Menu_RecordsHint", "Menu_DiagnosticsHint",
             "Leave_TitleFormat", "Leave_Message", "Leave_Save", "Leave_Discard", "Leave_Cancel",
-            "Shell_MenuButton", "Shell_OpenAreaMenu", "Shell_Modified", "Shell_ReadOnlyRunning",
+            "Shell_OpenAreaMenu", "Shell_Modified", "Shell_ReadOnlyRunning",
             "SubView_TagMonitor", "Alarm_SaveFailedStayingOnPage",
         };
 

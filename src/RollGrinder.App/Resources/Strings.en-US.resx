@@ -151,9 +151,6 @@
   <data name="Alarm_ConnectionRestored" xml:space="preserve">
     <value>Connection to the machine was restored</value>
   </data>
-  <data name="Alarm_DetailColumn" xml:space="preserve">
-    <value>Detail</value>
-  </data>
   <data name="Alarm_DomainFailure" xml:space="preserve">
     <value>Process data is not valid</value>
   </data>
@@ -436,9 +433,6 @@
   <data name="Fn_ImportPoints" xml:space="preserve">
     <value>Import points</value>
   </data>
-  <data name="Fn_Latest" xml:space="preserve">
-    <value>Latest</value>
-  </data>
   <data name="Fn_MachineConfig" xml:space="preserve">
     <value>Machine config</value>
   </data>
@@ -526,17 +520,11 @@
   <data name="JobState_Handed" xml:space="preserve">
     <value>Handed over</value>
   </data>
-  <data name="Job_AddStepButton" xml:space="preserve">
-    <value>Add step</value>
-  </data>
   <data name="Job_BodyLengthLabel" xml:space="preserve">
     <value>Body length (mm)</value>
   </data>
   <data name="Job_DiameterLabel" xml:space="preserve">
     <value>Nominal diameter (mm)</value>
-  </data>
-  <data name="Job_DownloadButton" xml:space="preserve">
-    <value>Hand over</value>
   </data>
   <data name="Job_GeometryInvalid" xml:space="preserve">
     <value>Body length or diameter is not a number</value>
@@ -544,17 +532,11 @@
   <data name="Job_HandedOver" xml:space="preserve">
     <value>Handed over; the NC runs the job now</value>
   </data>
-  <data name="Job_Header" xml:space="preserve">
-    <value>Job editor</value>
-  </data>
   <data name="Job_IdentifiersMissing" xml:space="preserve">
     <value>Job ID and roll ID are required</value>
   </data>
   <data name="Job_JobIdLabel" xml:space="preserve">
     <value>Job ID</value>
-  </data>
-  <data name="Job_NewJobButton" xml:space="preserve">
-    <value>New job</value>
   </data>
   <data name="Job_NoSteps" xml:space="preserve">
     <value>At least one step is required</value>
@@ -571,20 +553,11 @@
   <data name="Job_ReadyToHandOver" xml:space="preserve">
     <value>Parameters are ready to hand over</value>
   </data>
-  <data name="Job_RemoveStepButton" xml:space="preserve">
-    <value>Remove</value>
-  </data>
   <data name="Job_RollIdLabel" xml:space="preserve">
     <value>Roll ID</value>
   </data>
-  <data name="Job_StepsHeader" xml:space="preserve">
-    <value>Steps</value>
-  </data>
   <data name="Job_TagMapIncomplete" xml:space="preserve">
     <value>tagmap.json is incomplete; nothing was written</value>
-  </data>
-  <data name="Job_ValidateButton" xml:space="preserve">
-    <value>Validate</value>
   </data>
   <data name="Job_ValidationFailed" xml:space="preserve">
     <value>Validation failed; nothing was written</value>
@@ -619,33 +592,6 @@
   <data name="Live_ZPosition" xml:space="preserve">
     <value>Z position</value>
   </data>
-  <data name="Main_ConfigDirectoryLabel" xml:space="preserve">
-    <value>Configuration directory</value>
-  </data>
-  <data name="Main_ConnectionLabel" xml:space="preserve">
-    <value>Connection</value>
-  </data>
-  <data name="Main_DataDirectoryLabel" xml:space="preserve">
-    <value>Data directory</value>
-  </data>
-  <data name="Main_GatewayLabel" xml:space="preserve">
-    <value>Gateway</value>
-  </data>
-  <data name="Main_Header" xml:space="preserve">
-    <value>System status</value>
-  </data>
-  <data name="Main_LogDirectoryLabel" xml:space="preserve">
-    <value>Log directory</value>
-  </data>
-  <data name="Main_MachineLabel" xml:space="preserve">
-    <value>Machine</value>
-  </data>
-  <data name="Main_SkeletonNotice" xml:space="preserve">
-    <value></value>
-  </data>
-  <data name="Main_TagCountLabel" xml:space="preserve">
-    <value>Tag map entries</value>
-  </data>
   <data name="Manual_AlignHeadInward" xml:space="preserve">
     <value>Ends differ by {0:F3} mm, beyond tolerance; adjust the headstock-side steady rest inward</value>
   </data>
@@ -654,9 +600,6 @@
   </data>
   <data name="Manual_AxisHeader" xml:space="preserve">
     <value>Axis positions</value>
-  </data>
-  <data name="Manual_DiameterColumn" xml:space="preserve">
-    <value>Diameter mm</value>
   </data>
   <data name="Manual_HeadSide" xml:space="preserve">
     <value>Headstock side</value>
@@ -673,12 +616,6 @@
   <data name="Manual_OtherHeader" xml:space="preserve">
     <value>Headstock, soft landing and others</value>
   </data>
-  <data name="Manual_Position" xml:space="preserve">
-    <value>Position</value>
-  </data>
-  <data name="Manual_RadiusColumn" xml:space="preserve">
-    <value>Radius mm</value>
-  </data>
   <data name="Manual_RollDiameter" xml:space="preserve">
     <value>Roll diameter mm</value>
   </data>
@@ -694,41 +631,14 @@
   <data name="Measurement_CaptureButton" xml:space="preserve">
     <value>Capture point</value>
   </data>
-  <data name="Measurement_ChartHeader" xml:space="preserve">
-    <value>Deviation and compensation (µm diameter)</value>
-  </data>
   <data name="Measurement_ClearButton" xml:space="preserve">
     <value>Clear points</value>
-  </data>
-  <data name="Measurement_CompensationStored" xml:space="preserve">
-    <value>Compensation stored; it takes effect at the next handover</value>
-  </data>
-  <data name="Measurement_ComputeButton" xml:space="preserve">
-    <value>Compute compensation</value>
-  </data>
-  <data name="Measurement_DiameterColumn" xml:space="preserve">
-    <value>Measured diameter (mm)</value>
-  </data>
-  <data name="Measurement_Header" xml:space="preserve">
-    <value>Measurement and compensation</value>
-  </data>
-  <data name="Measurement_JobIdMissing" xml:space="preserve">
-    <value>Enter a job ID first</value>
   </data>
   <data name="Measurement_NotEnoughPoints" xml:space="preserve">
     <value>At least two points and a job ID are required</value>
   </data>
-  <data name="Measurement_OutOfTolerance" xml:space="preserve">
-    <value>Out of tolerance</value>
-  </data>
-  <data name="Measurement_PeakToValleyLabel" xml:space="preserve">
-    <value>Peak to valley (µm diameter)</value>
-  </data>
   <data name="Measurement_PointCaptured" xml:space="preserve">
     <value>Captured one point</value>
-  </data>
-  <data name="Measurement_PositionColumn" xml:space="preserve">
-    <value>Body position (mm)</value>
   </data>
   <data name="Measurement_SaveButton" xml:space="preserve">
     <value>Save measurement</value>
@@ -736,68 +646,11 @@
   <data name="Measurement_Saved" xml:space="preserve">
     <value>Measurement archived</value>
   </data>
-  <data name="Measurement_ToleranceLabel" xml:space="preserve">
-    <value>Tolerance (µm diameter)</value>
-  </data>
-  <data name="Measurement_VerdictLabel" xml:space="preserve">
-    <value>Verdict</value>
-  </data>
-  <data name="Measurement_WithinTolerance" xml:space="preserve">
-    <value>Within tolerance</value>
-  </data>
-  <data name="Measurement_WorstDeviationLabel" xml:space="preserve">
-    <value>Worst deviation (µm diameter)</value>
-  </data>
   <data name="Metric_Duration" xml:space="preserve">
     <value>Duration min</value>
   </data>
   <data name="Metric_Profile" xml:space="preserve">
     <value>Profile</value>
-  </data>
-  <data name="Metric_RollCode" xml:space="preserve">
-    <value>Roll</value>
-  </data>
-  <data name="Metric_Started" xml:space="preserve">
-    <value>Started</value>
-  </data>
-  <data name="Metric_State" xml:space="preserve">
-    <value>State</value>
-  </data>
-  <data name="Metric_WorstDeviation" xml:space="preserve">
-    <value>Worst deviation µm</value>
-  </data>
-  <data name="Monitor_AxesHeader" xml:space="preserve">
-    <value>Axes</value>
-  </data>
-  <data name="Monitor_AxisNameColumn" xml:space="preserve">
-    <value>Axis</value>
-  </data>
-  <data name="Monitor_AxisPositionColumn" xml:space="preserve">
-    <value>Position (mm)</value>
-  </data>
-  <data name="Monitor_AxisRoleColumn" xml:space="preserve">
-    <value>Role</value>
-  </data>
-  <data name="Monitor_AxisSpeedColumn" xml:space="preserve">
-    <value>Speed (rpm)</value>
-  </data>
-  <data name="Monitor_ChannelStateLabel" xml:space="preserve">
-    <value>Channel state</value>
-  </data>
-  <data name="Monitor_Header" xml:space="preserve">
-    <value>Machine status</value>
-  </data>
-  <data name="Monitor_MeasuredDiameterLabel" xml:space="preserve">
-    <value>Measured diameter (mm)</value>
-  </data>
-  <data name="Monitor_ProgramLabel" xml:space="preserve">
-    <value>Program</value>
-  </data>
-  <data name="Monitor_SnapshotAgeLabel" xml:space="preserve">
-    <value>Snapshot age (s)</value>
-  </data>
-  <data name="Monitor_TrendHeader" xml:space="preserve">
-    <value>Measured diameter trend</value>
   </data>
   <data name="Option_hasAutomaticWheelBalancer" xml:space="preserve">
     <value>Wheel balancer</value>
@@ -969,9 +822,6 @@
   </data>
   <data name="Steps_ClearProfile" xml:space="preserve">
     <value>Edit here instead</value>
-  </data>
-  <data name="Steps_ProfileFromLibrary" xml:space="preserve">
-    <value>From library</value>
   </data>
   <data name="Steps_ProfileInline" xml:space="preserve">
     <value>Edited here</value>
@@ -1192,17 +1042,8 @@
   <data name="Profile_ValidationHeader" xml:space="preserve">
     <value>Validation</value>
   </data>
-  <data name="Records_DeviationColumn" xml:space="preserve">
-    <value>Worst deviation (µm)</value>
-  </data>
-  <data name="Records_DurationColumn" xml:space="preserve">
-    <value>Duration (min)</value>
-  </data>
   <data name="Records_Empty" xml:space="preserve">
     <value>No records in this period</value>
-  </data>
-  <data name="Records_ExportButton" xml:space="preserve">
-    <value>Export CSV</value>
   </data>
   <data name="Records_Exported" xml:space="preserve">
     <value>Exported</value>
@@ -1216,38 +1057,17 @@
   <data name="Records_FromLabel" xml:space="preserve">
     <value>From</value>
   </data>
-  <data name="Records_Header" xml:space="preserve">
-    <value>Grinding records</value>
-  </data>
   <data name="Records_Loaded" xml:space="preserve">
     <value>Query complete</value>
   </data>
   <data name="Records_NoSelection" xml:space="preserve">
     <value>Select a record first</value>
   </data>
-  <data name="Records_NoteLabel" xml:space="preserve">
-    <value>Note</value>
-  </data>
-  <data name="Records_ProfileColumn" xml:space="preserve">
-    <value>Profile</value>
-  </data>
   <data name="Records_QueryButton" xml:space="preserve">
     <value>Query</value>
   </data>
-  <data name="Records_RecordIdColumn" xml:space="preserve">
-    <value>Record ID</value>
-  </data>
   <data name="Records_ResultHeader" xml:space="preserve">
     <value>· grinding result</value>
-  </data>
-  <data name="Records_RollColumn" xml:space="preserve">
-    <value>Roll</value>
-  </data>
-  <data name="Records_StartedColumn" xml:space="preserve">
-    <value>Started</value>
-  </data>
-  <data name="Records_StateColumn" xml:space="preserve">
-    <value>State</value>
   </data>
   <data name="Records_SummaryFormat" xml:space="preserve">
     <value>{0} rolls</value>
@@ -1351,12 +1171,6 @@
   <data name="Shell_Brand" xml:space="preserve">
     <value>RGX</value>
   </data>
-  <data name="Shell_ClearAlarmsButton" xml:space="preserve">
-    <value>Clear alarms</value>
-  </data>
-  <data name="Shell_Subtitle" xml:space="preserve">
-    <value>After handover the NC runs the job; the HMI only edits, displays and records</value>
-  </data>
   <data name="Startup_FailedCaption" xml:space="preserve">
     <value>Startup failed</value>
   </data>
@@ -1398,21 +1212,6 @@
   </data>
   <data name="Steps_TotalTimeFormat" xml:space="preserve">
     <value>{0} min</value>
-  </data>
-  <data name="Tab_Alarms" xml:space="preserve">
-    <value>Alarms</value>
-  </data>
-  <data name="Tab_Job" xml:space="preserve">
-    <value>Job</value>
-  </data>
-  <data name="Tab_Measurement" xml:space="preserve">
-    <value>Measurement</value>
-  </data>
-  <data name="Tab_Monitor" xml:space="preserve">
-    <value>Monitor</value>
-  </data>
-  <data name="Tab_Records" xml:space="preserve">
-    <value>Records</value>
   </data>
   <data name="Top_NcConnected" xml:space="preserve">
     <value>NC connected</value>
@@ -1555,9 +1354,6 @@
   <data name="Nav_BreadcrumbSeparator" xml:space="preserve">
     <value> › </value>
   </data>
-  <data name="Shell_MenuButton" xml:space="preserve">
-    <value>Menu</value>
-  </data>
   <data name="Shell_Modified" xml:space="preserve">
     <value>Modified</value>
   </data>
@@ -1696,9 +1492,6 @@
   <data name="Manual_ConfirmAgain" xml:space="preserve">
     <value>Press again</value>
   </data>
-  <data name="Manual_LastActionHeader" xml:space="preserve">
-    <value>Last action</value>
-  </data>
   <data name="Option_hasContactDetection" xml:space="preserve">
     <value>Wheel contact detection</value>
   </data>
@@ -1770,12 +1563,6 @@
   </data>
   <data name="Auto_JumpToStep" xml:space="preserve">
     <value>Jump to step</value>
-  </data>
-  <data name="Auto_EndStepEarly" xml:space="preserve">
-    <value>End step early</value>
-  </data>
-  <data name="Auto_StepFlowTitle" xml:space="preserve">
-    <value>Step flow</value>
   </data>
   <data name="Fn_ConfirmAgain" xml:space="preserve">
     <value>Press again</value>
