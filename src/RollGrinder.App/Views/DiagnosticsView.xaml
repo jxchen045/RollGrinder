@@ -13,6 +13,32 @@
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
+
+            <!--
+                只读文本视图：机床配置、变量映射、运行日志共用一块。
+                只显示不编辑——这几样改错了机床就动不了，改它们得开文件；
+                界面上能看见是为了现场能对着电话把值念给人听。
+            -->
+            <Style x:Key="InspectorPanel" TargetType="Border" BasedOn="{StaticResource Card}">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_MachineConfig">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_TagMapping">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="AuditPanel" TargetType="Border" BasedOn="{StaticResource Card}">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_AuditLog">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
         </Grid.Resources>
 
         <Grid.ColumnDefinitions>
@@ -206,6 +232,41 @@
                 </DockPanel>
             </Border>
         </Grid>
+
+        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource InspectorPanel}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="52">
+                    <TextBlock Text="{loc:Loc Diag_InspectorHeader}" Style="{StaticResource Text.CardTitle}"
+                               VerticalAlignment="Center" />
+                </Border>
+                <TextBox Text="{Binding InspectorText, Mode=OneWay}" IsReadOnly="True"
+                         FontFamily="{StaticResource Font.Mono}" FontSize="14" Margin="12"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         BorderThickness="0" Background="{StaticResource Brush.Surface}"
+                         TextWrapping="NoWrap" />
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource AuditPanel}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="52">
+                    <TextBlock Text="{loc:Loc Diag_AuditHeader}" Style="{StaticResource Text.CardTitle}"
+                               VerticalAlignment="Center" />
+                </Border>
+                <ItemsControl ItemsSource="{Binding AuditRows}" Margin="16,12">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,0,0,10">
+                                <TextBlock Text="{Binding Label}" FontSize="16" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}"
+                                           FontSize="15" HorizontalAlignment="Right"
+                                           Foreground="{StaticResource Brush.TextSecondary}" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
 
         <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource TagMonitorPanel}">
             <DockPanel>

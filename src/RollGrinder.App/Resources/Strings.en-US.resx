@@ -2119,4 +2119,34 @@
   <data name="Ledger_LastGround" xml:space="preserve">
     <value>Last ground</value>
   </data>
+  <data name="SubView_MachineConfig" xml:space="preserve">
+    <value>Machine configuration</value>
+  </data>
+  <data name="SubView_TagMapping" xml:space="preserve">
+    <value>Tag mapping</value>
+  </data>
+  <data name="SubView_AuditLog" xml:space="preserve">
+    <value>Calibration audit</value>
+  </data>
+  <data name="Diag_InspectorHeader" xml:space="preserve">
+    <value>Read-only view</value>
+  </data>
+  <data name="Diag_AuditHeader" xml:space="preserve">
+    <value>Calibration audit: who last changed each value</value>
+  </data>
+  <data name="Diag_NoRunLog" xml:space="preserve">
+    <value>There are no log files in the log directory yet</value>
+  </data>
+  <data name="Diag_FileMissingFormat" xml:space="preserve">
+    <value>File not found: {0}</value>
+  </data>
+  <data name="Diag_AuditEntryFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Diag_SnapshotExported" xml:space="preserve">
+    <value>Diagnostics snapshot exported</value>
+  </data>
+  <data name="Diag_BackupWritten" xml:space="preserve">
+    <value>Backup written</value>
+  </data>
 </root>

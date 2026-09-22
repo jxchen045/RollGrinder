@@ -2119,4 +2119,34 @@
   <data name="Ledger_LastGround" xml:space="preserve">
     <value>最近一次</value>
   </data>
+  <data name="SubView_MachineConfig" xml:space="preserve">
+    <value>机床配置</value>
+  </data>
+  <data name="SubView_TagMapping" xml:space="preserve">
+    <value>变量映射</value>
+  </data>
+  <data name="SubView_AuditLog" xml:space="preserve">
+    <value>标定审计</value>
+  </data>
+  <data name="Diag_InspectorHeader" xml:space="preserve">
+    <value>只读查看</value>
+  </data>
+  <data name="Diag_AuditHeader" xml:space="preserve">
+    <value>标定审计：每一项最后一次是谁改的</value>
+  </data>
+  <data name="Diag_NoRunLog" xml:space="preserve">
+    <value>日志目录里还没有日志文件</value>
+  </data>
+  <data name="Diag_FileMissingFormat" xml:space="preserve">
+    <value>找不到文件：{0}</value>
+  </data>
+  <data name="Diag_AuditEntryFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Diag_SnapshotExported" xml:space="preserve">
+    <value>诊断快照已导出</value>
+  </data>
+  <data name="Diag_BackupWritten" xml:space="preserve">
+    <value>备份已写出</value>
+  </data>
 </root>

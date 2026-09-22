@@ -62,6 +62,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<IRecordService, RecordService>();
         services.AddSingleton<IReportService, ReportService>();
         services.AddSingleton<IReportPrintQueue, ReportPrintQueue>();
+        services.AddSingleton<Diagnostics.IDiagnosticsExportService, Diagnostics.DiagnosticsExportService>();
 
         services.AddHostedService<MachineMonitorHostedService>();
 

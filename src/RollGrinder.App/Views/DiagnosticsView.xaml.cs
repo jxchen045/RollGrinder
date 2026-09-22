@@ -1,12 +1,81 @@
+using System;
+using System.Globalization;
+using System.Threading;
+using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Win32;
+using RollGrinder.App.ViewModels;
 
 namespace RollGrinder.App.Views;
 
-/// <summary>诊断页。</summary>
+/// <summary>
+/// 诊断页。导出诊断快照与备份都要挑一个文件路径，对话框留在视图里。
+/// </summary>
 public partial class DiagnosticsView : UserControl
 {
+    private DiagnosticsViewModel? viewModel;
+
     public DiagnosticsView()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        Detach();
+        this.viewModel = DataContext as DiagnosticsViewModel;
+        if (this.viewModel is not null)
+        {
+            this.viewModel.SnapshotExportRequested += OnSnapshotExportRequested;
+            this.viewModel.BackupRequested += OnBackupRequested;
+        }
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e) => Detach();
+
+    private void Detach()
+    {
+        if (this.viewModel is not null)
+        {
+            this.viewModel.SnapshotExportRequested -= OnSnapshotExportRequested;
+            this.viewModel.BackupRequested -= OnBackupRequested;
+        }
+    }
+
+    private async void OnSnapshotExportRequested(object? sender, EventArgs e)
+    {
+        if (this.viewModel is null || !TryPickPath("diagnostics", ".txt", "Text|*.txt", out string path))
+        {
+            return;
+        }
+
+        await this.viewModel.ExportSnapshotAsync(path, CancellationToken.None);
+    }
+
+    private async void OnBackupRequested(object? sender, EventArgs e)
+    {
+        if (this.viewModel is null || !TryPickPath("rollgrinder-backup", ".zip", "Zip|*.zip", out string path))
+        {
+            return;
+        }
+
+        await this.viewModel.BackupAsync(path, CancellationToken.None);
+    }
+
+    private static bool TryPickPath(string prefix, string extension, string filter, out string path)
+    {
+        var dialog = new SaveFileDialog
+        {
+            FileName = string.Create(
+                CultureInfo.InvariantCulture, $"{prefix}-{DateTime.Now:yyyyMMdd-HHmm}{extension}"),
+            DefaultExt = extension,
+            Filter = filter,
+        };
+
+        bool chosen = dialog.ShowDialog() == true;
+        path = chosen ? dialog.FileName : string.Empty;
+        return chosen;
     }
 }

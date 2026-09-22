@@ -2,16 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
+using RollGrinder.Data;
 using RollGrinder.Nc;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Calibration;
+using RollGrinder.Services.Diagnostics;
 using RollGrinder.Services.Monitoring;
 
 namespace RollGrinder.App.ViewModels;
@@ -69,6 +75,8 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
     private readonly NcJobTranslator translator;
     private readonly IAlarmLog alarmLog;
     private readonly IAppOptions options;
+    private readonly ICalibrationService calibration;
+    private readonly IDiagnosticsExportService exports;
 
     private readonly DiagnosticRowViewModel connection;
     private readonly DiagnosticRowViewModel snapshotAge;
@@ -92,6 +100,8 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         IAlarmLog alarmLog,
         IAppOptions options,
         IStringLocalizer localizer,
+        ICalibrationService calibration,
+        IDiagnosticsExportService exports,
         IAlarmSink alarms,
         INavigator navigator)
         : base(alarms, localizer, navigator)
@@ -102,6 +112,8 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         this.translator = translator ?? throw new ArgumentNullException(nameof(translator));
         this.alarmLog = alarmLog ?? throw new ArgumentNullException(nameof(alarmLog));
         this.options = options ?? throw new ArgumentNullException(nameof(options));
+        this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
+        this.exports = exports ?? throw new ArgumentNullException(nameof(exports));
 
         this.connection = new DiagnosticRowViewModel("Diag_Connection", localizer);
         this.snapshotAge = new DiagnosticRowViewModel("Diag_SnapshotAge", localizer);
@@ -134,14 +146,15 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
 
         SetFunctionKeys(new[]
         {
-            FunctionKeyViewModel.Placeholder("Fn_ExportSnapshot", localizer, () => NotImplementedYet("Fn_ExportSnapshot"), FunctionKeyKind.Primary),
-            FunctionKeyViewModel.Placeholder("Fn_RunLog", localizer, () => NotImplementedYet("Fn_RunLog")),
+            // 导出诊断快照要挑一个文件路径，对话框在视图里；这个键只负责触发。
+            new FunctionKeyViewModel("Fn_ExportSnapshot", RequestSnapshotExportCommand, localizer, FunctionKeyKind.Primary),
+            new FunctionKeyViewModel("Fn_RunLog", OpenRunLogCommand, localizer),
             // 二级子视图：打开后导航槽变成"返回 诊断"。
             FunctionKeyViewModel.Placeholder("Fn_TagMonitor", localizer, () => Navigator.OpenSubView(TagMonitorSubView)),
-            FunctionKeyViewModel.Placeholder("Fn_MachineConfig", localizer, () => NotImplementedYet("Fn_MachineConfig")),
-            FunctionKeyViewModel.Placeholder("Fn_TagMapping", localizer, () => NotImplementedYet("Fn_TagMapping")),
-            FunctionKeyViewModel.Placeholder("Fn_AuditLog", localizer, () => NotImplementedYet("Fn_AuditLog")),
-            FunctionKeyViewModel.Placeholder("Fn_BackupRestore", localizer, () => NotImplementedYet("Fn_BackupRestore")),
+            new FunctionKeyViewModel("Fn_MachineConfig", OpenMachineConfigCommand, localizer),
+            new FunctionKeyViewModel("Fn_TagMapping", OpenTagMappingCommand, localizer),
+            new FunctionKeyViewModel("Fn_AuditLog", OpenAuditLogCommand, localizer),
+            new FunctionKeyViewModel("Fn_BackupRestore", RequestBackupCommand, localizer),
         });
     }
 
@@ -153,6 +166,161 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
 
     /// <summary>变量监视子视图的资源键，同时用作面包屑文案。</summary>
     public const string TagMonitorSubView = "SubView_TagMonitor";
+
+    /// <summary>机床配置子视图。</summary>
+    public const string MachineConfigSubView = "SubView_MachineConfig";
+
+    /// <summary>变量映射子视图。</summary>
+    public const string TagMappingSubView = "SubView_TagMapping";
+
+    /// <summary>标定审计子视图。</summary>
+    public const string AuditLogSubView = "SubView_AuditLog";
+
+    /// <summary>
+    /// 只读的文本视图：机床配置、变量映射、运行日志都摆在这里。
+    ///
+    /// 只显示不编辑：这三样东西改错了机床就动不了，改它们得开文件——
+    /// 界面上能看见是为了现场能对着电话把值念给人听，不是为了在这里改。
+    /// </summary>
+    [ObservableProperty]
+    private string inspectorText = string.Empty;
+
+    /// <summary>标定审计的行：每一项最后一次是谁改的。</summary>
+    public ObservableCollection<LabelValueViewModel> AuditRows { get; } = new();
+
+    /// <summary>界面要导出诊断快照时触发；路径由视图选。</summary>
+    public event EventHandler? SnapshotExportRequested;
+
+    /// <summary>界面要备份时触发；路径由视图选。</summary>
+    public event EventHandler? BackupRequested;
+
+    [RelayCommand]
+    private void RequestSnapshotExport() => SnapshotExportRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>导一份诊断快照；路径由界面选。</summary>
+    public Task ExportSnapshotAsync(string filePath, CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            await this.exports.ExportSnapshotAsync(filePath, token).ConfigureAwait(true);
+            Alarms.Raise(AlarmSeverity.Information, "Diag_SnapshotExported", filePath, AlarmCodes.Unspecified);
+        }, cancellationToken);
+
+    /// <summary>备份 config/ 与 data/；路径由界面选。</summary>
+    public Task BackupAsync(string filePath, CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            await this.exports.BackupAsync(filePath, token).ConfigureAwait(true);
+            Alarms.Raise(AlarmSeverity.Information, "Diag_BackupWritten", filePath, AlarmCodes.Unspecified);
+        }, cancellationToken);
+
+    [RelayCommand]
+    private void RequestBackup() => BackupRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>机床配置：把 machine.json 原样摆出来。</summary>
+    [RelayCommand]
+    private Task OpenMachineConfigAsync(CancellationToken cancellationToken) =>
+        ShowFileAsync(this.options.MachineConfigFilePath, MachineConfigSubView, cancellationToken);
+
+    /// <summary>变量映射：把 tagmap.json 原样摆出来。</summary>
+    [RelayCommand]
+    private Task OpenTagMappingAsync(CancellationToken cancellationToken) =>
+        ShowFileAsync(this.options.TagMapFilePath, TagMappingSubView, cancellationToken);
+
+    /// <summary>运行日志：日志目录里最新的那一个文件。</summary>
+    [RelayCommand]
+    private Task OpenRunLogAsync(CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            string? newest = NewestLogFile(this.options.LogDirectory);
+            if (newest is null)
+            {
+                InspectorText = Localizer["Diag_NoRunLog"];
+            }
+            else
+            {
+                // 只看末尾：日志一天能长到几十兆，全读进来界面就卡住了。
+                InspectorText = await TailAsync(newest, RunLogTailLines, token).ConfigureAwait(true);
+            }
+
+            Navigator.OpenSubView(MachineConfigSubView);
+        }, cancellationToken);
+
+    /// <summary>标定审计：每一项最后一次是谁在什么时候改的。</summary>
+    [RelayCommand]
+    private Task OpenAuditLogAsync(CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            AuditRows.Clear();
+            foreach (CalibrationAudit entry in await this.calibration
+                .LoadAuditAsync(token).ConfigureAwait(true))
+            {
+                AuditRows.Add(new LabelValueViewModel(
+                    "Parameter_" + entry.ParameterKey,
+                    Localizer.Format(
+                        "Diag_AuditEntryFormat",
+                        entry.ChangedBy,
+                        entry.ChangedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)),
+                    Localizer));
+            }
+
+            Navigator.OpenSubView(AuditLogSubView);
+        }, cancellationToken);
+
+    /// <summary>运行日志一次看多少行。</summary>
+    private const int RunLogTailLines = 400;
+
+    private Task ShowFileAsync(string path, string subViewKey, CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            InspectorText = File.Exists(path)
+                ? await File.ReadAllTextAsync(path, token).ConfigureAwait(true)
+                : Localizer.Format("Diag_FileMissingFormat", path);
+
+            Navigator.OpenSubView(subViewKey);
+        }, cancellationToken);
+
+    private static string? NewestLogFile(string directory)
+    {
+        if (!Directory.Exists(directory))
+        {
+            return null;
+        }
+
+        string? newest = null;
+        DateTime newestAt = DateTime.MinValue;
+        foreach (string path in Directory.EnumerateFiles(directory, "*.log"))
+        {
+            DateTime at = File.GetLastWriteTimeUtc(path);
+            if (at > newestAt)
+            {
+                newestAt = at;
+                newest = path;
+            }
+        }
+
+        return newest;
+    }
+
+    private static async Task<string> TailAsync(string path, int lines, CancellationToken cancellationToken)
+    {
+        // Serilog 还开着这个文件，所以要按共享读取打开，不能独占。
+        await using var stream = new FileStream(
+            path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream);
+
+        var tail = new Queue<string>(lines);
+        while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is string line)
+        {
+            if (tail.Count == lines)
+            {
+                tail.Dequeue();
+            }
+
+            tail.Enqueue(line);
+        }
+
+        return string.Join(Environment.NewLine, tail);
+    }
 
     public ObservableCollection<DiagnosticRowViewModel> ConnectionRows { get; }
 
