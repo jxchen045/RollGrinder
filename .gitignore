@@ -10,3 +10,6 @@ config/tagmap.json
 # 发给现场的离线包（git bundle / 源码 zip）是产物，不进版本库。
 *.bundle
 RollGrinder-source.zip
+
+# 全量测试脚本的产物（scripts/run-full-test.ps1）
+TestResults/

@@ -57,7 +57,12 @@ public static class MachineAccessServiceCollectionExtensions
         {
             GatewayKind.Stub => new StubGateway(tagMap),
             GatewayKind.Offline => new OfflineGateway(TimeProvider.System),
-            GatewayKind.Sim => new SimulationGateway(tagMap, machine, TimeProvider.System),
+            GatewayKind.Sim => new SimulationGateway(
+                tagMap,
+                machine,
+                options.SimulationSpeed > 1.0
+                    ? new AcceleratedTimeProvider(TimeProvider.System, options.SimulationSpeed)
+                    : TimeProvider.System),
             GatewayKind.File => new FileGateway(tagMap, options.DataDirectory, options.ReplayFilePath, TimeProvider.System),
             GatewayKind.OpcUa => new OpcUaGateway(
                 tagMap,

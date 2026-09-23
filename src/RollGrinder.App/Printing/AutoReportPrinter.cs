@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Threading;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Records;
@@ -86,13 +87,8 @@ public sealed class AutoReportPrinter : IDisposable
         {
             FlowDocument document = ReportDocumentBuilder.Build(report, this.localizer);
 
-            // 不 ShowDialog：PrintDialog 不弹的时候用的就是系统默认打印机。
-            var dialog = new PrintDialog();
-            document.PageHeight = dialog.PrintableAreaHeight;
-            document.PageWidth = dialog.PrintableAreaWidth;
-
-            IDocumentPaginatorSource paginator = document;
-            dialog.PrintDocument(paginator.DocumentPaginator, this.localizer[report.TitleResourceKey]);
+            // 不问操作员：直接用系统默认打印机。
+            InteractionScope.DocumentOutput.Print(document, this.localizer[report.TitleResourceKey], askOperator: false);
         }
         catch (Exception ex) when (ex is PrintQueueException or PrintSystemException or InvalidOperationException)
         {

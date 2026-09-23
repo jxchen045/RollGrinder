@@ -9,7 +9,7 @@ using System.Linq;
 using RollGrinder.App.Printing;
 using RollGrinder.Services.Records;
 using ScottPlot;
-using Microsoft.Win32;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.ViewModels;
 
 namespace RollGrinder.App.Views;
@@ -117,18 +117,7 @@ public partial class RecordsView : UserControl
             return;
         }
 
-        var dialog = new PrintDialog();
-        if (dialog.ShowDialog() != true)
-        {
-            return;
-        }
-
-        // 按所选打印机的可打印区域重新分页：换一台纸张不同的打印机也不会切掉边。
-        IDocumentPaginatorSource paginator = document;
-        document.PageHeight = dialog.PrintableAreaHeight;
-        document.PageWidth = dialog.PrintableAreaWidth;
-
-        dialog.PrintDocument(paginator.DocumentPaginator, document.Name);
+        InteractionScope.DocumentOutput.Print(document, document.Name, askOperator: true);
     }
 
     /// <summary>功能键上的"导出"与页面上的按钮走同一条路。</summary>
@@ -141,18 +130,15 @@ public partial class RecordsView : UserControl
             return;
         }
 
-        var dialog = new SaveFileDialog
-        {
-            FileName = string.Create(CultureInfo.InvariantCulture, $"records-{DateTime.Now:yyyyMMdd-HHmm}.csv"),
-            DefaultExt = ".csv",
-            Filter = "CSV|*.csv",
-        };
-
-        if (dialog.ShowDialog() != true)
+        string? path = InteractionScope.FileDialogs.PickSavePath(
+            string.Create(CultureInfo.InvariantCulture, $"records-{DateTime.Now:yyyyMMdd-HHmm}.csv"),
+            ".csv",
+            "CSV|*.csv");
+        if (path is null)
         {
             return;
         }
 
-        await viewModel.ExportAsync(dialog.FileName, CancellationToken.None);
+        await viewModel.ExportAsync(path, CancellationToken.None);
     }
 }

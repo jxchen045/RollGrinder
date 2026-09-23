@@ -21,6 +21,9 @@ public partial class App : Application
 {
     private readonly IHost host;
 
+    /// <summary>界面自检（--selftest）：主窗口显示后开跑，跑完以它的返回值作为退出码退出。</summary>
+    private readonly Func<ShellWindow, IServiceProvider, Task<int>>? selfTest;
+
     /// <summary>2 秒内连抛超过 10 次就不再兜住：见 <see cref="ExceptionStormDetector"/>。</summary>
     private readonly ExceptionStormDetector storm = new(maxCount: 10, window: TimeSpan.FromSeconds(2));
 
@@ -28,9 +31,10 @@ public partial class App : Application
 
     private IAlarmSink? alarms;
 
-    public App(IHost host)
+    public App(IHost host, Func<ShellWindow, IServiceProvider, Task<int>>? selfTest = null)
     {
         this.host = host ?? throw new ArgumentNullException(nameof(host));
+        this.selfTest = selfTest;
     }
 
     protected override void OnStartup(StartupEventArgs e)
@@ -56,6 +60,28 @@ public partial class App : Application
             Dispatcher);
 
         window.Show();
+
+        if (this.selfTest is not null)
+        {
+            Dispatcher.InvokeAsync(RunSelfTestAsync, DispatcherPriority.ApplicationIdle);
+        }
+    }
+
+    private async Task RunSelfTestAsync()
+    {
+        int exitCode;
+        try
+        {
+            exitCode = await this.selfTest!((ShellWindow)MainWindow, this.host.Services).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Self-test runner crashed");
+            exitCode = 3;
+        }
+
+        Log.Information("Self-test finished with exit code {ExitCode}", exitCode);
+        Shutdown(exitCode);
     }
 
     protected override void OnExit(ExitEventArgs e)

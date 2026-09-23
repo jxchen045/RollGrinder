@@ -16,14 +16,20 @@ namespace RollGrinder.Composition;
 ///   --config &lt;dir&gt;    配置目录
 ///   --data &lt;dir&gt;      数据目录
 ///   --replay &lt;file&gt;   回放指定的 .jsonl 录制文件（隐含 --gateway file）
+///   --sim-speed &lt;n&gt;   仿真时间倍率 1–100（只对 --gateway sim 生效）
 /// </summary>
 public sealed class AppOptions : IAppOptions
 {
     public const string MachineConfigFileName = "machine.json";
     public const string TagMapFileName = "tagmap.json";
 
-    private AppOptions(string configDirectory, string dataDirectory, GatewayKind gateway, string? replayFilePath)
+    /// <summary>仿真时间倍率上限：再快，一次读数之间拖板就会越过整根辊身。</summary>
+    public const double MaxSimulationSpeed = 100.0;
+
+    private AppOptions(
+        string configDirectory, string dataDirectory, GatewayKind gateway, string? replayFilePath, double simulationSpeed = 1.0)
     {
+        SimulationSpeed = simulationSpeed;
         ConfigDirectory = configDirectory;
         DataDirectory = dataDirectory;
         Gateway = gateway;
@@ -50,6 +56,9 @@ public sealed class AppOptions : IAppOptions
     /// </summary>
     public bool IsOffline => Gateway == GatewayKind.Offline;
 
+    /// <inheritdoc />
+    public double SimulationSpeed { get; }
+
     /// <summary>回放文件路径（--replay）；为空时取 data/replay 下最新的 .jsonl。</summary>
     public string? ReplayFilePath { get; }
 
@@ -66,6 +75,7 @@ public sealed class AppOptions : IAppOptions
         string dataDirectory = Path.Combine(baseDirectory, "data");
         GatewayKind gateway = GatewayKind.OpcUa;
         string? replayFilePath = null;
+        double simulationSpeed = 1.0;
 
         for (int i = 0; i < args.Count; i++)
         {
@@ -97,13 +107,17 @@ public sealed class AppOptions : IAppOptions
                     gateway = GatewayKind.File;
                     break;
 
+                case "--sim-speed":
+                    simulationSpeed = ParseSimulationSpeed(RequireValue(args, ref i, arg));
+                    break;
+
                 default:
                     // 未知参数留给宿主处理（例如 WPF 自身的参数），此处不报错。
                     break;
             }
         }
 
-        return new AppOptions(configDirectory, dataDirectory, gateway, replayFilePath);
+        return new AppOptions(configDirectory, dataDirectory, gateway, replayFilePath, simulationSpeed);
     }
 
     private static string RequireValue(IReadOnlyList<string> args, ref int index, string optionName)
@@ -115,6 +129,18 @@ public sealed class AppOptions : IAppOptions
 
         index++;
         return args[index];
+    }
+
+    private static double ParseSimulationSpeed(string value)
+    {
+        if (!double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double speed)
+            || speed < 1.0 || speed > MaxSimulationSpeed)
+        {
+            throw new ArgumentException(
+                $"--sim-speed expects a number between 1 and {MaxSimulationSpeed}, got '{value}'.", nameof(value));
+        }
+
+        return speed;
     }
 
     private static GatewayKind ParseGateway(string value) => value.ToLowerInvariant() switch

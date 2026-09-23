@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Win32;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.ViewModels;
 
 namespace RollGrinder.App.Views;
@@ -66,16 +66,11 @@ public partial class DiagnosticsView : UserControl
 
     private static bool TryPickPath(string prefix, string extension, string filter, out string path)
     {
-        var dialog = new SaveFileDialog
-        {
-            FileName = string.Create(
-                CultureInfo.InvariantCulture, $"{prefix}-{DateTime.Now:yyyyMMdd-HHmm}{extension}"),
-            DefaultExt = extension,
-            Filter = filter,
-        };
-
-        bool chosen = dialog.ShowDialog() == true;
-        path = chosen ? dialog.FileName : string.Empty;
-        return chosen;
+        string? chosen = InteractionScope.FileDialogs.PickSavePath(
+            string.Create(CultureInfo.InvariantCulture, $"{prefix}-{DateTime.Now:yyyyMMdd-HHmm}{extension}"),
+            extension,
+            filter);
+        path = chosen ?? string.Empty;
+        return chosen is not null;
     }
 }

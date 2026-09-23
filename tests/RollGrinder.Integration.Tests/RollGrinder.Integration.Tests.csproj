@@ -24,6 +24,8 @@
     <Compile Include="..\..\src\RollGrinder.App\Navigation\NavigationModel.cs" Link="Navigation\NavigationModel.cs" />
     <Compile Include="..\..\src\RollGrinder.App\Navigation\AreaMenuLayout.cs" Link="Navigation\AreaMenuLayout.cs" />
     <Compile Include="..\..\src\RollGrinder.App\Diagnostics\ExceptionStormDetector.cs" Link="Diagnostics\ExceptionStormDetector.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\SelfTest\SelfTestOptions.cs" Link="SelfTest\SelfTestOptions.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\SelfTest\SelfTestRecorder.cs" Link="SelfTest\SelfTestRecorder.cs" />
   </ItemGroup>
 
   <ItemGroup>

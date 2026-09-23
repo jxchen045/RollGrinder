@@ -36,6 +36,12 @@ public interface IAppOptions
     /// </summary>
     bool IsOffline { get; }
 
+    /// <summary>
+    /// 仿真时间倍率（命令行 --sim-speed，默认 1）。只影响仿真网关，
+    /// 让一支辊的全流程在自检里几十秒跑完；真机床网关不读这个值。
+    /// </summary>
+    double SimulationSpeed { get; }
+
     /// <summary>回放文件路径（命令行 --replay）；为空时由文件网关取最新一份录制。</summary>
     string? ReplayFilePath { get; }
 }

@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Windows.Controls;
-using Microsoft.Win32;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.ViewModels;
 using ScottPlot;
 
@@ -53,13 +53,13 @@ public partial class ProfileView : UserControl
             return;
         }
 
-        var dialog = new OpenFileDialog { DefaultExt = ".csv", Filter = "CSV|*.csv|All files|*.*" };
-        if (dialog.ShowDialog() != true)
+        string? path = InteractionScope.FileDialogs.PickOpenPath(".csv", "CSV|*.csv|All files|*.*");
+        if (path is null)
         {
             return;
         }
 
-        await this.viewModel.ImportPointsAsync(dialog.FileName, CancellationToken.None);
+        await this.viewModel.ImportPointsAsync(path, CancellationToken.None);
     }
 
     private async void OnGeneratePointsRequested(object? sender, EventArgs e)
@@ -69,20 +69,16 @@ public partial class ProfileView : UserControl
             return;
         }
 
-        var dialog = new SaveFileDialog
-        {
-            FileName = string.Create(
-                CultureInfo.InvariantCulture, $"profile-{DateTime.Now:yyyyMMdd-HHmm}.csv"),
-            DefaultExt = ".csv",
-            Filter = "CSV|*.csv",
-        };
-
-        if (dialog.ShowDialog() != true)
+        string? path = InteractionScope.FileDialogs.PickSavePath(
+            string.Create(CultureInfo.InvariantCulture, $"profile-{DateTime.Now:yyyyMMdd-HHmm}.csv"),
+            ".csv",
+            "CSV|*.csv");
+        if (path is null)
         {
             return;
         }
 
-        await this.viewModel.GeneratePointsAsync(dialog.FileName, CancellationToken.None);
+        await this.viewModel.GeneratePointsAsync(path, CancellationToken.None);
     }
 
     private void Redraw()

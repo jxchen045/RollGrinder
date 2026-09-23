@@ -9,7 +9,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RollGrinder.App.Localization;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Navigation;
+using RollGrinder.App.SelfTest;
 using RollGrinder.App.ViewModels;
 using RollGrinder.App.Views;
 using RollGrinder.Composition;
@@ -33,15 +35,31 @@ public static class Program
     public static int Main(string[] args)
     {
         AppOptions options;
+        SelfTestOptions selfTest;
         try
         {
             options = AppOptions.Parse(args, AppContext.BaseDirectory);
+            selfTest = SelfTestOptions.Parse(args, AppContext.BaseDirectory);
         }
         catch (ArgumentException ex)
         {
             // 日志尚未建立，只能写标准错误。
             Console.Error.WriteLine(ex.Message);
             return 2;
+        }
+
+        // 自检两道闸（只许假机床、只许专用数据目录）必须在碰数据目录之前查。
+        SelfTestRunner? selfTestRunner = null;
+        if (selfTest.Enabled)
+        {
+            string? refusal = SelfTestOptions.Refuse(options.Gateway, options.DataDirectory);
+            if (refusal is not null)
+            {
+                Console.Error.WriteLine(refusal);
+                return 2;
+            }
+
+            selfTestRunner = PrepareSelfTest(selfTest, options);
         }
 
         IStringLocalizer localizer = new ResxStringLocalizer();
@@ -88,7 +106,7 @@ public static class Program
             host.Services.GetRequiredService<ICalibrationService>()
                 .LoadAsync(CancellationToken.None).GetAwaiter().GetResult();
 
-            var application = new App(host);
+            var application = new App(host, selfTestRunner is null ? null : selfTestRunner.RunAsync);
             application.InitializeComponent();
             int exitCode = application.Run();
 
@@ -109,6 +127,22 @@ public static class Program
         {
             Log.CloseAndFlush();
         }
+    }
+
+    /// <summary>
+    /// 自检准备：给数据目录打上专用标记，把文件对话框与打印换成自动应答。
+    /// </summary>
+    private static SelfTestRunner PrepareSelfTest(SelfTestOptions selfTest, AppOptions options)
+    {
+        Directory.CreateDirectory(options.DataDirectory);
+        File.WriteAllText(
+            Path.Combine(options.DataDirectory, SelfTestOptions.DataMarkerFileName),
+            "This data directory belongs to the HMI self-test. Never point the production HMI here.");
+
+        string output = selfTest.OutputDirectory ?? Path.Combine(options.DataDirectory, "selftest");
+        var interaction = new AutoAnswerInteraction(Path.Combine(output, "files"), Path.Combine(output, "prints"));
+        InteractionScope.SetCurrent(interaction, interaction);
+        return new SelfTestRunner(selfTest, options, interaction, output);
     }
 
     private static string SampleDirectory() => Path.Combine(AppContext.BaseDirectory, "config");
