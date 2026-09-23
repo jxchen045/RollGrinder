@@ -224,6 +224,20 @@
   </Style>
 
   <!-- 数值输入框。运行中（页面 IsReadOnly）自动转只读：能看能选，不能改。 -->
+  <Style x:Key="ValueTextBox" TargetType="TextBox">
+    <Setter Property="IsReadOnly"
+            Value="{Binding DataContext.IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=False}" />
+    <Setter Property="FontFamily" Value="{StaticResource Font.Mono}" />
+    <Setter Property="FontSize" Value="{StaticResource Size.DataRow}" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+    <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Brush.ButtonBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Height" Value="46" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
   <!--
     参数网格里的一格。数值/文本给输入框，开关与选项给一排分段按钮——
     界面完全按 ParameterSchema 生成，新增一类辊形或工序不动这里。
@@ -289,20 +303,6 @@
       </StackPanel>
     </Border>
   </DataTemplate>
-
-  <Style x:Key="ValueTextBox" TargetType="TextBox">
-    <Setter Property="IsReadOnly"
-            Value="{Binding DataContext.IsReadOnly, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=False}" />
-    <Setter Property="FontFamily" Value="{StaticResource Font.Mono}" />
-    <Setter Property="FontSize" Value="{StaticResource Size.DataRow}" />
-    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
-    <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
-    <Setter Property="BorderBrush" Value="{StaticResource Brush.ButtonBorder}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="Height" Value="46" />
-    <Setter Property="Padding" Value="10,0" />
-    <Setter Property="VerticalContentAlignment" Value="Center" />
-  </Style>
 
   <!-- 数据行：左标签右数值，底部细分隔线 -->
   <Style x:Key="DataRowBorder" TargetType="Border">

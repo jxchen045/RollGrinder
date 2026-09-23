@@ -1,12 +1,16 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using RollGrinder.App.Diagnostics;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Printing;
 using RollGrinder.App.Views;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Records;
+using Serilog;
 
 namespace RollGrinder.App;
 
@@ -17,7 +21,12 @@ public partial class App : Application
 {
     private readonly IHost host;
 
+    /// <summary>2 秒内连抛超过 10 次就不再兜住：见 <see cref="ExceptionStormDetector"/>。</summary>
+    private readonly ExceptionStormDetector storm = new(maxCount: 10, window: TimeSpan.FromSeconds(2));
+
     private AutoReportPrinter? printer;
+
+    private IAlarmSink? alarms;
 
     public App(IHost host)
     {
@@ -27,6 +36,14 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // 界面层统一兜底（架构约束第 10 条）：任何没被页面自己接住的异常都转成报警条目，
+        // 并把完整堆栈写进日志——而不是弹一个崩溃框把整个上位机带走。
+        this.alarms = this.host.Services.GetRequiredService<IAlarmSink>();
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+        AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
+
         ShellWindow window = this.host.Services.GetRequiredService<ShellWindow>();
         MainWindow = window;
 
@@ -43,7 +60,44 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        DispatcherUnhandledException -= OnDispatcherUnhandledException;
+        TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
+        AppDomain.CurrentDomain.UnhandledException -= OnDomainUnhandledException;
         this.printer?.Dispose();
         base.OnExit(e);
+    }
+
+    /// <summary>界面线程上的异常：记日志、转报警、界面接着用。成了风暴就放手。</summary>
+    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        if (!this.storm.TryAbsorb(DateTimeOffset.UtcNow))
+        {
+            Log.Fatal(e.Exception, "Unhandled UI exceptions keep recurring; letting the HMI exit instead of spinning");
+            return;
+        }
+
+        Log.Error(e.Exception, "Unhandled UI exception, converted to an alarm");
+        this.alarms?.RaiseException(e.Exception);
+        e.Handled = true;
+    }
+
+    /// <summary>没人等的后台任务失败了：同样记日志并转报警（切回界面线程登记）。</summary>
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        Log.Error(e.Exception, "Unobserved task exception, converted to an alarm");
+        e.SetObserved();
+        Exception exception = e.Exception.InnerExceptions.Count == 1 ? e.Exception.InnerExceptions[0] : e.Exception;
+        Dispatcher.BeginInvoke(() => this.alarms?.RaiseException(exception));
+    }
+
+    /// <summary>其他线程上的致命异常：拦不住，只能保证堆栈进了日志。</summary>
+    private static void OnDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception exception)
+        {
+            Log.Fatal(exception, "Unhandled exception on a background thread; the HMI is terminating");
+        }
+
+        Log.CloseAndFlush();
     }
 }
