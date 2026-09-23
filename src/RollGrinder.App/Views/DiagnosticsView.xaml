@@ -28,6 +28,9 @@
                     <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_TagMapping">
                         <Setter Property="Visibility" Value="Visible" />
                     </DataTrigger>
+                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_RunLog">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
                 </Style.Triggers>
             </Style>
 

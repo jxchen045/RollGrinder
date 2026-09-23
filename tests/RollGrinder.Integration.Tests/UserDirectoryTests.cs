@@ -123,10 +123,21 @@ public sealed class UserDirectoryTests : IDisposable
         UserDirectory directory = await DirectoryAsync();
         await directory.CreateAsync("wang", password, UserRole.Operator, CancellationToken.None);
 
-        byte[] file = await File.ReadAllBytesAsync(this.database.DatabaseFilePath, CancellationToken.None);
+        // 先放掉连接池：Windows 上池里的连接占着文件，直接读会被拒。
+        // 三个文件都查——WAL 模式下刚写进去的内容可能还在 -wal 里，只查主库会漏。
+        SqliteConnection.ClearAllPools();
+        foreach (string suffix in new[] { string.Empty, "-wal", "-shm" })
+        {
+            string path = this.database.DatabaseFilePath + suffix;
+            if (!File.Exists(path))
+            {
+                continue;
+            }
 
-        IndexOf(file, Encoding.UTF8.GetBytes(password)).Should().Be(-1, "库里不该有口令明文");
-        IndexOf(file, Encoding.Unicode.GetBytes(password)).Should().Be(-1);
+            byte[] file = await ReadSharedAsync(path);
+            IndexOf(file, Encoding.UTF8.GetBytes(password)).Should().Be(-1, "库里不该有口令明文：" + Path.GetFileName(path));
+            IndexOf(file, Encoding.Unicode.GetBytes(password)).Should().Be(-1, Path.GetFileName(path));
+        }
     }
 
     [Fact]
@@ -186,6 +197,14 @@ public sealed class UserDirectoryTests : IDisposable
 
         await directory.Invoking(d => d.SetPasswordAsync(UserDirectory.SeedUserName, string.Empty, CancellationToken.None))
             .Should().ThrowAsync<DomainException>();
+    }
+
+    private static async Task<byte[]> ReadSharedAsync(string path)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var copy = new MemoryStream();
+        await stream.CopyToAsync(copy);
+        return copy.ToArray();
     }
 
     private static int IndexOf(byte[] haystack, byte[] needle)

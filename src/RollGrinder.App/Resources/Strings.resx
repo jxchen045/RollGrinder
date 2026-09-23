@@ -2008,4 +2008,10 @@
   <data name="Nav_ShortcutBadgeHint" xml:space="preserve">
     <value>按 Ctrl+1…7 可直接切到对应页面，不用打开页面菜单</value>
   </data>
+  <data name="SubView_RunLog" xml:space="preserve">
+    <value>运行日志</value>
+  </data>
+  <data name="Records_NoteLabel" xml:space="preserve">
+    <value>备注</value>
+  </data>
 </root>

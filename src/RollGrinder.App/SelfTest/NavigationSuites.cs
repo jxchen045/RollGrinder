@@ -48,6 +48,7 @@ internal sealed class NavigationSuite : ISelfTestSuite
                 IReadOnlyList<string> missing = h.FindMissingResources();
                 ctx.Check(missing.Count == 0, "missing resources on page: " + string.Join(", ", missing));
                 ctx.Note("breadcrumb=" + shell.BreadcrumbText);
+                WarnClipped(h, ctx);
             }, StepOptions.Shot);
         }
 
@@ -173,6 +174,16 @@ internal sealed class NavigationSuite : ISelfTestSuite
         });
 
         await h.GoToAsync(home);
+    }
+
+    /// <summary>按钮文字被截断：不判失败（不影响功能），但记 WARN 并列出来。</summary>
+    internal static void WarnClipped(SelfTestHarness h, StepContext ctx)
+    {
+        IReadOnlyList<string> clipped = h.FindClippedButtons();
+        if (clipped.Count > 0)
+        {
+            ctx.Warn("clipped buttons: " + string.Join(" | ", clipped));
+        }
     }
 
     private static string Invariant(System.FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
@@ -364,5 +375,6 @@ internal sealed class RenderSuite : ISelfTestSuite
     {
         IReadOnlyList<string> missing = h.FindMissingResources();
         ctx.Check(missing.Count == 0, "missing resources: " + string.Join(", ", missing));
+        NavigationSuite.WarnClipped(h, ctx);
     }
 }

@@ -155,6 +155,21 @@ public sealed class ReportTests : IDisposable
     }
 
     [Fact]
+    public async Task Enum_like_values_are_handed_to_the_layout_as_resource_keys()
+    {
+        // 自检截图里报表"状态"一栏印着 "Handed"：枚举名不能直接上纸，要按界面语言取字。
+        await using ServiceProvider services = await BuildAsync();
+        await SeedAsync(services, withMeasurement: false);
+
+        GrindingReport report = (await services.GetRequiredService<IReportService>()
+            .BuildAsync(RecordId, ReportKind.PostGrind, CancellationToken.None))!;
+
+        ReportField state = report.Header.Single(field => field.LabelResourceKey == "Report_State");
+        state.ValueIsResourceKey.Should().BeTrue();
+        state.Value.Should().StartWith("JobState_");
+    }
+
+    [Fact]
     public async Task The_post_grind_report_says_how_the_roll_actually_came_out()
     {
         await using ServiceProvider services = await BuildAsync();

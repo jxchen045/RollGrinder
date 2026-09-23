@@ -112,7 +112,7 @@ public static class ReportDocumentBuilder
     private static void AppendField(TableRow row, ReportField field, IStringLocalizer localizer)
     {
         row.Cells.Add(Cell(localizer[field.LabelResourceKey], bold: true));
-        row.Cells.Add(Cell(field.Value));
+        row.Cells.Add(Cell(field.ValueIsResourceKey ? localizer[field.Value] : field.Value));
     }
 
     /// <summary>

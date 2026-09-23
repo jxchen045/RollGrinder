@@ -131,7 +131,9 @@ public sealed class ReportService : IReportService
             new("Report_NominalDiameter", Number(job.Geometry.NominalDiameterMm, "F3")),
 
             // 辊形与程序记的是**调出来时的名字**：库里之后改了名，这支辊的记录不跟着变。
-            new("Report_Profile", job.ProfileName ?? job.ProfileTypeKey),
+            job.ProfileName is { Length: > 0 } profileName
+                ? new("Report_Profile", profileName)
+                : new("Report_Profile", "ProfileType_" + job.ProfileTypeKey, ValueIsResourceKey: true),
             new("Report_Program", job.ProgramName ?? string.Empty),
             new("Report_StartedAt", Instant(record.StartedAtUtc)),
         };
@@ -144,7 +146,8 @@ public sealed class ReportService : IReportService
             fields.Add(new ReportField("Report_Duration", record.FinishedAtUtc is null
                 ? string.Empty
                 : Number((record.FinishedAtUtc.Value - record.StartedAtUtc).TotalMinutes, "F0")));
-            fields.Add(new ReportField("Report_State", record.State.ToString()));
+            // 状态给资源键，由排版时按界面语言取字——报表上不能出现 "Handed" 这种枚举名。
+            fields.Add(new ReportField("Report_State", "JobState_" + record.State, ValueIsResourceKey: true));
         }
 
         if (!string.IsNullOrWhiteSpace(record.Note))

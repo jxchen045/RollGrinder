@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
+using RollGrinder.Core.Time;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Records;
@@ -258,8 +259,8 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     public Task QueryAsync(CancellationToken cancellationToken) =>
         RunGuardedAsync(async token =>
         {
-            var fromUtc = new DateTimeOffset(FromDate.Date, TimeSpan.Zero);
-            var toUtc = new DateTimeOffset(ToDate.Date.AddDays(1), TimeSpan.Zero);
+            // 查询日期是操作员所在地的日历日，不是 UTC 日。
+            (DateTimeOffset fromUtc, DateTimeOffset toUtc) = LocalDays.Range(FromDate, ToDate, TimeZoneInfo.Local);
 
             Records.Clear();
             foreach (GrindingRecordView view in await this.recordService
@@ -334,10 +335,8 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             ToDate = to;
             await QueryAsync(token).ConfigureAwait(true);
 
-            GrindingSummary summary = await this.recordService.SummariseAsync(
-                new DateTimeOffset(from.Date, TimeSpan.Zero),
-                new DateTimeOffset(to.Date.AddDays(1), TimeSpan.Zero),
-                token).ConfigureAwait(true);
+            (DateTimeOffset fromUtc, DateTimeOffset toUtc) = LocalDays.Range(from, to, TimeZoneInfo.Local);
+            GrindingSummary summary = await this.recordService.SummariseAsync(fromUtc, toUtc, token).ConfigureAwait(true);
 
             // 一支都没磨时合格率是"--"不是 0%：
             // "这段时间没干活"与"干了活全不合格"是两回事。

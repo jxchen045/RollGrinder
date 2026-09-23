@@ -27,7 +27,16 @@
                     <TextBlock Text="{loc:Loc Steps_SequenceHeader}" Style="{StaticResource Text.CardTitle}" />
                 </Border>
 
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
+                <!-- 两行：下拉框占满一行，两个按钮平分第二行。一行放不下——左栏只有约 345 px，按钮字会被截断。 -->
+                <Grid DockPanel.Dock="Top" Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <!--
                         按实机的 5 个工序槽分组呈现（外加不占槽的探伤/测量/标记/暂停）。
                         内部仍然是任意排序的若干种工序类型，槽只是分组——
@@ -35,7 +44,7 @@
                     -->
                     <ComboBox x:Name="StepTypePicker" SelectedItem="{Binding SelectedStepType}"
                               DisplayMemberPath="DisplayName" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                              Width="190" Height="46" FontSize="17" Margin="0,0,8,0">
+                              Grid.Row="0" Grid.ColumnSpan="2" Height="46" FontSize="17" Margin="0,0,0,8">
                         <ComboBox.GroupStyle>
                             <GroupStyle>
                                 <GroupStyle.HeaderTemplate>
@@ -49,10 +58,10 @@
                         </ComboBox.GroupStyle>
                     </ComboBox>
                     <Button Content="{loc:Loc Steps_AddStep}" Command="{Binding AddStepCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Height="46" Width="80" Margin="0,0,8,0" />
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="0" Height="46" Margin="0,0,4,0" />
                     <Button Content="{loc:Loc Steps_NewJob}" Command="{Binding NewJobCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Height="46" Width="90" />
-                </StackPanel>
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Height="46" Margin="4,0,0,0" />
+                </Grid>
 
                 <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
                         BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14">
@@ -152,7 +161,13 @@
                                     <TextBlock Text="{loc:Loc Job_ProfileTypeLabel}" Style="{StaticResource Text.Label}" />
                                     <ComboBox ItemsSource="{Binding ProfileTypeKeys}" SelectedItem="{Binding SelectedProfileTypeKey}"
                                               IsEnabled="{Binding CanEditInlineProfile}"
-                                              Height="46" FontSize="18" Margin="0,8,0,0" />
+                                              Height="46" FontSize="18" Margin="0,8,0,0">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}, ConverterParameter=ProfileType_}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
                                 </StackPanel>
                             </Border>
                             <Border Style="{StaticResource ParameterCell}">

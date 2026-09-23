@@ -107,11 +107,16 @@ public sealed class FunctionKeyStyleConverter : IValueConverter
         throw new NotSupportedException();
 }
 
-/// <summary>资源键 → 本地化文案。顶栏的上下文标签用它。</summary>
+/// <summary>
+/// 资源键 → 本地化文案。顶栏的上下文标签用它。
+/// ConverterParameter 给一个前缀时把它拼在值前面：辊形类型键 "Crown" + "ProfileType_" → "凸度"。
+/// </summary>
 public sealed class LocalizeConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        value is string key && key.Length > 0 ? Localization.LocalizationScope.Current[key] : string.Empty;
+        value is string key && key.Length > 0
+            ? Localization.LocalizationScope.Current[(parameter as string ?? string.Empty) + key]
+            : string.Empty;
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();

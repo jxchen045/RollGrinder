@@ -170,6 +170,9 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
     /// <summary>机床配置子视图。</summary>
     public const string MachineConfigSubView = "SubView_MachineConfig";
 
+    /// <summary>运行日志子视图：与机床配置共用检视面板，但面包屑要说清楚看的是什么。</summary>
+    public const string RunLogSubView = "SubView_RunLog";
+
     /// <summary>变量映射子视图。</summary>
     public const string TagMappingSubView = "SubView_TagMapping";
 
@@ -242,7 +245,7 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
                 InspectorText = await TailAsync(newest, RunLogTailLines, token).ConfigureAwait(true);
             }
 
-            Navigator.OpenSubView(MachineConfigSubView);
+            Navigator.OpenSubView(RunLogSubView);
         }, cancellationToken);
 
     /// <summary>标定审计：每一项最后一次是谁在什么时候改的。</summary>

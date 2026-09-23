@@ -429,16 +429,32 @@ public sealed partial class StepsViewModel : PageViewModelBase
         Add("RollData_HeadBoxWeight", sheet.HeadBoxWeightKg, "F0");
         Add("RollData_TailBoxWeight", sheet.TailBoxWeightKg, "F0");
 
-        TotalWeightText = sheet.TotalWeightKg is double total
-            ? total.ToString("F0", CultureInfo.CurrentCulture)
-            : "--";
+        RefreshTotalWeight();
 
-        void Add(string key, double? value, string format) =>
-            RollData.Add(new RollDataRowViewModel(
+        void Add(string key, double? value, string format)
+        {
+            var row = new RollDataRowViewModel(
                 key,
                 Localizer[key],
-                value is null ? string.Empty : value.Value.ToString(format, CultureInfo.CurrentCulture)));
+                value is null ? string.Empty : value.Value.ToString(format, CultureInfo.CurrentCulture));
+
+            // 吊装总重跟着输入走：填完三项重量当场就看得到，不用存了再重开。
+            row.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(RollDataRowViewModel.Text))
+                {
+                    RefreshTotalWeight();
+                }
+            };
+            RollData.Add(row);
+        }
     }
+
+    /// <summary>按格子里现在的值算吊装总重；缺一项就是 "--"。</summary>
+    private void RefreshTotalWeight() =>
+        TotalWeightText = ReadRollData().TotalWeightKg is double total
+            ? total.ToString("F0", CultureInfo.CurrentCulture)
+            : "--";
 
     private static double ParseOrZero(string text) =>
         TryParseDouble(text, out double value) ? value : 0.0;
@@ -584,6 +600,11 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private void NewJob()
     {
         JobId = NewJobId();
+
+        // 工序清空了，就不再是哪个程序了：留着程序名，这支辊的记录会写成"用的是某某程序"，
+        // 而那个程序可能根本没被用过、甚至已经删了。
+        ProgramId = null;
+        ProgramName = string.Empty;
         Steps.Clear();
         Violations.Clear();
         StatusResourceKey = string.Empty;

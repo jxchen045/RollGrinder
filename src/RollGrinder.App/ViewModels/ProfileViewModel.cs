@@ -665,7 +665,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
 
         IRollProfileType profileType = this.profileTypes.Get(row.Segment.ProfileTypeKey);
-        SegmentParametersTitle = profileType.Key;
+        SegmentParametersTitle = Localizer["ProfileType_" + profileType.Key];
 
         ParameterSet values = profileType.Schema.ApplyDefaults(row.Segment.Parameters);
         foreach (ParameterDescriptor descriptor in profileType.Schema.Descriptors)
@@ -689,7 +689,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         {
             Segments.Add(new SegmentRowViewModel(
                 segment,
-                segment.ProfileTypeKey,
+                Localizer["ProfileType_" + segment.ProfileTypeKey],
                 string.Create(
                     CultureInfo.CurrentCulture,
                     $"{segment.FromMm:F0} – {segment.ToMm:F0} mm")));

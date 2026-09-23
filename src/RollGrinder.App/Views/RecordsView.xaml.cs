@@ -117,7 +117,11 @@ public partial class RecordsView : UserControl
             return;
         }
 
-        InteractionScope.DocumentOutput.Print(document, document.Name, askOperator: true);
+        // 打印队列里显示报表标题（磨前工艺单 / 磨削报告），而不是一个空名字。
+        string title = this.viewModel?.Report is { } report
+            ? this.viewModel.Localizer[report.TitleResourceKey]
+            : document.Name;
+        InteractionScope.DocumentOutput.Print(document, title, askOperator: true);
     }
 
     /// <summary>功能键上的"导出"与页面上的按钮走同一条路。</summary>

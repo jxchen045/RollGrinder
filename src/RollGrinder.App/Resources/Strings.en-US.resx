@@ -2008,4 +2008,10 @@
   <data name="Nav_ShortcutBadgeHint" xml:space="preserve">
     <value>Press Ctrl+1…7 to jump straight to a page without opening the page menu</value>
   </data>
+  <data name="SubView_RunLog" xml:space="preserve">
+    <value>Run log</value>
+  </data>
+  <data name="Records_NoteLabel" xml:space="preserve">
+    <value>Note</value>
+  </data>
 </root>

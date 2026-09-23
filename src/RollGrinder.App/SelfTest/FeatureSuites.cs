@@ -10,6 +10,7 @@ using RollGrinder.App.Navigation;
 using RollGrinder.App.ViewModels;
 using RollGrinder.Core.Calibration;
 using RollGrinder.Core.Parameters;
+using RollGrinder.Core.Profiles;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Records;
 
@@ -42,6 +43,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
         await h.StepAsync("Segments", "InsertEveryType", async ctx =>
         {
             ctx.Check(page.AvailableTypes.Count > 0, "no profile types registered");
+            RollProfileTypeRegistry registry = h.Services.GetRequiredService<RollProfileTypeRegistry>();
             int before = page.Segments.Count;
             foreach (string type in page.AvailableTypes.ToList())
             {
@@ -49,7 +51,11 @@ internal sealed class ProfileSuite : ISelfTestSuite
                 await h.RunAsync(page.InsertSegmentCommand);
                 page.SelectedSegment = page.Segments.Last();
                 await h.SettleAsync(50);
-                ctx.Check(page.SegmentParameters.Count > 0, "segment of type " + type + " shows no parameters");
+
+                // 界面上的参数格数必须和这种辊形的参数定义一一对应（圆柱就是 0 个）。
+                int declared = registry.Get(type).Schema.Descriptors.Count;
+                ctx.Check(page.SegmentParameters.Count == declared,
+                    Invariant($"segment of type {type} shows {page.SegmentParameters.Count} parameters, schema declares {declared}"));
             }
 
             ctx.Check(page.Segments.Count == before + page.AvailableTypes.Count, "every type should add one segment");
@@ -292,6 +298,7 @@ internal sealed class StepsSuite : ISelfTestSuite
             await h.RunAsync(page.SaveProgramAsCommand);
             await h.RunAsync(page.NewJobCommand);
             ctx.Check(page.Steps.Count == 0, "new job should clear steps");
+            ctx.Check(page.ProgramId is null && string.IsNullOrEmpty(page.ProgramName), "new job must not keep the old program's identity");
             await h.PressKeyAsync(ctx, "Fn_ProgramLibrary");
             ctx.Check(page.IsProgramLibraryOpen, "program library should open");
             h.TryScreenshot("steps-program-library");
@@ -488,6 +495,8 @@ internal sealed class ManualSuite : ISelfTestSuite
 
         await h.StepAsync("Measurement", "CaptureSaveClear", async ctx =>
         {
+            // 前面按过的"测量采样"动作也会取一个点：先清空，再数自己取的。
+            await h.RunAsync(page.ClearPointsCommand);
             for (int i = 0; i < 3; i++)
             {
                 await h.RunAsync(page.CapturePointCommand);

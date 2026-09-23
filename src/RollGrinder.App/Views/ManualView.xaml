@@ -125,10 +125,16 @@
                         <Button Content="{loc:Loc Measurement_ClearButton}" Command="{Binding ClearPointsCommand}"
                                 Style="{StaticResource SecondaryButton}" Height="42" Margin="0,0,8,0" />
                         <Button Content="{loc:Loc Measurement_SaveButton}" Command="{Binding SaveMeasurementCommand}"
-                                Style="{StaticResource SecondaryButton}" Height="42" Margin="0,0,8,0" />
-                        <TextBox Text="{Binding JobId, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource ValueTextBox}" Width="150" Height="42" />
+                                Style="{StaticResource SecondaryButton}" Height="42" />
                     </StackPanel>
+
+                    <!-- 归档到哪个作业：单独一行并写明是"作业号"，否则只是一个看不出用途的空框。 -->
+                    <DockPanel DockPanel.Dock="Top" Margin="14,8,14,0">
+                        <TextBlock Text="{loc:Loc Job_JobIdLabel}" Style="{StaticResource Text.Label}"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBox Text="{Binding JobId, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource ValueTextBox}" Height="42" />
+                    </DockPanel>
 
                     <Border DockPanel.Dock="Bottom" Padding="14,10">
                         <StackPanel>

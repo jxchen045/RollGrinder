@@ -20,7 +20,7 @@ public enum ReportKind
 /// <summary>报表里的一行：一个量与它的值。</summary>
 /// <param name="LabelResourceKey">名目的资源键；界面层按当前语言取字。</param>
 /// <param name="Value">值，已经按显示单位格式化好。</param>
-public sealed record ReportField(string LabelResourceKey, string Value);
+public sealed record ReportField(string LabelResourceKey, string Value, bool ValueIsResourceKey = false);
 
 /// <summary>报表里的一张表。</summary>
 /// <param name="TitleResourceKey">表头的资源键。</param>

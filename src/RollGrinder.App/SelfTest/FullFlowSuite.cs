@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using RollGrinder.App.Navigation;
 using RollGrinder.App.ViewModels;
 using RollGrinder.Core.Steps;
+using RollGrinder.Services.Records;
 
 namespace RollGrinder.App.SelfTest;
 
@@ -43,14 +44,24 @@ internal sealed class FullFlowSuite : ISelfTestSuite
                 await h.RunAsync(steps.ClearProfileSelectionCommand);
             }
 
-            StepTypeOptionViewModel? rough = steps.StepTypeOptions.FirstOrDefault(o => o.IsAvailable && o.SlotKey == StepSlotKeys.Rough);
-            ctx.Check(rough is not null, "no rough grinding step type is available");
-            steps.SelectedStepType = rough;
-            await h.RunAsync(steps.AddStepCommand);
+            // 磨前测量 → 粗磨 → 磨后测量 → 圆度：把测量分阶段落库、圆度存档都走一遍。
+            string[] sequence = { StepTypeKeys.Measure, StepTypeKeys.Rough, StepTypeKeys.Measure, StepTypeKeys.Roundness };
+            foreach (string key in sequence)
+            {
+                StepTypeOptionViewModel? option = steps.StepTypeOptions.FirstOrDefault(o => o.Key == key);
+                ctx.Check(option is not null && option.IsAvailable, "step type " + key + " is not available on this machine");
+                steps.SelectedStepType = option;
+                await h.RunAsync(steps.AddStepCommand);
+            }
 
+            string[] wanted =
+            {
+                ProgramOptionKeys.PreGrindMeasure, ProgramOptionKeys.PostGrindMeasure,
+                ProgramOptionKeys.PrintPreGrindData, ProgramOptionKeys.PrintPostGrindData,
+            };
             foreach (ProgramOptionRowViewModel option in steps.ProgramOptions.Where(o => o.IsAvailable))
             {
-                if (option.Descriptor.Key is ProgramOptionKeys.PrintPreGrindData or ProgramOptionKeys.PrintPostGrindData)
+                if (wanted.Contains(option.Descriptor.Key))
                 {
                     option.IsOn = true;
                 }
@@ -58,7 +69,7 @@ internal sealed class FullFlowSuite : ISelfTestSuite
 
             await h.RunAsync(steps.ValidateCommand);
             ctx.Check(steps.StatusResourceKey == "Job_ReadyToHandOver", "job should validate, status " + steps.StatusResourceKey);
-            ctx.Note("job " + steps.JobId + ", step " + rough!.Key + ", duration " + steps.TotalDurationText);
+            ctx.Note("job " + steps.JobId + ", steps " + string.Join(">", sequence) + ", duration " + steps.TotalDurationText);
         }, StepOptions.Shot);
 
         StepStatus download = await h.StepAsync("Run", "DownloadToNc", async ctx =>
@@ -137,20 +148,20 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             await h.PressKeyAsync(ctx, "Fn_Coolant");
         }, new StepOptions(Tolerant: true));
 
-        await h.StepAsync("Run", "SkipAndEndEarlyNeedConfirmation", async ctx =>
+        await h.StepAsync("Run", "EndEarlyConfirmationExpires", async ctx =>
         {
+            // 规范（手动动作规范.md）：危险动作第一下只预备，4 秒内不按第二下自动撤销。
+            // 这里只按一下，等过窗口，确认它自己撤销了——不真的提前结束这一道。
             await h.PressKeyAsync(ctx, "Fn_EndEarly");
-            bool armed = h.IndexOfKey("Fn_ConfirmAgain") >= 0;
-            ctx.Note("end-early armed=" + armed);
-            if (armed)
+            if (h.IndexOfKey("Fn_ConfirmAgain") < 0)
             {
-                // 另一个键会把确认撤掉：这里按"保持"验证撤销，而不真的提前结束这一道。
-                await h.PressKeyAsync(ctx, "Fn_Pause");
-                ctx.Check(h.IndexOfKey("Fn_ConfirmAgain") < 0, "pressing another key should disarm the pending confirmation");
+                ctx.Note("end-early refused without arming in the current state");
+                return;
             }
 
-            SequenceRowViewModel? later = auto.Sequence.Skip(1).FirstOrDefault(r => r.JumpCommand.CanExecute(null));
-            ctx.Note("jump target available=" + (later is not null));
+            bool expired = await h.WaitUntilAsync(() => h.IndexOfKey("Fn_ConfirmAgain") < 0, TimeSpan.FromSeconds(6));
+            ctx.Check(expired, "an armed end-early should disarm by itself after the 4-second window");
+            ctx.Check(h.IndexOfKey("Fn_EndEarly") >= 0, "the key should be labelled 'end early' again");
         }, new StepOptions(Tolerant: true));
 
         await h.StepAsync("Run", "GrindsToCompletion", async ctx =>
@@ -167,14 +178,14 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             return Task.CompletedTask;
         });
 
-        await h.StepAsync("After", "ReportsPrintedAutomatically", async ctx =>
+        await h.StepAsync("After", "PreGrindSheetPrintedAutomatically", async ctx =>
         {
             bool printed = await h.WaitUntilAsync(
                 () => h.Interaction.Produced.Count(p => p.Contains("-auto-", StringComparison.Ordinal)) > printsBefore,
                 TimeSpan.FromSeconds(15));
             int count = h.Interaction.Produced.Count(p => p.Contains("-auto-", StringComparison.Ordinal)) - printsBefore;
             ctx.Note(Invariant($"{count} automatic print(s): ") + string.Join(", ", h.Interaction.Produced.Where(p => p.Contains("-auto-", StringComparison.Ordinal)).Select(Path.GetFileName)));
-            ctx.Check(printed, "with 'print post-grind data' on, finishing should print a report without asking");
+            ctx.Check(printed, "with 'print pre-grind data' on, the pre-grind sheet should print without asking");
         });
 
         await h.StepAsync("After", "RecordCreated", async ctx =>
@@ -198,6 +209,59 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             RecordRowViewModel? row = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
             ctx.Note(row is null ? "none" : "state=" + row.StateText + ", duration=" + row.DurationText + ", worst=" + row.WorstDeviationText);
         }, StepOptions.Shot);
+
+        await h.StepAsync("After", "FinishRecordOnRecordsPage", async ctx =>
+        {
+            // 现行设计：记录由操作员在记录页点"完成"收尾；收尾时定格砂轮直径、存圆度、出磨后报告。
+            RecordsViewModel records = h.Page<RecordsViewModel>();
+            RecordRowViewModel? row = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
+            if (row is null)
+            {
+                ctx.Skip("no record to finish");
+            }
+
+            int autoBefore = h.Interaction.Produced.Count(p => p.Contains("-auto-", StringComparison.Ordinal));
+            records.SelectedRecord = row;
+            records.Note = "self-test";
+            await h.RunAsync(records.FinishSelectedCommand);
+            ctx.Check(records.StatusResourceKey == "Records_Finished", "status should say finished, is " + records.StatusResourceKey);
+
+            RecordRowViewModel? finished = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
+            ctx.Check(finished?.View.FinishedAtUtc is not null, "the record should carry a finish time");
+            ctx.Note("state=" + finished?.StateText + ", duration=" + finished?.DurationText + ", worst=" + finished?.WorstDeviationText);
+
+            bool postPrinted = await h.WaitUntilAsync(
+                () => h.Interaction.Produced.Count(p => p.Contains("-auto-", StringComparison.Ordinal)) > autoBefore,
+                TimeSpan.FromSeconds(15));
+            ctx.Check(postPrinted, "with 'print post-grind data' on, finishing should print the grinding report without asking");
+            ctx.Note("printed " + Path.GetFileName(h.Interaction.LastProduced));
+        }, StepOptions.Shot);
+
+        await h.StepAsync("After", "RecordCurvesHaveData", async ctx =>
+        {
+            RecordsViewModel records = h.Page<RecordsViewModel>();
+            records.SelectedRecord = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
+            if (records.SelectedRecord is null)
+            {
+                ctx.Skip("no record");
+            }
+
+            await h.SettleAsync(300);
+            var empty = new System.Collections.Generic.List<string>();
+            foreach (RecordCurveKind kind in Enum.GetValues<RecordCurveKind>())
+            {
+                records.SelectCurveCommand.Execute(kind);
+                await h.SettleAsync(300);
+                ctx.Note(kind + (records.CurveHasData ? "=data" : "=empty"));
+                h.TryScreenshot("flow-record-curve-" + kind);
+                if (!records.CurveHasData && kind != RecordCurveKind.CompensationConvergence)
+                {
+                    empty.Add(kind.ToString());
+                }
+            }
+
+            ctx.Check(empty.Count == 0, "a job with pre/post measurement and roundness should fill these curves: " + string.Join(", ", empty));
+        });
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);

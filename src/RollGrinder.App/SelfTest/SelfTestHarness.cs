@@ -62,14 +62,19 @@ internal sealed record StepOptions(
     public static StepOptions Expect(params string[] alarmKeys) => new(ExpectedAlarms: alarmKeys);
 }
 
-/// <summary>一步里的上下文：写备注、做断言、声明跳过。</summary>
+/// <summary>一步里的上下文：写备注、做断言、声明跳过、记警告。</summary>
 internal sealed class StepContext
 {
     private readonly List<string> notes = new();
 
     public string Detail => string.Join("; ", this.notes);
 
+    /// <summary>这一步里记下的警告（不判失败，但整步记 WARN）。</summary>
+    public List<string> Warnings { get; } = new();
+
     public void Note(string text) => this.notes.Add(text);
+
+    public void Warn(string text) => Warnings.Add(text);
 
     public void Check(bool condition, string message)
     {
@@ -206,6 +211,15 @@ internal sealed partial class SelfTestHarness
                 failures.Add("unexpected error alarm " + alarm.MessageResourceKey);
             }
             else if (alarm.Severity == AlarmSeverity.Warning && status == StepStatus.Pass)
+            {
+                status = StepStatus.Warn;
+            }
+        }
+
+        if (context.Warnings.Count > 0)
+        {
+            failures.Add("WARN " + string.Join("; ", context.Warnings));
+            if (status == StepStatus.Pass)
             {
                 status = StepStatus.Warn;
             }
@@ -415,6 +429,75 @@ internal sealed partial class SelfTestHarness
         }
 
         return missing.ToList();
+    }
+
+    /// <summary>
+    /// 找出文字被截断的按钮。两种截法都查：
+    /// 1. 按钮自己太窄：文字需要的宽度大于按钮里那个 TextBlock 实际分到的宽度；
+    /// 2. 按钮被父容器裁掉：横向 StackPanel 里排不下，超出了外层容器的边界。
+    /// 滚动区里的内容本来就会超出可视范围，不算。
+    /// </summary>
+    public IReadOnlyList<string> FindClippedButtons()
+    {
+        var clipped = new List<string>();
+        foreach (Button button in FindVisuals<Button>(Window).Where(b => b.IsVisible && b.ActualWidth > 0))
+        {
+            foreach (TextBlock text in FindVisuals<TextBlock>(button).Where(t => t.IsVisible && !string.IsNullOrEmpty(t.Text)))
+            {
+                double needed = MeasureText(text);
+                if (needed > text.ActualWidth + 1.5)
+                {
+                    clipped.Add(Invariant($"'{text.Text}' needs {needed:0} px, has {text.ActualWidth:0}"));
+                }
+            }
+
+            if (OverflowsContainer(button) is { } overflow)
+            {
+                clipped.Add(Invariant($"'{button.Content}' cut off by its container by {overflow:0} px"));
+            }
+        }
+
+        return clipped.Distinct().ToList();
+    }
+
+    private static double MeasureText(TextBlock text)
+    {
+        var formatted = new FormattedText(
+            text.Text,
+            CultureInfo.CurrentUICulture,
+            text.FlowDirection,
+            new Typeface(text.FontFamily, text.FontStyle, text.FontWeight, text.FontStretch),
+            text.FontSize,
+            Brushes.Black,
+            VisualTreeHelper.GetDpi(text).PixelsPerDip);
+        return formatted.WidthIncludingTrailingWhitespace + text.Padding.Left + text.Padding.Right;
+    }
+
+    private double? OverflowsContainer(FrameworkElement element)
+    {
+        Rect bounds = element.TransformToAncestor(Window).TransformBounds(new Rect(element.RenderSize));
+        DependencyObject? current = VisualTreeHelper.GetParent(element);
+        while (current is not null && current != Window)
+        {
+            if (current is ScrollContentPresenter or ScrollViewer)
+            {
+                return null;
+            }
+
+            if (current is Border or Grid or DockPanel && current is FrameworkElement container && container.ActualWidth > 0)
+            {
+                Rect box = container.TransformToAncestor(Window).TransformBounds(new Rect(container.RenderSize));
+                double overflow = bounds.Right - box.Right;
+                if (overflow > 2)
+                {
+                    return overflow;
+                }
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
     }
 
     /// <summary>可视树里某一类元素（深度优先）。</summary>

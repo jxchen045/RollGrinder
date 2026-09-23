@@ -23,16 +23,32 @@
                              Height="46" FontSize="17" VerticalContentAlignment="Center" />
                 </DockPanel>
 
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="8">
+                <!-- 两行：下拉框占满一行，三个按钮平分第二行。一行放不下——左栏只有约 330 px，按钮字会被截断。 -->
+                <Grid DockPanel.Dock="Top" Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <ComboBox ItemsSource="{Binding AvailableTypes}" SelectedItem="{Binding SelectedTypeForInsert}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                              Width="120" Height="46" FontSize="17" Margin="0,0,8,0" />
+                              Grid.Row="0" Grid.ColumnSpan="3" Height="46" FontSize="17" Margin="0,0,0,8">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}, ConverterParameter=ProfileType_}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                     <Button Content="{loc:Loc Profile_Insert}" Command="{Binding InsertSegmentCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Height="46" Width="66" Margin="0,0,8,0" />
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="0" Height="46" Margin="0,0,4,0" />
                     <Button Content="{loc:Loc Profile_Delete}" Command="{Binding RemoveSegmentCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Height="46" Width="66" Margin="0,0,8,0" />
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Height="46" Margin="4,0,4,0" />
                     <Button Content="{loc:Loc Profile_MoveUp}" Command="{Binding MoveSegmentUpCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Height="46" Width="66" />
-                </StackPanel>
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="2" Height="46" Margin="4,0,0,0" />
+                </Grid>
 
                 <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,10">
                     <StackPanel>

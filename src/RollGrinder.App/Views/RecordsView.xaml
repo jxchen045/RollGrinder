@@ -35,14 +35,25 @@
         <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
             <DockPanel>
                 <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="{loc:Loc Records_FromLabel}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <DatePicker SelectedDate="{Binding FromDate}" Width="120" Height="38" Margin="8,0" FontSize="15" />
-                        <TextBlock Text="{loc:Loc Records_ToLabel}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <DatePicker SelectedDate="{Binding ToDate}" Width="120" Height="38" Margin="8,0" FontSize="15" />
-                        <Button Content="{loc:Loc Records_QueryButton}" Command="{Binding QueryCommand}"
-                                Style="{StaticResource PrimaryButton}" Height="38" Padding="16,0" />
-                    </StackPanel>
+                    <!-- 日期一行、查询按钮一行：挤在一行时英文界面下按钮会被裁掉。 -->
+                    <Grid VerticalAlignment="Center">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{loc:Loc Records_FromLabel}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <DatePicker Grid.Column="1" SelectedDate="{Binding FromDate}" Height="38" Margin="8,0" FontSize="15" />
+                        <TextBlock Grid.Column="2" Text="{loc:Loc Records_ToLabel}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <DatePicker Grid.Column="3" SelectedDate="{Binding ToDate}" Height="38" Margin="8,0,0,0" FontSize="15" />
+                        <Button Grid.Row="1" Grid.ColumnSpan="4" Content="{loc:Loc Records_QueryButton}" Command="{Binding QueryCommand}"
+                                Style="{StaticResource PrimaryButton}" Height="38" Margin="0,8,0,0" />
+                    </Grid>
                 </Border>
 
                 <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
@@ -147,11 +158,14 @@
 
                     <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
                             BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,10">
+                        <!-- 备注写明是备注；"完成"按钮按文字自适应宽度，英文下不被截断。 -->
                         <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{loc:Loc Records_NoteLabel}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" Margin="0,0,10,0" />
                             <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}"
                                      Style="{StaticResource ValueTextBox}" Width="320" />
                             <Button Content="{loc:Loc Records_FinishButton}" Command="{Binding FinishSelectedCommand}"
-                                    Style="{StaticResource SecondaryButton}" Height="46" Width="160" Margin="10,0,0,0" />
+                                    Style="{StaticResource SecondaryButton}" Height="46" MinWidth="160" Padding="20,0" Margin="10,0,0,0" />
                         </StackPanel>
                     </Border>
 
