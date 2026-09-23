@@ -64,6 +64,18 @@ public sealed class UserDirectory : IUserDirectory
     /// <summary>首次启动种下的管理账号名。</summary>
     public const string SeedUserName = "admin";
 
+    /// <summary>报警资源键：用户名重复。</summary>
+    public const string AlreadyExistsResourceKey = "Users_AlreadyExists";
+
+    /// <summary>报警资源键：密码为空。</summary>
+    public const string PasswordEmptyResourceKey = "Users_PasswordEmpty";
+
+    /// <summary>报警资源键：要删或降级的是最后一个制造商账户。</summary>
+    public const string LastManufacturerResourceKey = "Users_LastManufacturer";
+
+    /// <summary>报警资源键：用户不存在。</summary>
+    public const string NotFoundResourceKey = "Users_NotFound";
+
     /// <summary>PBKDF2 迭代次数。新设的口令用这个数；老口令按它自己存的那个数验。</summary>
     public const int Iterations = 210_000;
 
@@ -121,7 +133,7 @@ public sealed class UserDirectory : IUserDirectory
 
         if (await this.users.FindAsync(name, cancellationToken).ConfigureAwait(false) is not null)
         {
-            throw new DomainException($"User '{name}' already exists.");
+            throw new DomainException($"User '{name}' already exists.", AlreadyExistsResourceKey, name);
         }
 
         await this.users.UpsertAsync(
@@ -133,7 +145,7 @@ public sealed class UserDirectory : IUserDirectory
     {
         if (string.IsNullOrEmpty(password))
         {
-            throw new DomainException("A password cannot be empty.");
+            throw new DomainException("A password cannot be empty.", PasswordEmptyResourceKey, null);
         }
 
         StoredUser stored = await RequireAsync(userName, cancellationToken).ConfigureAwait(false);
@@ -196,12 +208,12 @@ public sealed class UserDirectory : IUserDirectory
             }
         }
 
-        throw new DomainException("The last manufacturer account cannot be removed or demoted.");
+        throw new DomainException("The last manufacturer account cannot be removed or demoted.", LastManufacturerResourceKey, null);
     }
 
     private async Task<StoredUser> RequireAsync(string userName, CancellationToken cancellationToken) =>
         await this.users.FindAsync(Normalize(userName), cancellationToken).ConfigureAwait(false)
-        ?? throw new DomainException($"User '{userName}' does not exist.");
+        ?? throw new DomainException($"User '{userName}' does not exist.", NotFoundResourceKey, userName);
 
     private StoredUser Build(UserAccount account, string? password)
     {

@@ -149,7 +149,7 @@
     <value>Connection to the machine was restored</value>
   </data>
   <data name="Alarm_DomainFailure" xml:space="preserve">
-    <value>Process data is not valid</value>
+    <value>Operation not performed</value>
   </data>
   <data name="Alarm_GatewayFailure" xml:space="preserve">
     <value>Machine communication failed</value>
@@ -2028,5 +2028,17 @@
   </data>
   <data name="Records_AlreadyFinished" xml:space="preserve">
     <value>This record is already closed</value>
+  </data>
+  <data name="Users_AlreadyExists" xml:space="preserve">
+    <value>User name already exists</value>
+  </data>
+  <data name="Users_PasswordEmpty" xml:space="preserve">
+    <value>Password cannot be empty</value>
+  </data>
+  <data name="Users_LastManufacturer" xml:space="preserve">
+    <value>At least one manufacturer account must remain; it cannot be removed or demoted</value>
+  </data>
+  <data name="Users_NotFound" xml:space="preserve">
+    <value>User does not exist</value>
   </data>
 </root>

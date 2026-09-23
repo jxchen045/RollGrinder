@@ -4,7 +4,8 @@
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:conv="clr-namespace:RollGrinder.App.Converters">
+                    xmlns:conv="clr-namespace:RollGrinder.App.Converters"
+                    xmlns:ctl="clr-namespace:RollGrinder.App.Controls">
 
   <conv:StepStateToBackgroundConverter x:Key="StepStateToBackground" />
   <conv:StepStateToForegroundConverter x:Key="StepStateToForeground" />
@@ -46,7 +47,28 @@
     <Setter Property="Padding" Value="16,12" />
   </Style>
 
-  <!-- 次级按钮：白底描边，功能条与卡片内通用 -->
+  <!--
+    键盘焦点框：内白外黑两道细框，深色、浅色按钮上都看得清。
+    只在用键盘（Tab / 方向键）移动焦点时出现，鼠标、触摸点击不出现——不干扰触摸操作。
+  -->
+  <Style x:Key="KeyboardFocusRing">
+    <Setter Property="Control.Template">
+      <Setter.Value>
+        <ControlTemplate>
+          <Grid SnapsToDevicePixels="True">
+            <Rectangle Margin="-4" Stroke="{StaticResource Brush.FocusRing}" StrokeThickness="2" />
+            <Rectangle Margin="-2" Stroke="{StaticResource Brush.Surface}" StrokeThickness="2" />
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!--
+    次级按钮：白底描边，功能条与卡片内通用。也是所有按钮共用的模板。
+    悬停 / 按下 / 禁用的颜色由各样式经 ctl:ButtonStates 声明，模板按声明取色——
+    以前模板统一把悬停改浅灰、按下改浅蓝，白字实心按钮一悬停字就看不见了（约 1.1:1）。
+  -->
   <Style x:Key="SecondaryButton" TargetType="Button">
     <Setter Property="FontFamily" Value="{StaticResource Font.Sans}" />
     <Setter Property="FontSize" Value="{StaticResource Size.Body}" />
@@ -55,25 +77,42 @@
     <Setter Property="BorderBrush" Value="{StaticResource Brush.ButtonBorder}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Padding" Value="16,6" />
+    <Setter Property="FocusVisualStyle" Value="{StaticResource KeyboardFocusRing}" />
+    <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.SurfaceHover}" />
+    <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.SurfacePressed}" />
+    <Setter Property="ctl:ButtonStates.DisabledBackground" Value="{StaticResource Brush.DisabledFill}" />
+    <Setter Property="ctl:ButtonStates.DisabledForeground" Value="{StaticResource Brush.DisabledText}" />
+    <Setter Property="ctl:ButtonStates.DisabledBorderBrush" Value="{StaticResource Brush.DisabledBorder}" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Button">
           <Border x:Name="Chrome"
                   Background="{TemplateBinding Background}"
                   BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}">
-            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  SnapsToDevicePixels="True">
+            <ContentPresenter x:Name="Content"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
                               Margin="{TemplateBinding Padding}" />
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.HeaderFill}" />
+              <Setter TargetName="Chrome" Property="Background"
+                      Value="{Binding (ctl:ButtonStates.HoverBackground), RelativeSource={RelativeSource TemplatedParent}}" />
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
-              <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.SelectionFill}" />
+              <Setter TargetName="Chrome" Property="Background"
+                      Value="{Binding (ctl:ButtonStates.PressedBackground), RelativeSource={RelativeSource TemplatedParent}}" />
             </Trigger>
+            <!-- 禁用：中性灰底灰字，按钮留在原位不跳动；不用半透明，红键不会变成像"警告"的粉色。 -->
             <Trigger Property="IsEnabled" Value="False">
-              <Setter Property="Opacity" Value="0.45" />
+              <Setter TargetName="Chrome" Property="Background"
+                      Value="{Binding (ctl:ButtonStates.DisabledBackground), RelativeSource={RelativeSource TemplatedParent}}" />
+              <Setter TargetName="Chrome" Property="BorderBrush"
+                      Value="{Binding (ctl:ButtonStates.DisabledBorderBrush), RelativeSource={RelativeSource TemplatedParent}}" />
+              <Setter TargetName="Chrome" Property="BorderThickness" Value="1" />
+              <Setter TargetName="Content" Property="TextElement.Foreground"
+                      Value="{Binding (ctl:ButtonStates.DisabledForeground), RelativeSource={RelativeSource TemplatedParent}}" />
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -81,21 +120,30 @@
     </Setter>
   </Style>
 
-  <!-- 主按钮：实心强调色 -->
-  <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+  <!-- 实心按钮的悬停 / 按下：往深里走，白字对比度只升不降。 -->
+  <Style x:Key="FilledAccentStates" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
     <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
     <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
     <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.AccentHover}" />
+    <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.AccentPressed}" />
   </Style>
+
+  <!-- 主按钮：实心强调色 -->
+  <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource FilledAccentStates}" />
 
   <!-- 启动这类"开始干活"的键用绿色 -->
   <Style x:Key="StartButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
     <Setter Property="Background" Value="{StaticResource Brush.Normal}" />
+    <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.NormalHover}" />
+    <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.NormalPressed}" />
   </Style>
 
   <!-- 复位、急停这类危险动作用红色 -->
   <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
     <Setter Property="Background" Value="{StaticResource Brush.CurrentStep}" />
+    <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.CurrentStepHover}" />
+    <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.CurrentStepPressed}" />
   </Style>
 
   <!--
@@ -117,14 +165,21 @@
               <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
               <Setter Property="Background" Value="{StaticResource Brush.Normal}" />
               <Setter Property="BorderThickness" Value="0" />
+              <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.NormalHover}" />
+              <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.NormalPressed}" />
             </DataTrigger>
             <DataTrigger Binding="{Binding IsAwaitingConfirmation}" Value="True">
               <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
               <Setter Property="Background" Value="{StaticResource Brush.CurrentStep}" />
               <Setter Property="BorderThickness" Value="0" />
+              <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.CurrentStepHover}" />
+              <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.CurrentStepPressed}" />
             </DataTrigger>
+            <!-- tagmap 里没登记：与禁用同一种中性灰，不用半透明（半透明的绿/红键会变成看不清的淡色）。 -->
             <DataTrigger Binding="{Binding IsMapped}" Value="False">
-              <Setter Property="Opacity" Value="0.35" />
+              <Setter Property="Background" Value="{StaticResource Brush.DisabledFill}" />
+              <Setter Property="Foreground" Value="{StaticResource Brush.DisabledText}" />
+              <Setter Property="BorderBrush" Value="{StaticResource Brush.DisabledBorder}" />
             </DataTrigger>
           </Style.Triggers>
         </Style>
@@ -152,15 +207,29 @@
             <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
           </Border>
           <ControlTemplate.Triggers>
+            <!-- 顺序有讲究：悬停不能盖掉"已选中"——以前悬停在已勾的项上它看起来像没勾。 -->
             <Trigger Property="IsChecked" Value="True">
               <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.SelectionFill}" />
               <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
             </Trigger>
-            <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.HeaderFill}" />
-            </Trigger>
+            <MultiTrigger>
+              <MultiTrigger.Conditions>
+                <Condition Property="IsMouseOver" Value="True" />
+                <Condition Property="IsChecked" Value="False" />
+              </MultiTrigger.Conditions>
+              <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.SurfaceHover}" />
+            </MultiTrigger>
+            <MultiTrigger>
+              <MultiTrigger.Conditions>
+                <Condition Property="IsMouseOver" Value="True" />
+                <Condition Property="IsChecked" Value="True" />
+              </MultiTrigger.Conditions>
+              <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.SelectionHover}" />
+            </MultiTrigger>
             <Trigger Property="IsEnabled" Value="False">
-              <Setter Property="Opacity" Value="0.35" />
+              <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.DisabledFill}" />
+              <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource Brush.DisabledBorder}" />
+              <Setter Property="Foreground" Value="{StaticResource Brush.DisabledText}" />
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -170,11 +239,14 @@
 
   <!-- 导航槽（功能条第 8 格）。深底色，和 7 个功能键一眼分得开：
        这一格永远是"出路"，不是功能。 -->
-  <Style x:Key="NavigationButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
-    <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
+  <Style x:Key="NavigationButton" TargetType="Button" BasedOn="{StaticResource FilledAccentStates}">
     <Setter Property="Background" Value="{StaticResource Brush.AccentDark}" />
-    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.AccentDarkHover}" />
+    <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.AccentDarkPressed}" />
   </Style>
+
+  <!-- 顶栏里深蓝底的键（左上角菜单键）：和导航槽同一套深色状态。 -->
+  <Style x:Key="TopBarDarkButton" TargetType="Button" BasedOn="{StaticResource NavigationButton}" />
 
   <!-- 页面菜单态的区域键：软键条原地换成"去哪页"，整排改成浅强调底 + 强调色描边，
        和平常的功能键一眼分得开，免得把"切到记录页"当成"保存"按下去。 -->
@@ -183,12 +255,16 @@
     <Setter Property="Background" Value="{StaticResource Brush.SelectionFill}" />
     <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
     <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.SelectionHover}" />
+    <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.SelectionPressed}" />
   </Style>
 
   <!-- 当前所在的那一页：实心强调色。按它只是收起菜单。 -->
   <Style x:Key="AreaMenuKeyCurrentButton" TargetType="Button" BasedOn="{StaticResource AreaMenuKeyButton}">
     <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
     <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
+    <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.AccentHover}" />
+    <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.AccentPressed}" />
   </Style>
 
   <!-- 确认框里的按钮 -->
@@ -202,12 +278,16 @@
     <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
     <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
     <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.AccentHover}" />
+    <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.AccentPressed}" />
   </Style>
 
   <Style x:Key="DialogDangerButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
     <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
     <Setter Property="Background" Value="{StaticResource Brush.CurrentStep}" />
     <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.CurrentStepHover}" />
+    <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.CurrentStepPressed}" />
   </Style>
 
   <!-- 曲线切换这类分段选择键 -->
@@ -221,6 +301,8 @@
     <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
     <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
     <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.AccentHover}" />
+    <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.AccentPressed}" />
   </Style>
 
   <!-- 数值输入框。运行中（页面 IsReadOnly）自动转只读：能看能选，不能改。 -->
@@ -248,8 +330,9 @@
       <Border.Style>
         <Style TargetType="Border" BasedOn="{StaticResource ParameterCell}">
           <Style.Triggers>
+            <!-- 不适用：灰底 + 格内控件禁用态。不用半透明——40% 透明时标签对比度只剩约 2:1。 -->
             <DataTrigger Binding="{Binding IsApplicable}" Value="False">
-              <Setter Property="Opacity" Value="0.4" />
+              <Setter Property="Background" Value="{StaticResource Brush.DisabledFill}" />
             </DataTrigger>
           </Style.Triggers>
         </Style>
@@ -286,6 +369,8 @@
                         <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
                         <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
                         <Setter Property="BorderThickness" Value="0" />
+                        <Setter Property="ctl:ButtonStates.HoverBackground" Value="{StaticResource Brush.AccentHover}" />
+                        <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.AccentPressed}" />
                       </DataTrigger>
                     </Style.Triggers>
                   </Style>
@@ -296,13 +381,69 @@
         </ItemsControl>
 
         <TextBlock Text="{Binding ErrorText}"
-                   FontSize="14"
+                   FontSize="{StaticResource Size.Caption}"
                    Foreground="{StaticResource Brush.CurrentStep}"
                    TextWrapping="Wrap"
                    Margin="0,4,0,0" />
       </StackPanel>
     </Border>
   </DataTemplate>
+
+  <!--
+    数据表（报警事件、对中结果……）：表头灰底、只留横线、行高 40、隔行浅底，选中用本系统的浅蓝而不是系统蓝。
+    WPF 默认表格是竖线网格 + 系统蓝选中，和其余界面不是一套。
+  -->
+  <Style x:Key="DataTableHeader" TargetType="DataGridColumnHeader">
+    <Setter Property="Background" Value="{StaticResource Brush.HeaderFill}" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+    <Setter Property="FontSize" Value="{StaticResource Size.Label}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="BorderBrush" Value="{StaticResource Brush.Divider}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style x:Key="DataTableCell" TargetType="DataGridCell">
+    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="DataGridCell">
+          <Border Background="{TemplateBinding Background}" Padding="12,0">
+            <ContentPresenter VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="{StaticResource Brush.SelectionFill}" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="DataTable" TargetType="DataGrid">
+    <Setter Property="AutoGenerateColumns" Value="False" />
+    <Setter Property="IsReadOnly" Value="True" />
+    <Setter Property="HeadersVisibility" Value="Column" />
+    <Setter Property="GridLinesVisibility" Value="Horizontal" />
+    <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource Brush.GridLine}" />
+    <Setter Property="RowHeight" Value="40" />
+    <Setter Property="FontSize" Value="{StaticResource Size.Label}" />
+    <Setter Property="FontFamily" Value="{StaticResource Font.Sans}" />
+    <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+    <Setter Property="RowBackground" Value="{StaticResource Brush.Surface}" />
+    <Setter Property="AlternatingRowBackground" Value="{StaticResource Brush.RowAlternate}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="SelectionMode" Value="Single" />
+    <Setter Property="CanUserResizeRows" Value="False" />
+    <Setter Property="ColumnHeaderStyle" Value="{StaticResource DataTableHeader}" />
+    <Setter Property="CellStyle" Value="{StaticResource DataTableCell}" />
+  </Style>
 
   <!-- 数据行：左标签右数值，底部细分隔线 -->
   <Style x:Key="DataRowBorder" TargetType="Border">

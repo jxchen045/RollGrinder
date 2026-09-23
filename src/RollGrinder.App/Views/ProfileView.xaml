@@ -123,7 +123,7 @@
                                                FontSize="15" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
                                     <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding DisplayName}" FontSize="18" />
-                                        <TextBlock Text="{Binding PurposeText}" Style="{StaticResource Text.Label}" FontSize="14" />
+                                        <TextBlock Text="{Binding PurposeText}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
                                     </StackPanel>
                                 </DockPanel>
                             </Border>

@@ -453,7 +453,23 @@ internal sealed partial class SelfTestHarness
 
             if (OverflowsContainer(button) is { } overflow)
             {
-                clipped.Add(Invariant($"'{button.Content}' cut off by its container by {overflow:0} px"));
+                clipped.Add(Invariant($"'{ButtonLabel(button)}' cut off by its container ({overflow})"));
+            }
+        }
+
+        // 按钮以外的字：不换行、也没设省略号，却装不下——那就是被硬截断了（设了省略号的是有意为之）。
+        foreach (TextBlock text in FindVisuals<TextBlock>(Window).Where(t => t.IsVisible && t.ActualWidth > 0
+                     && !string.IsNullOrEmpty(t.Text) && t.TextWrapping == TextWrapping.NoWrap && t.TextTrimming == TextTrimming.None))
+        {
+            if (FindAncestor<Button>(text) is not null || FindAncestor<ComboBox>(text) is not null || FindAncestor<DataGrid>(text) is not null)
+            {
+                continue;
+            }
+
+            double needed = MeasureText(text);
+            if (needed > text.ActualWidth + 1.5)
+            {
+                clipped.Add(Invariant($"text '{Shorten(text.Text)}' needs {needed:0} px, has {text.ActualWidth:0}"));
             }
         }
 
@@ -473,7 +489,8 @@ internal sealed partial class SelfTestHarness
         return formatted.WidthIncludingTrailingWhitespace + text.Padding.Left + text.Padding.Right;
     }
 
-    private double? OverflowsContainer(FrameworkElement element)
+    /// <summary>元素有没有超出某一级容器（或窗口）的边界；超出了返回"哪边、多少像素"。滚动区里的不算。</summary>
+    private string? OverflowsContainer(FrameworkElement element)
     {
         Rect bounds = element.TransformToAncestor(Window).TransformBounds(new Rect(element.RenderSize));
         DependencyObject? current = VisualTreeHelper.GetParent(element);
@@ -487,10 +504,14 @@ internal sealed partial class SelfTestHarness
             if (current is Border or Grid or DockPanel && current is FrameworkElement container && container.ActualWidth > 0)
             {
                 Rect box = container.TransformToAncestor(Window).TransformBounds(new Rect(container.RenderSize));
-                double overflow = bounds.Right - box.Right;
-                if (overflow > 2)
+                string? side = bounds.Right - box.Right > 2 ? Invariant($"right {bounds.Right - box.Right:0} px")
+                    : box.Left - bounds.Left > 2 ? Invariant($"left {box.Left - bounds.Left:0} px")
+                    : bounds.Bottom - box.Bottom > 2 ? Invariant($"bottom {bounds.Bottom - box.Bottom:0} px")
+                    : box.Top - bounds.Top > 2 ? Invariant($"top {box.Top - bounds.Top:0} px")
+                    : null;
+                if (side is not null)
                 {
-                    return overflow;
+                    return side;
                 }
             }
 
@@ -499,6 +520,153 @@ internal sealed partial class SelfTestHarness
 
         return null;
     }
+
+    private static T? FindAncestor<T>(DependencyObject element)
+        where T : DependencyObject
+    {
+        for (DependencyObject? current = VisualTreeHelper.GetParent(element); current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is T match)
+            {
+                return match;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 某个具名界面元素此刻是否**真的**显示在屏幕上（它和它的所有上级都可见、且有尺寸）。
+    /// 视图模型说"浮层开着"不算数——登录框曾被错嵌进一个平时隐藏的容器里，命令层全过、屏幕上却什么都没有。
+    /// </summary>
+    public bool IsShownOnScreen(string elementName) =>
+        Window.FindName(elementName) is FrameworkElement element
+        && element.IsVisible
+        && element.ActualWidth > 0
+        && element.ActualHeight > 0;
+
+    /// <summary>
+    /// 找出对比度不够的字与按钮状态（WCAG：正文 4.5:1，大字与禁用 3:1）。
+    /// 按钮查常态 / 悬停 / 按下（或禁用），字查它相对实际背景的对比度——
+    /// 半透明的底色、上级元素的透明度都先合成再算，看到的就是屏幕上的样子。
+    /// </summary>
+    public IReadOnlyList<string> FindLowContrast()
+    {
+        var issues = new List<string>();
+        foreach (Button button in FindVisuals<Button>(Window).Where(b => b.IsVisible && b.ActualWidth > 0))
+        {
+            string label = ButtonLabel(button);
+            if (!button.IsEnabled)
+            {
+                CheckPair(issues, label, "disabled", Controls.ButtonStates.GetDisabledForeground(button),
+                    Controls.ButtonStates.GetDisabledBackground(button), Controls.ContrastMath.LargeTextOrGraphics);
+                continue;
+            }
+
+            CheckPair(issues, label, "normal", button.Foreground, button.Background, Controls.ContrastMath.NormalText);
+            CheckPair(issues, label, "hover", button.Foreground, Controls.ButtonStates.GetHoverBackground(button), Controls.ContrastMath.NormalText);
+            CheckPair(issues, label, "pressed", button.Foreground, Controls.ButtonStates.GetPressedBackground(button), Controls.ContrastMath.NormalText);
+        }
+
+        foreach (TextBlock text in FindVisuals<TextBlock>(Window).Where(t => t.IsVisible && t.ActualWidth > 0 && !string.IsNullOrWhiteSpace(t.Text)))
+        {
+            if (text.Foreground is not SolidColorBrush foreground || EffectiveBackground(text) is not Color background)
+            {
+                continue;
+            }
+
+            double opacity = CumulativeOpacity(text) * foreground.Opacity;
+            Color fg = foreground.Color;
+            (byte r, byte g, byte b) = Controls.ContrastMath.Blend(
+                (byte)Math.Round(fg.A * opacity), fg.R, fg.G, fg.B, background.R, background.G, background.B);
+            double ratio = Controls.ContrastMath.Ratio(r, g, b, background.R, background.G, background.B);
+            double required = text.IsEnabled
+                ? Controls.ContrastMath.RequiredFor(text.FontSize, text.FontWeight.ToOpenTypeWeight() >= 600)
+                : Controls.ContrastMath.LargeTextOrGraphics;
+            if (ratio < required)
+            {
+                issues.Add(Invariant($"text '{Shorten(text.Text)}' {ratio:0.0}:1 < {required}:1 (#{r:X2}{g:X2}{b:X2} on #{background.R:X2}{background.G:X2}{background.B:X2})"));
+            }
+        }
+
+        return issues.Distinct().ToList();
+    }
+
+    private static void CheckPair(List<string> issues, string label, string state, Brush? foreground, Brush? background, double required)
+    {
+        if (foreground is not SolidColorBrush fg || background is not SolidColorBrush bg || bg.Color.A < 255)
+        {
+            return;
+        }
+
+        double ratio = Controls.ContrastMath.Ratio(fg.Color.R, fg.Color.G, fg.Color.B, bg.Color.R, bg.Color.G, bg.Color.B);
+        if (ratio < required)
+        {
+            issues.Add(Invariant($"button '{label}' {state} {ratio:0.0}:1 < {required}:1"));
+        }
+    }
+
+    /// <summary>字背后实际的底色：往上找第一个有底色的元素，半透明的层层叠上去。</summary>
+    private Color? EffectiveBackground(DependencyObject element)
+    {
+        var layers = new List<Color>();
+        for (DependencyObject? current = VisualTreeHelper.GetParent(element); current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            Brush? brush = current switch
+            {
+                Panel panel => panel.Background,
+                Border border => border.Background,
+                Control control => control.Background,
+                _ => null,
+            };
+
+            if (brush is SolidColorBrush solid && solid.Color.A > 0 && solid.Opacity > 0)
+            {
+                Color color = solid.Color;
+                layers.Add(color);
+                if (color.A == 255 && solid.Opacity >= 1.0)
+                {
+                    break;
+                }
+            }
+        }
+
+        if (layers.Count == 0)
+        {
+            return (Window.Background as SolidColorBrush)?.Color;
+        }
+
+        Color result = layers[^1].A == 255 ? layers[^1] : (Window.Background as SolidColorBrush)?.Color ?? Colors.White;
+        for (int i = layers.Count - (layers[^1].A == 255 ? 2 : 1); i >= 0; i--)
+        {
+            Color top = layers[i];
+            (byte r, byte g, byte b) = Controls.ContrastMath.Blend(top.A, top.R, top.G, top.B, result.R, result.G, result.B);
+            result = Color.FromRgb(r, g, b);
+        }
+
+        return result;
+    }
+
+    private static double CumulativeOpacity(DependencyObject element)
+    {
+        double opacity = 1.0;
+        for (DependencyObject? current = element; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is UIElement ui)
+            {
+                opacity *= ui.Opacity;
+            }
+        }
+
+        return opacity;
+    }
+
+    private static string ButtonLabel(Button button) =>
+        button.Content as string
+        ?? FindVisuals<TextBlock>(button).Select(t => t.Text).FirstOrDefault(t => !string.IsNullOrWhiteSpace(t))
+        ?? button.Name;
+
+    private static string Shorten(string text) => text.Length > 24 ? text[..24] + "…" : text;
 
     /// <summary>可视树里某一类元素（深度优先）。</summary>
     public static IEnumerable<T> FindVisuals<T>(DependencyObject root)
@@ -537,6 +705,16 @@ internal sealed partial class SelfTestHarness
 
             var bitmap = new RenderTargetBitmap(
                 (int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+
+            // 先铺窗口底色再画内容。RenderTargetBitmap 只画元素本身，窗口背景不在里面，
+            // 透明的缝隙存成 JPEG 会变成黑块——第二轮截图里那些"黑条"就是这么来的，屏幕上并没有。
+            var backdrop = new DrawingVisual();
+            using (DrawingContext dc = backdrop.RenderOpen())
+            {
+                dc.DrawRectangle(Window.Background ?? Brushes.White, null, new Rect(0, 0, bitmap.Width, bitmap.Height));
+            }
+
+            bitmap.Render(backdrop);
             bitmap.Render(root);
 
             var encoder = new JpegBitmapEncoder { QualityLevel = 75 };

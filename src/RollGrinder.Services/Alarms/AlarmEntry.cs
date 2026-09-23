@@ -31,7 +31,7 @@ public static class AlarmCodes
     /// <summary>与机床通信失败。</summary>
     public const int GatewayFailure = 800001;
 
-    /// <summary>工艺数据不合法。</summary>
+    /// <summary>业务规则拒绝了这一步操作（参数不合法、账户规则等）。</summary>
     public const int DomainFailure = 800002;
 
     /// <summary>未预期的错误。</summary>

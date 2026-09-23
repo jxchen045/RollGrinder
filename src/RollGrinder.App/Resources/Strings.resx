@@ -149,7 +149,7 @@
     <value>与机床的连接已恢复</value>
   </data>
   <data name="Alarm_DomainFailure" xml:space="preserve">
-    <value>工艺数据不合法</value>
+    <value>操作未执行</value>
   </data>
   <data name="Alarm_GatewayFailure" xml:space="preserve">
     <value>机床通信失败</value>
@@ -2028,5 +2028,17 @@
   </data>
   <data name="Records_AlreadyFinished" xml:space="preserve">
     <value>这条记录已经收尾了，不再重复收尾</value>
+  </data>
+  <data name="Users_AlreadyExists" xml:space="preserve">
+    <value>用户名已存在</value>
+  </data>
+  <data name="Users_PasswordEmpty" xml:space="preserve">
+    <value>密码不能为空</value>
+  </data>
+  <data name="Users_LastManufacturer" xml:space="preserve">
+    <value>至少要保留一个制造商账户，不能删除或降级</value>
+  </data>
+  <data name="Users_NotFound" xml:space="preserve">
+    <value>用户不存在</value>
   </data>
 </root>

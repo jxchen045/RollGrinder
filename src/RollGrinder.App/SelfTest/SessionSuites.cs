@@ -31,6 +31,7 @@ internal sealed class SessionSuite : ISelfTestSuite
         await h.StepAsync("SignIn", "LoginOverlayShownAtStartup", ctx =>
         {
             ctx.Check(shell.IsSignInOpen, "sign-in overlay should be open at startup");
+            ctx.Check(h.IsShownOnScreen("SignInOverlay"), "the sign-in dialog must actually be visible on screen, not just flagged open");
             ctx.Check(shell.KnownUserNames.Contains(UserDirectory.SeedUserName), "seed account 'admin' should be listed");
             ctx.Check(shell.IsOverlayOpen, "function keys must be blocked while signed out");
             return Task.CompletedTask;
@@ -73,6 +74,7 @@ internal sealed class SessionSuite : ISelfTestSuite
             await h.RunAsync(shell.SignInCommand);
             ctx.Check(shell.IsSignedIn, "should be signed in after setting the first password");
             ctx.Check(!shell.IsSignInOpen, "sign-in overlay should close");
+            ctx.Check(!h.IsShownOnScreen("SignInOverlay"), "the sign-in dialog should be gone from the screen");
             ctx.Check(shell.CanManageUsers, "manufacturer account should be able to manage users");
             ctx.Note("home page " + shell.CurrentPage.Key);
         }, StepOptions.Shot);
@@ -86,6 +88,7 @@ internal sealed class SessionSuite : ISelfTestSuite
         {
             await h.RunAsync(shell.OpenUserAdminCommand);
             ctx.Check(shell.IsUserAdminOpen, "user admin overlay should open");
+            ctx.Check(h.IsShownOnScreen("UserAdminOverlay"), "the user admin dialog must actually be visible on screen");
         }, StepOptions.Shot);
 
         await h.StepAsync("Users", "CreateOperator", async ctx =>
@@ -103,7 +106,7 @@ internal sealed class SessionSuite : ISelfTestSuite
             shell.NewUserPassword = SelfTestAccounts.OperatorPassword;
             await h.RunAsync(shell.CreateUserCommand);
             ctx.Check(shell.UserAccounts.Count(a => a.UserName == SelfTestAccounts.OperatorName) == 1, "duplicate must not be created");
-        }, StepOptions.Expect(AlarmLog.DomainFailureResourceKey, AlarmLog.UnexpectedFailureResourceKey, "*"));
+        }, StepOptions.Expect(UserDirectory.AlreadyExistsResourceKey));
 
         await h.StepAsync("Users", "ResetOperatorPassword", async ctx =>
         {
@@ -119,7 +122,7 @@ internal sealed class SessionSuite : ISelfTestSuite
             shell.SelectedUserAccount = shell.UserAccounts.First(a => a.UserName == UserDirectory.SeedUserName);
             await h.RunAsync(shell.DeleteUserCommand);
             ctx.Check(shell.UserAccounts.Any(a => a.UserName == UserDirectory.SeedUserName), "the last manufacturer account must survive");
-        }, StepOptions.Expect(AlarmLog.DomainFailureResourceKey));
+        }, StepOptions.Expect(UserDirectory.LastManufacturerResourceKey));
 
         await h.StepAsync("Users", "DeleteOperator", async ctx =>
         {

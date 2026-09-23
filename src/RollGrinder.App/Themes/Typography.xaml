@@ -21,8 +21,9 @@
   <sys:Double x:Key="Size.Parameter">30</sys:Double>
   <sys:Double x:Key="Size.DataRow">24</sys:Double>
   <sys:Double x:Key="Size.Body">19</sys:Double>
-  <sys:Double x:Key="Size.Label">15</sys:Double>
-  <sys:Double x:Key="Size.CardTitle">17</sys:Double>
+  <sys:Double x:Key="Size.Label">16</sys:Double>
+  <sys:Double x:Key="Size.Caption">15</sys:Double>
+  <sys:Double x:Key="Size.CardTitle">18</sys:Double>
   <sys:Double x:Key="Size.PageTitle">22</sys:Double>
   <sys:Double x:Key="Size.Brand">26</sys:Double>
 

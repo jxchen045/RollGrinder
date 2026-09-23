@@ -494,6 +494,10 @@ public sealed class LocalizationTests
             Services.Monitoring.MachineMonitor.ConnectionRestoredResourceKey,
             Services.Jobs.JobDownloadService.HandoverCompletedResourceKey,
             Services.Jobs.JobDownloadService.HandoverNotArchivedResourceKey,
+            Services.Session.UserDirectory.AlreadyExistsResourceKey,
+            Services.Session.UserDirectory.PasswordEmptyResourceKey,
+            Services.Session.UserDirectory.LastManufacturerResourceKey,
+            Services.Session.UserDirectory.NotFoundResourceKey,
         };
 
         foreach (string key in raised)

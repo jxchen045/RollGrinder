@@ -84,6 +84,7 @@ public partial class ProfileView : UserControl
     private void Redraw()
     {
         PreviewPlot.Plot.Clear();
+        PlotTheme.Apply(PreviewPlot);
 
         if (this.viewModel is null || this.viewModel.ComposedPoints.Count < 2)
         {

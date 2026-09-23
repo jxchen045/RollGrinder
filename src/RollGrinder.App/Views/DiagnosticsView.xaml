@@ -186,9 +186,7 @@
                     <Border DockPanel.Dock="Bottom" Padding="14,10">
                         <TextBlock Text="{Binding AlarmRangeNoteText}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" />
                     </Border>
-                    <DataGrid ItemsSource="{Binding Events}" AutoGenerateColumns="False" IsReadOnly="True"
-                              HeadersVisibility="Column" FontSize="16" BorderThickness="0"
-                              Background="{StaticResource Brush.Surface}">
+                    <DataGrid ItemsSource="{Binding Events}" Style="{StaticResource DataTable}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="{loc:Loc Alarm_TimeColumn}" Binding="{Binding TimeText}" Width="180" />
                             <DataGridTextColumn Header="{loc:Loc Diag_AlarmCodeColumn}" Binding="{Binding CodeText}" Width="120" />
@@ -214,7 +212,7 @@
                             <DataTemplate>
                                 <Border Style="{StaticResource ParameterCell}">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="14" />
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
                                         <TextBlock Text="{Binding StateText}" FontSize="19" Margin="0,4,0,0">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
@@ -243,7 +241,7 @@
                                VerticalAlignment="Center" />
                 </Border>
                 <TextBox Text="{Binding InspectorText, Mode=OneWay}" IsReadOnly="True"
-                         FontFamily="{StaticResource Font.Mono}" FontSize="14" Margin="12"
+                         FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}" Margin="12"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
                          BorderThickness="0" Background="{StaticResource Brush.Surface}"
                          TextWrapping="NoWrap" />

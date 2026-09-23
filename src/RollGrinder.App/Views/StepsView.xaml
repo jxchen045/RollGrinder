@@ -49,7 +49,7 @@
                             <GroupStyle>
                                 <GroupStyle.HeaderTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold"
+                                        <TextBlock Text="{Binding Name}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
                                                    Padding="6,6,6,2"
                                                    Foreground="{StaticResource Brush.TextSecondary}" />
                                     </DataTemplate>
@@ -88,7 +88,7 @@
                                                     RelativeSource={RelativeSource AncestorType=UserControl},
                                                     Converter={StaticResource InverseBool}}"
                                                 Style="{StaticResource SecondaryButton}" FontSize="15" Padding="10,2" Height="32" />
-                                        <TextBlock Text="{Binding DurationText}" DockPanel.Dock="Right" FontSize="14"
+                                        <TextBlock Text="{Binding DurationText}" DockPanel.Dock="Right" FontSize="{StaticResource Size.Caption}"
                                                    Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center"
                                                    Margin="0,0,12,0" />
                                         <TextBlock Text="{Binding DisplayName}" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" />
@@ -211,7 +211,7 @@
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding UsesLibraryProfile}" Value="True">
                                             <!-- 辊形来自库里，这一格压暗：留在原位，只是按不动。 -->
-                                            <Setter Property="Opacity" Value="0.35" />
+                                            <Setter Property="Opacity" Value="0.6" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>

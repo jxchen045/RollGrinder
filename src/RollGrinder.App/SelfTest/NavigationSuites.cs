@@ -156,6 +156,7 @@ internal sealed class NavigationSuite : ISelfTestSuite
             shell.AreaMenuItems.First(i => i.Key == PageKey.Records).Command.Execute(null);
             await h.SettleAsync();
             ctx.Check(shell.IsLeaveConfirmOpen, "leaving a dirty page should ask first");
+            ctx.Check(h.IsShownOnScreen("LeaveConfirmOverlay"), "the leave-confirm dialog must actually be visible on screen");
             h.TryScreenshot("leave-confirm");
             await h.RunAsync(shell.CancelLeaveCommand);
             ctx.Check(shell.CurrentPage.Key == PageKey.Profile && profile.IsDirty, "'keep editing' should stay with the edits");
@@ -176,13 +177,22 @@ internal sealed class NavigationSuite : ISelfTestSuite
         await h.GoToAsync(home);
     }
 
-    /// <summary>按钮文字被截断：不判失败（不影响功能），但记 WARN 并列出来。</summary>
+    /// <summary>
+    /// 界面质量检查：按钮文字被截断、内容被容器裁掉、字或按钮状态对比度不够。
+    /// 不判失败（不影响功能），但记 WARN 并逐条列出。
+    /// </summary>
     internal static void WarnClipped(SelfTestHarness h, StepContext ctx)
     {
         IReadOnlyList<string> clipped = h.FindClippedButtons();
         if (clipped.Count > 0)
         {
-            ctx.Warn("clipped buttons: " + string.Join(" | ", clipped));
+            ctx.Warn("clipped: " + string.Join(" | ", clipped));
+        }
+
+        IReadOnlyList<string> contrast = h.FindLowContrast();
+        if (contrast.Count > 0)
+        {
+            ctx.Warn(contrast.Count + " low-contrast: " + string.Join(" | ", contrast.Take(25)));
         }
     }
 

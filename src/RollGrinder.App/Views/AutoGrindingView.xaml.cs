@@ -49,6 +49,7 @@ public partial class AutoGrindingView : UserControl
         if (this.viewModel is null || this.viewModel.CurvePoints.Count < 2)
         {
             CurvePlot.Plot.Clear();
+            PlotTheme.Apply(CurvePlot);
             CurvePlot.Refresh();
             return;
         }
@@ -57,6 +58,8 @@ public partial class AutoGrindingView : UserControl
         double[] values = this.viewModel.CurvePoints.Select(point => point.Value).ToArray();
 
         CurvePlot.Plot.Clear();
+
+        PlotTheme.Apply(CurvePlot);
         CurvePlot.Plot.Add.HorizontalLine(0.0, 1f, Colors.Gray, LinePattern.Dotted);
 
         // 公差带只有误差曲线才有意义：圆度、偏心、电流各有各的判据，

@@ -67,6 +67,14 @@ public sealed class AlarmLog : IAlarmLog
     {
         ArgumentNullException.ThrowIfNull(exception);
 
+        // 带了界面资源键的领域异常是"操作员这一步不被允许"，不是故障：报警条显示本地化原因，
+        // 级别降为警告。没带键的仍用通用标题，英文原文作细节，至少不丢信息。
+        if (exception is DomainException { ResourceKey: string key } explained)
+        {
+            Raise(AlarmSeverity.Warning, key, explained.Detail, AlarmCodes.DomainFailure);
+            return;
+        }
+
         (string resourceKey, int code) = exception switch
         {
             GatewayException => (GatewayFailureResourceKey, AlarmCodes.GatewayFailure),

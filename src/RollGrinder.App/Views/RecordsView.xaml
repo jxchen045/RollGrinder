@@ -34,7 +34,8 @@
 
         <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
             <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
+                <!-- 高度随内容：日期一行 + 查询按钮一行。写死高度会把两行裁成半截（曾把"查询"裁掉一半）。 -->
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="Auto" Padding="14,10">
                     <!-- 日期一行、查询按钮一行：挤在一行时英文界面下按钮会被裁掉。 -->
                     <Grid VerticalAlignment="Center">
                         <Grid.RowDefinitions>
@@ -82,12 +83,12 @@
                                     <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
                                         <TextBlock Text="{Binding StartedText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
                                                    HorizontalAlignment="Right" />
-                                        <TextBlock Text="{Binding StateText}" FontSize="14" HorizontalAlignment="Right"
+                                        <TextBlock Text="{Binding StateText}" FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Right"
                                                    Foreground="{StaticResource Brush.Normal}" />
                                     </StackPanel>
                                     <StackPanel>
                                         <TextBlock Text="{Binding RollCode}" FontFamily="{StaticResource Font.Mono}" FontSize="19" />
-                                        <TextBlock Text="{Binding ProfileTypeText}" Style="{StaticResource Text.Label}" FontSize="14" />
+                                        <TextBlock Text="{Binding ProfileTypeText}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
                                     </StackPanel>
                                 </DockPanel>
                             </Border>
@@ -122,7 +123,7 @@
                             <DataTemplate>
                                 <Border Style="{StaticResource ParameterCell}">
                                     <StackPanel>
-                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="14" />
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
                                         <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.DataRow}" Margin="0,4,0,0" />
                                     </StackPanel>
                                 </Border>

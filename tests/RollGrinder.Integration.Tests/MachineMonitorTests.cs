@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -272,6 +273,20 @@ public sealed class AlarmLogTests
             newest => newest.MessageResourceKey.Should().Be(AlarmLog.UnexpectedFailureResourceKey),
             middle => middle.MessageResourceKey.Should().Be(AlarmLog.DomainFailureResourceKey),
             oldest => oldest.MessageResourceKey.Should().Be(AlarmLog.GatewayFailureResourceKey));
+    }
+
+    [Fact]
+    public void A_domain_exception_with_a_resource_key_shows_the_localized_reason_not_the_english_text()
+    {
+        var log = new AlarmLog(limit: 10, new ManualTimeProvider(DateTimeOffset.UnixEpoch));
+
+        log.RaiseException(new RollGrinder.Core.DomainException("User 'op' already exists.", "Users_AlreadyExists", "op"));
+
+        AlarmEntry entry = log.Snapshot().Single();
+        entry.MessageResourceKey.Should().Be("Users_AlreadyExists");
+        entry.Detail.Should().Be("op", "英文原文只进日志，报警条只带具体对象");
+        entry.Severity.Should().Be(AlarmSeverity.Warning, "操作员这一步被规则拦下不是故障");
+        entry.Code.Should().Be(AlarmCodes.DomainFailure);
     }
 
     [Fact]

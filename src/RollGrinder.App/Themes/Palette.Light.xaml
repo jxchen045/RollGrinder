@@ -20,10 +20,10 @@
   <Color x:Key="Color.GridLine">#D8DDE4</Color>
   <Color x:Key="Color.TextPrimary">#16191E</Color>
   <Color x:Key="Color.TextSecondary">#4A5461</Color>
-  <Color x:Key="Color.TextMuted">#6B7581</Color>
+  <Color x:Key="Color.TextMuted">#5A6470</Color>
   <Color x:Key="Color.OnAccent">#FFFFFF</Color>
   <Color x:Key="Color.OnAccentMuted">#B9D4EA</Color>
-  <Color x:Key="Color.ButtonBorder">#B6BCC6</Color>
+  <Color x:Key="Color.ButtonBorder">#8C95A1</Color>
   <Color x:Key="Color.FunctionBar">#DDE2E8</Color>
   <Color x:Key="Color.NormalFill">#E2F2E9</Color>
   <Color x:Key="Color.SelectionFill">#E3EDF6</Color>
@@ -32,6 +32,28 @@
   <Color x:Key="Color.PlotGridMinor">#E4E8ED</Color>
   <Color x:Key="Color.Reference">#8D97A3</Color>
   <Color x:Key="Color.WarningFill">#8A5A00</Color>
+
+  <!--
+    按钮的悬停 / 按下 / 禁用色。实心按钮一律往深里走（白字对比度只升不降），
+    浅色按钮往浅蓝里走（深字对比度仍在 13:1 以上）。禁用是中性灰底灰字，不再用半透明：
+    红键半透明会变成像"警告"的粉色。对比度由 ButtonContrastTests 逐对核算：文字 ≥ 4.5:1，禁用文字 ≥ 3:1，描边 ≥ 3:1。
+  -->
+  <Color x:Key="Color.SurfaceHover">#E8EEF4</Color>
+  <Color x:Key="Color.SurfacePressed">#D3E1EE</Color>
+  <Color x:Key="Color.AccentHover">#0F4370</Color>
+  <Color x:Key="Color.AccentPressed">#0A3357</Color>
+  <Color x:Key="Color.AccentDarkHover">#0A3357</Color>
+  <Color x:Key="Color.AccentDarkPressed">#072640</Color>
+  <Color x:Key="Color.NormalHover">#19663F</Color>
+  <Color x:Key="Color.NormalPressed">#125131</Color>
+  <Color x:Key="Color.CurrentStepHover">#971E17</Color>
+  <Color x:Key="Color.CurrentStepPressed">#7B1812</Color>
+  <Color x:Key="Color.SelectionHover">#D3E1EE</Color>
+  <Color x:Key="Color.SelectionPressed">#C3D6E8</Color>
+  <Color x:Key="Color.DisabledFill">#ECEEF1</Color>
+  <Color x:Key="Color.DisabledText">#6B7581</Color>
+  <Color x:Key="Color.DisabledBorder">#D3D8DE</Color>
+  <Color x:Key="Color.FocusRing">#16191E</Color>
 
   <SolidColorBrush x:Key="Brush.Background" Color="{StaticResource Color.Background}" />
   <SolidColorBrush x:Key="Brush.Surface" Color="{StaticResource Color.Surface}" />
@@ -57,6 +79,22 @@
   <SolidColorBrush x:Key="Brush.PlotGridMinor" Color="{StaticResource Color.PlotGridMinor}" />
   <SolidColorBrush x:Key="Brush.Reference" Color="{StaticResource Color.Reference}" />
   <SolidColorBrush x:Key="Brush.WarningFill" Color="{StaticResource Color.WarningFill}" />
+  <SolidColorBrush x:Key="Brush.SurfaceHover" Color="{StaticResource Color.SurfaceHover}" />
+  <SolidColorBrush x:Key="Brush.SurfacePressed" Color="{StaticResource Color.SurfacePressed}" />
+  <SolidColorBrush x:Key="Brush.AccentHover" Color="{StaticResource Color.AccentHover}" />
+  <SolidColorBrush x:Key="Brush.AccentPressed" Color="{StaticResource Color.AccentPressed}" />
+  <SolidColorBrush x:Key="Brush.AccentDarkHover" Color="{StaticResource Color.AccentDarkHover}" />
+  <SolidColorBrush x:Key="Brush.AccentDarkPressed" Color="{StaticResource Color.AccentDarkPressed}" />
+  <SolidColorBrush x:Key="Brush.NormalHover" Color="{StaticResource Color.NormalHover}" />
+  <SolidColorBrush x:Key="Brush.NormalPressed" Color="{StaticResource Color.NormalPressed}" />
+  <SolidColorBrush x:Key="Brush.CurrentStepHover" Color="{StaticResource Color.CurrentStepHover}" />
+  <SolidColorBrush x:Key="Brush.CurrentStepPressed" Color="{StaticResource Color.CurrentStepPressed}" />
+  <SolidColorBrush x:Key="Brush.SelectionHover" Color="{StaticResource Color.SelectionHover}" />
+  <SolidColorBrush x:Key="Brush.SelectionPressed" Color="{StaticResource Color.SelectionPressed}" />
+  <SolidColorBrush x:Key="Brush.DisabledFill" Color="{StaticResource Color.DisabledFill}" />
+  <SolidColorBrush x:Key="Brush.DisabledText" Color="{StaticResource Color.DisabledText}" />
+  <SolidColorBrush x:Key="Brush.DisabledBorder" Color="{StaticResource Color.DisabledBorder}" />
+  <SolidColorBrush x:Key="Brush.FocusRing" Color="{StaticResource Color.FocusRing}" />
   <SolidColorBrush x:Key="Brush.StepIdle" Color="{StaticResource Color.HeaderFill}" />
   <SolidColorBrush x:Key="Brush.OnCurrentStep" Color="#FFFFFF" />
   <SolidColorBrush x:Key="Brush.OnNextStep" Color="#3A2F00" />
