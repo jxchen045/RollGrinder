@@ -432,6 +432,13 @@
       "description": "工序数"
     },
     {
+      "key": "job.cycleComplete",
+      "address": "ns=2;s=/Channel/Parameter/R[124]",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "循环正常结束：NC 程序开头 R124=0，M30 之前 R124=1。上位机据此自动收尾磨削记录"
+    },
+    {
       "key": "job.totalPasses",
       "address": "ns=2;s=/Channel/Parameter/R[123]",
       "dataType": "Int32",

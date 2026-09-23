@@ -418,7 +418,12 @@ public sealed class RecordService : IRecordService
             .ConfigureAwait(false);
 
         await SaveRoundnessAsync(recordId, cancellationToken).ConfigureAwait(false);
-        await QueuePostGrindReportAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+        // 磨后报告只给磨完的辊出：半路被复位的辊出一张"磨削报告"只会让人以为它磨好了。
+        if (state == JobState.Completed)
+        {
+            await QueuePostGrindReportAsync(recordId, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <summary>

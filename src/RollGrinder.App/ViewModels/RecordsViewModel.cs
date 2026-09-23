@@ -284,6 +284,14 @@ public sealed partial class RecordsViewModel : PageViewModelBase
                 return;
             }
 
+            // 磨完的辊现在由 NC 的结束位自动收尾；已经收过尾的不再动——
+            // 再收一次会改掉当时的结束时间与状态，还会多打一张磨削报告。
+            if (SelectedRecord.View.FinishedAtUtc is not null)
+            {
+                StatusResourceKey = "Records_AlreadyFinished";
+                return;
+            }
+
             await this.recordService.FinishAsync(
                 SelectedRecord.RecordId,
                 JobState.Completed,

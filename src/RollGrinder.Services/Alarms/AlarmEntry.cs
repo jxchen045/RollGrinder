@@ -64,6 +64,15 @@ public static class AlarmCodes
     /// <summary>tagmap 缺少必需变量。</summary>
     public const int TagMissing = 800030;
 
+    /// <summary>NC 报了循环正常结束，记录已自动收尾为已完成。</summary>
+    public const int RecordCompleted = 800026;
+
+    /// <summary>循环在正常结束之前被复位，记录已自动收尾为已放弃。</summary>
+    public const int RecordAbandoned = 800027;
+
+    /// <summary>循环结束了但 NC 没提供结束位，记录要操作员手动收尾。</summary>
+    public const int RecordNeedsManualFinish = 800028;
+
     /// <summary>号是否落在本系统号段内。</summary>
     public static bool IsHmiCode(int code) => code is >= RangeStart and <= RangeEnd;
 }

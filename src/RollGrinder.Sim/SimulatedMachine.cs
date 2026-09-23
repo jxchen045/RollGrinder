@@ -33,6 +33,15 @@ public sealed class SimulatedMachine
     /// <summary>下发进来的每道工序走刀次数，按工序下标（从 0 起）。</summary>
     private readonly Dictionary<int, int> stepPassCounts = new();
 
+    /// <summary>下发进来的每道工序有没有进给（每刀进给或连续进给大于 0）。测量、暂停这类工序没有，不去除材料。</summary>
+    private readonly Dictionary<int, bool> stepCuts = new();
+
+    /// <summary>
+    /// 循环正常结束位（job.cycleComplete）。程序开始清 0，最后一道走完置 1；
+    /// 半路被中止（参数失效）不置——上位机靠它区分"磨完了"与"被复位了"。
+    /// </summary>
+    private bool cycleComplete;
+
     /// <summary>下发进来的辊形点列，按下标收，收齐一对就同步进辊面模型。</summary>
     private readonly Dictionary<int, double> profilePositionsMm = new();
     private readonly Dictionary<int, double> profileOffsetsMm = new();
@@ -134,16 +143,26 @@ public sealed class SimulatedMachine
         }
 
         // 工序走刀次数是数组变量，下发时一条一条写进来：记下来，仿真才知道每道磨几刀。
-        if (TagKeySyntax.TrySplit(logicalName, out string baseKey, out int index)
-            && string.Equals(baseKey, MachineTagKeys.JobStepPassCount, StringComparison.Ordinal))
+        // 测量这类工序下发的是 0 刀：按扫一个来回算，而不是退回默认刀数。
+        if (TagKeySyntax.TrySplit(logicalName, out string baseKey, out int index))
         {
-            int? passCount = (int?)ToDouble(value.Raw);
-            if (passCount is > 0)
+            if (string.Equals(baseKey, MachineTagKeys.JobStepPassCount, StringComparison.Ordinal))
             {
-                this.stepPassCounts[index] = passCount.Value;
+                if ((int?)ToDouble(value.Raw) is int passCount)
+                {
+                    this.stepPassCounts[index] = Math.Max(1, passCount);
+                }
+
+                return;
             }
 
-            return;
+            if (string.Equals(baseKey, MachineTagKeys.JobStepInfeedPerPassRadiusMm, StringComparison.Ordinal)
+                || string.Equals(baseKey, MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin, StringComparison.Ordinal))
+            {
+                bool cuts = (ToDouble(value.Raw) ?? 0.0) > 0.0;
+                this.stepCuts[index] = cuts || (this.stepCuts.TryGetValue(index, out bool already) && already);
+                return;
+            }
         }
 
         switch (logicalName)
@@ -215,20 +234,27 @@ public sealed class SimulatedMachine
 
         // 去除量按恒定速率逼近目标半径，同一份量也从辊面上磨掉——
         // 磨到余量见底，辊面就落在「指令辊形 + 系统性偏差」上。
-        double removalMm = RemovalRateMmPerMinute * minutes;
-        this.currentRadiusMm = Math.Max(this.targetRadiusMm, this.currentRadiusMm - removalMm);
-        this.surface.Remove(removalMm);
-
-        if (this.currentRadiusMm <= this.targetRadiusMm + double.Epsilon)
+        // 只有带进给的工序才去除；余量见底后也不提前收工——和真 NC 一样把剩下的工序（测量、圆度……）走完。
+        if (CurrentStepCuts && this.currentRadiusMm > this.targetRadiusMm)
         {
-            ChannelState = NcChannelState.Reset;
-            ProgramName = string.Empty;
+            double removalMm = Math.Min(RemovalRateMmPerMinute * minutes, this.currentRadiusMm - this.targetRadiusMm);
+            this.currentRadiusMm -= removalMm;
+            this.surface.Remove(removalMm);
         }
     }
+
+    /// <summary>当前工序去不去除材料。没下发过进给信息的（老式调用）按会去除处理。</summary>
+    private bool CurrentStepCuts =>
+        !this.stepCuts.TryGetValue(this.currentStepOrder - 1, out bool cuts) || cuts;
 
     /// <summary>读取一个逻辑变量；仿真不认识的变量返回 null，由调用方决定怎么处理。</summary>
     public object? Read(string logicalName)
     {
+        if (logicalName == MachineTagKeys.JobCycleComplete)
+        {
+            return this.cycleComplete ? 1 : 0;
+        }
+
         if (logicalName == MachineTagKeys.ChannelState)
         {
             return (int)ChannelState;
@@ -369,8 +395,10 @@ public sealed class SimulatedMachine
         this.currentStepOrder++;
 
         // 最后一道工序走完，程序结束——和真机一样，上位机不需要参与。
+        // 结束前置"循环正常结束"位，对应 NC 程序里 M30 之前那一句 R124=1。
         if (this.stepCount > 0 && this.currentStepOrder > this.stepCount)
         {
+            this.cycleComplete = true;
             ChannelState = NcChannelState.Reset;
             ProgramName = string.Empty;
         }
@@ -388,6 +416,9 @@ public sealed class SimulatedMachine
 
     private void StartProgram()
     {
+        // 对应 NC 程序开头那一句 R124=0。
+        this.cycleComplete = false;
+
         // 新一支辊：辊面按当前几何重建，余量与来料误差回到进来时的样子。
         this.surface = new RollSurfaceModel(this.bodyLengthMm, this.targetRadiusMm);
         foreach (int index in this.profilePositionsMm.Keys)

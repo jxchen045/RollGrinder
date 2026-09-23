@@ -2014,4 +2014,19 @@
   <data name="Records_NoteLabel" xml:space="preserve">
     <value>Note</value>
   </data>
+  <data name="Alarm_RecordCompleted" xml:space="preserve">
+    <value>Roll finished; the record was closed automatically</value>
+  </data>
+  <data name="Alarm_RecordAbandoned" xml:space="preserve">
+    <value>Channel reset before the cycle completed; the record was closed as abandoned</value>
+  </data>
+  <data name="Alarm_RecordNeedsManualFinish" xml:space="preserve">
+    <value>Cycle ended but the NC provides no completion flag: please close the record on the Records page</value>
+  </data>
+  <data name="Alarm_RecordFinishFailed" xml:space="preserve">
+    <value>Automatic closing of the grinding record failed; please close it on the Records page</value>
+  </data>
+  <data name="Records_AlreadyFinished" xml:space="preserve">
+    <value>This record is already closed</value>
+  </data>
 </root>

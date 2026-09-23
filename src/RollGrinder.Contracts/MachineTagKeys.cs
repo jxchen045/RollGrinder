@@ -187,6 +187,16 @@ public static class MachineTagKeys
         JobControlFeedHold,
     };
 
+    /// <summary>
+    /// 循环正常结束（NC → 上位机）。NC 程序开头置 0，走完最后一道、M30 之前置 1。
+    ///
+    /// 上位机靠它区分"磨完了"与"半路被复位了"：通道从运行回到复位时，
+    /// 见到 1 就把这支辊的记录收尾为已完成，否则收尾为已放弃。
+    /// 用 R 参数而不用 PLC 位：只需在 NC 程序里加两行，不动 PLC。
+    /// 没映射时上位机不猜，记录留给操作员在记录页手动收尾。
+    /// </summary>
+    public const string JobCycleComplete = "job.cycleComplete";
+
     /// <summary>当前工序的第几次走刀。</summary>
     public const string JobCurrentPass = "job.currentPass";
 
@@ -283,6 +293,7 @@ public static class MachineTagKeys
             JobCurrentStepOrder,
             JobCurrentPass,
             JobTotalPasses,
+            JobCycleComplete,
             MeasureProbeAMm,
             MeasureProbeBMm,
             MeasureRoundnessMicrometer,

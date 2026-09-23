@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using RollGrinder.App.Navigation;
 using RollGrinder.App.ViewModels;
 using RollGrinder.Core.Steps;
+using RollGrinder.Data.Model;
 using RollGrinder.Services.Records;
 
 namespace RollGrinder.App.SelfTest;
@@ -188,54 +189,58 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             ctx.Check(printed, "with 'print pre-grind data' on, the pre-grind sheet should print without asking");
         });
 
-        await h.StepAsync("After", "RecordCreated", async ctx =>
+        await h.StepAsync("After", "RecordClosedAutomatically", async ctx =>
         {
+            // NC 走完最后一道置"循环正常结束"位（仿真里就是 R124=1），上位机据此自动收尾：
+            // 记录变成已完成、带结束时间，勾了"打印磨后数据"就自动出磨削报告——不用人去记录页点。
             RecordsViewModel records = h.Page<RecordsViewModel>();
             await h.GoToAsync(PageKey.Records, ctx);
             records.FromDate = DateTime.Today.AddDays(-1);
             records.ToDate = DateTime.Today;
-            bool found = false;
-            for (int i = 0; i < 10 && !found; i++)
+            RecordRowViewModel? row = null;
+            for (int i = 0; i < 15; i++)
             {
                 await h.RunAsync(records.QueryCommand);
-                found = records.Records.Any(r => r.RollCode == SelfTestNames.FlowRollId);
-                if (!found)
+                row = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
+                if (row?.View.FinishedAtUtc is not null)
                 {
-                    await Task.Delay(1000);
+                    break;
                 }
+
+                await Task.Delay(1000);
             }
 
-            ctx.Check(found, "a grinding record for " + SelfTestNames.FlowRollId + " should exist");
-            RecordRowViewModel? row = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
-            ctx.Note(row is null ? "none" : "state=" + row.StateText + ", duration=" + row.DurationText + ", worst=" + row.WorstDeviationText);
-        }, StepOptions.Shot);
-
-        await h.StepAsync("After", "FinishRecordOnRecordsPage", async ctx =>
-        {
-            // 现行设计：记录由操作员在记录页点"完成"收尾；收尾时定格砂轮直径、存圆度、出磨后报告。
-            RecordsViewModel records = h.Page<RecordsViewModel>();
-            RecordRowViewModel? row = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
-            if (row is null)
-            {
-                ctx.Skip("no record to finish");
-            }
-
-            int autoBefore = h.Interaction.Produced.Count(p => p.Contains("-auto-", StringComparison.Ordinal));
-            records.SelectedRecord = row;
-            records.Note = "self-test";
-            await h.RunAsync(records.FinishSelectedCommand);
-            ctx.Check(records.StatusResourceKey == "Records_Finished", "status should say finished, is " + records.StatusResourceKey);
-
-            RecordRowViewModel? finished = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
-            ctx.Check(finished?.View.FinishedAtUtc is not null, "the record should carry a finish time");
-            ctx.Note("state=" + finished?.StateText + ", duration=" + finished?.DurationText + ", worst=" + finished?.WorstDeviationText);
+            ctx.Check(row is not null, "a grinding record for " + SelfTestNames.FlowRollId + " should exist");
+            ctx.Note("state=" + row!.StateText + ", duration=" + row.DurationText + ", worst=" + row.WorstDeviationText);
+            ctx.Check(row.View.FinishedAtUtc is not null, "the record should close by itself when the NC reports cycle complete");
+            ctx.Check(row.View.State == JobState.Completed, "a normally finished roll should be recorded as completed, is " + row.View.State);
 
             bool postPrinted = await h.WaitUntilAsync(
-                () => h.Interaction.Produced.Count(p => p.Contains("-auto-", StringComparison.Ordinal)) > autoBefore,
+                () => h.Interaction.Produced.Count(p => p.Contains("-auto-", StringComparison.Ordinal)) >= printsBefore + 2,
                 TimeSpan.FromSeconds(15));
-            ctx.Check(postPrinted, "with 'print post-grind data' on, finishing should print the grinding report without asking");
-            ctx.Note("printed " + Path.GetFileName(h.Interaction.LastProduced));
-        }, StepOptions.Shot);
+            ctx.Note("automatic prints: " + string.Join(", ", h.Interaction.Produced.Where(p => p.Contains("-auto-", StringComparison.Ordinal)).Select(Path.GetFileName)));
+            ctx.Check(postPrinted, "with 'print post-grind data' on, the grinding report should print by itself after the roll finishes");
+        }, new StepOptions(Screenshot: true, ExpectedAlarms: new[] { "Alarm_RecordCompleted" }));
+
+        await h.StepAsync("After", "FinishButtonDoesNotReopenAClosedRecord", async ctx =>
+        {
+            RecordsViewModel records = h.Page<RecordsViewModel>();
+            RecordRowViewModel? row = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
+            if (row?.View.FinishedAtUtc is null)
+            {
+                ctx.Skip("the flow record is not closed");
+            }
+
+            DateTimeOffset? finishedAt = row!.View.FinishedAtUtc;
+            int prints = h.Interaction.Produced.Count;
+            records.SelectedRecord = row;
+            await h.RunAsync(records.FinishSelectedCommand);
+            ctx.Check(records.StatusResourceKey == "Records_AlreadyFinished", "pressing finish on a closed record should say so, status " + records.StatusResourceKey);
+            await h.RunAsync(records.QueryCommand);
+            RecordRowViewModel? again = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
+            ctx.Check(again?.View.FinishedAtUtc == finishedAt, "the finish time must not change");
+            ctx.Check(h.Interaction.Produced.Count == prints, "no second report may be printed");
+        });
 
         await h.StepAsync("After", "RecordCurvesHaveData", async ctx =>
         {
