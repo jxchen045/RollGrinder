@@ -23,6 +23,12 @@ public enum FunctionKeyKind
 
     /// <summary>导航槽（第 8 键）：与功能键区分开，避免"以为按的是功能"。</summary>
     Navigation = 4,
+
+    /// <summary>页面菜单态下的区域键：整排换成另一种底色，一眼看出软键条现在是"去哪页"而不是"做什么"。</summary>
+    AreaMenu = 5,
+
+    /// <summary>页面菜单态下当前所在的那一页。</summary>
+    AreaMenuCurrent = 6,
 }
 
 /// <summary>
@@ -85,4 +91,12 @@ public sealed partial class FunctionKeyViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Label))]
     private string? labelArgument;
+
+    /// <summary>印在标签下面的快捷键（如 Ctrl+3）；null 不显示。让快捷键不用翻手册就能被发现。</summary>
+    [ObservableProperty]
+    private string? shortcutText;
+
+    /// <summary>悬停提示：这一格里有什么，或者为什么现在按不了。</summary>
+    [ObservableProperty]
+    private string? hintText;
 }

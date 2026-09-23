@@ -1336,9 +1336,6 @@
   <data name="Menu_StepsHint" xml:space="preserve">
     <value>Step sequence, process parameters, NC download</value>
   </data>
-  <data name="Menu_Title" xml:space="preserve">
-    <value>Go to page</value>
-  </data>
   <data name="Nav_AreaMenu" xml:space="preserve">
     <value>Page menu</value>
   </data>
@@ -1355,7 +1352,7 @@
     <value>Modified</value>
   </data>
   <data name="Shell_OpenAreaMenu" xml:space="preserve">
-    <value>Open the page menu</value>
+    <value>Page menu: the soft keys turn into pages (same as F8; press again to close); Ctrl+1…7 jumps directly</value>
   </data>
   <data name="Shell_ReadOnlyRunning" xml:space="preserve">
     <value>Running · read-only</value>
@@ -2004,5 +2001,11 @@
   </data>
   <data name="Alarm_FeedHoldRequested" xml:space="preserve">
     <value>Feed hold requested</value>
+  </data>
+  <data name="Nav_ShortcutFormat" xml:space="preserve">
+    <value>Ctrl+{0}</value>
+  </data>
+  <data name="Nav_ShortcutBadgeHint" xml:space="preserve">
+    <value>Press Ctrl+1…7 to jump straight to a page without opening the page menu</value>
   </data>
 </root>

@@ -5,7 +5,7 @@ namespace RollGrinder.App.Navigation;
 /// <summary>底部功能条最后一个键（导航槽）当前扮演的角色。</summary>
 public enum NavigationKeyRole
 {
-    /// <summary>主页根部：本页没有上一级，这个键用来打开区域菜单。</summary>
+    /// <summary>主页根部：本页没有上一级，这个键用来打开页面菜单。</summary>
     OpenAreaMenu = 0,
 
     /// <summary>子页面根部：回主页（自动磨削）。</summary>
@@ -16,6 +16,9 @@ public enum NavigationKeyRole
 
     /// <summary>页内二级子视图：关掉子视图，回本页根部。</summary>
     CloseSubView = 3,
+
+    /// <summary>软键条正处于页面菜单态：取消，软键条变回本页的功能键。</summary>
+    CloseAreaMenu = 4,
 }
 
 /// <summary>
@@ -33,7 +36,7 @@ public sealed record NavigationKeyDescriptor(
 /// 页面切换的状态机。刻意做成纯逻辑（不引用 WPF、不引用本地化），
 /// 这样切换规则可以被单元测试直接覆盖。
 ///
-/// 结构：主页（自动磨削）+ 5 个子页面，每页可再打开一层子视图，最深三层。
+/// 结构：主页（自动磨削）+ 6 个子页面，每页可再打开一层子视图，最深三层。
 /// 规则：
 /// 1. 区域之间永远是"平的"——从任何区域到任何区域都是一步，不叠历史栈；
 /// 2. 导航槽（第 8 键）只退一级，且标签写明退到哪；
@@ -143,11 +146,19 @@ public sealed class NavigationModel
     public void CloseAreaMenu() => IsAreaMenuOpen = false;
 
     /// <summary>
-    /// 导航槽当前该显示什么。优先级：子视图 &gt; 任务返回点 &gt; 回主页 &gt; 打开菜单。
+    /// 导航槽当前该显示什么。优先级：菜单态 &gt; 子视图 &gt; 任务返回点 &gt; 回主页 &gt; 打开菜单。
     /// 任何位置都有明确含义，不存在按了没反应的死键。
+    ///
+    /// 菜单态排第一：页面菜单是把底部软键条原地换成区域键（对齐 Operate 的 MENU SELECT），
+    /// 这时第 8 键就是"取消"，按下去软键条变回来，不换页。
     /// </summary>
     public NavigationKeyDescriptor DescribeNavigationKey()
     {
+        if (IsAreaMenuOpen)
+        {
+            return new NavigationKeyDescriptor(NavigationKeyRole.CloseAreaMenu, "Menu_Cancel", null);
+        }
+
         if (CurrentSubViewKey is not null)
         {
             return new NavigationKeyDescriptor(NavigationKeyRole.CloseSubView, "Nav_BackToPageFormat", CurrentArea);

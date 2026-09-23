@@ -17,7 +17,7 @@ namespace RollGrinder.App.ViewModels;
 public sealed record ContextItem(string LabelResourceKey, string Value, bool IsMonospaced = false);
 
 /// <summary>
-/// 一个一级页面。外壳负责画顶栏、区域菜单与底部功能条，
+/// 一个一级页面。外壳负责画顶栏、页面菜单与底部功能条，
 /// 页面负责给出标题、上下文与前 7 个功能键——第 8 个是导航槽，页面碰不到。
 /// </summary>
 public abstract partial class PageViewModelBase : ViewModelBase
@@ -49,7 +49,7 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// <summary>页面标题。</summary>
     public string Title => Localizer[TitleResourceKey];
 
-    /// <summary>区域菜单里这一项的副标题：一句话说明这页有什么，避免靠猜。</summary>
+    /// <summary>页面菜单里这一页的悬停说明：一句话说明这页有什么，避免靠猜。</summary>
     public virtual string MenuHintResourceKey => TitleResourceKey;
 
     /// <summary>顶栏上显示的上下文。</summary>

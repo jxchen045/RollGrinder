@@ -216,6 +216,8 @@ public sealed class NavigationTests
             {
                 foreach (bool withSubView in new[] { false, true })
                 {
+                    foreach (bool withMenu in new[] { false, true })
+                    {
                     var model = new NavigationModel();
                     if (withTask)
                     {
@@ -231,15 +233,41 @@ public sealed class NavigationTests
                         model.OpenSubView("SubView_TagMonitor");
                     }
 
+                    if (withMenu)
+                    {
+                        model.OpenAreaMenu();
+                    }
+
                     NavigationKeyDescriptor key = model.DescribeNavigationKey();
                     key.LabelResourceKey.Should().NotBeNullOrWhiteSpace();
-                    if (key.Role != NavigationKeyRole.OpenAreaMenu)
+                    if (key.Role is not (NavigationKeyRole.OpenAreaMenu or NavigationKeyRole.CloseAreaMenu))
                     {
-                        key.TargetArea.Should().NotBeNull("除了打开菜单，其余角色都必须说明退到哪一页");
+                        key.TargetArea.Should().NotBeNull("除了开/收菜单，其余角色都必须说明退到哪一页");
+                    }
                     }
                 }
             }
         }
+    }
+
+    [Fact]
+    public void While_the_menu_is_open_the_navigation_key_cancels_it_without_moving()
+    {
+        // 页面菜单是软键条原地变身：第 8 键此时就是"取消"，按下去软键条变回来，人还在原页。
+        var model = new NavigationModel();
+        model.GoToArea(PageKey.Records);
+        model.OpenSubView("SubView_TagMonitor");
+        model.OpenAreaMenu();
+
+        NavigationKeyDescriptor key = model.DescribeNavigationKey();
+
+        key.Role.Should().Be(NavigationKeyRole.CloseAreaMenu, "菜单态优先于子视图与返回主页");
+        key.LabelResourceKey.Should().Be("Menu_Cancel");
+        key.TargetArea.Should().BeNull("取消不换页");
+
+        model.CloseAreaMenu();
+        model.CurrentArea.Should().Be(PageKey.Records);
+        model.DescribeNavigationKey().Role.Should().Be(NavigationKeyRole.CloseSubView, "收起菜单后第 8 键回到原来的角色");
     }
 
     [Fact]
@@ -258,7 +286,7 @@ public sealed class NavigationTests
         string[] required =
         {
             "Nav_AreaMenu", "Nav_BackToHome", "Nav_BackToPageFormat", "Nav_BreadcrumbSeparator",
-            "Menu_Title", "Menu_Cancel", "Menu_Current", "Fn_Empty",
+            "Menu_Cancel", "Menu_Current", "Fn_Empty", "Nav_ShortcutFormat", "Nav_ShortcutBadgeHint",
             "Menu_AutoGrindingHint", "Menu_StepsHint", "Menu_ProfileHint",
             "Menu_ManualHint", "Menu_RecordsHint", "Menu_DiagnosticsHint",
             "Leave_TitleFormat", "Leave_Message", "Leave_Save", "Leave_Discard", "Leave_Cancel",

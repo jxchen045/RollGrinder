@@ -176,13 +176,19 @@
     <Setter Property="BorderThickness" Value="0" />
   </Style>
 
-  <!-- 区域菜单里的一格：触摸目标做大，戴手套也点得准 -->
-  <Style x:Key="AreaMenuTile" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
-    <Setter Property="Height" Value="136" />
-    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-    <Setter Property="VerticalContentAlignment" Value="Stretch" />
-    <Setter Property="Padding" Value="20,16" />
-    <Setter Property="Margin" Value="8" />
+  <!-- 页面菜单态的区域键：软键条原地换成"去哪页"，整排改成浅强调底 + 强调色描边，
+       和平常的功能键一眼分得开，免得把"切到记录页"当成"保存"按下去。 -->
+  <Style x:Key="AreaMenuKeyButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+    <Setter Property="Foreground" Value="{StaticResource Brush.Accent}" />
+    <Setter Property="Background" Value="{StaticResource Brush.SelectionFill}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+
+  <!-- 当前所在的那一页：实心强调色。按它只是收起菜单。 -->
+  <Style x:Key="AreaMenuKeyCurrentButton" TargetType="Button" BasedOn="{StaticResource AreaMenuKeyButton}">
+    <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
+    <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
   </Style>
 
   <!-- 确认框里的按钮 -->

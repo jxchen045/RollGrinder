@@ -94,6 +94,8 @@ public sealed class FunctionKeyStyleConverter : IValueConverter
                 FunctionKeyKind.Start => "StartButton",
                 FunctionKeyKind.Danger => "DangerButton",
                 FunctionKeyKind.Navigation => "NavigationButton",
+                FunctionKeyKind.AreaMenu => "AreaMenuKeyButton",
+                FunctionKeyKind.AreaMenuCurrent => "AreaMenuKeyCurrentButton",
                 _ => "SecondaryButton",
             }
             : "SecondaryButton";

@@ -22,6 +22,7 @@
          App 是 net8.0-windows 目标，测试工程不能引用它。 -->
     <Compile Include="..\..\src\RollGrinder.App\Navigation\PageKey.cs" Link="Navigation\PageKey.cs" />
     <Compile Include="..\..\src\RollGrinder.App\Navigation\NavigationModel.cs" Link="Navigation\NavigationModel.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\Navigation\AreaMenuLayout.cs" Link="Navigation\AreaMenuLayout.cs" />
   </ItemGroup>
 
   <ItemGroup>

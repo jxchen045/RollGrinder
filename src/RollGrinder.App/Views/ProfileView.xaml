@@ -162,7 +162,7 @@
             </Border>
         </Grid>
 
-        <!-- 辊形库：盖在整页之上，和区域菜单同一种做法——不另开窗口，触摸屏上好点。 -->
+        <!-- 辊形库：盖在整页之上——不另开窗口，触摸屏上好点。 -->
         <Border Grid.ColumnSpan="2" Background="#CC101418"
                 Visibility="{Binding IsLibraryOpen, Converter={StaticResource BoolToVisibility}}">
             <Border Style="{StaticResource Card}" Width="720" Height="520"

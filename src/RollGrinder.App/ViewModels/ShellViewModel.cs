@@ -22,7 +22,7 @@ namespace RollGrinder.App.ViewModels;
 /// <summary>
 /// 界面外壳：顶栏（菜单 / 页面上下文 / 状态条 / NC 连接 / 权限 / 时钟）、
 /// 页面容器、底部 8 键功能条（前 7 个来自页面，第 8 个是导航槽），
-/// 以及两个浮层：区域菜单与离开确认。
+/// 以及离开确认浮层。页面菜单不是浮层：它是功能条原地换成区域键（对齐 Operate 的 MENU SELECT）。
 ///
 /// 页面切换的规则只有这一处，见 <see cref="NavigationModel"/>：
 /// 区域之间是平的（不叠历史栈），导航槽只退一级且标签写明退到哪，
@@ -34,17 +34,6 @@ namespace RollGrinder.App.ViewModels;
 public sealed partial class ShellViewModel : ViewModelBase
 {
     private const string NoAlarmCode = "0000";
-
-    private static readonly IReadOnlyList<PageKey> AreaOrder = new[]
-    {
-        PageKey.AutoGrinding,
-        PageKey.Steps,
-        PageKey.Profile,
-        PageKey.Manual,
-        PageKey.Records,
-        PageKey.Diagnostics,
-        PageKey.Settings,
-    };
 
     private readonly IAlarmLog alarmLog;
     private readonly IMachineMonitor monitor;
@@ -98,7 +87,7 @@ public sealed partial class ShellViewModel : ViewModelBase
             localizer,
             FunctionKeyKind.Navigation);
 
-        foreach (PageKey area in AreaOrder)
+        foreach (PageKey area in AreaMenuLayout.DefaultOrder)
         {
             if (!this.pages.TryGetValue(area, out PageViewModelBase? page))
             {
@@ -134,7 +123,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     /// <summary>底部功能条实际渲染的 8 格：前 7 格来自页面（不足补空位），第 8 格是导航槽。</summary>
     public ObservableCollection<FunctionKeyViewModel> FunctionKeys { get; } = new();
 
-    /// <summary>区域菜单的六格。</summary>
+    /// <summary>页面菜单里的区域（最多 7 个）：菜单态的软键与 Ctrl+1…7 都按它排。</summary>
     public ObservableCollection<AreaMenuItemViewModel> AreaMenuItems { get; } = new();
 
     [ObservableProperty]
@@ -161,9 +150,16 @@ public sealed partial class ShellViewModel : ViewModelBase
     [ObservableProperty]
     private string roleText = string.Empty;
 
-    /// <summary>区域菜单是否展开。</summary>
+    /// <summary>
+    /// 页面菜单是否展开。展开 = 底部软键条原地换成区域键（对齐 Operate 的 MENU SELECT），
+    /// **不是浮层**：页面照常显示、照常可用，磨削监控一刻都不被遮挡。
+    /// </summary>
     [ObservableProperty]
     private bool isAreaMenuOpen;
+
+    /// <summary>当前页的直达快捷键（如 Ctrl+3），常驻在顶栏面包屑前——一键切页不该是隐藏知识。</summary>
+    [ObservableProperty]
+    private string currentAreaShortcutText = string.Empty;
 
     /// <summary>离开确认框是否展开。</summary>
     [ObservableProperty]
@@ -196,7 +192,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     /// <summary>离线时第一个能进的区域，兼作主页。</summary>
     private PageKey FirstOfflineArea()
     {
-        foreach (PageKey area in AreaOrder)
+        foreach (PageKey area in AreaMenuLayout.DefaultOrder)
         {
             if (this.pages.TryGetValue(area, out PageViewModelBase? page) && page.WorksOffline)
             {
@@ -207,10 +203,13 @@ public sealed partial class ShellViewModel : ViewModelBase
         return NavigationModel.DefaultHomeArea;
     }
 
-    /// <summary>有浮层挡着时，底下的页面与功能条不接受点击。</summary>
-    public bool IsOverlayOpen => IsAreaMenuOpen || IsLeaveConfirmOpen || IsSignInOpen || IsUserAdminOpen;
+    /// <summary>
+    /// 有浮层挡着时，底下的页面与功能条不接受点击。
+    /// 页面菜单不算浮层：它就长在软键条上，不挡任何东西。
+    /// </summary>
+    public bool IsOverlayOpen => IsLeaveConfirmOpen || IsSignInOpen || IsUserAdminOpen;
 
-    partial void OnIsAreaMenuOpenChanged(bool value) => OnPropertyChanged(nameof(IsOverlayOpen));
+    partial void OnIsAreaMenuOpenChanged(bool value) => RebuildFunctionKeys();
 
     partial void OnIsLeaveConfirmOpenChanged(bool value) => OnPropertyChanged(nameof(IsOverlayOpen));
 
@@ -591,6 +590,20 @@ public sealed partial class ShellViewModel : ViewModelBase
         SyncNavigation();
     }
 
+    /// <summary>顶栏左上角的菜单键：开着就收，收着就开——鼠标点同一处就能反悔。</summary>
+    [RelayCommand]
+    private void ToggleAreaMenu()
+    {
+        if (this.model.IsAreaMenuOpen)
+        {
+            CloseAreaMenu();
+        }
+        else
+        {
+            OpenAreaMenu();
+        }
+    }
+
     [RelayCommand]
     private void CloseAreaMenu()
     {
@@ -697,6 +710,10 @@ public sealed partial class ShellViewModel : ViewModelBase
         {
             case NavigationKeyRole.OpenAreaMenu:
                 OpenAreaMenu();
+                break;
+
+            case NavigationKeyRole.CloseAreaMenu:
+                CloseAreaMenu();
                 break;
 
             case NavigationKeyRole.CloseSubView:
@@ -829,11 +846,17 @@ public sealed partial class ShellViewModel : ViewModelBase
         SyncNavigation();
     }
 
-    /// <summary>重建 8 格：页面的键不足 7 个时补空位，保证导航槽永远在最右边同一格。</summary>
+    /// <summary>
+    /// 重建 8 格：页面的键不足 7 个时补空位，保证导航槽永远在最右边同一格。
+    /// 菜单态时前 7 格换成区域键，第 8 格（导航槽）变成"取消"。
+    /// </summary>
     private void RebuildFunctionKeys()
     {
         FunctionKeys.Clear();
-        foreach (FunctionKeyViewModel key in CurrentPage.FunctionKeys)
+        IEnumerable<FunctionKeyViewModel> keys = this.model.IsAreaMenuOpen
+            ? BuildAreaKeys()
+            : CurrentPage.FunctionKeys;
+        foreach (FunctionKeyViewModel key in keys)
         {
             FunctionKeys.Add(key);
         }
@@ -852,7 +875,38 @@ public sealed partial class ShellViewModel : ViewModelBase
         FunctionKeys.Add(this.navigationKey);
     }
 
-    /// <summary>把状态机的当前样子刷到界面：导航槽标签、菜单高亮、面包屑。</summary>
+    /// <summary>菜单态的区域键：F(n) = Ctrl+n = 第 n 个区域，键上印着快捷键，悬停说明里面有什么。</summary>
+    private IEnumerable<FunctionKeyViewModel> BuildAreaKeys()
+    {
+        var byArea = AreaMenuItems.ToDictionary(item => item.Key);
+        IReadOnlyList<AreaSoftKey> layout = AreaMenuLayout.Build(
+            AreaMenuItems.Select(item => item.Key).ToList(),
+            this.model.CurrentArea,
+            area => byArea[area].IsAvailable);
+
+        foreach (AreaSoftKey slot in layout)
+        {
+            AreaMenuItemViewModel item = byArea[slot.Area];
+            string hint = !slot.IsAvailable
+                ? item.UnavailableHint
+                : slot.IsCurrent
+                    ? this.localizer["Menu_Current"] + " · " + item.Hint
+                    : item.Hint;
+
+            yield return new FunctionKeyViewModel(
+                item.TitleResourceKey,
+                item.Command,
+                this.localizer,
+                slot.IsCurrent ? FunctionKeyKind.AreaMenuCurrent : FunctionKeyKind.AreaMenu)
+            {
+                IsEnabled = slot.IsAvailable,
+                ShortcutText = this.localizer.Format("Nav_ShortcutFormat", slot.ShortcutNumber),
+                HintText = hint,
+            };
+        }
+    }
+
+    /// <summary>把状态机的当前样子刷到界面：导航槽标签、菜单态、面包屑、当前页快捷键。</summary>
     private void SyncNavigation()
     {
         NavigationKeyDescriptor descriptor = this.model.DescribeNavigationKey();
@@ -863,12 +917,11 @@ public sealed partial class ShellViewModel : ViewModelBase
                 : null;
 
         IsAreaMenuOpen = this.model.IsAreaMenuOpen;
-        OnPropertyChanged(nameof(IsOverlayOpen));
 
-        foreach (AreaMenuItemViewModel item in AreaMenuItems)
-        {
-            item.IsCurrent = item.Key == this.model.CurrentArea;
-        }
+        AreaMenuItemViewModel? current = AreaMenuItems.FirstOrDefault(item => item.Key == this.model.CurrentArea);
+        CurrentAreaShortcutText = current is null
+            ? string.Empty
+            : this.localizer.Format("Nav_ShortcutFormat", current.ShortcutNumber);
 
         BreadcrumbText = BuildBreadcrumb();
     }

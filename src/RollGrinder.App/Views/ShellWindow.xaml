@@ -41,9 +41,10 @@
         <!-- 顶栏 76：品牌 / 页面上下文 / 状态条 / NC 连接 / 权限 / 时钟 -->
         <Border DockPanel.Dock="Top" Height="76" Background="{StaticResource Brush.Accent}" Padding="20,0">
             <DockPanel LastChildFill="True">
-                <!-- 左上角恒为"菜单"：位置固定，任何页面、任何深度，一步到任何区域。 -->
+                <!-- 左上角恒为"菜单"：位置固定，任何页面、任何深度都能按。
+                     按下去是把底部软键条换成区域键（再按一次收回），不弹浮层。 -->
                 <Button DockPanel.Dock="Left"
-                        Command="{Binding OpenAreaMenuCommand}"
+                        Command="{Binding ToggleAreaMenuCommand}"
                         ToolTip="{loc:Loc Shell_OpenAreaMenu}"
                         Background="{StaticResource Brush.AccentDark}"
                         BorderThickness="0"
@@ -65,6 +66,19 @@
                                    VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
+
+                <!-- 当前页的直达快捷键：常驻，让"Ctrl+数字一键切页"不用翻手册也能被发现 -->
+                <Border DockPanel.Dock="Left"
+                        Background="{StaticResource Brush.AccentDark}"
+                        Height="32" Padding="10,0" Margin="0,0,12,0"
+                        VerticalAlignment="Center"
+                        ToolTip="{loc:Loc Nav_ShortcutBadgeHint}">
+                    <TextBlock Text="{Binding CurrentAreaShortcutText}"
+                               FontFamily="{StaticResource Font.Mono}"
+                               FontSize="15"
+                               Foreground="{StaticResource Brush.OnAccentMuted}"
+                               VerticalAlignment="Center" />
+                </Border>
 
                 <!-- 面包屑：当前在哪一层，一眼可见 -->
                 <TextBlock DockPanel.Dock="Left"
@@ -210,9 +224,24 @@
             </DockPanel>
         </Border>
 
-        <!-- 底部功能条 86：8 个等宽键，最后一个是返回 -->
-        <Border DockPanel.Dock="Bottom" Height="86" Background="{StaticResource Brush.FunctionBar}"
-                BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,2,0,0" Padding="14,12">
+        <!-- 底部功能条 86：8 个等宽键，最后一个是导航槽。
+             页面菜单态时前 7 格原地换成区域键（对齐 Operate 的 MENU SELECT），
+             整条换强调色上沿，一眼看出现在按下去是"换页"而不是"干活"。 -->
+        <Border DockPanel.Dock="Bottom" Height="86" Padding="14,12">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{StaticResource Brush.FunctionBar}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Divider}" />
+                    <Setter Property="BorderThickness" Value="0,2,0,0" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsAreaMenuOpen}" Value="True">
+                            <Setter Property="Background" Value="{StaticResource Brush.AccentDark}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+                            <Setter Property="BorderThickness" Value="0,4,0,0" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <ItemsControl ItemsSource="{Binding FunctionKeys}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -221,11 +250,24 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Button Content="{Binding Label}"
-                                Command="{Binding Command}"
+                        <Button Command="{Binding Command}"
                                 IsEnabled="{Binding IsEnabled}"
+                                ToolTip="{Binding HintText}"
+                                ToolTipService.ShowOnDisabled="True"
                                 Style="{Binding Kind, Converter={StaticResource FunctionKeyStyle}}"
-                                Margin="5,0" />
+                                Margin="5,0">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding Label}"
+                                           HorizontalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding ShortcutText}"
+                                           FontFamily="{StaticResource Font.Mono}"
+                                           FontSize="13"
+                                           Opacity="0.8"
+                                           HorizontalAlignment="Center"
+                                           Visibility="{Binding ShortcutText, Converter={StaticResource TextToVisibility}}" />
+                            </StackPanel>
+                        </Button>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -235,98 +277,6 @@
             <ContentControl Content="{Binding CurrentPage}"
                             Margin="12"
                             IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}" />
-
-            <!-- 区域菜单：六格，和页面一样大的触摸目标，点外面即取消 -->
-            <Grid Background="#B3101418"
-                  Visibility="{Binding IsAreaMenuOpen, Converter={StaticResource BoolToVisibility}}">
-                <Border Background="{StaticResource Brush.Surface}"
-                        BorderBrush="{StaticResource Brush.Divider}"
-                        BorderThickness="1"
-                        Width="1100"
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Center">
-                    <StackPanel>
-                        <Border Background="{StaticResource Brush.HeaderFill}" Height="56" Padding="24,0">
-                            <TextBlock Text="{loc:Loc Menu_Title}"
-                                       FontSize="{StaticResource Size.CardTitle}"
-                                       Foreground="{StaticResource Brush.TextSecondary}"
-                                       VerticalAlignment="Center" />
-                        </Border>
-
-                        <ItemsControl ItemsSource="{Binding AreaMenuItems}" Margin="12">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Columns="3" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Command="{Binding Command}">
-                                        <Button.Style>
-                                            <Style TargetType="Button" BasedOn="{StaticResource AreaMenuTile}">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource Brush.SelectionFill}" />
-                                                        <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
-                                                        <Setter Property="BorderThickness" Value="3" />
-                                                    </DataTrigger>
-                                                    <!-- 离线进不去的格子：压暗但照样列出来并说明原因 -->
-                                                    <DataTrigger Binding="{Binding IsAvailable}" Value="False">
-                                                        <Setter Property="Opacity" Value="0.4" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                        <DockPanel LastChildFill="True">
-                                            <Border DockPanel.Dock="Left"
-                                                    Background="{StaticResource Brush.Accent}"
-                                                    Width="40" Height="40"
-                                                    VerticalAlignment="Top"
-                                                    Margin="0,0,14,0">
-                                                <TextBlock Text="{Binding ShortcutText}"
-                                                           FontFamily="{StaticResource Font.Mono}"
-                                                           FontSize="22"
-                                                           Foreground="{StaticResource Brush.OnAccent}"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center" />
-                                            </Border>
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding Title}"
-                                                           FontSize="26"
-                                                           Foreground="{StaticResource Brush.TextPrimary}"
-                                                           TextWrapping="Wrap" />
-                                                <TextBlock Text="{Binding Hint}"
-                                                           FontSize="16"
-                                                           Foreground="{StaticResource Brush.TextSecondary}"
-                                                           TextWrapping="Wrap"
-                                                           Margin="0,6,0,0" />
-                                                <TextBlock Text="{loc:Loc Menu_Current}"
-                                                           FontSize="15"
-                                                           Foreground="{StaticResource Brush.Accent}"
-                                                           Margin="0,6,0,0"
-                                                           Visibility="{Binding IsCurrent, Converter={StaticResource BoolToVisibility}}" />
-                                                <TextBlock Text="{Binding UnavailableHint}"
-                                                           FontSize="15"
-                                                           Foreground="{StaticResource Brush.WarningFill}"
-                                                           TextWrapping="Wrap"
-                                                           Margin="0,6,0,0"
-                                                           Visibility="{Binding UnavailableHint, Converter={StaticResource TextToVisibility}}" />
-                                            </StackPanel>
-                                        </DockPanel>
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <Border Background="{StaticResource Brush.HeaderFill}" Padding="16,12">
-                            <Button Content="{loc:Loc Menu_Cancel}"
-                                    Command="{Binding CloseAreaMenuCommand}"
-                                    Style="{StaticResource DialogButton}"
-                                    HorizontalAlignment="Right" />
-                        </Border>
-                    </StackPanel>
-                </Border>
-            </Grid>
 
             <!-- 离开确认：脏页切走时拦一道，三个选择都写清楚后果 -->
             <Grid Background="#B3101418"

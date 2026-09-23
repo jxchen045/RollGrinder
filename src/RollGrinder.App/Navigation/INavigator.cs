@@ -8,7 +8,7 @@ namespace RollGrinder.App.Navigation;
 /// </summary>
 public interface INavigator
 {
-    /// <summary>平切到某个区域（等同于从区域菜单点它）。</summary>
+    /// <summary>平切到某个区域（等同于从页面菜单选它，或按 Ctrl+n）。</summary>
     void GoToArea(PageKey area);
 
     /// <summary>
@@ -26,7 +26,7 @@ public interface INavigator
     /// <summary>关掉本页的子视图。</summary>
     void CloseSubView();
 
-    /// <summary>展开区域菜单。</summary>
+    /// <summary>展开页面菜单（软键条换成区域键）。</summary>
     void OpenAreaMenu();
 }
 
@@ -59,7 +59,7 @@ public enum NavigationRequestKind
     /// <summary>关闭子视图。</summary>
     CloseSubView = 4,
 
-    /// <summary>展开区域菜单。</summary>
+    /// <summary>展开页面菜单（软键条换成区域键）。</summary>
     OpenAreaMenu = 5,
 }
 

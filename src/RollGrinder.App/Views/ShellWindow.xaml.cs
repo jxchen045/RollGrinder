@@ -11,7 +11,7 @@ namespace RollGrinder.App.Views;
 /// 与机床数据到达频率解耦；每一拍只驱动当前页。
 ///
 /// 键盘映射对应操作面板的软键：F1–F8 = 底部八格（第 8 格是导航槽），
-/// Esc = 退一级 / 收浮层，Ctrl+1…7 = 直接切区域。
+/// Esc = 收起页面菜单或浮层 / 退一级，Ctrl+1…7 = 直接切区域（当前页的 Ctrl+n 常驻在顶栏）。
 /// </summary>
 public partial class ShellWindow : Window
 {
