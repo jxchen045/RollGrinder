@@ -24,6 +24,7 @@ public partial class RecordsView : UserControl
     public RecordsView()
     {
         InitializeComponent();
+        PlotTheme.Apply(RecordPlot);
         DataContextChanged += OnDataContextChanged;
         Unloaded += OnUnloaded;
     }
@@ -59,7 +60,6 @@ public partial class RecordsView : UserControl
     private void OnCurveChanged(object? sender, EventArgs e)
     {
         RecordPlot.Plot.Clear();
-        PlotTheme.Apply(RecordPlot);
 
         RecordCurve? curve = this.viewModel?.Curve;
         if (this.viewModel is null || curve is null || !curve.HasData)

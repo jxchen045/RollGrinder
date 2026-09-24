@@ -546,6 +546,47 @@ internal sealed partial class SelfTestHarness
         && element.ActualHeight > 0;
 
     /// <summary>
+    /// 找出按钮上"接不住鼠标"的地方：在按钮里取中心和四角内缩 3 px 共 5 个点做命中测试，
+    /// 命中落到了按钮的上级元素（而不是按钮自己或它里面的东西），说明这一点是空洞。
+    ///
+    /// 空洞正是"鼠标停在按钮上闪烁"的成因：鼠标在空洞上时 IsMouseOver 在真/假之间来回翻，
+    /// 悬停色一帧有一帧没有。被别的元素（浮层、提示）盖住的点不算——那是另一个元素接住了鼠标。
+    /// </summary>
+    public IReadOnlyList<string> FindHitTestHoles()
+    {
+        var issues = new List<string>();
+        foreach (Button button in FindVisuals<Button>(Window).Where(b => b.IsVisible && b.IsEnabled && b.ActualWidth > 8 && b.ActualHeight > 8))
+        {
+            double w = button.ActualWidth;
+            double h = button.ActualHeight;
+            Point[] probes =
+            {
+                new(w / 2, h / 2), new(3, 3), new(w - 3, 3), new(3, h - 3), new(w - 3, h - 3),
+            };
+
+            foreach (Point probe in probes)
+            {
+                Point inWindow = button.TranslatePoint(probe, Window);
+                if (Window.InputHitTest(inWindow) is not DependencyObject hit)
+                {
+                    continue;
+                }
+
+                bool inside = ReferenceEquals(hit, button) || (hit is Visual v && v.IsDescendantOf(button));
+                bool fellThrough = !inside && button.IsDescendantOf(hit as Visual ?? Window);
+                if (fellThrough)
+                {
+                    issues.Add(ButtonLabel(button) + " @" + probe.X.ToString("0", CultureInfo.InvariantCulture)
+                        + "," + probe.Y.ToString("0", CultureInfo.InvariantCulture));
+                    break;
+                }
+            }
+        }
+
+        return issues;
+    }
+
+    /// <summary>
     /// 找出对比度不够的字与按钮状态（WCAG：正文 4.5:1，大字与禁用 3:1）。
     /// 按钮查常态 / 悬停 / 按下（或禁用），字查它相对实际背景的对比度——
     /// 半透明的底色、上级元素的透明度都先合成再算，看到的就是屏幕上的样子。
@@ -558,8 +599,8 @@ internal sealed partial class SelfTestHarness
             string label = ButtonLabel(button);
             if (!button.IsEnabled)
             {
-                CheckPair(issues, label, "disabled", Controls.ButtonStates.GetDisabledForeground(button),
-                    Controls.ButtonStates.GetDisabledBackground(button), Controls.ContrastMath.LargeTextOrGraphics);
+                CheckPair(issues, label, "disabled", button.TryFindResource("Brush.DisabledText") as Brush,
+                    button.TryFindResource("Brush.DisabledFill") as Brush, Controls.ContrastMath.LargeTextOrGraphics);
                 continue;
             }
 

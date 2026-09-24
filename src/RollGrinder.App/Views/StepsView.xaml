@@ -297,6 +297,7 @@
                                     <ToggleButton IsChecked="{Binding IsOn}"
                                                   IsEnabled="{Binding IsAvailable}"
                                                   ToolTip="{Binding UnavailableHint}"
+                                                  ToolTipService.Placement="Right"
                                                   Height="42"
                                                   Margin="2"
                                                   HorizontalContentAlignment="Left"

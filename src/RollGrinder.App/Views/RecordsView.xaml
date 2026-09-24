@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
+             xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
              xmlns:rec="clr-namespace:RollGrinder.Services.Records;assembly=RollGrinder.Services"
              xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
     <Grid>
@@ -141,19 +142,19 @@
                             <Button Content="{loc:Loc Curve_BeforeAfter}" Command="{Binding SelectCurveCommand}"
                                     CommandParameter="{x:Static rec:RecordCurveKind.BeforeAfterProfile}"
                                     Style="{StaticResource SegmentButton}" Margin="0,0,10,0"
-                                    Tag="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=BeforeAfterProfile}" />
+                                    ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=BeforeAfterProfile}" />
                             <Button Content="{loc:Loc Curve_Error}" Command="{Binding SelectCurveCommand}"
                                     CommandParameter="{x:Static rec:RecordCurveKind.Deviation}"
                                     Style="{StaticResource SegmentButton}" Margin="0,0,10,0"
-                                    Tag="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=Deviation}" />
+                                    ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=Deviation}" />
                             <Button Content="{loc:Loc Curve_Roundness}" Command="{Binding SelectCurveCommand}"
                                     CommandParameter="{x:Static rec:RecordCurveKind.Roundness}"
                                     Style="{StaticResource SegmentButton}" Margin="0,0,10,0"
-                                    Tag="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=Roundness}" />
+                                    ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=Roundness}" />
                             <Button Content="{loc:Loc Curve_Convergence}" Command="{Binding SelectCurveCommand}"
                                     CommandParameter="{x:Static rec:RecordCurveKind.CompensationConvergence}"
                                     Style="{StaticResource SegmentButton}"
-                                    Tag="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=CompensationConvergence}" />
+                                    ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=CompensationConvergence}" />
                         </StackPanel>
                     </Border>
 

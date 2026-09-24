@@ -26,12 +26,13 @@ public sealed class ButtonContrastTests
     public void Every_button_style_is_readable_in_every_state()
     {
         IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
-        IReadOnlyDictionary<string, XElement> styles = LoadButtonStyles();
+        IReadOnlyDictionary<string, XElement> keyed = LoadButtonStyles();
         var problems = new List<string>();
+        int checkedVariants = 0;
 
-        foreach (string name in styles.Keys)
+        foreach ((string name, IReadOnlyDictionary<string, string> setters) in Variants(keyed))
         {
-            IReadOnlyDictionary<string, string> setters = Resolve(name, styles);
+            checkedVariants++;
             string Color(string property) =>
                 setters.TryGetValue(property, out string? key) && brushes.TryGetValue(key, out string? hex)
                     ? hex
@@ -41,12 +42,20 @@ public sealed class ButtonContrastTests
             Check(name, "normal", fg, Color("Background"), ContrastMath.NormalText, problems);
             Check(name, "hover", fg, Color("ctl:ButtonStates.HoverBackground"), ContrastMath.NormalText, problems);
             Check(name, "pressed", fg, Color("ctl:ButtonStates.PressedBackground"), ContrastMath.NormalText, problems);
-            Check(name, "disabled", Color("ctl:ButtonStates.DisabledForeground"), Color("ctl:ButtonStates.DisabledBackground"),
-                ContrastMath.LargeTextOrGraphics, problems);
         }
 
-        styles.Should().ContainKeys("SecondaryButton", "PrimaryButton", "StartButton", "DangerButton", "NavigationButton");
+        keyed.Should().ContainKeys("SecondaryButton", "PrimaryButton", "StartButton", "DangerButton", "NavigationButton");
+        checkedVariants.Should().BeGreaterThan(keyed.Count, "样式触发器（选中、保持型动作点亮、待确认）的变体也要核算");
         problems.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void The_shared_disabled_look_is_readable()
+    {
+        // 禁用态所有按钮共用一层中性灰（模板里的 DisabledLayer），核一次即可。
+        IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
+        ContrastMath.Ratio(brushes["Brush.DisabledText"], brushes["Brush.DisabledFill"])
+            .Should().BeGreaterThanOrEqualTo(ContrastMath.LargeTextOrGraphics);
     }
 
     [Fact]
@@ -115,29 +124,68 @@ public sealed class ButtonContrastTests
             .ToDictionary(s => (string)s.Attribute(X + "Key")!);
     }
 
-    /// <summary>沿 BasedOn 链合并 Setter：子样式覆盖父样式。值只保留 StaticResource 的键名。</summary>
-    private static IReadOnlyDictionary<string, string> Resolve(string name, IReadOnlyDictionary<string, XElement> styles)
+    /// <summary>
+    /// 要核算的全部外观：每个带键的按钮样式、写在模板里的内联按钮样式，
+    /// 以及它们每一个样式触发器生效时的样子（基础 Setter 再叠上触发器的 Setter）。
+    /// </summary>
+    private static IEnumerable<(string Name, IReadOnlyDictionary<string, string> Setters)> Variants(
+        IReadOnlyDictionary<string, XElement> keyed)
     {
-        XElement style = styles[name];
-        var result = new Dictionary<string, string>(StringComparer.Ordinal);
-        if ((string?)style.Attribute("BasedOn") is { } basedOn)
+        XDocument controls = XDocument.Load(Path.Combine(Themes, "Controls.xaml"));
+        var all = controls.Descendants(Wpf + "Style")
+            .Where(s => (string?)s.Attribute("TargetType") == "Button")
+            .Select((s, i) => (Name: (string?)s.Attribute(X + "Key") ?? "inline#" + i, Style: s));
+
+        foreach ((string name, XElement style) in all)
         {
-            string parent = basedOn["{StaticResource ".Length..^1].Trim();
-            foreach (KeyValuePair<string, string> pair in Resolve(parent, styles))
+            IReadOnlyDictionary<string, string> baseSetters = Resolve(style, keyed);
+            yield return (name, baseSetters);
+
+            IEnumerable<XElement> triggers = Chain(style, keyed)
+                .SelectMany(s => s.Elements(Wpf + "Style.Triggers").Elements());
+            int t = 0;
+            foreach (XElement trigger in triggers)
             {
-                result[pair.Key] = pair.Value;
+                var merged = new Dictionary<string, string>(baseSetters, StringComparer.Ordinal);
+                Apply(trigger.Elements(Wpf + "Setter"), merged);
+                yield return ($"{name} trigger#{t++}", merged);
             }
         }
+    }
 
-        foreach (XElement setter in style.Elements(Wpf + "Setter"))
+    /// <summary>样式本身及其 BasedOn 祖先，祖先在前。</summary>
+    private static IEnumerable<XElement> Chain(XElement style, IReadOnlyDictionary<string, XElement> keyed)
+    {
+        var chain = new List<XElement>();
+        for (XElement? s = style; s is not null;)
+        {
+            chain.Insert(0, s);
+            s = (string?)s.Attribute("BasedOn") is { } basedOn ? keyed[basedOn["{StaticResource ".Length..^1].Trim()] : null;
+        }
+
+        return chain;
+    }
+
+    private static IReadOnlyDictionary<string, string> Resolve(XElement style, IReadOnlyDictionary<string, XElement> keyed)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (XElement s in Chain(style, keyed))
+        {
+            Apply(s.Elements(Wpf + "Setter"), result);
+        }
+
+        return result;
+    }
+
+    private static void Apply(IEnumerable<XElement> setters, Dictionary<string, string> into)
+    {
+        foreach (XElement setter in setters)
         {
             string value = (string?)setter.Attribute("Value") ?? string.Empty;
             if (value.StartsWith("{StaticResource ", StringComparison.Ordinal))
             {
-                result[(string)setter.Attribute("Property")!] = value["{StaticResource ".Length..^1].Trim();
+                into[(string)setter.Attribute("Property")!] = value["{StaticResource ".Length..^1].Trim();
             }
         }
-
-        return result;
     }
 }

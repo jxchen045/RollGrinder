@@ -189,6 +189,12 @@ internal sealed class NavigationSuite : ISelfTestSuite
             ctx.Warn("clipped: " + string.Join(" | ", clipped));
         }
 
+        IReadOnlyList<string> holes = h.FindHitTestHoles();
+        if (holes.Count > 0)
+        {
+            ctx.Warn(holes.Count + " hit-test holes (hover flicker): " + string.Join(" | ", holes.Take(25)));
+        }
+
         IReadOnlyList<string> contrast = h.FindLowContrast();
         if (contrast.Count > 0)
         {

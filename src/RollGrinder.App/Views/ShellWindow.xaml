@@ -46,6 +46,7 @@
                 <Button DockPanel.Dock="Left"
                         Command="{Binding ToggleAreaMenuCommand}"
                         ToolTip="{loc:Loc Shell_OpenAreaMenu}"
+                        ToolTipService.Placement="Bottom"
                         Padding="16,0"
                         Height="56"
                         VerticalAlignment="Center"
@@ -70,7 +71,8 @@
                         Background="{StaticResource Brush.AccentDark}"
                         Height="32" Padding="10,0" Margin="0,0,12,0"
                         VerticalAlignment="Center"
-                        ToolTip="{loc:Loc Nav_ShortcutBadgeHint}">
+                        ToolTip="{loc:Loc Nav_ShortcutBadgeHint}"
+                        ToolTipService.Placement="Bottom">
                     <TextBlock Text="{Binding CurrentAreaShortcutText}"
                                FontFamily="{StaticResource Font.Mono}"
                                FontSize="15"
@@ -252,6 +254,7 @@
                                 IsEnabled="{Binding IsEnabled}"
                                 ToolTip="{Binding HintText}"
                                 ToolTipService.ShowOnDisabled="True"
+                                ToolTipService.Placement="Top"
                                 Style="{Binding Kind, Converter={StaticResource FunctionKeyStyle}}"
                                 Margin="5,0">
                             <StackPanel HorizontalAlignment="Center">
