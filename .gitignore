@@ -13,3 +13,6 @@ RollGrinder-source.zip
 
 # 全量测试脚本的产物（scripts/run-full-test.ps1）
 TestResults/
+
+# 源码 zip 附带的文件清单（打包时生成，供测试脚本核对旧文件残留）
+SOURCE-MANIFEST.txt

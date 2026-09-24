@@ -3,7 +3,7 @@
     一键全量测试：环境 → 构建 → 分模块单元/集成测试 → 三轮界面自检 → 汇总 → 打包成一个 zip 供上传分析。
 
 .DESCRIPTION
-    在装有 .NET 8 SDK 的 Windows 桌面上运行（界面自检要真的把 WPF 窗口开出来，
+    在装有 .NET 8 或更高 SDK（含 VS2026 自带的 10.0）的 Windows 桌面上运行（界面自检要真的把 WPF 窗口开出来，
     所以必须在有桌面会话的登录用户下跑，不能在远程无界面会话或服务里跑）。
 
     界面自检只对仿真/离线机床跑，并且用每一轮新建的专用数据目录——
@@ -129,11 +129,52 @@ $envLines.Add("params           : SimSpeed=$SimSpeed SkipBuild=$SkipBuild SkipUn
 $envLines | Set-Content -Path (Join-Path $Run 'environment.txt') -Encoding UTF8
 $envLines | ForEach-Object { Write-Host "  $_" }
 
+# ─── 0b. 源码核对：有没有旧版本残留的文件 ─────────────────────────────────────────
+# 把新源码 zip 解压覆盖到旧目录上，只会新增和覆盖、不会删除——早已删掉的旧文件还躺在那里，
+# 与新文件里的同名类型撞车，构建报一串 CS0101 / CS0111（第三轮测试就是这么失败的）。
+# 有 git 时看未跟踪的源文件；没有 git 时对照源码 zip 里附带的 SOURCE-MANIFEST.txt。
+$sourceOk = $true
+$sourcePattern = '^(src|tests)/.+\.(cs|xaml|csproj|props|targets|resx)$'
+$manifest = Join-Path $RepoRoot 'SOURCE-MANIFEST.txt'
+$stale = @()
+$sourceCheck = 'skipped (no git repository and no SOURCE-MANIFEST.txt)'
+if ((Try-Run { git -C $RepoRoot rev-parse --is-inside-work-tree } 'false') -eq 'true') {
+    $stale = @(git -C $RepoRoot ls-files --others --exclude-standard -- src tests | Where-Object { $_ -match $sourcePattern })
+    $sourceCheck = 'git'
+}
+elseif (Test-Path $manifest) {
+    $known = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+    Get-Content $manifest -Encoding UTF8 | ForEach-Object { [void]$known.Add($_.Trim()) }
+    $prefix = $RepoRoot.TrimEnd('\') + '\'
+    $stale = @(Get-ChildItem -Path (Join-Path $RepoRoot 'src'), (Join-Path $RepoRoot 'tests') -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } |
+        ForEach-Object { $_.FullName.Substring($prefix.Length).Replace('\', '/') } |
+        Where-Object { $_ -match $sourcePattern -and -not $known.Contains($_) })
+    $sourceCheck = 'SOURCE-MANIFEST.txt'
+}
+
+if ($stale.Count -gt 0) {
+    $sourceOk = $false
+    $stale | Set-Content -Path (Join-Path $Run 'stale-files.txt') -Encoding UTF8
+    Add-Result 'SourceCheck' 'FAIL' ("{0} file(s) not part of this source version (leftovers from an older copy): {1}. Delete them, or unpack the source into an EMPTY folder. List: stale-files.txt" -f $stale.Count, (($stale | Select-Object -First 10) -join ', '))
+    Write-Host ''
+    Write-Host '  以下文件不属于这一版源码（旧版本残留），会导致构建失败。删除命令：' -ForegroundColor Yellow
+    $stale | ForEach-Object { Write-Host ("    Remove-Item '{0}'" -f (Join-Path $RepoRoot $_)) -ForegroundColor Yellow }
+    Write-Host ''
+}
+else {
+    Add-Result 'SourceCheck' 'PASS' "no leftover files ($sourceCheck)"
+}
+
 # ─── 1. 构建 ──────────────────────────────────────────────────────────────────
 Write-Stage '1/5  Build'
 $solution = Join-Path $RepoRoot 'RollGrinder.sln'
 $buildOk = $true
-if ($SkipBuild) {
+if (-not $sourceOk) {
+    $buildOk = $false
+    Add-Result 'Build' 'SKIP' 'source check failed: remove the leftover files first (see SourceCheck)'
+}
+elseif ($SkipBuild) {
     Add-Result 'Build' 'SKIP' 'skipped by -SkipBuild'
 }
 else {
@@ -261,6 +302,10 @@ function Invoke-UiPass([string] $Pass) {
 
 if ($SkipUi) {
     Add-Result 'UI' 'SKIP' 'skipped by -SkipUi'
+}
+elseif (-not $buildOk) {
+    # 构建失败时 bin 里可能还躺着上一次的 exe——拿旧程序跑自检只会得出误导的结论。
+    Add-Result 'UI' 'SKIP' 'build failed or skipped because of the source check'
 }
 elseif (-not (Test-Path $exe)) {
     Add-Result 'UI' 'FAIL' "RollGrinder.App.exe not found under $binDir (build first)"
