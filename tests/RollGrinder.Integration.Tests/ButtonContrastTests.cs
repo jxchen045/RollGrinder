@@ -59,6 +59,32 @@ public sealed class ButtonContrastTests
     }
 
     [Fact]
+    public void Alarm_banner_text_is_readable_on_every_severity_fill()
+    {
+        // 报警条底色随级别变（信息 / 警告 / 错误，见 SeverityToBrushConverter），
+        // 上面每一行字在三种底色上都要够 4.5:1——第四轮现场自检查出报警号浅蓝字在警告底上只有 3.9:1。
+        IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
+        XDocument shell = XDocument.Load(Path.Combine(RepositoryLayout.Root, "src", "RollGrinder.App", "Views", "ShellWindow.xaml"));
+        XElement banner = shell.Descendants(Wpf + "Border")
+            .Single(b => ((string?)b.Attribute("Background"))?.Contains("SeverityToBrush", StringComparison.Ordinal) == true);
+        string[] textBrushes = banner.Descendants(Wpf + "TextBlock")
+            .Select(t => (string?)t.Attribute("Foreground") ?? string.Empty)
+            .Select(f => f["{StaticResource ".Length..^1].Trim())
+            .Distinct()
+            .ToArray();
+
+        textBrushes.Should().NotBeEmpty();
+        foreach (string text in textBrushes)
+        {
+            foreach (string fill in new[] { "Brush.AccentDark", "Brush.WarningFill", "Brush.CurrentStep" })
+            {
+                ContrastMath.Ratio(brushes[text], brushes[fill]).Should().BeGreaterThanOrEqualTo(
+                    ContrastMath.NormalText, $"{text} on {fill}");
+            }
+        }
+    }
+
+    [Fact]
     public void White_buttons_have_a_visible_edge_on_white_cards()
     {
         // 按钮描边是界面元素边界，≥ 3:1——以前 1.9:1，白按钮放在白卡片上几乎看不出边。

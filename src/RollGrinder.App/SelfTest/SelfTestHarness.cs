@@ -546,6 +546,25 @@ internal sealed partial class SelfTestHarness
         && element.ActualHeight > 0;
 
     /// <summary>
+    /// 找出没跟屏幕缩放走的曲线图：图表库按物理像素作画，缩放倍数没设上时，
+    /// 高分屏上所有刻度字、线条都只有设计尺寸的几分之一。
+    /// </summary>
+    public IReadOnlyList<string> FindUnscaledPlots()
+    {
+        var issues = new List<string>();
+        foreach (ScottPlot.WPF.WpfPlot plot in FindVisuals<ScottPlot.WPF.WpfPlot>(Window).Where(p => p.IsVisible && p.ActualWidth > 0))
+        {
+            double scale = VisualTreeHelper.GetDpi(plot).DpiScaleX;
+            if (Math.Abs(plot.Plot.ScaleFactor - scale) > 0.01)
+            {
+                issues.Add(Invariant($"{plot.Name}: ScaleFactor {plot.Plot.ScaleFactor:0.##} but display scale {scale:0.##}"));
+            }
+        }
+
+        return issues;
+    }
+
+    /// <summary>
     /// 找出按钮上"接不住鼠标"的地方：在按钮里取中心和四角内缩 3 px 共 5 个点做命中测试，
     /// 命中落到了按钮的上级元素（而不是按钮自己或它里面的东西），说明这一点是空洞。
     ///
@@ -617,6 +636,13 @@ internal sealed partial class SelfTestHarness
             }
 
             double opacity = CumulativeOpacity(text) * foreground.Opacity;
+            if (opacity < 0.05)
+            {
+                // 完全透明 = 此刻不显示（如日期框已有日期时的占位提示，由控件的视觉状态隐藏）。
+                // 看不见的字谈不上对比度；不跳过的话会被算成 1:1 误报。
+                continue;
+            }
+
             Color fg = foreground.Color;
             (byte r, byte g, byte b) = Controls.ContrastMath.Blend(
                 (byte)Math.Round(fg.A * opacity), fg.R, fg.G, fg.B, background.R, background.G, background.B);

@@ -195,6 +195,12 @@ internal sealed class NavigationSuite : ISelfTestSuite
             ctx.Warn(holes.Count + " hit-test holes (hover flicker): " + string.Join(" | ", holes.Take(25)));
         }
 
+        IReadOnlyList<string> unscaled = h.FindUnscaledPlots();
+        if (unscaled.Count > 0)
+        {
+            ctx.Warn("charts not following display scale (text too small): " + string.Join(" | ", unscaled));
+        }
+
         IReadOnlyList<string> contrast = h.FindLowContrast();
         if (contrast.Count > 0)
         {

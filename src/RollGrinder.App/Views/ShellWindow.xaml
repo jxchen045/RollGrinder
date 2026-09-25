@@ -207,10 +207,12 @@
                             <SolidColorBrush Color="#45C07C" />
                         </Border.BorderBrush>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- 报警号用白字：浅蓝（OnAccentMuted）在警告棕底上只有 3.9:1、错误红底上 4.3:1。
+                                 和后面的文字靠等宽字体区分，不靠变淡。 -->
                             <TextBlock Text="{Binding BannerCode}"
                                        FontFamily="{StaticResource Font.Mono}"
                                        FontSize="15"
-                                       Foreground="{StaticResource Brush.OnAccentMuted}"
+                                       Foreground="{StaticResource Brush.OnAccent}"
                                        VerticalAlignment="Center"
                                        Margin="0,0,10,0" />
                             <TextBlock Text="{Binding BannerText}"

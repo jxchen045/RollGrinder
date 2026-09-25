@@ -125,6 +125,42 @@ public sealed class SelfTestFrameworkTests : IDisposable
     }
 
     [Fact]
+    public void An_external_close_leaves_an_aborted_summary_that_names_the_last_step()
+    {
+        string output = Path.Combine(this.root, "closed");
+        DateTimeOffset t0 = new(2026, 9, 25, 14, 55, 35, TimeSpan.Zero);
+        using var recorder = new SelfTestRecorder(output, "offline", new Dictionary<string, string>(), t0);
+        recorder.Record(Step(recorder.NextSequence(), StepStatus.Pass));
+        recorder.Record(Step(recorder.NextSequence(), StepStatus.Pass));
+
+        recorder.AbortOnExternalClose(t0.AddSeconds(10));
+
+        recorder.IsCompleted.Should().BeTrue();
+        string json = File.ReadAllText(Path.Combine(output, SelfTestRecorder.SummaryFileName));
+        SelfTestSummary summary = JsonSerializer.Deserialize<SelfTestSummary>(json)!;
+        summary.Aborted.Should().BeTrue();
+        summary.AbortReason.Should().Contain("closed from outside").And.Contain("step 0002").And.Contain("Step2");
+        SelfTestRecorder.ExitCodeFor(summary).Should().Be(SelfTestRecorder.AbortedExitCode);
+    }
+
+    [Fact]
+    public void Closing_the_window_after_the_run_completed_does_not_overwrite_the_summary()
+    {
+        string output = Path.Combine(this.root, "done");
+        DateTimeOffset t0 = new(2026, 9, 25, 14, 55, 35, TimeSpan.Zero);
+        using var recorder = new SelfTestRecorder(output, "sim", new Dictionary<string, string>(), t0);
+        recorder.Record(Step(recorder.NextSequence(), StepStatus.Pass));
+        SelfTestSummary finished = recorder.Complete(t0.AddSeconds(5));
+
+        recorder.AbortOnExternalClose(t0.AddSeconds(6));
+        recorder.Complete(t0.AddSeconds(7), "late").Should().BeSameAs(finished);
+
+        SelfTestSummary onDisk = JsonSerializer.Deserialize<SelfTestSummary>(
+            File.ReadAllText(Path.Combine(output, SelfTestRecorder.SummaryFileName)))!;
+        onDisk.Aborted.Should().BeFalse("自检自己跑完后关窗口是正常结束");
+    }
+
+    [Fact]
     public void Exit_codes_distinguish_pass_fail_and_abort()
     {
         SelfTestRecorder.ExitCodeFor(Summary(failed: 0, aborted: false)).Should().Be(0);

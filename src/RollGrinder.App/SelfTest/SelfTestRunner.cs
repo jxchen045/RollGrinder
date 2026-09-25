@@ -60,6 +60,11 @@ internal sealed class SelfTestRunner
         await harness.WaitUntilAsync(() => harness.Shell.KnownUserNames.Count > 0, TimeSpan.FromSeconds(15)).ConfigureAwait(true);
         await harness.SettleAsync(500).ConfigureAwait(true);
 
+        // 主窗口被外部关掉时当场写汇总：进程随即退出，下面的循环不会再有机会收尾。
+        void OnWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e) =>
+            recorder.AbortOnExternalClose(DateTimeOffset.UtcNow);
+        window.Closing += OnWindowClosing;
+
         string? abortReason = null;
         var watch = Stopwatch.StartNew();
         foreach (ISelfTestSuite suite in PlanSuites())
@@ -90,6 +95,7 @@ internal sealed class SelfTestRunner
         }
 
         SelfTestSummary summary = recorder.Complete(DateTimeOffset.UtcNow, abortReason);
+        window.Closing -= OnWindowClosing;
         return SelfTestRecorder.ExitCodeFor(summary);
     }
 

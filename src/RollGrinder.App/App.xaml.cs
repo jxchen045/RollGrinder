@@ -29,6 +29,9 @@ public partial class App : Application
 
     private AutoReportPrinter? printer;
 
+    /// <summary>自检已经跑完（或根本没开自检）。</summary>
+    private bool selfTestFinished;
+
     private IAlarmSink? alarms;
 
     public App(IHost host, Func<ShellWindow, IServiceProvider, Task<int>>? selfTest = null)
@@ -81,11 +84,19 @@ public partial class App : Application
         }
 
         Log.Information("Self-test finished with exit code {ExitCode}", exitCode);
+        this.selfTestFinished = true;
         Shutdown(exitCode);
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        if (this.selfTest is not null && !this.selfTestFinished)
+        {
+            // 自检还没跑完主窗口就被关了：退出码按"中途放弃"给，脚本才不会把它当成正常结束。
+            Log.Warning("Main window was closed from outside while the self-test was still running");
+            e.ApplicationExitCode = SelfTest.SelfTestRecorder.AbortedExitCode;
+        }
+
         DispatcherUnhandledException -= OnDispatcherUnhandledException;
         TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
         AppDomain.CurrentDomain.UnhandledException -= OnDomainUnhandledException;

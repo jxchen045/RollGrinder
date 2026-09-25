@@ -81,6 +81,7 @@ public sealed class SelfTestRecorder : IDisposable
     private readonly StreamWriter jsonLines;
     private readonly StreamWriter textLog;
     private int sequence;
+    private SelfTestSummary? completed;
 
     public SelfTestRecorder(
         string outputDirectory, string label, IReadOnlyDictionary<string, string> environment, DateTimeOffset startedAtUtc)
@@ -133,9 +134,39 @@ public sealed class SelfTestRecorder : IDisposable
         this.jsonLines.WriteLine(JsonSerializer.Serialize(new { kind = "note", text }, JsonOptions));
     }
 
-    /// <summary>收尾：写汇总。</summary>
+    /// <summary>已经写过汇总。</summary>
+    public bool IsCompleted => this.completed is not null;
+
+    /// <summary>
+    /// 主窗口在自检跑完之前被外部关掉了（关闭按钮、Alt+F4、触摸误碰、系统）：
+    /// 进程马上就要退，等不到自检自己收尾——当场写一份标明"中途被关"的汇总，
+    /// 而不是留下一个没有 summary.json、看不出原因的半截结果（第四轮离线自检就是这样）。
+    /// 已经写过汇总时什么也不做（自检跑完后自己关窗口走的也是这条路）。
+    /// </summary>
+    public void AbortOnExternalClose(DateTimeOffset closedAtUtc)
+    {
+        if (IsCompleted)
+        {
+            return;
+        }
+
+        StepResult? last = this.results.Count == 0 ? null : this.results[^1];
+        string where = last is null
+            ? "before the first step"
+            : Invariant($"after step {last.Sequence:D4} ({last.Suite} / {last.Case} / {last.Step})");
+        Note("main window closed from outside");
+        Complete(closedAtUtc, "main window was closed from outside " + where
+            + " (close button, Alt+F4, a stray touch or the OS); the self-test itself never closes it early");
+    }
+
+    /// <summary>收尾：写汇总。只写一次，再调返回第一次的结果。</summary>
     public SelfTestSummary Complete(DateTimeOffset finishedAtUtc, string? abortReason = null)
     {
+        if (this.completed is not null)
+        {
+            return this.completed;
+        }
+
         var summary = new SelfTestSummary(
             this.label,
             this.startedAtUtc,
@@ -165,8 +196,12 @@ public sealed class SelfTestRecorder : IDisposable
         }
 
         this.jsonLines.WriteLine(JsonSerializer.Serialize(new { kind = "summary", summary }, JsonOptions));
+        this.completed = summary;
         return summary;
     }
+
+    /// <summary>中途放弃（超时、主窗口被外部关掉）的退出码。</summary>
+    public const int AbortedExitCode = 3;
 
     /// <summary>进程退出码：0 全过（含 WARN），1 有失败，3 中途放弃。</summary>
     public static int ExitCodeFor(SelfTestSummary summary)
@@ -174,7 +209,7 @@ public sealed class SelfTestRecorder : IDisposable
         ArgumentNullException.ThrowIfNull(summary);
         if (summary.Aborted)
         {
-            return 3;
+            return AbortedExitCode;
         }
 
         return summary.Failed > 0 ? 1 : 0;

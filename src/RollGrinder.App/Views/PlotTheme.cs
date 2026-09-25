@@ -1,4 +1,6 @@
+using System;
 using System.Windows;
+using VisualTreeHelper = System.Windows.Media.VisualTreeHelper;
 using ScottPlot;
 using ScottPlot.WPF;
 
@@ -43,6 +45,49 @@ internal static class PlotTheme
         plot.Grid.MajorLineColor = PaletteColor(control, "Color.PlotGridMinor");
         plot.DataBackground.Color = PaletteColor(control, "Color.PlotBackground");
         plot.FigureBackground.Color = PaletteColor(control, "Color.Surface");
+
+        // 控件本身没有 DpiChanged 事件（只有窗口有）；拖到另一块缩放不同的屏上时由窗口的事件带过来。
+        // 页面每次切换都会新建视图，离开时退订，免得窗口一直拽着旧图不放。
+        Window? host = null;
+        control.Loaded += (_, _) =>
+        {
+            MatchDisplayScale(control);
+            host = Window.GetWindow(control);
+            if (host is not null)
+            {
+                host.DpiChanged -= OnWindowDpiChanged;
+                host.DpiChanged += OnWindowDpiChanged;
+            }
+        };
+        control.Unloaded += (_, _) =>
+        {
+            if (host is not null)
+            {
+                host.DpiChanged -= OnWindowDpiChanged;
+                host = null;
+            }
+        };
+
+        void OnWindowDpiChanged(object sender, DpiChangedEventArgs e) => MatchDisplayScale(control);
+    }
+
+    /// <summary>
+    /// 让图里的字和线跟着屏幕缩放走。
+    ///
+    /// ScottPlot 5.0.56 的 WPF 控件按物理像素作画，却不乘屏幕缩放：工控机 4K 屏开 200% 时，
+    /// 15 号的刻度字实际只有 7.5 DIP——第四轮现场截图里坐标数字只有两三毫米高就是这个原因，
+    /// 字号设多大都白设。这里把 <see cref="Plot.ScaleFactor"/> 设成当前缩放倍数，字号才是真的 DIP。
+    /// </summary>
+    public static void MatchDisplayScale(WpfPlot control)
+    {
+        double scale = VisualTreeHelper.GetDpi(control).DpiScaleX;
+        if (scale <= 0 || Math.Abs(control.Plot.ScaleFactor - scale) < 0.01)
+        {
+            return;
+        }
+
+        control.Plot.ScaleFactor = scale;
+        control.Refresh();
     }
 
     private static Color PaletteColor(FrameworkElement owner, string key)
