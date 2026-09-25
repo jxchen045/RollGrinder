@@ -24,6 +24,9 @@
 .PARAMETER SkipUi
     跳过界面自检。
 
+.PARAMETER KeepStaleFiles
+    发现旧版本残留的源文件时只报告、不挪走。默认会把它们挪进本次结果目录的 quarantine\ 再构建。
+
 .PARAMETER UiPasses
     要跑的界面自检轮次，默认三轮全跑：sim（仿真全流程）、offline（离线模式）、en-US（英文界面渲染巡检）。
 
@@ -43,6 +46,7 @@ param(
     [switch] $SkipBuild,
     [switch] $SkipUnitTests,
     [switch] $SkipUi,
+    [switch] $KeepStaleFiles,
     [ValidateSet('sim', 'offline', 'en-US')]
     [string[]] $UiPasses = @('sim', 'offline', 'en-US'),
     [int] $UiTimeoutMinutes = 25,
@@ -125,56 +129,76 @@ $envLines.Add("screens          : $(Try-Run { Add-Type -AssemblyName System.Wind
 $envLines.Add("interactive      : $([Environment]::UserInteractive)")
 $envLines.Add("dotnet.sdks      : $(Try-Run { (dotnet --list-sdks) -join '; ' })")
 $envLines.Add("dotnet.runtimes  : $(Try-Run { ((dotnet --list-runtimes) | Where-Object { $_ -match 'WindowsDesktop|NETCore.App' }) -join '; ' })")
-$envLines.Add("params           : SimSpeed=$SimSpeed SkipBuild=$SkipBuild SkipUnitTests=$SkipUnitTests SkipUi=$SkipUi UiPasses=$($UiPasses -join ',')")
+$envLines.Add("params           : SimSpeed=$SimSpeed SkipBuild=$SkipBuild SkipUnitTests=$SkipUnitTests SkipUi=$SkipUi KeepStaleFiles=$KeepStaleFiles UiPasses=$($UiPasses -join ',')")
 $envLines | Set-Content -Path (Join-Path $Run 'environment.txt') -Encoding UTF8
 $envLines | ForEach-Object { Write-Host "  $_" }
 
 # ─── 0b. 源码核对：有没有旧版本残留的文件 ─────────────────────────────────────────
 # 把新源码 zip 解压覆盖到旧目录上，只会新增和覆盖、不会删除——早已删掉的旧文件还躺在那里，
 # 与新文件里的同名类型撞车，构建报一串 CS0101 / CS0111（第三轮测试就是这么失败的）。
-# 有 git 时看未跟踪的源文件；没有 git 时对照源码 zip 里附带的 SOURCE-MANIFEST.txt。
-$sourceOk = $true
+#
+# 判断依据：本目录就是 git 仓库的根时，看未跟踪的源文件；否则对照源码 zip 附带的 SOURCE-MANIFEST.txt。
+# （只认"本目录是仓库根"：目录若只是躺在别的 git 仓库里面，那个仓库会把全部源码都当成未跟踪。）
+#
+# 处理：默认把残留**挪进本次结果目录的 quarantine\**（原路径保留，可原样放回），然后照常构建、
+# 单元测试、界面自检——不因为残留就把后面的测试整段跳过。-KeepStaleFiles 时只报告、不挪。
+function Get-NormalizedPath([string] $Path) {
+    return ([System.IO.Path]::GetFullPath($Path)).TrimEnd('\', '/').ToLowerInvariant()
+}
+
 $sourcePattern = '^(src|tests)/.+\.(cs|xaml|csproj|props|targets|resx)$'
 $manifest = Join-Path $RepoRoot 'SOURCE-MANIFEST.txt'
 $stale = @()
-$sourceCheck = 'skipped (no git repository and no SOURCE-MANIFEST.txt)'
-if ((Try-Run { git -C $RepoRoot rev-parse --is-inside-work-tree } 'false') -eq 'true') {
+$sourceCheck = $null
+$gitTop = Try-Run { git -C $RepoRoot rev-parse --show-toplevel } ''
+if ($gitTop -and ((Get-NormalizedPath $gitTop) -eq (Get-NormalizedPath $RepoRoot))) {
     $stale = @(git -C $RepoRoot ls-files --others --exclude-standard -- src tests | Where-Object { $_ -match $sourcePattern })
     $sourceCheck = 'git'
 }
 elseif (Test-Path $manifest) {
     $known = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
     Get-Content $manifest -Encoding UTF8 | ForEach-Object { [void]$known.Add($_.Trim()) }
-    $prefix = $RepoRoot.TrimEnd('\') + '\'
+    $prefixLength = ([System.IO.Path]::GetFullPath($RepoRoot)).TrimEnd('\', '/').Length + 1
     $stale = @(Get-ChildItem -Path (Join-Path $RepoRoot 'src'), (Join-Path $RepoRoot 'tests') -Recurse -File -ErrorAction SilentlyContinue |
         Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } |
-        ForEach-Object { $_.FullName.Substring($prefix.Length).Replace('\', '/') } |
+        ForEach-Object { $_.FullName.Substring($prefixLength).Replace('\', '/') } |
         Where-Object { $_ -match $sourcePattern -and -not $known.Contains($_) })
     $sourceCheck = 'SOURCE-MANIFEST.txt'
 }
 
-if ($stale.Count -gt 0) {
-    $sourceOk = $false
-    $stale | Set-Content -Path (Join-Path $Run 'stale-files.txt') -Encoding UTF8
-    Add-Result 'SourceCheck' 'FAIL' ("{0} file(s) not part of this source version (leftovers from an older copy): {1}. Delete them, or unpack the source into an EMPTY folder. List: stale-files.txt" -f $stale.Count, (($stale | Select-Object -First 10) -join ', '))
-    Write-Host ''
-    Write-Host '  以下文件不属于这一版源码（旧版本残留），会导致构建失败。删除命令：' -ForegroundColor Yellow
-    $stale | ForEach-Object { Write-Host ("    Remove-Item '{0}'" -f (Join-Path $RepoRoot $_)) -ForegroundColor Yellow }
-    Write-Host ''
+if ($null -eq $sourceCheck) {
+    Add-Result 'SourceCheck' 'SKIP' 'not a git repository root and no SOURCE-MANIFEST.txt: leftover files cannot be detected'
+}
+elseif ($stale.Count -eq 0) {
+    Add-Result 'SourceCheck' 'PASS' "no leftover files ($sourceCheck)"
 }
 else {
-    Add-Result 'SourceCheck' 'PASS' "no leftover files ($sourceCheck)"
+    $stale | Set-Content -Path (Join-Path $Run 'stale-files.txt') -Encoding UTF8
+    $shown = ($stale | Select-Object -First 10) -join ', '
+    if ($KeepStaleFiles) {
+        Add-Result 'SourceCheck' 'WARN' ("{0} leftover file(s) from an older copy kept (-KeepStaleFiles); the build will probably fail: {1}" -f $stale.Count, $shown)
+    }
+    else {
+        $quarantine = Join-Path $Run 'quarantine'
+        foreach ($relative in $stale) {
+            $target = Join-Path $quarantine ($relative.Replace('/', [System.IO.Path]::DirectorySeparatorChar))
+            New-Item -ItemType Directory -Force -Path (Split-Path $target -Parent) | Out-Null
+            Move-Item -LiteralPath (Join-Path $RepoRoot $relative) -Destination $target -Force
+        }
+        Add-Result 'SourceCheck' 'WARN' ("moved {0} leftover file(s) from an older copy to quarantine\ (paths kept; move back to restore): {1}" -f $stale.Count, $shown)
+        Write-Host ''
+        Write-Host "  以下文件不属于这一版源码（旧版本残留），已挪到 $quarantine" -ForegroundColor Yellow
+        $stale | ForEach-Object { Write-Host "    $_" -ForegroundColor Yellow }
+        Write-Host '  下次请把源码解压到空文件夹，或用 git bundle 更新。' -ForegroundColor Yellow
+        Write-Host ''
+    }
 }
 
 # ─── 1. 构建 ──────────────────────────────────────────────────────────────────
 Write-Stage '1/5  Build'
 $solution = Join-Path $RepoRoot 'RollGrinder.sln'
 $buildOk = $true
-if (-not $sourceOk) {
-    $buildOk = $false
-    Add-Result 'Build' 'SKIP' 'source check failed: remove the leftover files first (see SourceCheck)'
-}
-elseif ($SkipBuild) {
+if ($SkipBuild) {
     Add-Result 'Build' 'SKIP' 'skipped by -SkipBuild'
 }
 else {
@@ -304,8 +328,9 @@ if ($SkipUi) {
     Add-Result 'UI' 'SKIP' 'skipped by -SkipUi'
 }
 elseif (-not $buildOk) {
-    # 构建失败时 bin 里可能还躺着上一次的 exe——拿旧程序跑自检只会得出误导的结论。
-    Add-Result 'UI' 'SKIP' 'build failed or skipped because of the source check'
+    # 构建失败时 bin 里可能还躺着上一次的 exe——拿旧程序跑自检只会得出误导的结论，所以不跑；
+    # 记 FAIL 而不是 SKIP：界面自检没跑成是要处理的问题，不能在汇总里显得"一切正常只是略过"。
+    Add-Result 'UI' 'FAIL' 'NOT RUN: the build failed (see Build / build.log); an older RollGrinder.App.exe in bin would give misleading results'
 }
 elseif (-not (Test-Path $exe)) {
     Add-Result 'UI' 'FAIL' "RollGrinder.App.exe not found under $binDir (build first)"
