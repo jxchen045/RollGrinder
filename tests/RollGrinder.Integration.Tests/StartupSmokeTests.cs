@@ -67,7 +67,7 @@ public sealed class StartupSmokeTests : IDisposable
         host.Services.GetRequiredService<IMeasurementService>().Should().NotBeNull();
         host.Services.GetRequiredService<ICompensationService>().Should().NotBeNull();
         host.Services.GetRequiredService<IRecordService>().Should().NotBeNull();
-        host.Services.GetRequiredService<RollProfileTypeRegistry>().All.Should().HaveCount(4);
+        host.Services.GetRequiredService<RollProfileTypeRegistry>().All.Should().HaveCount(5);
         host.Services.GetRequiredService<GrindingStepTypeRegistry>().All
             .Select(stepType => stepType.Key)
             .Should().BeEquivalentTo(new[]

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
@@ -102,7 +103,8 @@ public sealed class GrindingJobValidator
         {
             IRollProfileType profileType = this.profileTypes.Get(segment.ProfileTypeKey);
 
-            foreach (ParameterViolation violation in profileType.Schema.Validate(segment.Parameters).Violations)
+            foreach (ParameterViolation violation in profileType.Schema.Validate(segment.Parameters).Violations
+                .Concat(profileType.ValidateShape(segment.Parameters, segment.LengthMm)))
             {
                 yield return violation with { ParameterKey = SegmentKey(segment, violation.ParameterKey) };
             }

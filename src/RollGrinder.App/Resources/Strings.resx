@@ -2146,4 +2146,46 @@
   <data name="Steps_Validate" xml:space="preserve">
     <value>校验</value>
   </data>
+  <data name="ProfileType_PointTable" xml:space="preserve">
+    <value>点表</value>
+  </data>
+  <data name="Parameter_points" xml:space="preserve">
+    <value>点表（Z mm / 直径偏差 µm）</value>
+  </data>
+  <data name="Parameter_interpolation" xml:space="preserve">
+    <value>插值方式</value>
+  </data>
+  <data name="Parameter_smoothing" xml:space="preserve">
+    <value>平滑度（0 不平滑 – 1 最平）</value>
+  </data>
+  <data name="Choice_interpolation_Linear" xml:space="preserve">
+    <value>折线</value>
+  </data>
+  <data name="Choice_interpolation_CubicSpline" xml:space="preserve">
+    <value>三次样条</value>
+  </data>
+  <data name="Choice_interpolation_ShapePreserving" xml:space="preserve">
+    <value>保形三次</value>
+  </data>
+  <data name="Choice_interpolation_SmoothingSpline" xml:space="preserve">
+    <value>平滑样条</value>
+  </data>
+  <data name="Violation_TooFewPoints" xml:space="preserve">
+    <value>点太少</value>
+  </data>
+  <data name="Violation_TooFewPoints_WithLimit" xml:space="preserve">
+    <value>点太少，至少要 {0} 个</value>
+  </data>
+  <data name="Violation_PointsNotIncreasing" xml:space="preserve">
+    <value>Z 要从小到大、不能重复</value>
+  </data>
+  <data name="Violation_PointsNotIncreasing_WithLimit" xml:space="preserve">
+    <value>Z 要从小到大、不能重复（{0}）</value>
+  </data>
+  <data name="Violation_PointsDoNotCoverSegment" xml:space="preserve">
+    <value>点没有从段起点排到段终点</value>
+  </data>
+  <data name="Violation_PointsDoNotCoverSegment_WithLimit" xml:space="preserve">
+    <value>第一个点要在 0，最后一个点要在段长 {0} mm 上</value>
+  </data>
 </root>

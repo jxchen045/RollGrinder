@@ -112,6 +112,10 @@ public sealed record ParameterDescriptor(
             options);
     }
 
+    /// <summary>声明一个点表参数；默认是空表，由用它的类型决定至少要几个点。</summary>
+    public static ParameterDescriptor Points(string key, ParameterUnit unit, bool isRequired = true) =>
+        new(key, ParameterValueKind.Points, unit, ParameterValue.FromPoints(Array.Empty<TablePoint>()), null, null, isRequired);
+
     /// <summary>声明一个文本参数。</summary>
     public static ParameterDescriptor Text(string key, string defaultValue = "", bool isRequired = false) =>
         new(key, ParameterValueKind.Text, ParameterUnit.None, ParameterValue.FromText(defaultValue), null, null, isRequired);

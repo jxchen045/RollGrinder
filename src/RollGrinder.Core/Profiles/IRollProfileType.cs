@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
 
@@ -27,4 +28,11 @@ public interface IRollProfileType
     /// 能不能参与对称编辑。CVC 这类本身就是左右不对称的辊形不能——含这种段时"对称"开关置灰。
     /// </summary>
     bool SupportsSymmetricEditing => true;
+
+    /// <summary>
+    /// schema 管不到、要结合段长才能判断的检查（例如点表有没有从段起点排到段终点）。
+    /// 大多数类型没有，默认什么都不报。
+    /// </summary>
+    IEnumerable<ParameterViolation> ValidateShape(ParameterSet parameters, double segmentLengthMm) =>
+        System.Array.Empty<ParameterViolation>();
 }

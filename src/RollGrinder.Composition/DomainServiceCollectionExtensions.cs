@@ -19,6 +19,7 @@ public static class DomainServiceCollectionExtensions
         services.AddSingleton<IRollProfileType, TaperProfileType>();
         services.AddSingleton<IRollProfileType, CrownProfileType>();
         services.AddSingleton<IRollProfileType, CvcProfileType>();
+        services.AddSingleton<IRollProfileType, PointTableProfileType>();
 
         // 工序类型：设计稿的 11 种，外加无火花光磨，再加对标 RGI 补上的圆度与暂停，共 14 种。
         // 注册顺序就是界面里"插入工序"下拉的顺序，按一支辊的工艺先后排。

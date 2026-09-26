@@ -38,6 +38,15 @@ public enum ParameterViolationKind
     /// 下发下去 NC 拿不到可用的进给，也磨不到任何东西。
     /// </summary>
     NoTraversingStep = 9,
+
+    /// <summary>点表的点太少（限值是至少要几个点）。</summary>
+    TooFewPoints = 10,
+
+    /// <summary>点表的 Z 不是严格递增（有重复或倒序）。</summary>
+    PointsNotIncreasing = 11,
+
+    /// <summary>点表没有从段起点排到段终点（限值是段长 mm）。</summary>
+    PointsDoNotCoverSegment = 12,
 }
 
 /// <summary>一条参数校验失败记录。</summary>

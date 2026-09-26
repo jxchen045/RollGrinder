@@ -2146,4 +2146,46 @@
   <data name="Steps_Validate" xml:space="preserve">
     <value>Validate</value>
   </data>
+  <data name="ProfileType_PointTable" xml:space="preserve">
+    <value>Point table</value>
+  </data>
+  <data name="Parameter_points" xml:space="preserve">
+    <value>Points (Z mm / diameter offset µm)</value>
+  </data>
+  <data name="Parameter_interpolation" xml:space="preserve">
+    <value>Interpolation</value>
+  </data>
+  <data name="Parameter_smoothing" xml:space="preserve">
+    <value>Smoothing (0 none – 1 flattest)</value>
+  </data>
+  <data name="Choice_interpolation_Linear" xml:space="preserve">
+    <value>Linear</value>
+  </data>
+  <data name="Choice_interpolation_CubicSpline" xml:space="preserve">
+    <value>Cubic spline</value>
+  </data>
+  <data name="Choice_interpolation_ShapePreserving" xml:space="preserve">
+    <value>Shape-preserving</value>
+  </data>
+  <data name="Choice_interpolation_SmoothingSpline" xml:space="preserve">
+    <value>Smoothing spline</value>
+  </data>
+  <data name="Violation_TooFewPoints" xml:space="preserve">
+    <value>Too few points</value>
+  </data>
+  <data name="Violation_TooFewPoints_WithLimit" xml:space="preserve">
+    <value>Too few points; at least {0} needed</value>
+  </data>
+  <data name="Violation_PointsNotIncreasing" xml:space="preserve">
+    <value>Z must increase with no repeats</value>
+  </data>
+  <data name="Violation_PointsNotIncreasing_WithLimit" xml:space="preserve">
+    <value>Z must increase with no repeats ({0})</value>
+  </data>
+  <data name="Violation_PointsDoNotCoverSegment" xml:space="preserve">
+    <value>The points do not run from the start to the end of the segment</value>
+  </data>
+  <data name="Violation_PointsDoNotCoverSegment_WithLimit" xml:space="preserve">
+    <value>The first point must be at 0 and the last at the segment length {0} mm</value>
+  </data>
 </root>

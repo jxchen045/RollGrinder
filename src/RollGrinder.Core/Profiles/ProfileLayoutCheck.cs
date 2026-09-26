@@ -92,7 +92,8 @@ public static class ProfileLayoutCheck
 
             if (registry.TryGet(segment.ProfileTypeKey, out IRollProfileType? profileType) && profileType is not null)
             {
-                foreach (ParameterViolation violation in profileType.Schema.Validate(segment.Parameters).Violations)
+                foreach (ParameterViolation violation in profileType.Schema.Validate(segment.Parameters).Violations
+                    .Concat(profileType.ValidateShape(segment.Parameters, segment.LengthMm)))
                 {
                     issues.Add(new ProfileIssue(
                         ProfileIssueKind.ParameterInvalid, true, segment.Order, null, segment.FromMm, segment.ToMm, violation));

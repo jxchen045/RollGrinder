@@ -7,4 +7,5 @@ public static class ProfileTypeKeys
     public const string Taper = "Taper";
     public const string Crown = "Crown";
     public const string Cvc = "Cvc";
+    public const string PointTable = "PointTable";
 }

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace RollGrinder.Core.Parameters;
 
@@ -12,7 +14,15 @@ public enum ParameterValueKind
 
     /// <summary>有限选项之一（例如变速模式）。取值是选项键，界面渲染成分段按钮。</summary>
     Choice = 3,
+
+    /// <summary>一张点表（X, Y 数对），例如点表辊形的 Z（mm）与直径偏差（µm）。界面渲染成表格。</summary>
+    Points = 4,
 }
+
+/// <summary>点表里的一个点。</summary>
+/// <param name="X">横坐标（点表辊形里是段内 Z，mm）。</param>
+/// <param name="Y">纵坐标（点表辊形里是直径偏差，µm）。</param>
+public readonly record struct TablePoint(double X, double Y);
 
 /// <summary>
 /// 一个参数的取值。不可变，取错种类立即抛 <see cref="DomainException"/>，不做静默转换。
@@ -53,6 +63,14 @@ public sealed record ParameterValue
         ? this.text
         : throw new DomainException($"Parameter value of kind {Kind} is not a choice.");
 
+    /// <summary>
+    /// 点表取值。值里只存规范化的文本（"x,y;x,y"），每次取时解析——
+    /// 这样两个点表相等就是文本相等，record 的值相等性不会被数组引用搅乱。
+    /// </summary>
+    public IReadOnlyList<TablePoint> Points => Kind == ParameterValueKind.Points
+        ? ParsePoints(this.text)
+        : throw new DomainException($"Parameter value of kind {Kind} is not a point table.");
+
     public static ParameterValue FromNumber(double value)
     {
         if (double.IsNaN(value) || double.IsInfinity(value))
@@ -68,6 +86,23 @@ public sealed record ParameterValue
 
     public static ParameterValue FromText(string value) =>
         new(ParameterValueKind.Text, 0.0, false, value ?? throw new ArgumentNullException(nameof(value)));
+
+    /// <summary>从一组点建点表值。点的次序原样保留（是否递增由用它的类型判断）。</summary>
+    public static ParameterValue FromPoints(IEnumerable<TablePoint> points)
+    {
+        ArgumentNullException.ThrowIfNull(points);
+        TablePoint[] list = points.ToArray();
+        if (list.Any(point => !double.IsFinite(point.X) || !double.IsFinite(point.Y)))
+        {
+            throw new DomainException("Point table values must be finite.");
+        }
+
+        return new ParameterValue(
+            ParameterValueKind.Points,
+            0.0,
+            false,
+            string.Join(";", list.Select(point => string.Create(CultureInfo.InvariantCulture, $"{point.X:R},{point.Y:R}"))));
+    }
 
     /// <summary>从选项键建值。是否属于允许集合由 schema 校验，这里不判断。</summary>
     public static ParameterValue FromChoice(string value) =>
@@ -85,7 +120,7 @@ public sealed record ParameterValue
     {
         ParameterValueKind.Number => this.number.ToString("R", CultureInfo.InvariantCulture),
         ParameterValueKind.Boolean => this.boolean ? "true" : "false",
-        ParameterValueKind.Text or ParameterValueKind.Choice => this.text,
+        ParameterValueKind.Text or ParameterValueKind.Choice or ParameterValueKind.Points => this.text,
         _ => throw new DomainException($"Unsupported parameter value kind {Kind}."),
     };
 
@@ -117,8 +152,36 @@ public sealed record ParameterValue
             case ParameterValueKind.Choice:
                 return FromChoice(text);
 
+            case ParameterValueKind.Points:
+                return FromPoints(ParsePoints(text));
+
             default:
                 throw new DomainException($"Unsupported parameter value kind {kind}.");
         }
+    }
+
+    private static TablePoint[] ParsePoints(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return Array.Empty<TablePoint>();
+        }
+
+        string[] pairs = text.Split(';');
+        var points = new TablePoint[pairs.Length];
+        for (int i = 0; i < pairs.Length; i++)
+        {
+            string[] parts = pairs[i].Split(',');
+            if (parts.Length != 2
+                || !double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double x)
+                || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double y))
+            {
+                throw new DomainException($"'{pairs[i]}' is not a valid point.");
+            }
+
+            points[i] = new TablePoint(x, y);
+        }
+
+        return points;
     }
 }
