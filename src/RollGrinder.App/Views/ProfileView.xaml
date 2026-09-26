@@ -6,7 +6,7 @@
              xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="340" />
+            <ColumnDefinition Width="380" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -16,29 +16,35 @@
                     <TextBlock Text="{loc:Loc Profile_SegmentsHeader}" Style="{StaticResource Text.CardTitle}" />
                 </Border>
 
-                <DockPanel DockPanel.Dock="Top" Margin="8,8,8,0">
-                    <TextBlock Text="{loc:Loc Profile_Name}" Style="{StaticResource Text.Label}"
-                               VerticalAlignment="Center" Width="72" />
-                    <TextBox Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}"
-                             IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                             Height="46" FontSize="17" VerticalContentAlignment="Center" />
-                </DockPanel>
+                <!-- 名称、设计长度、对称。只读时整块按不动。 -->
+                <StackPanel DockPanel.Dock="Top" Margin="8,8,8,0"
+                            IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
+                    <DockPanel>
+                        <TextBlock Text="{loc:Loc Profile_Name}" Style="{StaticResource Text.Label}"
+                                   VerticalAlignment="Center" Width="80" />
+                        <TextBox Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="46" FontSize="17" VerticalContentAlignment="Center" />
+                    </DockPanel>
+                    <DockPanel Margin="0,8,0,0">
+                        <TextBlock Text="{loc:Loc Profile_BodyLength}" Style="{StaticResource Text.Label}"
+                                   VerticalAlignment="Center" Width="80" />
+                        <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
+                                   DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}"
+                                 VerticalContentAlignment="Center" />
+                    </DockPanel>
+                    <!-- 对称只是编辑辅助：勾上只编头架端，尾架端镜像生成；含 CVC 时置灰。 -->
+                    <CheckBox Content="{loc:Loc Profile_Symmetric}" IsChecked="{Binding IsSymmetric}"
+                              IsEnabled="{Binding CanToggleSymmetry}" ToolTip="{loc:Loc Profile_SymmetricHint}"
+                              FontSize="16" Margin="0,10,0,0" />
+                </StackPanel>
 
-                <!-- 设计长度：各段区间都在 0 到它之间。以前藏着一个 300 mm，预览按它画，和输入对不上。 -->
-                <DockPanel DockPanel.Dock="Top" Margin="8,8,8,0">
-                    <TextBlock Text="{loc:Loc Profile_BodyLength}" Style="{StaticResource Text.Label}"
-                               VerticalAlignment="Center" Width="72" />
-                    <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
-                               DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
-                    <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
-                             IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                             Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}"
-                             VerticalContentAlignment="Center" />
-                </DockPanel>
-
-                <!-- 两行：类型下拉 + 插入；删除、上移、下移平分第二行。一行放不下——左栏只有约 330 px，按钮字会被截断。 -->
-                <Grid DockPanel.Dock="Top" Margin="8">
+                <!-- 三行：类型下拉 + 插入；删除、上移、下移；复制、改类型。左栏一行放不下更多，字会被截断。 -->
+                <Grid DockPanel.Dock="Top" Margin="8"
+                      IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
@@ -47,7 +53,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <ComboBox ItemsSource="{Binding AvailableTypes}" SelectedItem="{Binding SelectedTypeForInsert}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                    <ComboBox ItemsSource="{Binding AvailableTypes}" SelectedItem="{Binding SelectedTypeForInsert}"
                               Grid.Row="0" Grid.ColumnSpan="2" Height="46" FontSize="17" Margin="0,0,4,8">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
@@ -55,43 +61,46 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <Button Content="{loc:Loc Profile_Insert}" Command="{Binding InsertSegmentCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                    <Button Content="{loc:Loc Profile_Insert}" Command="{Binding InsertSegmentCommand}"
                             Style="{StaticResource SecondaryButton}" Grid.Row="0" Grid.Column="2" Height="46" Margin="4,0,0,8" />
-                    <Button Content="{loc:Loc Profile_Delete}" Command="{Binding RemoveSegmentCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="0" Height="46" Margin="0,0,4,0" />
-                    <Button Content="{loc:Loc Profile_MoveUp}" Command="{Binding MoveSegmentUpCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Height="46" Margin="4,0,4,0" />
-                    <Button Content="{loc:Loc Profile_MoveDown}" Command="{Binding MoveSegmentDownCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="2" Height="46" Margin="4,0,0,0" />
+                    <Button Content="{loc:Loc Profile_Delete}" Command="{Binding RemoveSegmentCommand}"
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="0" Height="46" Margin="0,0,4,8" />
+                    <Button Content="{loc:Loc Profile_MoveUp}" Command="{Binding MoveSegmentUpCommand}"
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Height="46" Margin="4,0,4,8" />
+                    <Button Content="{loc:Loc Profile_MoveDown}" Command="{Binding MoveSegmentDownCommand}"
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="2" Height="46" Margin="4,0,0,8" />
+                    <Button Content="{loc:Loc Profile_Copy}" Command="{Binding CopySegmentCommand}"
+                            Style="{StaticResource SecondaryButton}" Grid.Row="2" Grid.Column="0" Height="46" Margin="0,0,4,0" />
+                    <Button Content="{loc:Loc Profile_ChangeType}" Command="{Binding ChangeSegmentTypeCommand}"
+                            Style="{StaticResource SecondaryButton}" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Height="46" Margin="4,0,0,0" />
                 </Grid>
 
-                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,10">
+                <!-- 选中段：只有第一段能填起点 Z，其余段的起点是上一段的终点。 -->
+                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,10"
+                        IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,6">
-                            <TextBlock Text="{loc:Loc Profile_SegmentFrom}" Style="{StaticResource Text.Label}"
-                                       VerticalAlignment="Center" Width="72" />
-                            <TextBox Text="{Binding SegmentFromMmText, UpdateSourceTrigger=PropertyChanged}"
-                                     IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                            <TextBlock Text="{loc:Loc Profile_SegmentStart}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" Width="80" />
+                            <TextBox Text="{Binding SegmentStartText, UpdateSourceTrigger=PropertyChanged}"
+                                     IsEnabled="{Binding IsFirstSegmentSelected}"
                                      Height="42" FontSize="16" FontFamily="{StaticResource Font.Mono}"
                                      VerticalContentAlignment="Center" />
                         </DockPanel>
                         <DockPanel Margin="0,0,0,6">
-                            <TextBlock Text="{loc:Loc Profile_SegmentTo}" Style="{StaticResource Text.Label}"
-                                       VerticalAlignment="Center" Width="72" />
-                            <TextBox Text="{Binding SegmentToMmText, UpdateSourceTrigger=PropertyChanged}"
-                                     IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                            <TextBlock Text="{loc:Loc Profile_SegmentLength}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" Width="80" />
+                            <TextBox Text="{Binding SegmentLengthText, UpdateSourceTrigger=PropertyChanged}"
                                      Height="42" FontSize="16" FontFamily="{StaticResource Font.Mono}"
                                      VerticalContentAlignment="Center" />
                         </DockPanel>
                         <CheckBox Content="{loc:Loc Profile_SegmentMirrored}" IsChecked="{Binding SegmentIsMirrored}"
-                                  IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                                  FontSize="16" Margin="0,0,0,12" />
+                                  FontSize="16" />
                     </StackPanel>
                 </Border>
 
-                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14">
+                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,10">
                     <StackPanel>
-                        <TextBlock Text="{loc:Loc Profile_ValidationHeader}" Style="{StaticResource Text.Label}" Margin="0,0,0,10" />
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="{loc:Loc Profile_MaxChordError}" FontSize="16" />
                             <TextBlock Text="{Binding MaxChordErrorText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
@@ -102,11 +111,6 @@
                             <TextBlock Text="{Binding SegmentCountText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
                                        HorizontalAlignment="Right" />
                         </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="{loc:Loc Profile_TaperAlignment}" FontSize="16" />
-                            <TextBlock Text="{Binding TaperAlignmentText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                       HorizontalAlignment="Right" Foreground="{StaticResource Brush.Normal}" />
-                        </DockPanel>
                         <DockPanel>
                             <TextBlock Text="{loc:Loc Profile_CompensationAxis}" FontSize="16" />
                             <TextBlock Text="{Binding CompensationAxisText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
@@ -115,12 +119,28 @@
                     </StackPanel>
                 </Border>
 
+                <!-- 段表表头：# 类型 起点 长度 终点。Z 自头架侧辊身端面起，向尾架为正。 -->
+                <Grid DockPanel.Dock="Top" Margin="20,0,20,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="22" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="64" />
+                        <ColumnDefinition Width="64" />
+                        <ColumnDefinition Width="64" />
+                        <ColumnDefinition Width="10" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1" Text="{loc:Loc Profile_ColumnType}" Style="{StaticResource Text.Label}" Margin="8,0,0,0" />
+                    <TextBlock Grid.Column="2" Text="{loc:Loc Profile_ColumnStart}" Style="{StaticResource Text.Label}" TextAlignment="Right" />
+                    <TextBlock Grid.Column="3" Text="{loc:Loc Profile_ColumnLength}" Style="{StaticResource Text.Label}" TextAlignment="Right" />
+                    <TextBlock Grid.Column="4" Text="{loc:Loc Profile_ColumnEnd}" Style="{StaticResource Text.Label}" TextAlignment="Right" />
+                </Grid>
+
                 <ListBox ItemsSource="{Binding Segments}" SelectedItem="{Binding SelectedSegment}"
                          BorderThickness="0" Background="Transparent" Margin="8,0,8,8"
                          HorizontalContentAlignment="Stretch">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border Height="54" Padding="12,0" Margin="0,0,0,4">
+                            <Border Height="46" Padding="6,0" Margin="0,0,0,4">
                                 <Border.Style>
                                     <Style TargetType="Border">
                                         <Setter Property="Background" Value="{StaticResource Brush.StepIdle}" />
@@ -133,17 +153,30 @@
                                         </Style.Triggers>
                                     </Style>
                                 </Border.Style>
-                                <DockPanel VerticalAlignment="Center">
-                                    <!-- 这一段有错：行尾一条红标，和问题列表里的"第 N 段"对得上。 -->
-                                    <Border DockPanel.Dock="Right" Width="6" Height="34" Background="{StaticResource Brush.CurrentStep}"
-                                            Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}" />
-                                    <TextBlock Text="{Binding OrderText}" Width="22" FontFamily="{StaticResource Font.Mono}"
+                                <Grid VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="22" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="64" />
+                                        <ColumnDefinition Width="64" />
+                                        <ColumnDefinition Width="64" />
+                                        <ColumnDefinition Width="10" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding OrderText}" FontFamily="{StaticResource Font.Mono}"
                                                FontSize="15" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
-                                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="18" />
-                                        <TextBlock Text="{Binding PurposeText}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
-                                    </StackPanel>
-                                </DockPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontSize="17" Margin="8,0,0,0"
+                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{Binding StartText}" FontFamily="{StaticResource Font.Mono}" FontSize="15"
+                                               TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Brush.TextSecondary}" />
+                                    <TextBlock Grid.Column="3" Text="{Binding LengthText}" FontFamily="{StaticResource Font.Mono}" FontSize="15"
+                                               TextAlignment="Right" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="4" Text="{Binding EndText}" FontFamily="{StaticResource Font.Mono}" FontSize="15"
+                                               TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Brush.TextSecondary}" />
+                                    <!-- 这一段有错：行尾一条红标，和问题列表里的"第 N 段"对得上。 -->
+                                    <Border Grid.Column="5" Width="6" Height="30" HorizontalAlignment="Right"
+                                            Background="{StaticResource Brush.CurrentStep}"
+                                            Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}" />
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -154,36 +187,48 @@
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
-                <RowDefinition Height="250" />
+                <RowDefinition Height="280" />
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="52">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{loc:Loc Profile_PreviewHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,16,0" />
-                            <Rectangle Width="22" Height="3" Fill="{StaticResource Brush.Accent}" VerticalAlignment="Center" />
-                            <TextBlock Text="{loc:Loc Profile_LegendComposed}" FontSize="15" Margin="7,0,16,0" VerticalAlignment="Center" />
-                            <Rectangle Width="22" Height="3" Fill="{StaticResource Brush.Reference}" VerticalAlignment="Center" />
-                            <TextBlock Text="{loc:Loc Profile_LegendMain}" FontSize="15" Margin="7,0,0,0" VerticalAlignment="Center" />
-                        </StackPanel>
+                        <DockPanel VerticalAlignment="Center">
+                            <!-- 对照线只作对照、不改辊形；要把表变成辊形用功能键"点表导入"。 -->
+                            <Button DockPanel.Dock="Right" Content="{loc:Loc Profile_ImportReference}"
+                                    Command="{Binding RequestImportReferenceCommand}"
+                                    Style="{StaticResource SecondaryButton}" Height="40" Padding="12,0" />
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{loc:Loc Profile_PreviewHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,16,0" />
+                                <Rectangle Width="22" Height="3" Fill="{StaticResource Brush.Accent}" VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:Loc Profile_LegendComposed}" FontSize="15" Margin="7,0,16,0" VerticalAlignment="Center" />
+                                <Rectangle Width="22" Height="6" Fill="{StaticResource Brush.CurrentStep}" VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:Loc Profile_LegendSelected}" FontSize="15" Margin="7,0,16,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ReferenceDeviationText}" FontSize="15" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Brush.TextSecondary}" />
+                            </StackPanel>
+                        </DockPanel>
                     </Border>
                     <!-- 边编边校验：每改一次就重算。错误红字在前，有错不能保存；提示灰字在后。 -->
                     <Border DockPanel.Dock="Top" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,0,0,1"
                             Padding="14,8">
                         <StackPanel>
-                            <TextBlock Text="{Binding IssueSummaryText}" FontSize="17" FontWeight="SemiBold">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding StatusText}" FontSize="15"
+                                           Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" MaxWidth="520" />
+                                <TextBlock Text="{Binding IssueSummaryText}" FontSize="17" FontWeight="SemiBold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasErrors}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DockPanel>
                             <ScrollViewer MaxHeight="118" VerticalScrollBarVisibility="Auto" Margin="0,4,0,0">
                                 <ItemsControl ItemsSource="{Binding Issues}">
                                     <ItemsControl.ItemTemplate>
@@ -221,15 +266,45 @@
                                        Foreground="{StaticResource Brush.TextMuted}" />
                         </StackPanel>
                     </Border>
-                    <ItemsControl ItemsSource="{Binding SegmentParameters}"
-                                  Background="{StaticResource Brush.GridLine}"
-                                  ItemTemplate="{StaticResource ParameterCellTemplate}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="4" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
+                    <Grid IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 点表段：Z（段内，mm）与直径偏差（µm）一行一个点；加点落在选中点和下一个点的正中。 -->
+                        <DockPanel Grid.Column="0" Width="380" Margin="8"
+                                   Visibility="{Binding IsPointTableSelected, Converter={StaticResource BoolToVisibility}}">
+                            <StackPanel DockPanel.Dock="Right" Margin="8,0,0,0">
+                                <Button Content="{loc:Loc Profile_AddPoint}" Command="{Binding AddPointCommand}"
+                                        Style="{StaticResource SecondaryButton}" Height="44" Width="96" Margin="0,0,0,8" />
+                                <Button Content="{loc:Loc Profile_RemovePoint}" Command="{Binding RemovePointCommand}"
+                                        Style="{StaticResource SecondaryButton}" Height="44" Width="96" />
+                            </StackPanel>
+                            <TextBlock DockPanel.Dock="Bottom" Text="{Binding PointTableErrorText}" FontSize="{StaticResource Size.Caption}"
+                                       Foreground="{StaticResource Brush.CurrentStep}" TextWrapping="Wrap" />
+                            <DataGrid ItemsSource="{Binding PointRows}" SelectedItem="{Binding SelectedPoint}"
+                                      Style="{StaticResource DataTable}" AutoGenerateColumns="False"
+                                      CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="False">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{loc:Loc Profile_PointZ}"
+                                                        Binding="{Binding ZText, UpdateSourceTrigger=PropertyChanged}" Width="*" />
+                                    <DataGridTextColumn Header="{loc:Loc Profile_PointValue}"
+                                                        Binding="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+
+                        <ItemsControl Grid.Column="1" ItemsSource="{Binding SegmentParameters}"
+                                      Background="{StaticResource Brush.GridLine}"
+                                      ItemTemplate="{StaticResource ParameterCellTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="3" VerticalAlignment="Top" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </Grid>
                 </DockPanel>
             </Border>
         </Grid>

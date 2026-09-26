@@ -30,6 +30,7 @@ public partial class ProfileView : UserControl
         {
             this.viewModel.PreviewChanged += OnPreviewChanged;
             this.viewModel.ImportPointsRequested += OnImportPointsRequested;
+            this.viewModel.ImportReferenceRequested += OnImportReferenceRequested;
             this.viewModel.GeneratePointsRequested += OnGeneratePointsRequested;
             Redraw();
         }
@@ -41,6 +42,7 @@ public partial class ProfileView : UserControl
         {
             this.viewModel.PreviewChanged -= OnPreviewChanged;
             this.viewModel.ImportPointsRequested -= OnImportPointsRequested;
+            this.viewModel.ImportReferenceRequested -= OnImportReferenceRequested;
             this.viewModel.GeneratePointsRequested -= OnGeneratePointsRequested;
         }
     }
@@ -61,6 +63,22 @@ public partial class ProfileView : UserControl
         }
 
         await this.viewModel.ImportPointsAsync(path, CancellationToken.None);
+    }
+
+    private async void OnImportReferenceRequested(object? sender, EventArgs e)
+    {
+        if (this.viewModel is null)
+        {
+            return;
+        }
+
+        string? path = InteractionScope.FileDialogs.PickOpenPath(".csv", "CSV|*.csv|All files|*.*");
+        if (path is null)
+        {
+            return;
+        }
+
+        await this.viewModel.ImportReferenceAsync(path, CancellationToken.None);
     }
 
     private async void OnGeneratePointsRequested(object? sender, EventArgs e)
@@ -92,23 +110,43 @@ public partial class ProfileView : UserControl
             return;
         }
 
-        double[] mainX = this.viewModel.MainPoints.Select(point => point.BodyPositionMm).ToArray();
-        double[] mainY = this.viewModel.MainPoints.Select(point => point.DiameterMm).ToArray();
-        if (mainX.Length >= 2)
-        {
-            var main = PreviewPlot.Plot.Add.Scatter(mainX, mainY);
-            main.LineWidth = 2f;
-            main.MarkerSize = 0;
-            main.LinePattern = LinePattern.Dashed;
-            main.Color = Color.FromHex("#8D97A3");
-        }
-
         double[] composedX = this.viewModel.ComposedPoints.Select(point => point.BodyPositionMm).ToArray();
         double[] composedY = this.viewModel.ComposedPoints.Select(point => point.DiameterMm).ToArray();
         var composed = PreviewPlot.Plot.Add.Scatter(composedX, composedY);
         composed.LineWidth = 3f;
         composed.MarkerSize = 0;
         composed.Color = Color.FromHex("#15507F");
+
+        // 段界画虚线：顺接辊形一眼看出每段从哪到哪。
+        foreach (double boundary in this.viewModel.BoundaryZs)
+        {
+            var line = PreviewPlot.Plot.Add.VerticalLine(boundary);
+            line.LineWidth = 1f;
+            line.LinePattern = LinePattern.Dashed;
+            line.Color = Color.FromHex("#8D97A3");
+        }
+
+        // 当前段加粗、换色。
+        if (this.viewModel.SelectedSegmentPoints.Count >= 2)
+        {
+            var selected = PreviewPlot.Plot.Add.Scatter(
+                this.viewModel.SelectedSegmentPoints.Select(point => point.BodyPositionMm).ToArray(),
+                this.viewModel.SelectedSegmentPoints.Select(point => point.DiameterMm).ToArray());
+            selected.LineWidth = 6f;
+            selected.MarkerSize = 0;
+            selected.Color = Color.FromHex("#B3241C").WithAlpha(0.55);
+        }
+
+        // 点表段：原始点和插值曲线画在一起，看得出插值有没有在点之间鼓出来。
+        if (this.viewModel.TablePoints.Count > 0)
+        {
+            var table = PreviewPlot.Plot.Add.Scatter(
+                this.viewModel.TablePoints.Select(point => point.BodyPositionMm).ToArray(),
+                this.viewModel.TablePoints.Select(point => point.DiameterMm).ToArray());
+            table.LineWidth = 0f;
+            table.MarkerSize = 8f;
+            table.Color = Color.FromHex("#B3241C");
+        }
 
         // 导进来的对照线：虚线、另一个颜色，一眼看出哪条是设计、哪条是拿来比的。
         double[] referenceX = this.viewModel.ReferencePoints.Select(point => point.BodyPositionMm).ToArray();
@@ -119,7 +157,7 @@ public partial class ProfileView : UserControl
             reference.LineWidth = 2f;
             reference.MarkerSize = 0;
             reference.LinePattern = LinePattern.Dotted;
-            reference.Color = Color.FromHex("#B3241C");
+            reference.Color = Color.FromHex("#8A5A00");
         }
 
         PreviewPlot.Plot.Axes.AutoScale();

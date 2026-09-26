@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -21,6 +22,7 @@ internal static class SelfTestNames
 {
     public const string ProfileA = "SelfTest Profile A";
     public const string ProfileB = "SelfTest Profile B";
+    public const string OldProfile = "SelfTest Old Profile";
     public const string ProgramA = "SelfTest Program A";
     public const string ProgramB = "SelfTest Program B";
     public const string RollId = "SELFTEST-R1";
@@ -55,26 +57,46 @@ internal sealed class ProfileSuite : ISelfTestSuite
         await h.GoToAsync(PageKey.Profile);
         page.DiscardChanges();
 
-        await h.StepAsync("Segments", "InsertEveryType", async ctx =>
+        await h.StepAsync("Segments", "BuildFromEmptyEveryType", async ctx =>
         {
-            ctx.Check(page.AvailableTypes.Count > 0, "no profile types registered");
+            ctx.Check(page.AvailableTypes.Count > 1, "profile types should be registered");
             RollProfileTypeRegistry registry = h.Services.GetRequiredService<RollProfileTypeRegistry>();
-            int before = page.Segments.Count;
-            foreach (string type in page.AvailableTypes.ToList())
+            page.BodyLengthMmText = "2000";
+            await RemoveAllAsync(h, page);
+            ctx.Check(page.Segments.Count == 0 && page.HasErrors, "an empty profile should be reported");
+
+            List<string> types = page.AvailableTypes.ToList();
+            foreach (string type in types)
             {
                 page.SelectedTypeForInsert = type;
+                page.SelectedSegment = page.Segments.LastOrDefault();
                 await h.RunAsync(page.InsertSegmentCommand);
-                page.SelectedSegment = page.Segments.Last();
-                await h.SettleAsync(50);
+                ctx.Check(page.SelectedSegment?.Order == page.Segments.Count, "the new segment should be selected, at the end");
 
-                // 界面上的参数格数必须和这种辊形的参数定义一一对应（圆柱就是 0 个）。
-                int declared = registry.Get(type).Schema.Descriptors.Count;
+                // 参数格数等于这种辊形的参数定义（点表那一列单独用表格编辑，不算在格子里）。
+                int declared = registry.Get(type).Schema.Descriptors.Count(d => d.Kind != ParameterValueKind.Points);
                 ctx.Check(page.SegmentParameters.Count == declared,
                     Invariant($"segment of type {type} shows {page.SegmentParameters.Count} parameters, schema declares {declared}"));
+                if (type == ProfileTypeKeys.PointTable)
+                {
+                    ctx.Check(page.IsPointTableSelected && page.PointRows.Count == 2, "a new point table starts with two points");
+                }
             }
 
-            ctx.Check(page.Segments.Count == before + page.AvailableTypes.Count, "every type should add one segment");
-            ctx.Note(Invariant($"types={page.AvailableTypes.Count}, segments={page.Segments.Count}"));
+            ctx.Check(page.Segments.Count == types.Count, "every type should add one segment");
+
+            // 第一段铺满了设计长度，后面每段先给 100 mm：合计超了，要报错。
+            ctx.Check(page.HasErrors, "segments running past the design length should be reported");
+
+            // 把第一段缩短，让合计正好 2000：错误消失，后面各段的起点跟着前移。
+            page.SelectedSegment = page.Segments[0];
+            double first = 2000.0 - (100.0 * (types.Count - 1));
+            page.SegmentLengthText = first.ToString(CultureInfo.CurrentCulture);
+            await h.SettleAsync(50);
+            ctx.Check(!page.HasErrors, "segments adding up to the design length should be clean: " + Issues(page));
+            ctx.Check(page.Segments[1].StartText == page.Segments[0].EndText, "the second segment should start where the first ends");
+            ctx.Check(page.Composite?.Layout == ProfileLayout.Sequential, "new profiles are sequential");
+            ctx.Note(Invariant($"types={types.Count}, first length={first}"));
         }, StepOptions.Shot);
 
         await h.StepAsync("Segments", "Validate", async ctx =>
@@ -83,54 +105,132 @@ internal sealed class ProfileSuite : ISelfTestSuite
             ctx.Note("status=" + page.StatusResourceKey + ", maxChordError=" + page.MaxChordErrorText);
         }, new StepOptions(Tolerant: true));
 
-        await h.StepAsync("Segments", "MoveUpDownAndRemove", async ctx =>
+        await h.StepAsync("Segments", "MoveCopyAndRemove", async ctx =>
         {
             int count = page.Segments.Count;
             page.SelectedSegment = page.Segments.Last();
-            string movedType = page.SelectedSegment.Segment.ProfileTypeKey;
+            string movedType = page.SelectedSegment.DisplayName;
             await h.RunAsync(page.MoveSegmentUpCommand);
-            ctx.Check(page.SelectedSegment?.Order == count - 1 && page.SelectedSegment.Segment.ProfileTypeKey == movedType,
+            ctx.Check(page.SelectedSegment?.Order == count - 1 && page.SelectedSegment.DisplayName == movedType,
                 "after moving up the selection should follow the moved segment");
             await h.RunAsync(page.MoveSegmentDownCommand);
-            ctx.Check(page.SelectedSegment?.Order == count && page.SelectedSegment.Segment.ProfileTypeKey == movedType,
+            ctx.Check(page.SelectedSegment?.Order == count && page.SelectedSegment.DisplayName == movedType,
                 "move down should bring it back to the end");
+
+            await h.RunAsync(page.CopySegmentCommand);
+            ctx.Check(page.Segments.Count == count + 1 && page.HasErrors, "a copy makes the profile longer than the design length");
             await h.RunAsync(page.RemoveSegmentCommand);
-            ctx.Check(page.Segments.Count == count - 1, "remove should drop one segment");
+            ctx.Check(page.Segments.Count == count && !page.HasErrors, "removing the copy should make it fit again: " + Issues(page));
         });
 
         await h.StepAsync("Segments", "LiveValidationBlocksSave", async ctx =>
         {
             int saveKey = h.IndexOfKey("Fn_Save");
             page.SelectedSegment = page.Segments.Last();
-            string originalTo = page.SegmentToMmText;
-            ctx.Check(!page.HasErrors, "the profile should start without errors: " + string.Join(" | ", page.Issues.Select(i => i.Text)));
+            string originalLength = page.SegmentLengthText;
+            ctx.Check(!page.HasErrors, "the profile should start without errors: " + Issues(page));
 
-            // 终点伸出设计长度：立刻报错、段标红、保存与另存为变灰。
-            page.SegmentToMmText = Invariant($"{double.Parse(page.BodyLengthMmText, CultureInfo.CurrentCulture) + 500.0}");
+            // 最后一段伸出设计长度：立刻报错、段标红、保存与另存为变灰。
+            page.SegmentLengthText = (double.Parse(originalLength, CultureInfo.CurrentCulture) + 500.0).ToString(CultureInfo.CurrentCulture);
             await h.SettleAsync(50);
-            ctx.Check(page.HasErrors && page.Issues.Any(i => i.IsError), "a segment outside the body must show an error at once");
+            ctx.Check(page.HasErrors && page.Issues.Any(i => i.IsError), "a segment past the design length must show an error at once");
             ctx.Check(page.SelectedSegment?.HasError == true, "the offending segment should be marked");
             ctx.Check(!h.Shell.FunctionKeys[saveKey].Command.CanExecute(null), "save must be disabled while there are errors");
             ctx.Check(!page.SaveAsCommand.CanExecute(null), "save-as must be disabled while there are errors");
             h.TryScreenshot("profile-live-errors");
 
             // 正在输入、还不成立的内容也要说出来。
-            page.SegmentToMmText = "-";
+            page.SegmentLengthText = "-";
             await h.SettleAsync(50);
-            ctx.Check(page.HasErrors, "an unfinished range should be reported while typing");
+            ctx.Check(page.HasErrors, "an unfinished length should be reported while typing");
 
-            page.SegmentToMmText = originalTo;
+            page.SegmentLengthText = originalLength;
             await h.SettleAsync(50);
-            ctx.Check(!page.HasErrors, "restoring the range should clear the error: " + string.Join(" | ", page.Issues.Select(i => i.Text)));
+            ctx.Check(!page.HasErrors, "restoring the length should clear the error: " + Issues(page));
             ctx.Check(h.Shell.FunctionKeys[saveKey].Command.CanExecute(null), "save should be enabled again");
 
-            string originalLength = page.BodyLengthMmText;
+            string designLength = page.BodyLengthMmText;
             page.BodyLengthMmText = "1";
             await h.SettleAsync(50);
             ctx.Check(page.HasErrors, "a design length below the machine minimum is an error");
-            page.BodyLengthMmText = originalLength;
+            page.BodyLengthMmText = designLength;
             await h.SettleAsync(50);
             ctx.Check(!page.HasErrors, "restoring the design length should clear the error");
+        });
+
+        await h.StepAsync("PointTable", "EditPoints", async ctx =>
+        {
+            int order = page.Composite!.Segments.First(s => s.ProfileTypeKey == ProfileTypeKeys.PointTable).Order;
+            page.SelectedSegment = page.Segments[order - 1];
+            await h.SettleAsync(50);
+            ctx.Check(page.IsPointTableSelected, "the point table segment should show its table");
+
+            page.SelectedPoint = page.PointRows[0];
+            await h.RunAsync(page.AddPointCommand);
+            ctx.Check(page.PointRows.Count == 3, "add point should insert one between the first two");
+            page.PointRows[1].ValueText = "20";
+            await h.SettleAsync(50);
+            ctx.Check(!page.HasErrors, "a valid table should be clean: " + Issues(page));
+            ctx.Check(page.TablePoints.Count == 3, "the preview should show the raw points");
+            IReadOnlyList<TablePoint> stored = page.Composite.Segments[order - 1].Parameters.Get(PointTableProfileType.PointsKey).Points;
+            ctx.Check(stored.Count == 3 && Math.Abs(stored[1].Y - 20.0) < 1e-9, "the edited point should be written back");
+            h.TryScreenshot("profile-point-table");
+
+            string z = page.PointRows[1].ZText;
+            page.PointRows[1].ZText = "abc";
+            await h.SettleAsync(50);
+            ctx.Check(page.HasErrors, "a point that is not a number must be reported");
+            page.PointRows[1].ZText = z;
+            await h.SettleAsync(50);
+            ctx.Check(!page.HasErrors, "restoring the point should clear the error: " + Issues(page));
+        });
+
+        await h.StepAsync("Symmetric", "HeadstockSideMirrorsToTailstock", async ctx =>
+        {
+            await RemoveAllAsync(h, page);
+            page.IsSymmetric = true;
+            await h.SettleAsync(50);
+            ctx.Check(page.IsSymmetric, "symmetric editing should switch on for an empty profile");
+
+            // 头架端：锥度 150 mm（镜像，端面最低 −50 µm），再一段跨中点的凸度 1700 mm。
+            page.SelectedTypeForInsert = ProfileTypeKeys.Taper;
+            await h.RunAsync(page.InsertSegmentCommand);
+            page.SegmentLengthText = 150.0.ToString(CultureInfo.CurrentCulture);
+            page.SegmentIsMirrored = true;
+            page.SegmentParameters.First().Text = "-50";
+            page.SelectedTypeForInsert = ProfileTypeKeys.Crown;
+            await h.RunAsync(page.InsertSegmentCommand);
+            page.SegmentLengthText = 1700.0.ToString(CultureInfo.CurrentCulture);
+            page.SegmentParameters.First().Text = "300";
+            await h.SettleAsync(50);
+
+            ctx.Check(page.Segments.Count == 2, "only the headstock side is listed");
+            ctx.Check(!page.HasErrors, "the design example should be clean: " + Issues(page));
+            ctx.Check(page.Composite?.Segments.Count == 3 && page.Composite.Segments[2].IsMirrored == false
+                && page.Composite.Segments[2].FromMm == 1850.0,
+                "the tailstock taper should be generated as an independent mirrored segment");
+            h.TryScreenshot("profile-symmetric");
+
+            page.SelectedTypeForInsert = ProfileTypeKeys.Cvc;
+            await h.RunAsync(page.InsertSegmentCommand);
+            ctx.Check(page.Segments.Count == 2 && page.StatusResourceKey == "Profile_SymmetryUnsupportedType",
+                "CVC must not be inserted while editing symmetrically");
+
+            page.IsSymmetric = false;
+            await h.SettleAsync(50);
+            ctx.Check(page.Segments.Count == 3, "switching symmetry off lists all expanded segments");
+        });
+
+        await h.StepAsync("Symmetric", "AsymmetricProfileCannotFold", async ctx =>
+        {
+            page.SelectedSegment = page.Segments[2];
+            page.SegmentParameters.First().Text = "-40";
+            await h.SettleAsync(50);
+            page.IsSymmetric = true;
+            await h.SettleAsync(50);
+            ctx.Check(!page.IsSymmetric && page.StatusResourceKey == "Profile_SymmetryNotFoldable",
+                "a lopsided profile must not silently turn symmetric");
+            ctx.Check(!page.HasErrors, "the lopsided profile is still valid: " + Issues(page));
         });
 
         await h.StepAsync("Library", "SaveWithoutNameRefused", async ctx =>
@@ -176,6 +276,31 @@ internal sealed class ProfileSuite : ISelfTestSuite
             ctx.Check(!page.NamePrompt.IsOpen && page.ProfileId == idBefore, "cancel should leave everything as it was");
         });
 
+        await h.StepAsync("Library", "OldProfileIsConvertedToAPointTable", async ctx =>
+        {
+            // 阶段 0 以前存的叠加辊形：打开时按原来的合成曲线转成一段点表，形状不变。
+            var old = CompositeRollProfile.Superimposed(new[]
+            {
+                RollProfileSegment.Create(1, ProfileTypeKeys.Crown, 0.0, 2000.0,
+                    new CrownProfileType().Schema.CreateDefaults()
+                        .With(CrownProfileType.CrownDiameterMicrometerKey, ParameterValue.FromNumber(300.0))),
+                RollProfileSegment.Create(2, ProfileTypeKeys.Taper, 0.0, 150.0, new TaperProfileType().Schema.CreateDefaults()),
+            });
+            await h.Services.GetRequiredService<RollGrinder.Data.IRollProfileRepository>().SaveAsync(
+                RollGrinder.Core.Profiles.RollProfileDefinition.Create(
+                    "P-SELFTEST-OLD", SelfTestNames.OldProfile, 2000.0, old, DateTimeOffset.UtcNow),
+                System.Threading.CancellationToken.None);
+
+            await h.RunAsync(page.OpenLibraryCommand);
+            page.SelectedLibraryEntry = page.LibraryEntries.First(e => e.Name == SelfTestNames.OldProfile);
+            await h.RunAsync(page.LoadFromLibraryCommand);
+            ctx.Check(page.StatusResourceKey == "Profile_LegacyConverted", "the operator should be told it was converted");
+            ctx.Check(page.Composite?.Segments.Count == 1 && page.Composite.Segments[0].ProfileTypeKey == ProfileTypeKeys.PointTable,
+                "an old profile should open as one point table");
+            ctx.Check(page.IsDirty && !page.HasErrors, "the converted profile is clean but not yet saved: " + Issues(page));
+            h.TryScreenshot("profile-legacy-converted");
+        });
+
         await h.StepAsync("Library", "DeleteSecondProfile", async ctx =>
         {
             ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveAsCommand, page.NamePrompt, SelfTestNames.ProfileB),
@@ -213,10 +338,32 @@ internal sealed class ProfileSuite : ISelfTestSuite
             }
 
             h.Interaction.OpenAnswers.Enqueue(generated!);
-            await h.PressKeyAsync(ctx, "Fn_ImportPoints");
+            await h.RunAsync(page.RequestImportReferenceCommand);
+            await h.SettleAsync(200);
             ctx.Check(page.StatusResourceKey == "Profile_PointsImported", "status should say imported, is " + page.StatusResourceKey);
+            ctx.Check(page.ReferencePoints.Count > 10, "the reference line should be drawn");
             ctx.Note("reference deviation=" + page.ReferenceDeviationText);
         }, StepOptions.Shot);
+
+        await h.StepAsync("Points", "ImportPointTableAsANewSegment", async ctx =>
+        {
+            if (generated is null)
+            {
+                ctx.Skip("no generated CSV to import");
+            }
+
+            int count = page.Segments.Count;
+            page.SelectedSegment = page.Segments.Last();
+            h.Interaction.OpenAnswers.Enqueue(generated!);
+            await h.PressKeyAsync(ctx, "Fn_ImportPoints");
+            await h.SettleAsync(200);
+            ctx.Check(page.StatusResourceKey == "Profile_PointsImportedIntoSegment", "status should say imported, is " + page.StatusResourceKey);
+            ctx.Check(page.Segments.Count == count + 1 && page.IsPointTableSelected && page.PointRows.Count > 10,
+                "the table should arrive as a new point-table segment");
+            page.DiscardChanges();
+            await h.SettleAsync();
+            ctx.Check(page.Segments.Count == count, "discard should drop the imported segment");
+        });
 
         await h.StepAsync("Points", "ImportGarbageRefused", async ctx =>
         {
@@ -255,6 +402,18 @@ internal sealed class ProfileSuite : ISelfTestSuite
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
+
+    private static string Issues(ProfileViewModel page) => string.Join(" | ", page.Issues.Select(i => i.Text));
+
+    private static async Task RemoveAllAsync(SelfTestHarness h, ProfileViewModel page)
+    {
+        page.IsSymmetric = false;
+        while (page.Segments.Count > 0)
+        {
+            page.SelectedSegment = page.Segments.Last();
+            await h.RunAsync(page.RemoveSegmentCommand);
+        }
+    }
 }
 
 /// <summary>工序编程：新作业、每种工序、程序步骤开关、校验、轧辊数据、程序库、从辊形库选辊形。离线时验证下发被拒。</summary>

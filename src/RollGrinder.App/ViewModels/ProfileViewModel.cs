@@ -23,41 +23,56 @@ using RollGrinder.Services.Alarms;
 
 namespace RollGrinder.App.ViewModels;
 
-/// <summary>曲线段列表里的一行。</summary>
+/// <summary>段表里的一行：类型、起点 Z、段长、终点 Z。</summary>
 public sealed partial class SegmentRowViewModel : ObservableObject
 {
-    public SegmentRowViewModel(RollProfileSegment segment, string displayName, string purposeText)
+    public SegmentRowViewModel(int order, string displayName)
     {
-        this.segment = segment;
+        Order = order;
+        OrderText = order.ToString(CultureInfo.InvariantCulture);
         DisplayName = displayName;
-        this.purposeText = purposeText;
     }
 
-    /// <summary>
-    /// 这一行对应的段。改区间、改参数时就地换掉，不重建整张列表——
-    /// 重建会把正在输入的那个框换掉，打一个字光标就丢一次。
-    /// </summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Order), nameof(OrderText))]
-    private RollProfileSegment segment;
+    /// <summary>第几段（从 1 起，从头架往尾架数）。</summary>
+    public int Order { get; }
 
-    public int Order => Segment.Order;
+    public string OrderText { get; }
 
-    public string OrderText => Segment.Order.ToString(CultureInfo.InvariantCulture);
-
-    /// <summary>曲线类型名，例如 Polynom / Taper。</summary>
+    /// <summary>曲线类型名。</summary>
     public string DisplayName { get; }
 
-    /// <summary>区间与用途，例如 "0 – 150 mm · 头架端锥"。</summary>
+    /// <summary>起点 Z（mm）。改了前面某段的长度，这里就地跟着变，不重建列表。</summary>
     [ObservableProperty]
-    private string purposeText;
+    private string startText = string.Empty;
+
+    [ObservableProperty]
+    private string lengthText = string.Empty;
+
+    [ObservableProperty]
+    private string endText = string.Empty;
 
     [ObservableProperty]
     private bool isSelected;
 
-    /// <summary>这一段有错误（出界、参数不成立）：行尾一条红标。</summary>
+    /// <summary>这一段有错误（出界、参数不成立、段界跳变）：行尾一条红标。</summary>
     [ObservableProperty]
     private bool hasError;
+}
+
+/// <summary>点表里的一行（段内 Z mm、直径偏差 µm），界面上直接改文字。</summary>
+public sealed partial class PointRowViewModel : ObservableObject
+{
+    public PointRowViewModel(string zText, string valueText)
+    {
+        this.zText = zText;
+        this.valueText = valueText;
+    }
+
+    [ObservableProperty]
+    private string zText;
+
+    [ObservableProperty]
+    private string valueText;
 }
 
 /// <summary>问题列表里的一行。</summary>
@@ -66,39 +81,58 @@ public sealed partial class SegmentRowViewModel : ObservableObject
 public sealed record ProfileIssueRowViewModel(string Text, bool IsError);
 
 /// <summary>
-/// 辊形编辑。版面见 docs/design/B-Profile-辊形编辑.html：
-/// 左边是可叠加的曲线段，中上是预览，中下是该段参数（由 Schema 自动生成，新增类型不改界面）。
+/// 辊形编辑（阶段 1）。Z 原点是磨削起点（头架侧辊身端面），向尾架为正。
+///
+/// 段表只填第一段的起点 Z 和每段的长度，终点自动算、段与段首尾相接，不会重叠或断开。
+/// 勾"对称"只编头架端的段，尾架端镜像生成；落库的是展开后的整条辊形，不存"对称"。
+/// 每改一次就校验：段长合计对不上设计长度、段界跳变、参数越界、点表不成立都是错误，有错不能保存。
+/// 打开旧的叠加辊形时，按原来的合成曲线转成一段点表，形状不变。
 /// </summary>
 public sealed partial class ProfileViewModel : PageViewModelBase
 {
     /// <summary>中高轴（补偿执行轴）在 machine.json 里的 role。</summary>
     public const string CrownAxisRole = "RollProfile";
 
+    /// <summary>辊形已经排满设计长度时，新插一段的默认长度（mm）。</summary>
+    public const double DefaultInsertLengthMm = 100.0;
+
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly MachineDescription machine;
     private readonly HmiSettings settings;
+    private readonly IRollProfileRepository library;
+    private readonly AsyncRelayCommand saveKeyCommand;
 
     /// <summary>编辑用的参考几何：辊身长度就是辊形的设计长度，直径只用来算曲线，取机床最小直径。</summary>
     private RollGeometry geometry;
 
-    private double committedBodyLengthMm;
+    /// <summary>第一段的起点 Z（mm）。</summary>
+    private double startZMm;
 
-    private readonly IRollProfileRepository library;
+    /// <summary>
+    /// 段表上的段：不对称时是整条辊形；对称时只是头架端的那些（可带一段跨中点的中间段）。
+    /// 这是编辑的依据，<see cref="composite"/> 由它推出来。
+    /// </summary>
+    private readonly List<SequentialSegment> segments = new();
 
-    /// <summary>正在编辑的辊形；一段都没有时为 null（允许删到空，空的不能保存）。</summary>
+    /// <summary>整条辊形（预览、校验、存库都用它）；一段都没有或对称展开不了时为 null。</summary>
     private CompositeRollProfile? composite;
 
-    /// <summary>区间框或参数格里正在输入、还不成立的内容（资源键）；成立了就清掉。</summary>
+    /// <summary>对称展开不了的原因。</summary>
+    private SymmetryResult? symmetryResult;
+
+    /// <summary>框里正在输入、还不成立的内容（资源键）；成立了就清掉。</summary>
     private string? pendingInputErrorKey;
 
     /// <summary>设计长度框里的内容不成立。</summary>
     private bool bodyLengthInvalid;
 
-    /// <summary>编辑参数行时不要反过来又触发一次回写，否则 Rebuild 里的重建会递归。</summary>
+    /// <summary>程序里改输入框时不要反过来又触发一次回写。</summary>
     private bool suppressWriteBack;
 
-    /// <summary>上一次"干净"的辊形，供"放弃修改"回退。</summary>
+    /// <summary>上一次"干净"的辊形与设计长度，供"放弃修改"回退。</summary>
     private CompositeRollProfile? committedComposite;
+
+    private double committedBodyLengthMm;
 
     public ProfileViewModel(
         RollProfileTypeRegistry profileTypes,
@@ -116,34 +150,30 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.library = library ?? throw new ArgumentNullException(nameof(library));
         NamePrompt = new NamePromptViewModel(localizer);
 
-        this.geometry = RollGeometry.FromDiameter(
-            machine.Workpiece.MinBodyLengthMm, machine.Workpiece.MinDiameterMm);
-        // 编辑器改成"起点 Z + 段长"之前，仍按阶段 0 的叠加方式编辑（阶段 1 编辑器重做时换掉）。
-        this.composite = CompositeRollProfile.Superimposed(new[]
-        {
-            RollProfileSegment.Create(1, ProfileTypeKeys.Cylindrical, 0.0, this.geometry.BodyLengthMm, ParameterSet.Empty),
-        });
-        this.committedComposite = this.composite;
-        this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+        this.geometry = RollGeometry.FromDiameter(machine.Workpiece.MinBodyLengthMm, machine.Workpiece.MinDiameterMm);
+        this.segments.Add(new SequentialSegment(ProfileTypeKeys.Cylindrical, this.geometry.BodyLengthMm, ParameterSet.Empty));
         this.bodyLengthMmText = FormatLength(this.geometry.BodyLengthMm);
 
         AvailableTypes = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
         this.selectedTypeForInsert = AvailableTypes.FirstOrDefault() ?? ProfileTypeKeys.Cylindrical;
 
-        // 有错误时"保存""另存为"变灰。插段在左栏"插入"按钮上，功能条上不再重复一个"新建曲线段"。
+        // 有错误时"保存""另存为"变灰。插段在左栏"插入"按钮上，功能条上不重复。
         this.saveKeyCommand = new AsyncRelayCommand(() => SaveAsync(CancellationToken.None), () => !HasErrors);
         SetFunctionKeys(new[]
         {
             new FunctionKeyViewModel("Fn_Save", this.saveKeyCommand, localizer, FunctionKeyKind.Primary, requiresEditable: true),
             new FunctionKeyViewModel("Fn_SaveAs", SaveAsCommand, localizer, requiresEditable: true),
             // 两个键都要选文件，对话框在视图里；这里只负责触发与收结果。
-            new FunctionKeyViewModel("Fn_ImportPoints", RequestImportPointsCommand, localizer),
+            new FunctionKeyViewModel("Fn_ImportPoints", RequestImportPointsCommand, localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_GeneratePoints", RequestGeneratePointsCommand, localizer),
             new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
             new FunctionKeyViewModel("Fn_ProfileLibrary", OpenLibraryCommand, localizer),
         });
 
-        Rebuild();
+        RecomputeComposite();
+        this.committedComposite = this.composite;
+        this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+        Rebuild(1);
     }
 
     public override PageKey Key => PageKey.Profile;
@@ -160,41 +190,54 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
     public ObservableCollection<SegmentRowViewModel> Segments { get; } = new();
 
+    /// <summary>选中段的参数格（点表那一列不在这里，在 <see cref="PointRows"/>）。</summary>
     public ObservableCollection<ParameterRowViewModel> SegmentParameters { get; } = new();
 
+    /// <summary>选中段是点表时，它的点。</summary>
+    public ObservableCollection<PointRowViewModel> PointRows { get; } = new();
+
     public ObservableCollection<string> AvailableTypes { get; }
+
+    /// <summary>当前的整条辊形；删到空或对称展开不了时为 null。给自检与视图读。</summary>
+    public CompositeRollProfile? Composite => this.composite;
+
+    // ── 预览 ──────────────────────────────────────────────────────────────────
 
     /// <summary>合成辊形（辊身坐标 mm，直径量 mm）。</summary>
     public IReadOnlyList<(double BodyPositionMm, double DiameterMm)> ComposedPoints { get; private set; } =
         Array.Empty<(double, double)>();
 
-    /// <summary>仅主辊形（第 1 段），作为对照线。</summary>
-    public IReadOnlyList<(double BodyPositionMm, double DiameterMm)> MainPoints { get; private set; } =
+    /// <summary>选中段那一截（加粗高亮）。</summary>
+    public IReadOnlyList<(double BodyPositionMm, double DiameterMm)> SelectedSegmentPoints { get; private set; } =
+        Array.Empty<(double, double)>();
+
+    /// <summary>段界的 Z（虚线）。</summary>
+    public IReadOnlyList<double> BoundaryZs { get; private set; } = Array.Empty<double>();
+
+    /// <summary>选中段是点表时，表里的原始点（辊身坐标 mm，直径量 mm），和插值曲线画在一起。</summary>
+    public IReadOnlyList<(double BodyPositionMm, double DiameterMm)> TablePoints { get; private set; } =
+        Array.Empty<(double, double)>();
+
+    /// <summary>导进来的对照线（辊身坐标 mm，直径量 mm）。只作对照，不改辊形。</summary>
+    public IReadOnlyList<(double BodyPositionMm, double DiameterMm)> ReferencePoints { get; private set; } =
         Array.Empty<(double, double)>();
 
     public event EventHandler? PreviewChanged;
 
-    /// <summary>
-    /// 导进来的对照点列（辊身坐标 mm，直径量 mm）。
-    ///
-    /// 只作**对照**，不改这条辊形：上一版辊形、现场量出来的曲线、别人给的
-    /// 一张表，拿进来跟当前设计叠着看。要改还是去改曲线段的参数——
-    /// 点列一旦能直接变成辊形，这条辊形就再也说不清是按什么算出来的。
-    /// </summary>
-    public IReadOnlyList<(double BodyPositionMm, double DiameterMm)> ReferencePoints { get; private set; } =
-        Array.Empty<(double, double)>();
-
-    /// <summary>界面要导入点列时触发；路径由视图选。</summary>
+    /// <summary>界面要导入点表（进点表段）时触发；路径由视图选。</summary>
     public event EventHandler? ImportPointsRequested;
+
+    /// <summary>界面要导入对照线时触发；路径由视图选。</summary>
+    public event EventHandler? ImportReferenceRequested;
 
     /// <summary>界面要导出点列时触发；路径由视图选。</summary>
     public event EventHandler? GeneratePointsRequested;
 
-    /// <summary>对照点列与当前设计差得最多的地方（直径量 µm）；没导入时为空。</summary>
+    /// <summary>对照线与当前设计差得最多的地方（直径量 µm）；没导入时为空。</summary>
     [ObservableProperty]
     private string referenceDeviationText = string.Empty;
 
-    private readonly AsyncRelayCommand saveKeyCommand;
+    // ── 校验 ──────────────────────────────────────────────────────────────────
 
     /// <summary>每改一次就重新算的问题列表：错误在前，提示在后。</summary>
     public ObservableCollection<ProfileIssueRowViewModel> Issues { get; } = new();
@@ -210,7 +253,27 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     [ObservableProperty]
     private string issueSummaryText = string.Empty;
 
-    /// <summary>设计长度（mm）。辊形的区间都在 0 到它之间。</summary>
+    [ObservableProperty]
+    private string maxChordErrorText = "--";
+
+    [ObservableProperty]
+    private string segmentCountText = "--";
+
+    [ObservableProperty]
+    private string compensationAxisText = "--";
+
+    /// <summary>最近一个动作的结果提示。</summary>
+    [ObservableProperty]
+    private string statusResourceKey = string.Empty;
+
+    /// <summary>提示文字。资源键为空时不显示。</summary>
+    public string StatusText => string.IsNullOrEmpty(StatusResourceKey) ? string.Empty : Localizer[StatusResourceKey];
+
+    partial void OnStatusResourceKeyChanged(string value) => OnPropertyChanged(nameof(StatusText));
+
+    // ── 设计长度与对称 ────────────────────────────────────────────────────────
+
+    /// <summary>设计长度（mm）。段长合计要正好等于它。</summary>
     [ObservableProperty]
     private string bodyLengthMmText;
 
@@ -240,36 +303,480 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
         this.geometry = RollGeometry.FromDiameter(lengthMm, limits.MinDiameterMm);
         MarkDirty();
+        RecomputeComposite();
         Rebuild(SelectedSegment?.Order);
     }
+
+    /// <summary>
+    /// 对称编辑：只编头架端的段，尾架端镜像生成。只是编辑辅助——落库的是展开后的整条辊形。
+    /// </summary>
+    [ObservableProperty]
+    private bool isSymmetric;
+
+    /// <summary>对称开关能不能按：含 CVC 这类本身不对称的段时置灰（已经开着的照样能关）。</summary>
+    [ObservableProperty]
+    private bool canToggleSymmetry = true;
+
+    partial void OnIsSymmetricChanged(bool value)
+    {
+        if (this.suppressWriteBack)
+        {
+            return;
+        }
+
+        if (value)
+        {
+            // 打开对称：现有辊形得本身左右对称，才折得回头架端那一半；空的直接开始编。
+            IReadOnlyList<SequentialSegment>? half = this.composite is null
+                ? Array.Empty<SequentialSegment>()
+                : ProfileSymmetry.TryFold(this.composite, this.geometry.BodyLengthMm, this.profileTypes);
+            if (half is null)
+            {
+                StatusResourceKey = "Profile_SymmetryNotFoldable";
+                SetSymmetricSilently(false);
+                return;
+            }
+
+            ReplaceSegments(half);
+        }
+        else if (this.composite is not null)
+        {
+            // 关掉对称：展开后的整条辊形就是要继续编的段，两端从此各自独立。
+            ReplaceSegments(this.composite.SequentialSegments());
+        }
+
+        StatusResourceKey = string.Empty;
+        RecomputeComposite();
+        Rebuild(1);
+    }
+
+    private void SetSymmetricSilently(bool value)
+    {
+        this.suppressWriteBack = true;
+        try
+        {
+            IsSymmetric = value;
+        }
+        finally
+        {
+            this.suppressWriteBack = false;
+        }
+    }
+
+    private void ReplaceSegments(IEnumerable<SequentialSegment> replacement)
+    {
+        List<SequentialSegment> list = replacement.ToList();
+        this.segments.Clear();
+        this.segments.AddRange(list);
+    }
+
+    // ── 选中段 ────────────────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    private SegmentRowViewModel? selectedSegment;
+
+    [ObservableProperty]
+    private string selectedTypeForInsert;
+
+    [ObservableProperty]
+    private string segmentParametersTitle = string.Empty;
+
+    /// <summary>选中段的起点 Z。只有第一段能填，其余段的起点是上一段的终点。</summary>
+    [ObservableProperty]
+    private string segmentStartText = string.Empty;
+
+    [ObservableProperty]
+    private bool isFirstSegmentSelected;
+
+    /// <summary>选中段的长度（mm）。</summary>
+    [ObservableProperty]
+    private string segmentLengthText = string.Empty;
+
+    /// <summary>选中段是否沿段中点镜像——头架端的锥度就是尾架端锥度的镜像。</summary>
+    [ObservableProperty]
+    private bool segmentIsMirrored;
+
+    /// <summary>选中段是点表：参数区显示点表格子。</summary>
+    [ObservableProperty]
+    private bool isPointTableSelected;
+
+    [ObservableProperty]
+    private PointRowViewModel? selectedPoint;
+
+    partial void OnSegmentStartTextChanged(string value) => WriteBackSelectedSegment();
+
+    partial void OnSegmentLengthTextChanged(string value) => WriteBackSelectedSegment();
+
+    partial void OnSegmentIsMirroredChanged(bool value) => WriteBackSelectedSegment();
+
+    partial void OnSelectedSegmentChanged(SegmentRowViewModel? value)
+    {
+        foreach (SegmentRowViewModel row in Segments)
+        {
+            row.IsSelected = ReferenceEquals(row, value);
+        }
+
+        // 换了一段，上一段框里没打完的内容作废，它的输入错误也一起清掉。
+        this.pendingInputErrorKey = null;
+
+        SequentialSegment? segment = value is null ? null : this.segments[value.Order - 1];
+        this.suppressWriteBack = true;
+        try
+        {
+            IsFirstSegmentSelected = value?.Order == 1;
+            SegmentStartText = value?.StartText ?? string.Empty;
+            SegmentLengthText = segment is null ? string.Empty : FormatLength(segment.LengthMm);
+            SegmentIsMirrored = segment?.IsMirrored ?? false;
+        }
+        finally
+        {
+            this.suppressWriteBack = false;
+        }
+
+        ShowSegmentParameters(segment);
+        RefreshSelectionPreview();
+        RefreshIssues();
+    }
+
+    /// <summary>
+    /// 把左下的起点 / 长度 / 镜像、右下的参数格和点表写回选中的那一段。
+    /// 只就地更新段表各行的 Z 与预览，不重建列表和参数格——焦点留在正在输入的框里。
+    /// </summary>
+    private void WriteBackSelectedSegment()
+    {
+        if (this.suppressWriteBack || SelectedSegment is null)
+        {
+            return;
+        }
+
+        int index = SelectedSegment.Order - 1;
+        SequentialSegment current = this.segments[index];
+
+        if (!TryParseDouble(SegmentLengthText, out double lengthMm) || lengthMm <= 0.0
+            || (index == 0 && (!TryParseDouble(SegmentStartText, out double start) || start < 0.0)))
+        {
+            ShowInputError("Profile_Issue_InputLength");
+            return;
+        }
+
+        var pairs = new List<KeyValuePair<string, ParameterValue>>();
+        foreach (ParameterRowViewModel row in SegmentParameters)
+        {
+            ParameterValue? value = row.ToParameterValue();
+            if (value is null)
+            {
+                ShowInputError("Profile_Issue_InputParameter");
+                return;
+            }
+
+            pairs.Add(new KeyValuePair<string, ParameterValue>(row.Key, value));
+        }
+
+        if (IsPointTableSelected)
+        {
+            IReadOnlyList<TablePoint>? points = ParsePointRows();
+            if (points is null)
+            {
+                ShowInputError("Profile_Issue_InputPoints");
+                return;
+            }
+
+            pairs.Add(new KeyValuePair<string, ParameterValue>(PointTableProfileType.PointsKey, ParameterValue.FromPoints(points)));
+        }
+
+        if (index == 0)
+        {
+            TryParseDouble(SegmentStartText, out this.startZMm);
+        }
+
+        this.pendingInputErrorKey = null;
+        this.segments[index] = current with
+        {
+            LengthMm = lengthMm,
+            Parameters = new ParameterSet(pairs),
+            IsMirrored = SegmentIsMirrored,
+        };
+        MarkDirty();
+        RecomputeComposite();
+        RefreshRowPositions();
+        RefreshPreview();
+        RefreshValidation();
+        RefreshIssues();
+    }
+
+    private IReadOnlyList<TablePoint>? ParsePointRows()
+    {
+        var points = new List<TablePoint>(PointRows.Count);
+        foreach (PointRowViewModel row in PointRows)
+        {
+            if (!TryParseDouble(row.ZText, out double z) || !TryParseDouble(row.ValueText, out double value))
+            {
+                return null;
+            }
+
+            points.Add(new TablePoint(z, value));
+        }
+
+        return points;
+    }
+
+    private void ShowInputError(string resourceKey)
+    {
+        this.pendingInputErrorKey = resourceKey;
+        RefreshIssues();
+    }
+
+    private static bool TryParseDouble(string text, out double value) =>
+        double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value)
+        || double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
 
     private static string FormatLength(double lengthMm) =>
         lengthMm.ToString("0.###", CultureInfo.CurrentCulture);
 
-    /// <summary>当前的段；删到空时是空表。</summary>
-    private IReadOnlyList<RollProfileSegment> CurrentSegments =>
-        this.composite?.Segments ?? Array.Empty<RollProfileSegment>();
+    // ── 段操作 ────────────────────────────────────────────────────────────────
 
-    /// <summary>最近一个动作的结果提示。</summary>
-    [ObservableProperty]
-    private string statusResourceKey = string.Empty;
+    /// <summary>
+    /// 在选中段之后插一段所选类型。还没排满设计长度（对称时是中点）就补齐剩下的长度；
+    /// 已经排满了就先给 <see cref="DefaultInsertLengthMm"/>，校验会提示段长合计超了，由人去分。
+    /// </summary>
+    [RelayCommand]
+    private void InsertSegment()
+    {
+        IRollProfileType profileType = this.profileTypes.Get(SelectedTypeForInsert);
+        if (IsSymmetric && !profileType.SupportsSymmetricEditing)
+        {
+            StatusResourceKey = "Profile_SymmetryUnsupportedType";
+            return;
+        }
 
-    /// <summary>提示文字。资源键为空时不显示。</summary>
-    public string StatusText => string.IsNullOrEmpty(StatusResourceKey) ? string.Empty : Localizer[StatusResourceKey];
+        double target = IsSymmetric ? this.geometry.BodyLengthMm / 2.0 : this.geometry.BodyLengthMm;
+        double remaining = target - (this.startZMm + this.segments.Sum(segment => segment.LengthMm));
+        double lengthMm = remaining > ProfileLayoutCheck.ToleranceMm ? remaining : DefaultInsertLengthMm;
 
-    partial void OnStatusResourceKeyChanged(string value) => OnPropertyChanged(nameof(StatusText));
+        int position = SelectedSegment?.Order ?? this.segments.Count;
+        this.segments.Insert(position, NewSegment(profileType, lengthMm, isMirrored: false));
+        StatusResourceKey = string.Empty;
+        MarkDirty();
+        RecomputeComposite();
+        Rebuild(position + 1);
+    }
+
+    /// <summary>复制选中段，接在它后面。</summary>
+    [RelayCommand]
+    private void CopySegment()
+    {
+        if (SelectedSegment is null)
+        {
+            return;
+        }
+
+        int position = SelectedSegment.Order;
+        this.segments.Insert(position, this.segments[position - 1]);
+        MarkDirty();
+        RecomputeComposite();
+        Rebuild(position + 1);
+    }
+
+    /// <summary>把选中段换成所选类型，长度与镜像不变，参数回到新类型的默认值。</summary>
+    [RelayCommand]
+    private void ChangeSegmentType()
+    {
+        if (SelectedSegment is null)
+        {
+            return;
+        }
+
+        IRollProfileType profileType = this.profileTypes.Get(SelectedTypeForInsert);
+        if (IsSymmetric && !profileType.SupportsSymmetricEditing)
+        {
+            StatusResourceKey = "Profile_SymmetryUnsupportedType";
+            return;
+        }
+
+        int index = SelectedSegment.Order - 1;
+        SequentialSegment current = this.segments[index];
+        this.segments[index] = NewSegment(profileType, current.LengthMm, current.IsMirrored);
+        MarkDirty();
+        RecomputeComposite();
+        Rebuild(index + 1);
+    }
+
+    /// <summary>删掉选中的段，后面的段往前接上。可以删到一段不剩——空辊形不能保存。</summary>
+    [RelayCommand]
+    private void RemoveSegment()
+    {
+        if (SelectedSegment is null)
+        {
+            return;
+        }
+
+        int order = SelectedSegment.Order;
+        this.segments.RemoveAt(order - 1);
+        MarkDirty();
+        RecomputeComposite();
+
+        // 选中留在原位置（删的是最后一段就落到新的最后一段），连着按"删除"能一段段删。
+        Rebuild(Math.Min(order, this.segments.Count));
+    }
+
+    [RelayCommand]
+    private void MoveSegmentUp()
+    {
+        if (SelectedSegment is null || SelectedSegment.Order <= 1)
+        {
+            return;
+        }
+
+        int index = SelectedSegment.Order - 1;
+        (this.segments[index - 1], this.segments[index]) = (this.segments[index], this.segments[index - 1]);
+        MarkDirty();
+        RecomputeComposite();
+
+        // 选中跟着这一段走，连按几次就能一直往上挪。
+        Rebuild(index);
+    }
+
+    [RelayCommand]
+    private void MoveSegmentDown()
+    {
+        if (SelectedSegment is null || SelectedSegment.Order >= this.segments.Count)
+        {
+            return;
+        }
+
+        int index = SelectedSegment.Order - 1;
+        (this.segments[index + 1], this.segments[index]) = (this.segments[index], this.segments[index + 1]);
+        MarkDirty();
+        RecomputeComposite();
+        Rebuild(index + 2);
+    }
+
+    [RelayCommand]
+    private void Validate() => Rebuild(SelectedSegment?.Order);
+
+    private static SequentialSegment NewSegment(IRollProfileType profileType, double lengthMm, bool isMirrored) =>
+        new(
+            profileType.Key,
+            lengthMm,
+            profileType.Key == ProfileTypeKeys.PointTable
+                ? PointTableProfileType.DefaultsFor(lengthMm)
+                : profileType.Schema.CreateDefaults(),
+            isMirrored);
+
+    // ── 点表 ──────────────────────────────────────────────────────────────────
+
+    /// <summary>在选中点之后加一个点：落在它和下一个点的正中，值取两者平均；选中的是最后一个点就往后接。</summary>
+    [RelayCommand]
+    private void AddPoint()
+    {
+        if (!IsPointTableSelected)
+        {
+            return;
+        }
+
+        int index = SelectedPoint is null ? PointRows.Count - 1 : PointRows.IndexOf(SelectedPoint);
+        IReadOnlyList<TablePoint>? points = ParsePointRows();
+        TablePoint added;
+        if (points is null || points.Count == 0)
+        {
+            added = new TablePoint(0.0, 0.0);
+            index = PointRows.Count - 1;
+        }
+        else if (index >= 0 && index < points.Count - 1)
+        {
+            added = new TablePoint((points[index].X + points[index + 1].X) / 2.0, (points[index].Y + points[index + 1].Y) / 2.0);
+        }
+        else
+        {
+            index = points.Count - 1;
+            added = new TablePoint(points[^1].X + 10.0, points[^1].Y);
+        }
+
+        PointRowViewModel row = NewPointRow(added);
+        PointRows.Insert(index + 1, row);
+        SelectedPoint = row;
+        WriteBackSelectedSegment();
+    }
+
+    [RelayCommand]
+    private void RemovePoint()
+    {
+        if (!IsPointTableSelected || SelectedPoint is null)
+        {
+            return;
+        }
+
+        int index = PointRows.IndexOf(SelectedPoint);
+        PointRows.Remove(SelectedPoint);
+        SelectedPoint = PointRows.Count == 0 ? null : PointRows[Math.Min(index, PointRows.Count - 1)];
+        WriteBackSelectedSegment();
+    }
+
+    private PointRowViewModel NewPointRow(TablePoint point)
+    {
+        var row = new PointRowViewModel(
+            point.X.ToString("0.###", CultureInfo.CurrentCulture),
+            point.Y.ToString("0.###", CultureInfo.CurrentCulture));
+        row.PropertyChanged += (_, _) => WriteBackSelectedSegment();
+        return row;
+    }
 
     [RelayCommand]
     private void RequestImportPoints() => ImportPointsRequested?.Invoke(this, EventArgs.Empty);
 
     [RelayCommand]
+    private void RequestImportReference() => ImportReferenceRequested?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
     private void RequestGeneratePoints() => GeneratePointsRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>
-    /// 按当前合成曲线生成点列并写成 CSV。
-    ///
-    /// 点数就是下发用的采样点数——生成出来的这一份和真正下发给 NC 的
-    /// 是同一条线，不是另算一遍。
+    /// 导入点表（CSV：Z mm, 直径偏差 µm）。选中的是点表段就换掉它的点；否则在选中段之后插一段点表。
+    /// 点挪到从 Z = 0 起（导出的表常是整根辊身坐标），段长取点的跨度。
+    /// </summary>
+    public Task ImportPointsAsync(string filePath, CancellationToken cancellationToken) =>
+        RunGuardedAsync(async token =>
+        {
+            IReadOnlyList<TablePoint> points = PointTableCsv.StartAtZero(
+                PointTableCsv.Parse(await File.ReadAllLinesAsync(filePath, token).ConfigureAwait(true)));
+            if (points.Count < PointTableProfileType.MinimumPoints || points[^1].X <= 0.0)
+            {
+                // 一两个点连不成一条线；读错了文件该说出来，而不是画半条。
+                StatusResourceKey = "Profile_PointsNotUsable";
+                return;
+            }
+
+            double lengthMm = points[^1].X;
+            int index;
+            if (SelectedSegment is not null && IsPointTableSelected)
+            {
+                index = SelectedSegment.Order - 1;
+                SequentialSegment current = this.segments[index];
+                this.segments[index] = current with
+                {
+                    LengthMm = lengthMm,
+                    Parameters = current.Parameters.With(PointTableProfileType.PointsKey, ParameterValue.FromPoints(points)),
+                };
+            }
+            else
+            {
+                index = SelectedSegment?.Order ?? this.segments.Count;
+                this.segments.Insert(index, new SequentialSegment(
+                    ProfileTypeKeys.PointTable,
+                    lengthMm,
+                    PointTableProfileType.DefaultsFor(lengthMm)
+                        .With(PointTableProfileType.PointsKey, ParameterValue.FromPoints(points))));
+            }
+
+            StatusResourceKey = "Profile_PointsImportedIntoSegment";
+            MarkDirty();
+            RecomputeComposite();
+            Rebuild(index + 1);
+        }, cancellationToken);
+
+    /// <summary>
+    /// 按当前合成曲线生成点列并写成 CSV。点数就是下发用的采样点数——
+    /// 生成出来的这一份和真正下发给 NC 的是同一条线，不是另算一遍。
     /// </summary>
     public Task GeneratePointsAsync(string filePath, CancellationToken cancellationToken) =>
         RunGuardedAsync(async token =>
@@ -289,56 +796,29 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             StatusResourceKey = "Profile_PointsGenerated";
         }, cancellationToken);
 
-    /// <summary>读一份 CSV 点列作为对照线。</summary>
-    public Task ImportPointsAsync(string filePath, CancellationToken cancellationToken) =>
+    /// <summary>
+    /// 读一份 CSV 点列作为对照线：上一版辊形、现场量出来的曲线，拿进来和当前设计叠着看。
+    /// 只作对照，不改辊形——要把表变成辊形用"导入点表"。
+    /// </summary>
+    public Task ImportReferenceAsync(string filePath, CancellationToken cancellationToken) =>
         RunGuardedAsync(async token =>
         {
-            var points = new List<(double, double)>();
-            foreach (string line in await File.ReadAllLinesAsync(filePath, token).ConfigureAwait(true))
-            {
-                if (TryParsePoint(line, out (double, double) point))
-                {
-                    points.Add(point);
-                }
-            }
-
+            IReadOnlyList<TablePoint> points =
+                PointTableCsv.Parse(await File.ReadAllLinesAsync(filePath, token).ConfigureAwait(true));
             if (points.Count < 2)
             {
-                // 一两个点连不成一条线；读错了文件该说出来，而不是画半条。
                 StatusResourceKey = "Profile_PointsNotUsable";
                 return;
             }
 
-            points.Sort((left, right) => left.Item1.CompareTo(right.Item1));
-            ReferencePoints = points;
+            ReferencePoints = points
+                .OrderBy(point => point.X)
+                .Select(point => (point.X, UnitConversion.MicrometerToMm(point.Y)))
+                .ToArray();
             RefreshReferenceDeviation();
             StatusResourceKey = "Profile_PointsImported";
             PreviewChanged?.Invoke(this, EventArgs.Empty);
         }, cancellationToken);
-
-    /// <summary>
-    /// 一行 CSV → 一个点。表头与空行跳过；解析不了的行也跳过——
-    /// 现场的表常常带着注释与单位行，为这个整份不读太不划算。
-    /// </summary>
-    private static bool TryParsePoint(string line, out (double BodyPositionMm, double DiameterMm) point)
-    {
-        point = default;
-        if (string.IsNullOrWhiteSpace(line))
-        {
-            return false;
-        }
-
-        string[] parts = line.Split(',', ';', '\t');
-        if (parts.Length < 2
-            || !double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double positionMm)
-            || !double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double micrometer))
-        {
-            return false;
-        }
-
-        point = (positionMm, UnitConversion.MicrometerToMm(micrometer));
-        return true;
-    }
 
     /// <summary>对照线与当前设计差得最多的地方。看的就是这个数。</summary>
     private void RefreshReferenceDeviation()
@@ -349,255 +829,10 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             return;
         }
 
-        double worst = 0.0;
-        foreach ((double positionMm, double diameterMm) in ReferencePoints)
-        {
-            worst = Math.Max(worst, Math.Abs(diameterMm - InterpolateComposed(positionMm)));
-        }
-
-        ReferenceDeviationText = Localizer.Format(
-            "Profile_ReferenceDeviationFormat", UnitConversion.MmToMicrometer(worst));
+        var composed = new RollProfile(ComposedPoints.Select(point => new ProfilePoint(point.BodyPositionMm, point.DiameterMm)));
+        double worst = ReferencePoints.Max(point => Math.Abs(point.DiameterMm - composed.RadiusOffsetAtMm(point.BodyPositionMm)));
+        ReferenceDeviationText = Localizer.Format("Profile_ReferenceDeviationFormat", UnitConversion.MmToMicrometer(worst));
     }
-
-    /// <summary>当前设计在某个辊身位置上的值（直径量 mm），线性插值。</summary>
-    private double InterpolateComposed(double bodyPositionMm)
-    {
-        IReadOnlyList<(double Position, double Diameter)> points = ComposedPoints;
-        if (bodyPositionMm <= points[0].Position)
-        {
-            return points[0].Diameter;
-        }
-
-        for (int i = 1; i < points.Count; i++)
-        {
-            if (bodyPositionMm > points[i].Position)
-            {
-                continue;
-            }
-
-            double span = points[i].Position - points[i - 1].Position;
-            double t = span <= 0.0 ? 0.0 : (bodyPositionMm - points[i - 1].Position) / span;
-            return points[i - 1].Diameter + (t * (points[i].Diameter - points[i - 1].Diameter));
-        }
-
-        return points[^1].Diameter;
-    }
-
-    [ObservableProperty]
-    private SegmentRowViewModel? selectedSegment;
-
-    [ObservableProperty]
-    private string selectedTypeForInsert;
-
-    [ObservableProperty]
-    private string segmentParametersTitle = string.Empty;
-
-    [ObservableProperty]
-    private string maxChordErrorText = "--";
-
-    [ObservableProperty]
-    private string segmentCountText = "--";
-
-    [ObservableProperty]
-    private string taperAlignmentText = "--";
-
-    [ObservableProperty]
-    private string compensationAxisText = "--";
-
-    partial void OnSelectedSegmentChanged(SegmentRowViewModel? value)
-    {
-        foreach (SegmentRowViewModel row in Segments)
-        {
-            row.IsSelected = ReferenceEquals(row, value);
-        }
-
-        // 换了一段，上一段框里没打完的内容作废，它的输入错误也一起清掉。
-        this.pendingInputErrorKey = null;
-
-        this.suppressWriteBack = true;
-        try
-        {
-            SegmentFromMmText = value is null
-                ? string.Empty
-                : value.Segment.FromMm.ToString("F1", CultureInfo.CurrentCulture);
-            SegmentToMmText = value is null
-                ? string.Empty
-                : value.Segment.ToMm.ToString("F1", CultureInfo.CurrentCulture);
-            SegmentIsMirrored = value?.Segment.IsMirrored ?? false;
-        }
-        finally
-        {
-            this.suppressWriteBack = false;
-        }
-
-        ShowSegmentParameters(value);
-
-        // 上一段没打完的输入作废了，问题列表跟着更新；新选中段的越界参数就地标红。
-        RefreshIssues();
-    }
-
-    /// <summary>选中段的区间起点（辊身坐标 mm）。</summary>
-    [ObservableProperty]
-    private string segmentFromMmText = string.Empty;
-
-    /// <summary>选中段的区间终点（辊身坐标 mm）。</summary>
-    [ObservableProperty]
-    private string segmentToMmText = string.Empty;
-
-    /// <summary>选中段是否沿区间中点镜像——头架端那一段倒角就是尾架端那一段的镜像。</summary>
-    [ObservableProperty]
-    private bool segmentIsMirrored;
-
-    partial void OnSegmentFromMmTextChanged(string value) => WriteBackSelectedSegment();
-
-    partial void OnSegmentToMmTextChanged(string value) => WriteBackSelectedSegment();
-
-    partial void OnSegmentIsMirroredChanged(bool value) => WriteBackSelectedSegment();
-
-    /// <summary>
-    /// 把右侧参数格与区间框里的内容写回选中的那一段。
-    ///
-    /// 在这之前参数格是**只读的假象**：改了凸度，预览、校验、下发全都当没看见。
-    /// </summary>
-    private void WriteBackSelectedSegment()
-    {
-        if (this.suppressWriteBack || SelectedSegment is null)
-        {
-            return;
-        }
-
-        RollProfileSegment current = SelectedSegment.Segment;
-
-        if (!TryParseDouble(SegmentFromMmText, out double fromMm)
-            || !TryParseDouble(SegmentToMmText, out double toMm))
-        {
-            // 正在输入的中间态（空串、只打了一个减号）先不回写，但要说出来：边编边校验。
-            ShowInputError("Profile_Issue_InputRange");
-            return;
-        }
-
-        var pairs = new List<KeyValuePair<string, ParameterValue>>(SegmentParameters.Count);
-        foreach (ParameterRowViewModel row in SegmentParameters)
-        {
-            ParameterValue? value = row.ToParameterValue();
-            if (value is null)
-            {
-                // 这一格现在填的东西还不成立，等它填对了再回写。
-                ShowInputError("Profile_Issue_InputParameter");
-                return;
-            }
-
-            pairs.Add(new KeyValuePair<string, ParameterValue>(row.Key, value));
-        }
-
-        RollProfileSegment updated;
-        try
-        {
-            updated = RollProfileSegment.Create(
-                current.Order,
-                current.ProfileTypeKey,
-                fromMm,
-                toMm,
-                new ParameterSet(pairs),
-                SegmentIsMirrored);
-        }
-        catch (DomainException)
-        {
-            // 区间还没填成立（终点不大于起点、起点小于 0），先不回写，问题列表里写明。
-            ShowInputError("Profile_Issue_InputRange");
-            return;
-        }
-
-        this.pendingInputErrorKey = null;
-        this.composite = this.composite!.Replace(current.Order, updated);
-        MarkDirty();
-
-        // 就地更新这一行，不重建列表与参数格：焦点留在正在输入的框里。
-        RollProfileSegment stored = this.composite.Segments[current.Order - 1];
-        SelectedSegment.Segment = stored;
-        SelectedSegment.PurposeText = RangeText(stored);
-        RefreshPreview();
-        RefreshValidation();
-        RefreshIssues();
-    }
-
-    private void ShowInputError(string resourceKey)
-    {
-        this.pendingInputErrorKey = resourceKey;
-        RefreshIssues();
-    }
-
-    private static bool TryParseDouble(string text, out double value) =>
-        double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value)
-        || double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
-
-    [RelayCommand]
-    private void InsertSegment()
-    {
-        // 空辊形插进来的第一段铺满全长；再往上叠的段默认落在辊身后四分之一，现场再按需要改区间。
-        double fromMm = this.composite is null ? 0.0 : this.geometry.BodyLengthMm * 0.75;
-        IRollProfileType profileType = this.profileTypes.Get(SelectedTypeForInsert);
-        RollProfileSegment segment = RollProfileSegment.Create(
-            CurrentSegments.Count + 1,
-            profileType.Key,
-            fromMm,
-            this.geometry.BodyLengthMm,
-            profileType.Schema.CreateDefaults());
-
-        this.composite = this.composite is null ? CompositeRollProfile.Superimposed(new[] { segment }) : this.composite.Add(segment);
-        MarkDirty();
-        Rebuild(CurrentSegments.Count);
-    }
-
-    /// <summary>删掉选中的段。可以删到一段不剩——空辊形不能保存，问题列表会写明。</summary>
-    [RelayCommand]
-    private void RemoveSegment()
-    {
-        if (SelectedSegment is null || this.composite is null)
-        {
-            return;
-        }
-
-        int order = SelectedSegment.Order;
-        this.composite = this.composite.Segments.Count <= 1 ? null : this.composite.RemoveAt(order);
-        MarkDirty();
-
-        // 选中留在原位置（删的是最后一段就落到新的最后一段），连着按"删除"能一段段删。
-        Rebuild(Math.Min(order, CurrentSegments.Count));
-    }
-
-    [RelayCommand]
-    private void MoveSegmentUp()
-    {
-        if (SelectedSegment is null || this.composite is null || SelectedSegment.Order <= 1)
-        {
-            return;
-        }
-
-        int order = SelectedSegment.Order;
-        this.composite = this.composite.MoveUp(order);
-        MarkDirty();
-
-        // 选中跟着这一段走，连按几次就能一直往上挪。
-        Rebuild(order - 1);
-    }
-
-    [RelayCommand]
-    private void MoveSegmentDown()
-    {
-        if (SelectedSegment is null || this.composite is null || SelectedSegment.Order >= this.composite.Segments.Count)
-        {
-            return;
-        }
-
-        int order = SelectedSegment.Order;
-        this.composite = this.composite.MoveDown(order);
-        MarkDirty();
-        Rebuild(order + 1);
-    }
-
-    [RelayCommand]
-    private void Validate() => Rebuild(SelectedSegment?.Order);
 
     // ── 辊形库 ────────────────────────────────────────────────────────────────
     //
@@ -749,6 +984,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             DateTimeOffset now = DateTimeOffset.UtcNow;
             RollProfileDefinition? existing = await this.library.GetAsync(profileId, cancellationToken).ConfigureAwait(true);
 
+            // 存的是展开后的整条辊形：对称只是编辑辅助，不落库。
             await this.library.SaveAsync(
                 new RollProfileDefinition(
                     profileId,
@@ -801,7 +1037,10 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     [RelayCommand]
     private void CloseLibrary() => IsLibraryOpen = false;
 
-    /// <summary>把选中的那条辊形调进编辑器。当前未保存的改动会丢，所以脏的时候先拦一下。</summary>
+    /// <summary>
+    /// 把选中的那条辊形调进编辑器。旧的叠加辊形按原合成曲线转成一段点表（形状不变），
+    /// 并标成"改过"——存一次，库里这条就换成新格式。
+    /// </summary>
     [RelayCommand]
     private async Task LoadFromLibraryAsync(CancellationToken cancellationToken)
     {
@@ -819,15 +1058,20 @@ public sealed partial class ProfileViewModel : PageViewModelBase
                 return;
             }
 
-            this.composite = definition.Profile;
-            this.committedComposite = definition.Profile;
             SetBodyLength(definition.BodyLengthMm);
+            bool legacy = definition.Profile.Layout == ProfileLayout.Superimposed;
+            CompositeRollProfile loaded = legacy
+                ? LegacyProfileConversion.ToPointTable(definition.Profile, this.geometry, this.profileTypes, this.settings.ProfileSampleCount)
+                : definition.Profile;
+
+            LoadProfile(loaded);
+            this.committedComposite = loaded;
             this.committedBodyLengthMm = this.geometry.BodyLengthMm;
             ProfileId = definition.ProfileId;
             ProfileName = definition.Name;
-            IsDirty = false;
+            IsDirty = legacy;
+            StatusResourceKey = legacy ? "Profile_LegacyConverted" : string.Empty;
             IsLibraryOpen = false;
-            Rebuild(1);
         }
         catch (DataStoreException ex)
         {
@@ -868,14 +1112,13 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     private static string NewProfileId() =>
         string.Create(CultureInfo.InvariantCulture, $"P{DateTimeOffset.Now:yyyyMMddHHmmssfff}");
 
-    /// <summary>放弃修改：回到上次进入本页时的辊形，而不是清空。</summary>
+    /// <summary>放弃修改：回到上次进入本页（或上次存盘、打开）时的辊形，而不是清空。</summary>
     public override void DiscardChanges()
     {
-        this.composite = this.committedComposite;
         SetBodyLength(this.committedBodyLengthMm);
         this.pendingInputErrorKey = null;
+        LoadProfile(this.committedComposite);
         base.DiscardChanges();
-        Rebuild(1);
     }
 
     /// <summary>切到本页时记住当前状态，"放弃修改"才有东西可回。</summary>
@@ -883,6 +1126,16 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     {
         this.committedComposite = this.composite;
         this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+    }
+
+    /// <summary>把一条整辊形放进段表（对称关掉，两端各自独立）。</summary>
+    private void LoadProfile(CompositeRollProfile? profile)
+    {
+        SetSymmetricSilently(false);
+        this.startZMm = profile?.StartZMm ?? 0.0;
+        ReplaceSegments(profile?.SequentialSegments() ?? Array.Empty<SequentialSegment>());
+        RecomputeComposite();
+        Rebuild(1);
     }
 
     /// <summary>换设计长度（载入、回退），不算一次修改。</summary>
@@ -901,21 +1154,91 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
     }
 
-    private void ShowSegmentParameters(SegmentRowViewModel? row)
+    // ── 重建 ──────────────────────────────────────────────────────────────────
+
+    /// <summary>由段表推出整条辊形：对称时展开头架端，否则按起点 Z 顺接。</summary>
+    private void RecomputeComposite()
+    {
+        this.symmetryResult = null;
+        if (this.segments.Count == 0)
+        {
+            this.composite = null;
+        }
+        else if (IsSymmetric)
+        {
+            this.symmetryResult = ProfileSymmetry.Expand(this.geometry.BodyLengthMm, this.startZMm, this.segments, this.profileTypes);
+            this.composite = this.symmetryResult.Profile;
+        }
+        else
+        {
+            this.composite = CompositeRollProfile.Sequential(this.startZMm, this.segments);
+        }
+
+        CanToggleSymmetry = IsSymmetric
+            || ProfileSymmetry.IsSupported(this.segments.Select(segment => segment.ProfileTypeKey), this.profileTypes);
+        OnPropertyChanged(nameof(Composite));
+    }
+
+    /// <summary>按段表重建各行、预览与校验。</summary>
+    /// <param name="selectOrder">重建后选中第几段；null 或找不到时选第一段。</param>
+    private void Rebuild(int? selectOrder = null)
+    {
+        Segments.Clear();
+        for (int i = 0; i < this.segments.Count; i++)
+        {
+            Segments.Add(new SegmentRowViewModel(i + 1, Localizer["ProfileType_" + this.segments[i].ProfileTypeKey]));
+        }
+
+        RefreshRowPositions();
+        SelectedSegment = Segments.FirstOrDefault(row => row.Order == selectOrder) ?? Segments.FirstOrDefault();
+        RefreshPreview();
+        RefreshValidation();
+        RefreshIssues();
+    }
+
+    /// <summary>段表各行的起点、长度、终点（改了某段长度，后面各行就地跟着变）。</summary>
+    private void RefreshRowPositions()
+    {
+        double z = this.startZMm;
+        for (int i = 0; i < Segments.Count && i < this.segments.Count; i++)
+        {
+            double length = this.segments[i].LengthMm;
+            Segments[i].StartText = FormatLength(z);
+            Segments[i].LengthText = FormatLength(length);
+            Segments[i].EndText = FormatLength(z + length);
+            z += length;
+        }
+    }
+
+    private void ShowSegmentParameters(SequentialSegment? segment)
     {
         SegmentParameters.Clear();
-        if (row is null)
+        PointRows.Clear();
+        IsPointTableSelected = false;
+        if (segment is null)
         {
             SegmentParametersTitle = string.Empty;
             return;
         }
 
-        IRollProfileType profileType = this.profileTypes.Get(row.Segment.ProfileTypeKey);
+        IRollProfileType profileType = this.profileTypes.Get(segment.ProfileTypeKey);
         SegmentParametersTitle = Localizer["ProfileType_" + profileType.Key];
 
-        ParameterSet values = profileType.Schema.ApplyDefaults(row.Segment.Parameters);
+        ParameterSet values = profileType.Schema.ApplyDefaults(segment.Parameters);
         foreach (ParameterDescriptor descriptor in profileType.Schema.Descriptors)
         {
+            if (descriptor.Kind == ParameterValueKind.Points)
+            {
+                // 点表不放进参数格，单独一张表格编辑。
+                IsPointTableSelected = true;
+                foreach (TablePoint point in values.Get(descriptor.Key).Points)
+                {
+                    PointRows.Add(NewPointRow(point));
+                }
+
+                continue;
+            }
+
             var parameterRow = new ParameterRowViewModel(descriptor, values.Get(descriptor.Key), Localizer);
             parameterRow.PropertyChanged += (_, e) =>
             {
@@ -926,34 +1249,13 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             };
             SegmentParameters.Add(parameterRow);
         }
-    }
 
-    private static string RangeText(RollProfileSegment segment) =>
-        string.Create(CultureInfo.CurrentCulture, $"{segment.FromMm:F0} – {segment.ToMm:F0} mm");
-
-    /// <summary>按当前辊形重建段列表、预览与校验。</summary>
-    /// <param name="selectOrder">重建后选中第几段；null 或找不到时选第一段。</param>
-    private void Rebuild(int? selectOrder = null)
-    {
-        Segments.Clear();
-        foreach (RollProfileSegment segment in CurrentSegments)
-        {
-            Segments.Add(new SegmentRowViewModel(
-                segment,
-                Localizer["ProfileType_" + segment.ProfileTypeKey],
-                RangeText(segment)));
-        }
-
-        SelectedSegment = Segments.FirstOrDefault(row => row.Order == selectOrder) ?? Segments.FirstOrDefault();
-        RefreshPreview();
-        RefreshValidation();
-        RefreshIssues();
+        SelectedPoint = PointRows.FirstOrDefault();
     }
 
     /// <summary>
     /// 边编边校验：每改一次就把问题列表重算一遍（第一轮甲方测试 辊形 1⑥⑨）。
-    /// 错误（出界、断开、参数不成立、正在输入的内容不成立）在前，有错不能保存；
-    /// 两段重叠是提示——现在的辊形逐段叠加，主辊形上叠端部锥度就是这么用的。
+    /// 错误在前，有错不能保存。
     /// </summary>
     private void RefreshIssues()
     {
@@ -979,12 +1281,19 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
 
         var parameterErrors = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (ProfileIssue issue in ProfileLayoutCheck.Check(this.composite, this.geometry.BodyLengthMm, this.profileTypes))
+        if (this.symmetryResult is { Failure: not SymmetryFailure.None } failed)
         {
-            (issue.IsError ? errors : hints).Add(DescribeIssue(issue, parameterErrors));
-            if (issue.IsError && issue.SegmentOrder is int order)
+            errors.Add(DescribeSymmetryFailure(failed));
+        }
+        else
+        {
+            foreach (ProfileIssue issue in ProfileLayoutCheck.Check(this.composite, this.geometry.BodyLengthMm, this.profileTypes))
             {
-                badOrders.Add(order);
+                (issue.IsError ? errors : hints).Add(DescribeIssue(issue, parameterErrors));
+                if (issue.IsError && issue.SegmentOrder is int order)
+                {
+                    badOrders.Add(order);
+                }
             }
         }
 
@@ -1002,6 +1311,10 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             }
         }
 
+        PointTableErrorText = parameterErrors.TryGetValue(PointTableProfileType.PointsKey, out string? pointReason)
+            ? pointReason
+            : string.Empty;
+
         Issues.Clear();
         foreach (string text in errors)
         {
@@ -1018,6 +1331,18 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             ? Localizer.Format("Profile_IssuesSummaryFormat", errors.Count)
             : Localizer["Profile_IssuesNone"];
     }
+
+    /// <summary>选中段点表的问题（点太少、Z 不递增、没排满段长），写在表格下面。</summary>
+    [ObservableProperty]
+    private string pointTableErrorText = string.Empty;
+
+    private string DescribeSymmetryFailure(SymmetryResult result) => result.Failure switch
+    {
+        SymmetryFailure.DoesNotReachCenter => Localizer.Format("Profile_Issue_SymmetryReachFormat", result.MissingMm),
+        SymmetryFailure.CenterNotSelfSymmetric => Localizer["Profile_Issue_SymmetryCenter"],
+        SymmetryFailure.UnsupportedType => Localizer["Profile_Issue_SymmetryType"],
+        _ => Localizer["Profile_Issue_NoSegments"],
+    };
 
     private string DescribeIssue(ProfileIssue issue, IDictionary<string, string> selectedSegmentParameterErrors)
     {
@@ -1037,6 +1362,10 @@ public sealed partial class ProfileViewModel : PageViewModelBase
                 return Localizer.Format(
                     "Profile_Issue_OverlapFormat", issue.SegmentOrder!, issue.OtherSegmentOrder!, issue.FromMm, issue.ToMm);
 
+            case ProfileIssueKind.BoundaryJump:
+                return Localizer.Format(
+                    "Profile_Issue_BoundaryJumpFormat", issue.OtherSegmentOrder!, issue.SegmentOrder!, issue.FromMm, issue.JumpMicrometer);
+
             default:
                 var violation = new ViolationRowViewModel(issue.Violation!, Localizer);
                 if (issue.SegmentOrder == SelectedSegment?.Order)
@@ -1051,38 +1380,56 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
     private void RefreshPreview()
     {
-        if (this.composite is null)
+        ComposedPoints = Array.Empty<(double, double)>();
+        BoundaryZs = Array.Empty<double>();
+        if (this.composite is not null)
         {
-            // 删到空：预览空着，问题列表里写着"还没有曲线段"。
-            ComposedPoints = Array.Empty<(double, double)>();
-            MainPoints = Array.Empty<(double, double)>();
-            RefreshReferenceDeviation();
-            PreviewChanged?.Invoke(this, EventArgs.Empty);
-            return;
+            try
+            {
+                RollProfile composed = this.composite.Compose(this.geometry, this.profileTypes, this.settings.ProfileSampleCount);
+                ComposedPoints = composed.Points
+                    .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMm(point.RadiusOffsetMm)))
+                    .ToArray();
+                BoundaryZs = this.composite.Segments.Skip(1).Select(segment => segment.FromMm).ToArray();
+            }
+            catch (DomainException ex)
+            {
+                Alarms.RaiseException(ex);
+            }
         }
 
-        try
-        {
-            RollProfile composed = this.composite.Compose(
-                this.geometry, this.profileTypes, this.settings.ProfileSampleCount);
-            ComposedPoints = composed.Points
-                .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMm(point.RadiusOffsetMm)))
-                .ToArray();
-
-            var mainOnly = CompositeRollProfile.Superimposed(new[] { this.composite.Segments[0] });
-            RollProfile main = mainOnly.Compose(this.geometry, this.profileTypes, this.settings.ProfileSampleCount);
-            MainPoints = main.Points
-                .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMm(point.RadiusOffsetMm)))
-                .ToArray();
-        }
-        catch (DomainException ex)
-        {
-            Alarms.RaiseException(ex);
-            ComposedPoints = Array.Empty<(double, double)>();
-            MainPoints = Array.Empty<(double, double)>();
-        }
-
+        RefreshSelectionPreview();
         RefreshReferenceDeviation();
+    }
+
+    /// <summary>当前段加粗那一截、点表的原始点。只动选中相关的部分，然后通知视图重画。</summary>
+    private void RefreshSelectionPreview()
+    {
+        SelectedSegmentPoints = Array.Empty<(double, double)>();
+        TablePoints = Array.Empty<(double, double)>();
+
+        if (this.composite is not null && SelectedSegment is not null && SelectedSegment.Order <= this.composite.Segments.Count)
+        {
+            RollProfileSegment selected = this.composite.Segments[SelectedSegment.Order - 1];
+            RollProfile segmentOnly = CompositeRollProfile
+                .Sequential(selected.FromMm, new[] { SequentialSegment.From(selected) })
+                .Compose(RollGeometry.Create(Math.Max(this.geometry.BodyLengthMm, selected.ToMm), this.geometry.NominalRadiusMm), this.profileTypes, this.settings.ProfileSampleCount);
+            SelectedSegmentPoints = segmentOnly.Points
+                .Where(point => point.BodyPositionMm >= selected.FromMm && point.BodyPositionMm <= selected.ToMm)
+                .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMm(point.RadiusOffsetMm)))
+                .ToArray();
+
+            if (selected.ProfileTypeKey == ProfileTypeKeys.PointTable
+                && selected.Parameters.TryGet(PointTableProfileType.PointsKey, out ParameterValue? points) && points is not null)
+            {
+                TablePoints = points.Points
+                    .Select(point => (
+                        selected.IsMirrored ? selected.ToMm - point.X : selected.FromMm + point.X,
+                        UnitConversion.MicrometerToMm(point.Y)))
+                    .ToArray();
+            }
+        }
+
         PreviewChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -1096,11 +1443,6 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         MaxChordErrorText = ComposedPoints.Count >= 3
             ? string.Create(CultureInfo.CurrentCulture, $"{EstimateChordErrorMicrometer():F2} µm")
             : "--";
-
-        bool aligned = CurrentSegments
-            .Skip(1)
-            .All(segment => segment.FromMm >= 0.0 && segment.ToMm <= this.geometry.BodyLengthMm);
-        TaperAlignmentText = Localizer[aligned ? "Profile_Aligned" : "Profile_NotAligned"];
 
         AxisDescription? crownAxis = this.machine.Axes.FirstOrDefault(axis =>
             axis.IsPresent && string.Equals(axis.Role, CrownAxisRole, StringComparison.Ordinal));

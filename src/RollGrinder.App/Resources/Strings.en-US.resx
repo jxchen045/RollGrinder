@@ -772,14 +772,8 @@
   <data name="Profile_Saved" xml:space="preserve">
     <value>Profile saved to the library</value>
   </data>
-  <data name="Profile_SegmentFrom" xml:space="preserve">
-    <value>Segment from</value>
-  </data>
   <data name="Profile_SegmentMirrored" xml:space="preserve">
     <value>Mirrored</value>
-  </data>
-  <data name="Profile_SegmentTo" xml:space="preserve">
-    <value>Segment to</value>
   </data>
   <data name="Program_ColumnModified" xml:space="preserve">
     <value>Modified</value>
@@ -988,9 +982,6 @@
   <data name="StepType_Roundness" xml:space="preserve">
     <value>Roundness</value>
   </data>
-  <data name="Profile_Aligned" xml:space="preserve">
-    <value>Aligned</value>
-  </data>
   <data name="Profile_CompensationAxis" xml:space="preserve">
     <value>Compensation axis</value>
   </data>
@@ -1003,17 +994,11 @@
   <data name="Profile_LegendComposed" xml:space="preserve">
     <value>Composed</value>
   </data>
-  <data name="Profile_LegendMain" xml:space="preserve">
-    <value>Main</value>
-  </data>
   <data name="Profile_MaxChordError" xml:space="preserve">
     <value>Max chord error</value>
   </data>
   <data name="Profile_MoveUp" xml:space="preserve">
     <value>Move up</value>
-  </data>
-  <data name="Profile_NotAligned" xml:space="preserve">
-    <value>Not aligned</value>
   </data>
   <data name="Profile_ParametersHeader" xml:space="preserve">
     <value>Parameters ·</value>
@@ -1028,13 +1013,7 @@
     <value>Segments / length</value>
   </data>
   <data name="Profile_SegmentsHeader" xml:space="preserve">
-    <value>Curve segments (stacked)</value>
-  </data>
-  <data name="Profile_TaperAlignment" xml:space="preserve">
-    <value>Taper alignment</value>
-  </data>
-  <data name="Profile_ValidationHeader" xml:space="preserve">
-    <value>Validation</value>
+    <value>Curve segments (Z from the headstock body end)</value>
   </data>
   <data name="Records_Empty" xml:space="preserve">
     <value>No records in this period</value>
@@ -2104,9 +2083,6 @@
   <data name="Profile_Issue_ParameterFormat" xml:space="preserve">
     <value>Segment {0} "{1}": {2}</value>
   </data>
-  <data name="Profile_Issue_InputRange" xml:space="preserve">
-    <value>The selected segment's range is not valid: both ends must be numbers, start ≥ 0 and end &gt; start</value>
-  </data>
   <data name="Profile_Issue_InputParameter" xml:space="preserve">
     <value>A parameter of the selected segment is not valid (see the cell marked red)</value>
   </data>
@@ -2187,5 +2163,83 @@
   </data>
   <data name="Violation_PointsDoNotCoverSegment_WithLimit" xml:space="preserve">
     <value>The first point must be at 0 and the last at the segment length {0} mm</value>
+  </data>
+  <data name="Profile_Symmetric" xml:space="preserve">
+    <value>Symmetric editing</value>
+  </data>
+  <data name="Profile_SymmetricHint" xml:space="preserve">
+    <value>Edit the headstock-side segments only; the tailstock side is mirrored. The library stores the expanded profile. Profiles with CVC segments cannot be symmetric.</value>
+  </data>
+  <data name="Profile_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Profile_ChangeType" xml:space="preserve">
+    <value>Change to selected type</value>
+  </data>
+  <data name="Profile_SegmentStart" xml:space="preserve">
+    <value>Start Z</value>
+  </data>
+  <data name="Profile_SegmentLength" xml:space="preserve">
+    <value>Length L</value>
+  </data>
+  <data name="Profile_ColumnType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Profile_ColumnStart" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Profile_ColumnLength" xml:space="preserve">
+    <value>Length</value>
+  </data>
+  <data name="Profile_ColumnEnd" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="Profile_AddPoint" xml:space="preserve">
+    <value>Add point</value>
+  </data>
+  <data name="Profile_RemovePoint" xml:space="preserve">
+    <value>Remove point</value>
+  </data>
+  <data name="Profile_PointZ" xml:space="preserve">
+    <value>Z (mm)</value>
+  </data>
+  <data name="Profile_PointValue" xml:space="preserve">
+    <value>Diameter offset (µm)</value>
+  </data>
+  <data name="Profile_ImportReference" xml:space="preserve">
+    <value>Import reference</value>
+  </data>
+  <data name="Profile_LegendSelected" xml:space="preserve">
+    <value>Selected segment</value>
+  </data>
+  <data name="Profile_LegacyConverted" xml:space="preserve">
+    <value>This profile was in the old format and has been converted to one point-table segment with the same shape; saving stores it in the new format</value>
+  </data>
+  <data name="Profile_SymmetryNotFoldable" xml:space="preserve">
+    <value>The current profile is not symmetric, so symmetric editing cannot be switched on</value>
+  </data>
+  <data name="Profile_SymmetryUnsupportedType" xml:space="preserve">
+    <value>This type cannot be used in symmetric editing (it is not symmetric)</value>
+  </data>
+  <data name="Profile_PointsImportedIntoSegment" xml:space="preserve">
+    <value>Points imported into the segment</value>
+  </data>
+  <data name="Profile_Issue_BoundaryJumpFormat" xml:space="preserve">
+    <value>Segments {0} and {1} do not meet at Z {2:0.#} mm: jump of {3:0.#} µm</value>
+  </data>
+  <data name="Profile_Issue_InputLength" xml:space="preserve">
+    <value>The selected segment is not valid: the length must be a number above 0 and the first start Z must not be negative</value>
+  </data>
+  <data name="Profile_Issue_InputPoints" xml:space="preserve">
+    <value>A point table cell is not valid (Z and offset must both be numbers)</value>
+  </data>
+  <data name="Profile_Issue_SymmetryReachFormat" xml:space="preserve">
+    <value>Symmetric editing: the headstock-side segments are {0:0.#} mm short of the centre (negative means past it)</value>
+  </data>
+  <data name="Profile_Issue_SymmetryCenter" xml:space="preserve">
+    <value>Symmetric editing: the segment across the centre must itself be symmetric (cylindrical or crown)</value>
+  </data>
+  <data name="Profile_Issue_SymmetryType" xml:space="preserve">
+    <value>Symmetric editing: a segment is not symmetric (CVC); switch symmetric editing off first</value>
   </data>
 </root>

@@ -772,14 +772,8 @@
   <data name="Profile_Saved" xml:space="preserve">
     <value>辊形已存入库</value>
   </data>
-  <data name="Profile_SegmentFrom" xml:space="preserve">
-    <value>区间起点</value>
-  </data>
   <data name="Profile_SegmentMirrored" xml:space="preserve">
     <value>镜像</value>
-  </data>
-  <data name="Profile_SegmentTo" xml:space="preserve">
-    <value>区间终点</value>
   </data>
   <data name="Program_ColumnModified" xml:space="preserve">
     <value>修改时间</value>
@@ -988,9 +982,6 @@
   <data name="StepType_Roundness" xml:space="preserve">
     <value>圆度测量</value>
   </data>
-  <data name="Profile_Aligned" xml:space="preserve">
-    <value>已对齐</value>
-  </data>
   <data name="Profile_CompensationAxis" xml:space="preserve">
     <value>补偿执行轴</value>
   </data>
@@ -1003,17 +994,11 @@
   <data name="Profile_LegendComposed" xml:space="preserve">
     <value>合成辊形</value>
   </data>
-  <data name="Profile_LegendMain" xml:space="preserve">
-    <value>主辊形</value>
-  </data>
   <data name="Profile_MaxChordError" xml:space="preserve">
     <value>最大弦高误差</value>
   </data>
   <data name="Profile_MoveUp" xml:space="preserve">
     <value>上移</value>
-  </data>
-  <data name="Profile_NotAligned" xml:space="preserve">
-    <value>未对齐</value>
   </data>
   <data name="Profile_ParametersHeader" xml:space="preserve">
     <value>参数 ·</value>
@@ -1028,13 +1013,7 @@
     <value>分段数 / 段长</value>
   </data>
   <data name="Profile_SegmentsHeader" xml:space="preserve">
-    <value>曲线段（可叠加）</value>
-  </data>
-  <data name="Profile_TaperAlignment" xml:space="preserve">
-    <value>锥度起点对齐</value>
-  </data>
-  <data name="Profile_ValidationHeader" xml:space="preserve">
-    <value>校验</value>
+    <value>曲线段（Z 自头架侧辊身端面起）</value>
   </data>
   <data name="Records_Empty" xml:space="preserve">
     <value>该时间段没有记录</value>
@@ -2104,9 +2083,6 @@
   <data name="Profile_Issue_ParameterFormat" xml:space="preserve">
     <value>第 {0} 段「{1}」：{2}</value>
   </data>
-  <data name="Profile_Issue_InputRange" xml:space="preserve">
-    <value>选中段的区间没填成立：起点、终点要是数字，起点不小于 0，终点大于起点</value>
-  </data>
   <data name="Profile_Issue_InputParameter" xml:space="preserve">
     <value>选中段有参数格没填成立（见标红的格子）</value>
   </data>
@@ -2187,5 +2163,83 @@
   </data>
   <data name="Violation_PointsDoNotCoverSegment_WithLimit" xml:space="preserve">
     <value>第一个点要在 0，最后一个点要在段长 {0} mm 上</value>
+  </data>
+  <data name="Profile_Symmetric" xml:space="preserve">
+    <value>对称编辑</value>
+  </data>
+  <data name="Profile_SymmetricHint" xml:space="preserve">
+    <value>只编头架端的段，尾架端镜像生成；存进库的是展开后的整条辊形。含 CVC 的辊形不能对称。</value>
+  </data>
+  <data name="Profile_Copy" xml:space="preserve">
+    <value>复制</value>
+  </data>
+  <data name="Profile_ChangeType" xml:space="preserve">
+    <value>改成所选类型</value>
+  </data>
+  <data name="Profile_SegmentStart" xml:space="preserve">
+    <value>起点 Z</value>
+  </data>
+  <data name="Profile_SegmentLength" xml:space="preserve">
+    <value>长度 L</value>
+  </data>
+  <data name="Profile_ColumnType" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="Profile_ColumnStart" xml:space="preserve">
+    <value>起点</value>
+  </data>
+  <data name="Profile_ColumnLength" xml:space="preserve">
+    <value>长度</value>
+  </data>
+  <data name="Profile_ColumnEnd" xml:space="preserve">
+    <value>终点</value>
+  </data>
+  <data name="Profile_AddPoint" xml:space="preserve">
+    <value>加点</value>
+  </data>
+  <data name="Profile_RemovePoint" xml:space="preserve">
+    <value>删点</value>
+  </data>
+  <data name="Profile_PointZ" xml:space="preserve">
+    <value>Z（mm）</value>
+  </data>
+  <data name="Profile_PointValue" xml:space="preserve">
+    <value>直径偏差（µm）</value>
+  </data>
+  <data name="Profile_ImportReference" xml:space="preserve">
+    <value>导入对照线</value>
+  </data>
+  <data name="Profile_LegendSelected" xml:space="preserve">
+    <value>当前段</value>
+  </data>
+  <data name="Profile_LegacyConverted" xml:space="preserve">
+    <value>这是旧格式的辊形，已按原来的曲线转成一段点表，形状不变；保存后库里这条改为新格式</value>
+  </data>
+  <data name="Profile_SymmetryNotFoldable" xml:space="preserve">
+    <value>当前辊形左右不对称，不能直接切到对称编辑</value>
+  </data>
+  <data name="Profile_SymmetryUnsupportedType" xml:space="preserve">
+    <value>对称编辑时不能用这种类型（本身不对称）</value>
+  </data>
+  <data name="Profile_PointsImportedIntoSegment" xml:space="preserve">
+    <value>点表已导入到段里</value>
+  </data>
+  <data name="Profile_Issue_BoundaryJumpFormat" xml:space="preserve">
+    <value>第 {0}、{1} 段交界（Z {2:0.#} mm）跳变 {3:0.#} µm，接不上</value>
+  </data>
+  <data name="Profile_Issue_InputLength" xml:space="preserve">
+    <value>选中段没填成立：长度要是大于 0 的数，第一段的起点 Z 不能小于 0</value>
+  </data>
+  <data name="Profile_Issue_InputPoints" xml:space="preserve">
+    <value>点表里有没填成立的格（Z 和直径偏差都要是数）</value>
+  </data>
+  <data name="Profile_Issue_SymmetryReachFormat" xml:space="preserve">
+    <value>对称编辑：头架端各段到辊身中点还差 {0:0.#} mm（负数是超过了）</value>
+  </data>
+  <data name="Profile_Issue_SymmetryCenter" xml:space="preserve">
+    <value>对称编辑：跨在中点上的那一段本身要对称（圆柱或凸度）</value>
+  </data>
+  <data name="Profile_Issue_SymmetryType" xml:space="preserve">
+    <value>对称编辑：含本身不对称的段（CVC），请先关掉对称</value>
   </data>
 </root>
