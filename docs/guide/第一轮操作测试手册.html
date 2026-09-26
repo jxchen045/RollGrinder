@@ -346,33 +346,43 @@
       <h3>需要准备</h3>
       <ul>
         <li>Windows 10 或 11 电脑，装有 .NET 8 或更高的 SDK（装了 Visual Studio 即已包含）。</li>
-        <li>源码已编译：在源码根目录执行 <code>dotnet build RollGrinder.sln -c Release</code>，或者先跑一遍 <code>scripts\run-full-test.cmd</code>（它会编译并自检）。</li>
+        <li>最新源码：用 bundle 更新，或把源码 zip 解压到空文件夹。</li>
         <li>如果要看自动打印的报表：把 Windows 默认打印机设为"Microsoft Print to PDF"，自动打印时会弹出保存框，存成 PDF 看版式。</li>
       </ul>
 
-      <h3>启动（推荐：命令行，用独立的演示目录）</h3>
-      <p>演示数据放在单独的目录里，不影响其他数据，每次测试也能从干净状态开始。以源码在 <code>D:\Projects\RollGrinder</code> 为例：</p>
-<pre>cd D:\Projects\RollGrinder\src\RollGrinder.App\bin\Release\net8.0-windows
-RollGrinder.App.exe --gateway sim --sim-speed 5 --config D:\RG-Demo\config --data D:\RG-Demo\data</pre>
+      <h3>启动（推荐：双击演示脚本）</h3>
+      <p>在源码目录里双击 <code>scripts\start-demo.cmd</code>。脚本会先编译最新源码（第一次约 1 分钟，之后几秒），然后以仿真机床、5 倍速启动上位机。演示数据放在源码目录下的 <code>demo</code> 文件夹，不影响其他数据。</p>
+      <p>要换模式，在命令行里带一个参数运行：</p>
       <div class="tw">
         <table>
-          <thead><tr><th>参数</th><th>作用</th></tr></thead>
+          <thead><tr><th>命令</th><th>作用</th></tr></thead>
           <tbody>
-            <tr><td class="mono">--gateway sim</td><td>连仿真机床</td></tr>
-            <tr><td class="mono">--sim-speed 5</td><td>仿真时间 5 倍速。按 4 道工序的程序估算，一支辊约 1 分钟磨完。填 1 是正常节奏（约 5 分钟），最高 100。想让甲方看清运行过程就调低，想快速走完流程就调高。</td></tr>
-            <tr><td class="mono">--config / --data</td><td>配置和数据库放到演示目录。目录不存在会自动建好，配置从模板复制。</td></tr>
+            <tr><td class="mono">start-demo.cmd</td><td>仿真机床，5 倍速。按 4 道工序的程序估算，一支辊约 1 分钟磨完</td></tr>
+            <tr><td class="mono">start-demo.cmd 20</td><td>仿真机床，20 倍速（1–100 任选）。1 是正常节奏，一支辊约 5 分钟。想让甲方看清运行过程就调低，想快速走完流程就调高</td></tr>
+            <tr><td class="mono">start-demo.cmd offline</td><td>离线编程模式（场景 K）：只能编程、编辑辊形、查记录、改设置，自动磨削、手动、诊断三页变灰</td></tr>
+            <tr><td class="mono">start-demo.cmd reset</td><td>先清空演示数据再启动（见下面"恢复到干净状态"）</td></tr>
           </tbody>
         </table>
+      </div>
+      <div class="box warn">
+        <span class="tag">在 PowerShell 里运行</span>
+        <p>PowerShell 不会直接运行当前目录里的程序或脚本，前面要加 <code>.\</code>，否则会报"无法将……项识别为 cmdlet、函数、脚本文件或可运行程序的名称"：</p>
+<pre>cd D:\Projects\RollGrinder\scripts
+.\start-demo.cmd 5</pre>
+        <p>在"命令提示符"（cmd）里不用加 <code>.\</code>。</p>
       </div>
 
       <h4>其他启动方式</h4>
       <ul>
-        <li><strong>Visual Studio：</strong>打开 <code>RollGrinder.sln</code>，启动项目选 RollGrinder.App，启动下拉选"仿真机床 (推荐)"，按 F5。这种方式是 1 倍速，数据放在程序目录下。</li>
-        <li><strong>离线编程模式：</strong>把 <code>--gateway sim --sim-speed 5</code> 换成 <code>--offline</code>。只能编程、编辑辊形、查记录、改设置，自动磨削、手动、诊断三页变灰。用于演示"在办公室编程"的场景（见场景 K）。</li>
+        <li><strong>直接运行程序</strong>（已经编译过时）：
+<pre>cd D:\Projects\RollGrinder\src\RollGrinder.App\bin\Release\net8.0-windows
+.\RollGrinder.App.exe --gateway sim --sim-speed 5 --config D:\Projects\RollGrinder\demo\config --data D:\Projects\RollGrinder\demo\data</pre>
+          参数含义：<code>--gateway sim</code> 连仿真机床；<code>--sim-speed</code> 仿真倍速；<code>--config</code> / <code>--data</code> 配置与数据库放到演示目录（不存在会自动建好）；把 <code>--gateway sim --sim-speed 5</code> 换成 <code>--offline</code> 就是离线编程模式。</li>
+        <li><strong>Visual Studio：</strong>打开 <code>RollGrinder.sln</code>，启动项目选 RollGrinder.App，启动下拉选"仿真机床 (推荐)"，按 F5。这种方式是 1 倍速，数据放在程序目录下，和演示脚本的数据不是同一份。</li>
       </ul>
 
       <h3>恢复到干净状态</h3>
-      <p>关掉程序，删除整个 <code>D:\RG-Demo</code> 文件夹，再启动。账号、程序库、辊形库、磨削记录全部清空，等于新装的软件。</p>
+      <p>关掉上位机，运行 <code>start-demo.cmd reset</code>，或者手动删掉源码目录下的 <code>demo</code> 文件夹再启动。账号、程序库、辊形库、磨削记录全部清空，等于新装的软件。</p>
 
       <h3>第一次登录</h3>
       <ol class="steps">
@@ -766,7 +776,7 @@ RollGrinder.App.exe --gateway sim --sim-speed 5 --config D:\RG-Demo\config --dat
       <div class="scene" id="k">
         <div class="scene-head"><h3>K 离线编程（可选）</h3><span class="dur">约 5 分钟</span><span class="who">参加：工艺人员</span></div>
         <ol class="steps">
-          <li>关掉程序，用 <code>--offline</code> 重新启动（见第 2 节）。<span class="expect">顶栏显示"离线 · 编程模式"，主页变成工序编程；自动磨削、手动、诊断三页变灰，鼠标停留说明"离线模式不可用：这一页要连上机床"。</span></li>
+          <li>关掉程序，运行 <code>start-demo.cmd offline</code> 重新启动（见第 2 节）。<span class="expect">顶栏显示"离线 · 编程模式"，主页变成工序编程；自动磨削、手动、诊断三页变灰，鼠标停留说明"离线模式不可用：这一页要连上机床"。</span></li>
           <li>编一个程序、存进程序库，再按"下发 NC"。<span class="expect">下发被拒绝，说明没连机床。</span></li>
         </ol>
         <div class="look"><h4>请重点看</h4><ul>
