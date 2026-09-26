@@ -1,0 +1,631 @@
+<title>RGX 第一轮测试修改稿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #F2F4F7; --surface: #FFFFFF; --ink: #16191E; --ink-2: #4A5461; --ink-3: #5A6470;
+    --line: #D3D9E1; --line-soft: #E6EAF0; --fill: #F6F8FA;
+    --accent: #15507F; --accent-ink: #FFFFFF; --accent-soft: #E3EDF6;
+    --danger: #B3241C; --danger-soft: #FBEBE9;
+    --ok: #1F7A4D; --ok-soft: #E2F2E9;
+    --warn: #8A5A00; --warn-soft: #FBF1D9;
+    --next: #F6D24A;
+    --key-bg: #FFFFFF; --key-line: #8C95A1; --nav: #0F4370;
+    --sans: "Noto Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    --mono: "IBM Plex Mono", Consolas, "Cascadia Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+      --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+      --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+      --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+      --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+      --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+    --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+    --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+    --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+    --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+    --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.7; padding-inline: 16px; padding-block: 24px 64px; }
+  .page { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 32px; }
+  @media (min-width: 1120px) {
+    .page { grid-template-columns: 220px minmax(0, 1fr); }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto; }
+  }
+  main { min-width: 0; max-width: 920px; }
+  .toc { font-size: 14px; }
+  .toc h2 { font-size: 13px; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 8px; font-weight: 500; display: block; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { color: var(--ink-2); text-decoration: none; display: block; padding: 3px 8px; border-radius: 4px; }
+  .toc a:hover, .toc a:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+  .toc .sub { padding-left: 14px; font-size: 13px; }
+
+  .cover { border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+  .eyebrow { font-family: var(--mono); font-size: 13px; color: var(--ink-3); }
+  h1 { font-size: 32px; line-height: 1.3; margin: 6px 0 10px; text-wrap: balance; }
+  .lede { font-size: 17px; color: var(--ink-2); max-width: 64ch; margin: 0; }
+  section { margin-top: 44px; }
+  h2 { font-size: 24px; line-height: 1.35; margin: 0 0 14px; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+  h2 .no { font-family: var(--mono); font-size: 16px; color: var(--accent); font-weight: 600; min-width: 1.6em; }
+  h3 { font-size: 19px; margin: 28px 0 10px; text-wrap: balance; }
+  h4 { font-size: 16px; margin: 18px 0 6px; color: var(--ink-2); }
+  p { margin: 0 0 12px; max-width: 70ch; }
+  ul, ol { margin: 0 0 12px; padding-left: 1.4em; }
+  li { margin: 3px 0; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .tw { overflow-x: auto; margin: 0 0 16px; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--fill); font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+  td.num, th.num { font-family: var(--mono); text-align: center; white-space: nowrap; }
+  .nowrap { white-space: nowrap; }
+
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 7px; line-height: 1.7; white-space: nowrap; }
+  .pill.bug { background: var(--danger-soft); color: var(--danger); }
+  .pill.design { background: var(--accent-soft); color: var(--accent); }
+  .pill.ask { background: var(--warn-soft); color: var(--warn); }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .pri { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
+  .pri.p0 { color: var(--danger); }
+  .pri.p1 { color: var(--warn); }
+  .pri.p2 { color: var(--ink-3); }
+
+  .box { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; margin: 0 0 16px; }
+  .box > :last-child { margin-bottom: 0; }
+  .box .tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; padding: 0 8px; margin-bottom: 6px; background: var(--accent-soft); color: var(--accent); }
+  .box.bug .tag { background: var(--danger-soft); color: var(--danger); }
+  .box.ask .tag { background: var(--warn-soft); color: var(--warn); }
+
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 18px 0 0; }
+  .summary div { background: var(--surface); border: 1px solid var(--line); padding: 12px 14px; }
+  .summary b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .summary span { font-size: 14px; color: var(--ink-2); }
+
+  /* 软键 */
+  .key { display: inline-block; font-size: 13px; font-weight: 500; padding: 0 8px; border: 1px solid var(--key-line); background: var(--key-bg); border-radius: 3px; white-space: nowrap; line-height: 1.8; }
+
+  /* 线框 */
+  .wf { border: 2px solid var(--ink); background: var(--surface); font-size: 12.5px; line-height: 1.45; min-width: 760px; margin: 0 0 8px; }
+  .wf .bar { background: var(--nav); color: #FFFFFF; padding: 5px 8px; display: flex; gap: 10px; flex-wrap: nowrap; white-space: nowrap; }
+  .wf .main { display: grid; gap: 6px; padding: 6px; }
+  .wf .pane { border: 1px solid var(--line); padding: 6px 8px; background: var(--surface); min-width: 0; }
+  .wf .pane h5 { margin: 0 0 4px; font-size: 12px; color: var(--ink-2); font-weight: 700; }
+  .wf .pane.hl { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .wf table { font-size: 12px; }
+  .wf th, .wf td { padding: 3px 6px; }
+  .wf tr.sel td { background: var(--accent-soft); }
+  .wf .vsk { display: grid; grid-template-rows: repeat(8, 1fr); gap: 4px; }
+  .wf .vsk span, .wf .hsk span { border: 1px solid var(--key-line); background: var(--key-bg); padding: 4px 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wf .hsk { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 6px; background: var(--fill); border-top: 1px solid var(--line); }
+  .wf .hsk span.nav, .wf .vsk span.nav { background: var(--nav); color: #FFFFFF; border-color: var(--nav); }
+  .wf .vsk span.on { background: var(--ok); color: #FFFFFF; border-color: var(--ok); }
+  .wf .vsk span.hot, .wf .hsk span.hot { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .wf .status { display: flex; gap: 6px; flex-wrap: wrap; }
+  .wf .status span { border: 1px solid var(--line); padding: 1px 6px; white-space: nowrap; }
+  .wf .status span.on { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); }
+  .wf .status span.off { color: var(--ink-3); }
+  .wf .field { display: grid; grid-template-columns: 1fr auto; gap: 6px; border-bottom: 1px solid var(--line-soft); padding: 2px 0; }
+  .wf .field.focus { background: var(--next); color: #3A2F00; padding-inline: 4px; }
+  .wf .err { color: var(--danger); }
+  .wf .okc { color: var(--ok); }
+  .cap { font-size: 13px; color: var(--ink-3); margin: 0 0 18px; }
+  svg text { font-family: var(--sans); }
+  svg { display: block; max-width: 100%; height: auto; }
+
+  footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+  @media (max-width: 560px) { h1 { font-size: 26px; } h2 { font-size: 21px; } }
+  @media print {
+    body { background: #FFFFFF; color: #000000; padding: 0; font-size: 10.5pt; }
+    .toc { display: none; }
+    .page { display: block; max-width: none; }
+    main { max-width: none; }
+    section.major { break-before: page; }
+    table, .box, .wf, svg { break-inside: avoid; }
+    .tw { overflow: visible; }
+    .wf { min-width: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @page { size: A4; margin: 14mm 12mm; }
+</style>
+
+<div class="page">
+  <nav class="toc" aria-label="目录">
+    <h2>目录</h2>
+    <ol>
+      <li><a href="#s0">0 结论</a></li>
+      <li><a href="#s1">1 测试数据里查实的问题</a></li>
+      <li><a href="#s2">2 逐条回应</a></li>
+      <li class="sub"><a href="#r1">辊形编辑</a></li>
+      <li class="sub"><a href="#r2">工序编程</a></li>
+      <li class="sub"><a href="#r3">自动加工</a></li>
+      <li class="sub"><a href="#r4">手动操作</a></li>
+      <li class="sub"><a href="#r5">其他</a></li>
+      <li><a href="#s3">3 调研：同类系统怎么做</a></li>
+      <li><a href="#s4">4 五条设计原则</a></li>
+      <li><a href="#s5">5 修改稿</a></li>
+      <li class="sub"><a href="#m0">数据分层</a></li>
+      <li class="sub"><a href="#m1">辊形编辑</a></li>
+      <li class="sub"><a href="#m2">工艺程序</a></li>
+      <li class="sub"><a href="#m3">作业与下发</a></li>
+      <li class="sub"><a href="#m4">自动加工</a></li>
+      <li class="sub"><a href="#m5">手动与辅助</a></li>
+      <li class="sub"><a href="#m6">砂轮</a></li>
+      <li class="sub"><a href="#m7">机床配置与标签映射</a></li>
+      <li><a href="#s6">6 分期计划</a></li>
+      <li><a href="#s7">7 需要拍板的问题</a></li>
+      <li><a href="#s8">8 调研来源</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="cover">
+      <div class="eyebrow">MK84160 · RGX 上位机 · 依据 2026-09-26 第一轮甲方操作测试（RG-Demo 数据）</div>
+      <h1>第一轮测试问题分析与修改稿</h1>
+      <p class="lede">逐条回应测试中提出的 28 个问题：哪些是缺陷、根因在哪；哪些是设计问题、改成什么样。修改稿按"按键优先、触摸兼容、图形辅助输入、边编边校验"重新组织了辊形、工艺程序、作业、自动、手动、砂轮和配置七块，并给出分期计划和需要拍板的问题。</p>
+    </header>
+
+    <!-- 0 -->
+    <section id="s0">
+      <h2><span class="no">0</span>结论</h2>
+      <div class="summary">
+        <div><b>3 个缺陷已查到根因</b><span>"启动不加工"是下发写错进给速度加仿真把进给 0 当成瞬间走完；库里重名是"另存为"不改名且不查重；显示对不上是辊形与轧辊各有一个长度。</span></div>
+        <div><b>测试意见大多成立</b><span>28 条里：缺陷 7 条，设计需改 19 条，需现场确认 2 条。没有一条是"甲方理解错了"。</span></div>
+        <div><b>核心改动是数据分层</b><span>轧辊、辊形、工艺程序、作业四样东西各管各的，作业只做"组合 + 下发"。这一条同时解决了辊形页和工序页的大部分意见。</span></div>
+        <div><b>先修缺陷，再改结构</b><span>阶段 0 修缺陷约 2 天，可以马上做；阶段 1–3 的结构改动要等第 7 节几个问题拍板，尤其是工控机面板类型。</span></div>
+      </div>
+    </section>
+
+    <!-- 1 -->
+    <section id="s1" class="major">
+      <h2><span class="no">1</span>测试数据里查实的问题</h2>
+      <p>数据来自甲方测试后的 <code>D:\RG-Demo</code>：数据库里有 2 个辊形、2 个程序、2 个作业、3 条磨削记录，日志无报错。</p>
+
+      <div class="box bug">
+        <span class="tag">缺陷 1 · 启动后不加工（场景 3①）</span>
+        <p>三条磨削记录都在开始后 <b>3 秒</b>就判为"已完成"。这支辊有 9 道工序（开始、短行程、粗磨、半精磨、精磨、光磨、测量、圆度、结束），参数都在合理范围，<b>不是参数乱设导致的</b>。两个缺陷叠在一起：</p>
+        <ol>
+          <li><b>下发时写错了通用进给速度。</b>代码注释写的是"取首道磨削工序的进给"，实际取的是第一道工序。这支辊第一道是"开始"，没有进给，于是写给 NC 的 <code>job.feedMmPerMin = 0</code>。真机上引用这个变量的 NC 程序会拿到 F0。五轮自检下发的程序第一道是"测量"（有进给），所以一直没暴露。</li>
+          <li><b>仿真机床把进给 0 当成瞬间走完一刀。</b>拖板停在 0 位不动，每一拍都判为"到端点换向"，31 刀在 3 秒内刷完，然后报"循环正常结束"。</li>
+        </ol>
+        <p>另外，上位机也没发现"比预计时间快了几十倍"这种不可能的情况，所以运行时没有任何提示。修改：进给取第一道真正走刀的工序；仿真按每道工序自己的进给走，非走刀工序给固定停留时间；增加"磨得比预计快得离谱 / 慢得离谱"的合理性报警；下发前校验每道走刀工序进给大于 0。</p>
+      </div>
+
+      <div class="box bug">
+        <span class="tag">缺陷 2 · 库里同名条目（辊形 1②③、程序同样）</span>
+        <p>辊形库两条"工作辊-凸度300"，程序库两条"Test"，都是两秒到两分钟内先后存进去的。原因：<b>"另存为"不要求输入新名字</b>，直接拿当前名字存一条新的；<b>库也不检查重名</b>。修改："另存为"弹出命名框、默认"原名-副本"；库内名称唯一，重名时问"覆盖 / 改名 / 取消"。</p>
+      </div>
+
+      <div class="box bug">
+        <span class="tag">缺陷 3 · 辊形显示与设置对不上（辊形 1⑥）</span>
+        <p>辊形里存的辊身长度是 <b>300 mm</b>（机床允许的最小值，编辑器的默认值），而曲线段区间填到了 100–800 mm，<b>超出了辊形自己的长度</b>；作业里这支辊却是 2000 mm。第二段锥度的区间 225–300 mm 和第一段 100–500 mm 还互相重叠。预览按 300 mm 画，所以和输入对不上。</p>
+        <p>根子在数据结构：<b>辊形和轧辊各有一个长度，互相不知道</b>；区间用"起点 / 终点"两个数，允许重叠和断开，也没有实时校验。修改见 5.2：Z 坐标 + 段长，自动首尾相接；辊形不再自带"真实辊身长度"，改为"设计长度"，选用时与轧辊长度核对。</p>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section id="s2" class="major">
+      <h2><span class="no">2</span>逐条回应</h2>
+      <p><span class="pill bug">缺陷</span> 程序行为错了；<span class="pill design">设计</span> 能用但不合理，要改；<span class="pill ask">确认</span> 需要现场或甲方给出答案。优先级 <span class="pri p0">P0</span> 阶段 0 就修，<span class="pri p1">P1</span> 结构改动时一起做，<span class="pri p2">P2</span> 之后。</p>
+
+      <h3 id="r1">1 辊形编辑</h3>
+      <div class="tw"><table>
+        <thead><tr><th class="num">#</th><th>测试意见</th><th>性质</th><th>现状与原因</th><th>修改</th><th>级</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1①</td><td>只剩一段时删不掉，不能清空</td><td><span class="pill bug">缺陷</span></td><td>代码写死"至少保留一段"</td><td>允许删到空；空辊形不能保存，提示"至少需要一段"</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">1②</td><td>连续点保存，库里不断增加同名辊形</td><td><span class="pill bug">缺陷</span></td><td>见缺陷 2</td><td>名称唯一；"保存"只更新当前条目</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">1③a</td><td>另存为不体现新名称</td><td><span class="pill bug">缺陷</span></td><td>见缺陷 2</td><td>另存为先弹命名框</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">1③b</td><td>曲线类型用下拉菜单，纯按键不友好</td><td><span class="pill design">设计</span></td><td>下拉只对鼠标友好</td><td>全系统取消下拉：选项少的用竖向软键（每类型一个键），选项多的用可上下键移动的选择列表。见原则 1</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">1④</td><td>辊的直径、长度该和辊形一起设，还是放在工序编程</td><td><span class="pill design">设计</span></td><td>现在两处各有一份长度，互相不知道（缺陷 3）</td><td>都不对。尺寸属于轧辊本身，放进轧辊台账；辊形只有"设计长度"；作业把两者组合时核对。见 5.1</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">1⑤</td><td>Z 值应和曲线一起设；区间起终点不明确；首段给起点，后续只给长度，自动接长</td><td><span class="pill design">设计</span></td><td>现在是"区间起点 / 终点"，可重叠可断开</td><td>完全采纳。段表列：起点 Z（仅首段可填）、长度 L、终点 Z（自动算）；插入、删除、调序后自动首尾相接</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">1⑥</td><td>曲线显示与设置有问题</td><td><span class="pill bug">缺陷</span></td><td>见缺陷 3</td><td>随 1⑤ 重做；阶段 0 先加校验：区间超出长度、重叠、断开都报错</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">1⑦</td><td>"新建曲线段"与左侧"插入"重复</td><td><span class="pill design">设计</span></td><td>两个入口做同一件事</td><td>去掉 F3"新建曲线段"。插入 / 删除 / 上移 / 下移 / 复制放到竖向软键</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">1⑧</td><td>有上移没有下移</td><td><span class="pill bug">缺陷</span></td><td>漏做</td><td>补下移</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">1⑨</td><td>校验结果不明显；应自动校验，校验不过不能保存</td><td><span class="pill design">设计</span></td><td>校验要手动按 F6，结果在右下角</td><td>采纳。每次改动即校验；出错的段和参数格就地标红，顶部状态条写"有 N 处问题"；有错不能保存和选用</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">1⑩</td><td>支持表格输入离散点，并用可选的样条插值平滑</td><td><span class="pill design">设计</span></td><td>现在只能导入点表作"对照线"，不能作为辊形</td><td>采纳。新增曲线类型"点表"：表格录入 Z、直径偏差；插值方式可选（线性 / 三次样条 / 保形分段三次 / 平滑样条）；预览同时画原始点和插值曲线，并给出插值后最大弦高误差</td><td><span class="pri p1">P1</span></td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 id="r2">2 工序编程</h3>
+      <div class="tw"><table>
+        <thead><tr><th class="num">#</th><th>测试意见</th><th>性质</th><th>现状与原因</th><th>修改</th><th>级</th></tr></thead>
+        <tbody>
+          <tr><td class="num">2①</td><td>新建作业和新建工序不该放一起；应先建作业、设好初始参数，再建工序</td><td><span class="pill design">设计</span></td><td>"作业"和"工艺程序"揉在一页</td><td>拆开：工艺程序（工序序列，可复用）单独一页；作业（选轧辊 + 选辊形 + 选程序 → 下发）单独一页，按顺序引导。见 5.3、5.4</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">2②</td><td>辊形直接从辊形库选，不必在这里再设辊形参数</td><td><span class="pill design">设计</span></td><td>本页还能"现编"辊形</td><td>采纳。作业只能从库里选辊形，去掉"本页现编"</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">2③</td><td>新建时自动加"开始""结束"，插入的工序放两者之间</td><td><span class="pill design">设计</span></td><td>开始、结束是普通可选工序，可放任意位置或不放</td><td>采纳。新程序自带开始、结束，二者固定在首尾，不能删、不能移</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">2④</td><td>工序要有删除、上移、下移</td><td><span class="pill design">设计</span></td><td>只有删除</td><td>补上移、下移、复制；放在竖向软键</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">2⑤</td><td>工序中要有辅助动作：切削液开关、顶升、锁紧等</td><td><span class="pill ask">确认</span></td><td>只有"暂停"一种非磨削工序</td><td>新增"辅助动作"工序：从机床已登记的动作里挑，每个动作给开 / 关。需要 NC / PLC 侧约定由 NC 在程序里执行（M 代码或命令字），见问题 Q4</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">2⑥</td><td>保存、下发时要校验</td><td><span class="pill bug">缺陷</span></td><td>下发前有校验，但保存时没有；而且没查出"首道无进给"这类问题</td><td>边编边校验；保存、下发都强制校验；增加跨工序检查（余量分配、走刀工序进给大于 0、开始 / 结束位置等）</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">2⑦</td><td>好像没有砂轮修整工序</td><td><span class="pill design">设计</span></td><td>有，但藏在"倒角或修整砂轮"分组下，下拉里很难找</td><td>工序选择改为按类别的竖向软键，"砂轮修整"单独一个键；修整参数配简图</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">2⑧</td><td>每种工序参数不同，右侧要有工序简图，图上标参数和说明；参考克林博格</td><td><span class="pill design">设计</span></td><td>参数只是一张表</td><td>采纳。每种工序一张简图，当前正在输入的参数在图上高亮，下方一行说明、单位和允许范围（与西门子 ShopTurn 的帮助图同一思路）。见 5.3</td><td><span class="pri p1">P1</span></td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 id="r3">3 自动加工</h3>
+      <div class="tw"><table>
+        <thead><tr><th class="num">#</th><th>测试意见</th><th>性质</th><th>现状与原因</th><th>修改</th><th>级</th></tr></thead>
+        <tbody>
+          <tr><td class="num">3①</td><td>启动了没开始加工，运行时也没提示</td><td><span class="pill bug">缺陷</span></td><td>见缺陷 1。不是参数乱设</td><td>修下发与仿真；加合理性报警</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">3②</td><td>补偿设置跑到了工序设置里</td><td><span class="pill design">设计</span></td><td>F6"补偿设置"跳到工序编程页，且那里只读</td><td>补偿单独成自动页的一个子视图：看补偿状态与收敛过程；制造商可改增益、限幅等</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">3③</td><td>主页要补 X / Z 坐标和系统状态：切削液、顶升等</td><td><span class="pill design">设计</span></td><td>X / Z 在右栏中部，没有机构状态</td><td>顶部加一条状态带：方式、通道、程序名、X、Z、砂轮 / 头架转速、切削液、中心架、尾架、测量臂，每项灯色区分。需 tagmap 补对应状态位</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">3④</td><td>除了启动、暂停，还要复位（程序回初始）</td><td><span class="pill ask">确认</span></td><td>NC 复位在机床操作面板上（硬线按钮 S83）；上位机的"HMI 复位"只清自己的报警</td><td>建议保留在机床面板上。如果甲方希望屏幕上也有，就加"NC 复位"请求键（两下确认，经 PLC 执行），见问题 Q5</td><td><span class="pri p2">P2</span></td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 id="r4">4 手动操作</h3>
+      <div class="tw"><table>
+        <thead><tr><th class="num">#</th><th>测试意见</th><th>性质</th><th>现状与原因</th><th>修改</th><th>级</th></tr></thead>
+        <tbody>
+          <tr><td class="num">4</td><td>是否不在屏幕上做，直接用操作面板实体键（类似 MDI）；或保留但太密，按功能分页</td><td><span class="pill design">设计</span></td><td>27 个动作挤在一屏</td><td>两者结合：<b>运动类</b>（点动、手轮、各轴）只留在机床面板；<b>机构动作</b>留在屏幕上，但按功能分 6 页，每页不超过 8 个，<b>正好对应右侧 8 个竖向软键</b>；按键面板和触摸屏都好用。见 5.6</td><td><span class="pri p1">P1</span></td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 id="r5">5 其他</h3>
+      <div class="tw"><table>
+        <thead><tr><th class="num">#</th><th>测试意见</th><th>性质</th><th>现状与原因</th><th>修改</th><th>级</th></tr></thead>
+        <tbody>
+          <tr><td class="num">5①</td><td>没有砂轮修整功能</td><td><span class="pill design">设计</span></td><td>只有手动页的"砂轮修整"循环键，没有修整参数与设置</td><td>新增"砂轮"页：砂轮数据、修整参数、修整记录，配砂轮与金刚笔简图。见 5.7</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">5②</td><td>换砂轮要有简图、标识与说明</td><td><span class="pill design">设计</span></td><td>向导只有文字</td><td>每一步配简图，标出要量、要填的是哪个尺寸</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">5③</td><td>其他参数设置也参考克林博格，直观</td><td><span class="pill design">设计</span></td><td>标定值是一张表</td><td>标定按部件分组（砂轮、金刚笔、测头、基准盘、对刀），每组配简图</td><td><span class="pri p2">P2</span></td></tr>
+          <tr><td class="num">5④</td><td>机床配置、标签映射只显示 JSON，应有配置页面；为了安全可加权限</td><td><span class="pill design">设计</span></td><td>只读显示 JSON 原文</td><td>结构化编辑页：机床配置按分组表单，标签映射按表格（可搜索、可单点试读）；所有人可看，仅制造商可改；保存前自动备份、改动留审计、提示重启生效。见 5.8</td><td><span class="pri p1">P1</span></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 3 -->
+    <section id="s3" class="major">
+      <h2><span class="no">3</span>调研：同类系统怎么做</h2>
+      <p>"克林博格"按 <b>Klingelnberg</b> 理解（齿轮磨床与测量中心），如果指的是别的品牌请告诉我。厂商网站在这次调研环境里无法直接访问，以下来自公开资料与搜索摘要，出处见第 8 节。</p>
+      <div class="tw"><table>
+        <thead><tr><th>系统</th><th>公开资料中的做法</th><th>我们借鉴什么</th></tr></thead>
+        <tbody>
+          <tr><td>Klingelnberg Gear Operator / Gear Production</td><td>对话式输入与作业编排，清晰导航和可视化流程引导以防止误操作；持续用图形显示机床状态与过程；生成加工订单和操作机床都有大量"助手"；磨床与铣齿机同一套操作逻辑；触摸屏操作</td><td>向导式建作业；图形化参数输入；状态常驻可见；全系统一致的操作逻辑</td></tr>
+          <tr><td>西门子 ShopTurn / ShopMill（SINUMERIK Operate）</td><td>按工步编程；每个循环都有帮助图，当前参数在图上彩色高亮，部分带动画演示运动过程；横向、竖向软键驱动</td><td>工序简图 + 当前参数高亮；软键驱动的编辑方式，和同屏的 Operate 一致</td></tr>
+          <tr><td>西门子面板 OP 015</td><td>15 寸屏 1024×768，8+4 个横向软键、8 个竖向软键；软键条可由用户功能占用，配贴条标注</td><td>横 8 + 竖 8 软键的版面约定；分辨率可能不是 16:9，版面要能适配</td></tr>
+          <tr><td>ROLLGrind HMI（基于 SINUMERIK 840D sl / ONE 的轧辊磨床界面，用于 Pomini、Herkules、Waldrich 改造）</td><td>支持所有辊形、工作辊与支承辊，集成辊面缺陷检测，接入轧辊车间数据库</td><td>辊形类型要齐全（含点表）；轧辊台账作为基础数据</td></tr>
+          <tr><td>Herkules KP 10</td><td>18.5 或 24 寸面板；重要测量结果和输入按时间轴清楚显示；"跟随模式"让程序适应操作者；测量控制系统可边磨边修正</td><td>自动页按时间轴展示测量与补偿过程</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 4 -->
+    <section id="s4">
+      <h2><span class="no">4</span>五条设计原则</h2>
+      <ol>
+        <li><b>按键优先，触摸兼容。</b>每个操作都能只用软键和方向键、翻页键、回车完成；触摸是加速手段，不是唯一手段。去掉所有下拉菜单：选项不超过 8 个用竖向软键，更多用可上下键移动的选择列表。版面固定"底部 8 横 + 右侧 8 竖"软键，和同屏的 Operate 一致。这一条要等问题 Q1 确认面板类型，但按它做，两种面板都能用。</li>
+        <li><b>图形辅助输入。</b>凡是几何或运动参数，旁边配简图，当前正在输入的那一项在图上高亮，下面一行写说明、单位、允许范围。</li>
+        <li><b>数据分层，各管各的。</b>轧辊（尺寸、重量、材质）、辊形（曲线）、工艺程序（工序序列）是三种可复用的基础数据；作业只是把三者组合起来下发。</li>
+        <li><b>边编边校验，错了存不进去。</b>每次改动立即校验，问题就地标红并在状态条计数；保存、选用、下发都强制通过校验。</li>
+        <li><b>名称唯一，保存语义明确。</b>"保存"只更新当前条目；"另存为"必须输入新名字；库内重名要问。</li>
+      </ol>
+    </section>
+
+    <!-- 5 -->
+    <section id="s5" class="major">
+      <h2><span class="no">5</span>修改稿</h2>
+      <p>下面的线框只表达"放什么、放哪里、怎么操作"，配色和字号沿用现有界面。线框按 1920×1080 画，右侧一列是 8 个竖向软键，底部一行是 8 个横向软键。</p>
+
+      <h3 id="m0">5.1 数据分层</h3>
+      <div class="tw"><table>
+        <thead><tr><th>数据</th><th>包含什么</th><th>在哪编辑</th><th>与现在的区别</th></tr></thead>
+        <tbody>
+          <tr><td>轧辊（台账）</td><td>辊号、类型（工作辊 / 支承辊）、辊身长度、公称直径、当前直径、材质、净重、两端箱重、磨削履历</td><td>磨削记录 › 轧辊台账（可新建、修改）</td><td>现在尺寸填在工序编程页，重量在"轧辊数据"子页</td></tr>
+          <tr><td>辊形</td><td>曲线段（类型、Z 起点、长度、参数）或点表 + 插值方式；<b>设计长度</b>；对称方式</td><td>辊形编辑</td><td>不再存"真实辊身长度"；按 Z + 段长定义</td></tr>
+          <tr><td>工艺程序</td><td>开始 → 若干工序 → 结束；每道工序的参数；程序步骤开关的默认值</td><td>工艺程序（原工序编程）</td><td>不含辊号、尺寸、辊形</td></tr>
+          <tr><td>作业</td><td>选定的轧辊 + 辊形 + 工艺程序；本次的程序步骤开关；目标直径</td><td>新的"作业"页，按步骤引导</td><td>现在和工艺程序揉在一页</td></tr>
+        </tbody>
+      </table></div>
+      <p>选用时的核对：辊形设计长度与轧辊辊身长度不一致时，给出三种处理方式让人选（按比例拉伸 / 以辊身中心对齐不拉伸 / 取消），不静默处理。</p>
+
+      <h3 id="m1">5.2 辊形编辑</h3>
+      <div class="tw">
+        <div class="wf" role="img" aria-label="辊形编辑线框">
+          <div class="bar"><span>☰ RGX</span><span>Ctrl+3 辊形编辑 › 工作辊-凸度300</span><span>●  校验：通过</span></div>
+          <div class="main" style="grid-template-columns: 1.15fr 1.45fr 150px;">
+            <div class="pane hl">
+              <h5>曲线段（设计长度 2000 mm，Z 自左端起）</h5>
+              <table>
+                <thead><tr><th>#</th><th>类型</th><th>起点 Z</th><th>长度 L</th><th>终点 Z</th></tr></thead>
+                <tbody>
+                  <tr><td>1</td><td>锥度</td><td>0</td><td>150</td><td>150</td></tr>
+                  <tr class="sel"><td>2</td><td>凸度</td><td>150</td><td>1700</td><td>1850</td></tr>
+                  <tr><td>3</td><td>锥度</td><td>1850</td><td>150</td><td>2000</td></tr>
+                </tbody>
+              </table>
+              <p class="cap" style="margin:6px 0 0">只有第 1 段的起点可填；其余起点 = 上一段终点，自动接续。<span class="okc">合计 2000 = 设计长度</span></p>
+              <h5 style="margin-top:8px">第 2 段参数 · 凸度</h5>
+              <div class="field focus"><span>凸度（直径量）</span><span class="mono">300 µm</span></div>
+              <div class="field"><span>曲线形状</span><span>抛物线 ▸</span></div>
+              <div class="field"><span>对称中心</span><span>段中点</span></div>
+              <p class="cap" style="margin:4px 0 0">凸度：段中点相对两端的直径差。范围 −2000 ~ 2000 µm。</p>
+            </div>
+            <div class="pane">
+              <h5>预览（直径偏差 µm，横轴 Z mm）</h5>
+              <svg viewBox="0 0 420 190" aria-hidden="true">
+                <line x1="30" y1="150" x2="410" y2="150" stroke="var(--line)" stroke-width="1"/>
+                <line x1="30" y1="15" x2="30" y2="150" stroke="var(--line)" stroke-width="1"/>
+                <path d="M30 150 L58 118" stroke="var(--ink-2)" stroke-width="2" fill="none"/>
+                <path d="M58 118 Q220 20 382 118" stroke="var(--accent)" stroke-width="2.5" fill="none"/>
+                <path d="M382 118 L410 150" stroke="var(--ink-2)" stroke-width="2" fill="none"/>
+                <line x1="58" y1="20" x2="58" y2="160" stroke="var(--line)" stroke-dasharray="3 3"/>
+                <line x1="382" y1="20" x2="382" y2="160" stroke="var(--line)" stroke-dasharray="3 3"/>
+                <text x="30" y="172" font-size="10" fill="var(--ink-3)">0</text>
+                <text x="46" y="184" font-size="10" fill="var(--ink-3)">150</text>
+                <text x="366" y="184" font-size="10" fill="var(--ink-3)">1850</text>
+                <text x="392" y="172" font-size="10" fill="var(--ink-3)">2000</text>
+                <text x="190" y="46" font-size="11" fill="var(--accent)">段 2 凸度 300 µm</text>
+                <text x="4" y="24" font-size="10" fill="var(--ink-3)">µm</text>
+              </svg>
+              <p class="cap" style="margin:0">当前段加粗高亮；段界用虚线；校验出错的段画成红色。</p>
+            </div>
+            <div class="vsk">
+              <span class="hot">插入段 ▸</span><span>删除段</span><span>上移</span><span>下移</span><span>复制段</span><span>改类型 ▸</span><span>插值方式 ▸</span><span>清空</span>
+            </div>
+          </div>
+          <div class="hsk"><span>新建</span><span>辊形库</span><span class="hot">保存</span><span>另存为…</span><span>导入点表</span><span>导出点表</span><span></span><span class="nav">返回主页</span></div>
+        </div>
+      </div>
+      <p class="cap">"插入段 ▸"按下后，竖向软键换成类型选择：圆柱、凸度、锥度、CVC、点表、正弦凸度……选一个即插入，插在当前段之后；按返回键回到编辑软键。全程不用下拉菜单。</p>
+      <ul>
+        <li><b>段定义：</b>起点 Z（仅首段）+ 长度 L，终点自动算；插入、删除、调序后自动重新接续，不会重叠或断开。Z 的原点（左端还是辊身中心）见问题 Q6。</li>
+        <li><b>点表类型：</b>表格录入 Z 与直径偏差，可从 CSV 导入；插值方式四选一：线性、三次样条、保形分段三次（不过冲）、平滑样条（可调平滑度，用于测量数据）。预览同时画原始点与插值曲线，并显示最大弦高误差。</li>
+        <li><b>校验常驻：</b>段长合计是否等于设计长度、参数范围、曲线在段界的连续性（跳变多少 µm）、点表点数与单调性；出错的格子就地标红，顶栏显示"有 N 处问题"；有错时"保存"变灰。</li>
+        <li><b>保存语义：</b>"保存"更新当前条目；"另存为…"必须输入新名字；辊形名在库内唯一。</li>
+        <li>去掉"新建曲线段"键（与插入重复）；补"下移""复制"；允许删到空。</li>
+      </ul>
+
+      <h3 id="m2">5.3 工艺程序（原"工序编程"）</h3>
+      <div class="tw">
+        <div class="wf" role="img" aria-label="工艺程序线框">
+          <div class="bar"><span>☰ RGX</span><span>Ctrl+2 工艺程序 › 工作辊-精磨-标准</span><span>●  校验：第 3 道 1 处问题</span></div>
+          <div class="main" style="grid-template-columns: 0.9fr 1.6fr 150px;">
+            <div class="pane hl">
+              <h5>工序序列</h5>
+              <table>
+                <tbody>
+                  <tr><td>▣</td><td>开始</td><td class="mono">—</td></tr>
+                  <tr><td>1</td><td>测量</td><td class="mono">2 min</td></tr>
+                  <tr><td>2</td><td>粗磨</td><td class="mono">38 min</td></tr>
+                  <tr class="sel"><td>3</td><td>精磨 <span class="err">●</span></td><td class="mono">22 min</td></tr>
+                  <tr><td>4</td><td>辅助：切削液关</td><td class="mono">—</td></tr>
+                  <tr><td>5</td><td>测量</td><td class="mono">2 min</td></tr>
+                  <tr><td>▣</td><td>结束</td><td class="mono">—</td></tr>
+                </tbody>
+              </table>
+              <p class="cap" style="margin:6px 0 0">开始 / 结束固定首尾。预计总时间 64 min。</p>
+            </div>
+            <div class="pane">
+              <h5>第 3 道 · 精磨</h5>
+              <svg viewBox="0 0 440 150" aria-hidden="true">
+                <rect x="40" y="70" width="330" height="46" fill="var(--fill)" stroke="var(--ink-2)"/>
+                <rect x="18" y="82" width="22" height="22" fill="var(--line)" stroke="var(--ink-2)"/>
+                <rect x="370" y="82" width="22" height="22" fill="var(--line)" stroke="var(--ink-2)"/>
+                <circle cx="120" cy="36" r="30" fill="var(--surface)" stroke="var(--ink-2)" stroke-width="1.5"/>
+                <text x="104" y="40" font-size="11" fill="var(--ink-2)">砂轮</text>
+                <line x1="60" y1="60" x2="350" y2="60" stroke="var(--next)" stroke-width="4"/>
+                <path d="M350 60 l-8 -5 v10 z" fill="var(--next)"/>
+                <path d="M60 60 l8 -5 v10 z" fill="var(--next)"/>
+                <text x="170" y="54" font-size="12" fill="var(--ink)">拖板速度 800 mm/min</text>
+                <line x1="360" y1="42" x2="360" y2="66" stroke="var(--accent)" stroke-width="2"/>
+                <path d="M360 66 l-4 -7 h8 z" fill="var(--accent)"/>
+                <text x="366" y="48" font-size="11" fill="var(--accent)">换向进给 2 µm</text>
+                <text x="150" y="98" font-size="11" fill="var(--ink-2)">轧辊（头架转速 40 r/min）</text>
+                <text x="44" y="136" font-size="10" fill="var(--ink-3)">Z0</text>
+                <text x="350" y="136" font-size="10" fill="var(--ink-3)">Z 辊身终点</text>
+              </svg>
+              <div class="field"><span>磨削量（直径）</span><span class="mono err">10 µm</span></div>
+              <div class="field"><span>进给方式</span><span>周期进给 ▸</span></div>
+              <div class="field focus"><span>拖板速度</span><span class="mono">800 mm/min</span></div>
+              <div class="field"><span>每刀进给（直径，换向时）</span><span class="mono">2 µm</span></div>
+              <div class="field"><span>磨削道次 / 光磨道次</span><span class="mono">6 / 2</span></div>
+              <div class="field"><span>砂轮线速度 · 头架转速</span><span class="mono">35 m/s · 40 r/min</span></div>
+              <p class="cap" style="margin:4px 0 0">拖板速度：砂轮沿辊身往复的速度。范围 1–3000 mm/min。<span class="err">第 3 道：磨削量 10 µm 小于 6 刀 × 2 µm = 12 µm，最后一刀磨不到量。</span></p>
+            </div>
+            <div class="vsk">
+              <span class="hot">插入工序 ▸</span><span>删除</span><span>上移</span><span>下移</span><span>复制</span><span>余量分配</span><span>默认值</span><span>程序步骤</span>
+            </div>
+          </div>
+          <div class="hsk"><span>新建</span><span>程序库</span><span class="hot">保存</span><span>另存为…</span><span></span><span></span><span>用于作业 ▸</span><span class="nav">返回主页</span></div>
+        </div>
+      </div>
+      <p class="cap">"插入工序 ▸"按下后，竖向软键换成类别：磨削（粗 / 半精 / 精 / 超精 / 光磨 / 短行程）、测量（测量 / 圆度 / 涡流）、砂轮修整、倒角、辅助动作、暂停。再选具体工序，插在当前工序之后。</p>
+      <ul>
+        <li><b>每种工序一张简图：</b>往复磨削（拖板往复、换向进给）、连续进给、光磨、测量（测点分布）、圆度（截面与每转点数）、倒角（斜坡 / 圆弧、长度与高度）、砂轮修整（金刚笔、切深、走刀速度）。光标在哪个参数，图上哪个量就高亮。</li>
+        <li><b>跨工序校验：</b>各道磨削量合计 vs 总余量、每道"道次 × 每刀进给"与磨削量是否匹配、走刀工序进给大于 0、测量是否在磨削之后等。</li>
+        <li><b>辅助动作工序：</b>从机床已登记的机构动作里挑（切削液、中心架、尾架、测量臂……），给出开 / 关；具体由 NC 程序执行，接口见问题 Q4。</li>
+      </ul>
+
+      <h3 id="m3">5.4 作业与下发（新页）</h3>
+      <div class="tw">
+        <div class="wf" role="img" aria-label="作业页线框">
+          <div class="bar"><span>☰ RGX</span><span>作业 J20260926-01</span><span>●  3 / 5 步完成</span></div>
+          <div class="main" style="grid-template-columns: 170px 1fr 150px;">
+            <div class="pane">
+              <h5>步骤</h5>
+              <div class="field"><span class="okc">① 轧辊</span><span>R-2026-001</span></div>
+              <div class="field"><span class="okc">② 辊形</span><span>凸度300</span></div>
+              <div class="field focus"><span>③ 工艺程序</span><span>…</span></div>
+              <div class="field"><span>④ 程序步骤</span><span></span></div>
+              <div class="field"><span>⑤ 核对并下发</span><span></span></div>
+            </div>
+            <div class="pane hl">
+              <h5>③ 选择工艺程序</h5>
+              <table>
+                <thead><tr><th>程序名</th><th>工序</th><th>预计</th><th>修改时间</th></tr></thead>
+                <tbody>
+                  <tr class="sel"><td>工作辊-精磨-标准</td><td>5</td><td>64 min</td><td>09-26</td></tr>
+                  <tr><td>工作辊-修复磨</td><td>7</td><td>95 min</td><td>09-20</td></tr>
+                  <tr><td>支承辊-标准</td><td>6</td><td>120 min</td><td>09-18</td></tr>
+                </tbody>
+              </table>
+              <p class="cap" style="margin:6px 0 0">上下键选择，回车确认。右侧简要显示程序的工序序列。</p>
+            </div>
+            <div class="vsk"><span>上一步</span><span class="hot">下一步</span><span>新登记轧辊</span><span>打开辊形</span><span>打开程序</span><span></span><span></span><span>取消作业</span></div>
+          </div>
+          <div class="hsk"><span>新作业</span><span>最近作业</span><span></span><span></span><span class="hot">下发 NC</span><span></span><span>进入自动</span><span class="nav">返回主页</span></div>
+        </div>
+      </div>
+      <ul>
+        <li>第 ⑤ 步核对页列出：轧辊尺寸、辊形与长度核对结果、各道余量与时间、程序步骤开关、全部校验结果。有任何错误时"下发 NC"不可按。</li>
+        <li>下发成功后自动切到自动加工页（问题 Q3 确认）。</li>
+      </ul>
+
+      <h3 id="m4">5.5 自动加工</h3>
+      <div class="tw">
+        <div class="wf" role="img" aria-label="自动加工线框">
+          <div class="bar"><span>☰ RGX</span><span>Ctrl+1 自动加工</span><span>800020 参数已下发</span></div>
+          <div class="main" style="grid-template-columns: 1fr 150px;">
+            <div style="display:grid; gap:6px;">
+              <div class="pane">
+                <div class="status">
+                  <span>方式 AUTO</span><span class="on">通道 运行</span><span>程序 RG_J01.MPF</span><span class="mono">X 300.280</span><span class="mono">Z 1550.83</span><span class="mono">砂轮 590 r/min</span><span class="mono">头架 40 r/min</span><span class="on">切削液 开</span><span class="on">中心架 顶升</span><span class="on">尾架 锁紧</span><span class="off">测量臂 收起</span>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns: 0.8fr 1.7fr 0.9fr; gap:6px;">
+                <div class="pane"><h5>工序序列 / 进度</h5>（同现在）</div>
+                <div class="pane"><h5>曲线 / 参数矩阵</h5>（同现在）</div>
+                <div class="pane"><h5>实测直径 / 实时数据</h5>（同现在，X / Z 移到状态带）</div>
+              </div>
+            </div>
+            <div class="vsk"><span>曲线 ▸</span><span>参数矩阵</span><span class="hot">补偿 ▸</span><span>测量记录</span><span>工序跳转</span><span>提前结束</span><span></span><span></span></div>
+          </div>
+          <div class="hsk"><span>启动</span><span>暂停</span><span>切削液</span><span></span><span></span><span></span><span>磨削记录</span><span class="nav">页面菜单</span></div>
+        </div>
+      </div>
+      <ul>
+        <li><b>状态带常驻：</b>方式、通道、程序名、X、Z、两个主轴转速，以及切削液、中心架、尾架、测量臂等机构状态，开为绿、关为灰、读不到为虚框。需在 tagmap 补这些状态位的映射（问题 Q7）。</li>
+        <li><b>补偿子视图：</b>补偿状态、行程间补偿的收敛曲线、各次修正量；制造商可改增益、限幅，改动留审计。不再跳去工序页。</li>
+        <li><b>合理性监视：</b>实际用时远小于或远大于预计时间、拖板长时间不动但通道在运行，都报警。</li>
+        <li>复位：见问题 Q5。</li>
+      </ul>
+
+      <h3 id="m5">5.6 手动与辅助</h3>
+      <p>运动类操作（点动、手轮、回参考点以外的各轴移动）只在机床面板上。屏幕上的机构动作按功能分 6 页，每页不超过 8 个，一个动作对应一个竖向软键：</p>
+      <div class="tw"><table>
+        <thead><tr><th>页（横向软键）</th><th>竖向软键上的动作</th></tr></thead>
+        <tbody>
+          <tr><td>测量臂</td><td>外臂 A 放下 / 收起、内臂 B 放下 / 收起、双臂到轧辊、双臂归位、校测量臂、测量采样</td></tr>
+          <tr><td>尾架与套筒</td><td>套筒伸出 / 缩回、尾架前进 / 后退、（锁紧 / 松开，待确认）</td></tr>
+          <tr><td>头架</td><td>正转、反转、转速 +、转速 −、拨盘伸出、拨盘收回</td></tr>
+          <tr><td>软着陆与中心架</td><td>头架侧升 / 降、尾架侧升 / 降、U1 轴归零、（中心架托瓦，待补）</td></tr>
+          <tr><td>砂轮与冷却</td><td>砂轮启动、切削液、测砂轮直径、砂轮修整循环、（磁分、纸带、油冷机，待补）</td></tr>
+          <tr><td>测量与对中</td><td>采集测点、清空、归档、记录头架侧、记录尾架侧、清除对中</td></tr>
+        </tbody>
+      </table></div>
+      <div class="tw">
+        <div class="wf" role="img" aria-label="手动页线框">
+          <div class="bar"><span>☰ RGX</span><span>Ctrl+4 手动 › 尾架与套筒</span></div>
+          <div class="main" style="grid-template-columns: 1fr 1.1fr 150px;">
+            <div class="pane"><h5>轴位置 / 主轴 / 测头</h5>（同现在，只读）</div>
+            <div class="pane hl">
+              <h5>尾架与套筒 · 状态</h5>
+              <div class="field"><span>套筒</span><span class="okc">伸出到位</span></div>
+              <div class="field"><span>尾架</span><span class="okc">前进到位</span></div>
+              <div class="field"><span>顶紧压力</span><span class="mono">12.5 MPa</span></div>
+              <p class="cap" style="margin:6px 0 0">每个动作旁边显示到位状态；动作发出后在这里看结果。</p>
+            </div>
+            <div class="vsk"><span>套筒伸出</span><span>套筒缩回 ⚠</span><span>尾架前进</span><span>尾架后退 ⚠</span><span></span><span></span><span></span><span></span></div>
+          </div>
+          <div class="hsk"><span>测量臂</span><span class="hot">尾架套筒</span><span>头架</span><span>软着陆</span><span>砂轮冷却</span><span>测量对中</span><span>辅助循环 ▸</span><span class="nav">返回主页</span></div>
+        </div>
+      </div>
+      <p class="cap">⚠ 表示要按两下确认。辅助循环（手动磨削、校验基准、砂轮修整、轧辊找正、回参考点）收进"辅助循环 ▸"。</p>
+
+      <h3 id="m6">5.7 砂轮（新页，或并入设置）</h3>
+      <svg viewBox="0 0 640 210" role="img" aria-label="砂轮与金刚笔简图">
+        <circle cx="170" cy="105" r="88" fill="var(--fill)" stroke="var(--ink-2)" stroke-width="1.5"/>
+        <circle cx="170" cy="105" r="22" fill="var(--surface)" stroke="var(--ink-2)"/>
+        <line x1="82" y1="105" x2="258" y2="105" stroke="var(--accent)" stroke-width="2"/>
+        <path d="M82 105 l8 -5 v10 z M258 105 l-8 -5 v10 z" fill="var(--accent)"/>
+        <text x="120" y="98" font-size="12" fill="var(--accent)">D 砂轮直径</text>
+        <rect x="258" y="80" width="10" height="50" fill="none" stroke="var(--ink-3)" stroke-dasharray="3 2"/>
+        <text x="272" y="72" font-size="12" fill="var(--ink-2)">B 砂轮宽度</text>
+        <path d="M300 105 L340 95 L340 115 Z" fill="var(--ink-2)"/>
+        <rect x="340" y="98" width="70" height="14" fill="var(--line)" stroke="var(--ink-2)"/>
+        <text x="330" y="140" font-size="12" fill="var(--ink-2)">金刚笔</text>
+        <line x1="258" y1="160" x2="300" y2="160" stroke="var(--next)" stroke-width="3"/>
+        <text x="236" y="182" font-size="12" fill="var(--ink)">a 金刚笔位置偏移</text>
+        <text x="430" y="70" font-size="13" fill="var(--ink)">修整参数</text>
+        <text x="430" y="94" font-size="12" fill="var(--ink-2)">切深 ap（每次）</text>
+        <text x="430" y="114" font-size="12" fill="var(--ink-2)">走刀速度 vfd</text>
+        <text x="430" y="134" font-size="12" fill="var(--ink-2)">修整道次 / 光修道次</text>
+        <text x="430" y="154" font-size="12" fill="var(--ink-2)">修整间隔（每 N 支辊）</text>
+      </svg>
+      <p class="cap">砂轮页三块：砂轮数据（直径、宽度、最高线速度、当前磨损，带简图）、修整参数（带金刚笔简图）、修整与更换记录。换砂轮向导每一步也配简图，标出要量的是哪个尺寸。</p>
+
+      <h3 id="m7">5.8 机床配置与标签映射</h3>
+      <ul>
+        <li><b>机床配置：</b>按分组显示为表单：机床标识、轴（名称、作用、行程、是否存在）、选装装置开关、工件范围、阈值；每项带单位、范围和说明，改动即校验。</li>
+        <li><b>标签映射：</b>表格：逻辑名、NC / PLC 地址、数据类型、读写方向、说明、当前值与质量。可按名称搜索、只看缺失项；"试读"按钮单点读取验证地址。</li>
+        <li><b>权限与安全：</b>所有人可看；只有制造商可改；保存前自动备份原文件；每次改动写审计（谁、何时、改了什么）；保存后提示"重启上位机后生效"；提供"恢复上一版"。</li>
+      </ul>
+    </section>
+
+    <!-- 6 -->
+    <section id="s6" class="major">
+      <h2><span class="no">6</span>分期计划</h2>
+      <div class="tw"><table>
+        <thead><tr><th>阶段</th><th>内容</th><th>工作量估计</th><th>前提</th></tr></thead>
+        <tbody>
+          <tr><td class="nowrap">阶段 0<br>缺陷修复</td><td>下发进给取首道走刀工序；仿真按每道进给走、非走刀工序给停留时间；运行合理性报警；下发前校验走刀进给大于 0。库内名称唯一、另存为命名框。辊形：删到空、下移、去掉"新建曲线段"、边编边校验、有错不能保存、区间重叠 / 超长 / 断开报错。工序：上移、下移、保存时校验</td><td class="nowrap">约 2 天</td><td>无，可以马上开始</td></tr>
+          <tr><td class="nowrap">阶段 1<br>数据分层与辊形</td><td>轧辊台账可编辑；辊形改为 Z + 段长；点表类型与四种插值；作业页（向导）；工艺程序与作业拆开；开始 / 结束固定</td><td class="nowrap">约 2 周</td><td>Q6 Z 原点、Q8 插值方式</td></tr>
+          <tr><td class="nowrap">阶段 2<br>图形化输入</td><td>软键驱动的选择（去掉下拉）；竖向软键栏；每种工序的简图与参数高亮；砂轮页与修整参数；换砂轮向导配图；辅助动作工序</td><td class="nowrap">约 2–3 周</td><td>Q1 面板类型、Q2 分辨率、Q4 辅助动作接口</td></tr>
+          <tr><td class="nowrap">阶段 3<br>运行与配置</td><td>自动页状态带、补偿子视图；手动页分 6 页；机床配置与标签映射编辑器；权限细分</td><td class="nowrap">约 2 周</td><td>Q5 复位、Q7 状态位、Q9 权限</td></tr>
+        </tbody>
+      </table></div>
+      <p>每个阶段结束都跑一遍全量自检，并按新流程更新操作测试手册，再请甲方做下一轮测试。</p>
+    </section>
+
+    <!-- 7 -->
+    <section id="s7">
+      <h2><span class="no">7</span>需要拍板的问题</h2>
+      <div class="tw"><table>
+        <thead><tr><th class="num">#</th><th>问题</th><th>影响</th><th>建议</th></tr></thead>
+        <tbody>
+          <tr><td class="num">Q1</td><td>机床工控机是触摸屏、带实体软键的面板，还是两者都有？型号？</td><td>整体版面、软键数量</td><td>按"横 8 + 竖 8 软键 + 触摸兼容"做，两种都能用</td></tr>
+          <tr><td class="num">Q2</td><td>屏幕分辨率和长宽比</td><td>版面是否要按 4:3 / 5:4 重排</td><td>拿到型号即可确定</td></tr>
+          <tr><td class="num">Q3</td><td>下发成功后是否自动切到自动加工页</td><td>作业流程</td><td>自动切换</td></tr>
+          <tr><td class="num">Q4</td><td>程序中的辅助动作（切削液、顶升、锁紧……）由 NC 怎么执行：M 代码，还是 NC 写 PLC 命令字？有哪些动作？</td><td>辅助动作工序能否实现</td><td>请电气与 NC 程序员确定清单和接口</td></tr>
+          <tr><td class="num">Q5</td><td>屏幕上是否需要"NC 复位 / 程序回起点"</td><td>自动页软键</td><td>保留在机床面板；如需要，屏幕上加两下确认的请求键</td></tr>
+          <tr><td class="num">Q6</td><td>辊形 Z 坐标原点：辊身左端（头架侧）还是辊身中心？辊形是否默认左右对称？</td><td>辊形数据结构</td><td>原点取辊身左端，与机床 Z 轴一致；提供"对称编辑"开关</td></tr>
+          <tr><td class="num">Q7</td><td>机构状态（切削液、中心架、尾架锁紧、测量臂到位）在 PLC 里有无可读的状态位</td><td>自动页状态带、手动页到位显示</td><td>请电气提供地址，写进 tagmap</td></tr>
+          <tr><td class="num">Q8</td><td>点表插值需要哪几种？现场是否有现成的辊形点表文件格式</td><td>点表类型</td><td>先做线性、三次样条、保形分段三次、平滑样条四种</td></tr>
+          <tr><td class="num">Q9</td><td>权限：谁能编辑辊形和程序、谁能下发、谁能改补偿与配置</td><td>各页可编辑状态</td><td>操作者：选作业、下发、运行；管理员：辊形、程序、标定；制造商：补偿、机床配置、标签映射</td></tr>
+          <tr><td class="num">Q10</td><td>"克林博格"是否指 Klingelnberg？有没有可以参考的实际界面照片</td><td>参考方向</td><td>有照片请发来，修改稿会对照细化</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 8 -->
+    <section id="s8">
+      <h2><span class="no">8</span>调研来源</h2>
+      <ul>
+        <li><a href="https://klingelnberg.com/en/business-divisions/cylindrical-gear-technology/software/gear-operator">Klingelnberg · Gear Operator</a></li>
+        <li><a href="https://klingelnberg.com/en/business-divisions/cylindrical-gear-technology/software/gear-production">Klingelnberg · Gear Production</a></li>
+        <li><a href="https://klingelnberg.com/en/industry-solutions/automotive/detail-page?product=10&amp;cHash=3fb74f10018b4e0873bc3f582012c5fc">Klingelnberg · VIPER 500</a></li>
+        <li><a href="https://static.dc.siemens.com/cnc4you/CNC-Downloads/SINUMERIK-Operate-UserGuide-2013-09-bw-en.pdf">Siemens · SINUMERIK Operate User Guide</a></li>
+        <li><a href="https://www.fryermachine.com/pdf/support/programming/siemens828/turning/Siemens%20Turning%20Made%20Easy%20With%20ShopTurn.pdf">Siemens · Turning made easy with ShopTurn</a></li>
+        <li><a href="https://support.industry.siemens.com/cs/attachments/109763225/840Dsl_grinding_op_man_01218_en-US.pdf">Siemens · SINUMERIK 840D sl Grinding Operating Manual</a></li>
+        <li><a href="https://www.vicpas.com/pid18161393/6FC5200-0AC32-1AC5-Siemens-SINUMERIK-OP015-Membrane-Keyboard.htm">SINUMERIK OP 015 面板规格</a></li>
+        <li><a href="https://www.cncdesign.com.au/cnc-au/roll-grinders">CNC Design · Roll Grinder Upgrades（ROLLGrind HMI）</a></li>
+        <li><a href="https://www.maxismotion.com/products-and-solutions/roll-grinding-machine-modernization">Maxis Motion · Roll Grinding Machine Modernization</a></li>
+        <li><a href="https://www.herkules-machinetools.com/technologies/control/">Herkules · Roll grinding control system</a></li>
+        <li><a href="https://www.herkules-machinetools.com/technologies/measuring-technology/">Herkules · Measuring technology</a></li>
+      </ul>
+    </section>
+
+    <footer>缺陷根因由测试数据库、日志与源码（提交 641b8ba）核对得出。修改稿中的工作量为粗估，Q1–Q10 确认后细化。</footer>
+  </main>
+</div>
