@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using RollGrinder.Contracts.Dtos;
+using RollGrinder.Core;
 using RollGrinder.Core.Compensation;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Profiles;
@@ -639,6 +640,11 @@ public sealed class RecordService : IRecordService
         return purgedRecords + purgedAlarms;
     }
 
+    /// <summary>
+    /// 最差偏差（直径量 µm）：磨后实测减目标辊形，取绝对值最大处——和辊形误差 RMS、磨削报告同一个口径。
+    /// 以前拿实测减公称半径，凸度和余量都被算成了偏差，一支合格的凸度辊也会显示几百微米。
+    /// 没有磨后测量时用最近一次测量；辊形合不出来（追溯不到辊形类型）时为空。
+    /// </summary>
     private async Task<double?> WorstDeviationAsync(
         (Core.Steps.GrindingJob Job, JobState State)? job,
         CancellationToken cancellationToken)
@@ -648,24 +654,29 @@ public sealed class RecordService : IRecordService
             return null;
         }
 
+        Core.Steps.GrindingJob stored = job.Value.Job;
         MeasurementRecord? measurement = await this.measurements
-            .GetLatestByJobAsync(job.Value.Job.JobId, cancellationToken).ConfigureAwait(false);
-        if (measurement is null)
+                .GetLatestByStageAsync(stored.JobId, MeasurementStage.PostGrind, cancellationToken).ConfigureAwait(false)
+            ?? await this.measurements.GetLatestByJobAsync(stored.JobId, cancellationToken).ConfigureAwait(false);
+        if (measurement is null || measurement.Profile.Points.Count < 2)
         {
             return null;
         }
 
-        // 只用测量值本身相对公称半径的离散程度，避免这里再依赖辊形注册表。
-        double maxRadiusMm = double.MinValue;
-        double minRadiusMm = double.MaxValue;
-        foreach (MeasurementPoint point in measurement.Profile.Points)
+        Core.Geometry.RollProfile target;
+        try
         {
-            double deviationMm = point.MeasuredRadiusMm - job.Value.Job.Geometry.NominalRadiusMm;
-            maxRadiusMm = Math.Max(maxRadiusMm, deviationMm);
-            minRadiusMm = Math.Min(minRadiusMm, deviationMm);
+            target = stored.Profile.Compose(stored.Geometry, this.profileTypes, this.settings.ProfileSampleCount);
+        }
+        catch (DomainException)
+        {
+            return null;
         }
 
-        return UnitConversion.RadiusMmToDiameterMicrometer(Math.Max(Math.Abs(maxRadiusMm), Math.Abs(minRadiusMm)));
+        Core.Geometry.RollProfile deviation = CompensationCalculator.ComputeDeviation(measurement.Profile, target, stored.Geometry);
+        return deviation.Points.Count == 0
+            ? null
+            : ProfileQuality.FromDeviation(deviation).WorstDeviationDiameterMicrometer;
     }
 
     private static string Escape(string value) =>

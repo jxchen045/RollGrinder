@@ -41,6 +41,7 @@ public sealed class MeasurementCaptureService : IHostedService
     private readonly IGrindingRecordRepository records;
     private readonly GrindingStepTypeRegistry stepTypes;
     private readonly IAlarmSink alarms;
+    private readonly IMeasurementNotifications notifications;
     private readonly TimeProvider timeProvider;
 
     private readonly object gate = new();
@@ -59,6 +60,7 @@ public sealed class MeasurementCaptureService : IHostedService
         IGrindingRecordRepository records,
         GrindingStepTypeRegistry stepTypes,
         IAlarmSink alarms,
+        IMeasurementNotifications notifications,
         TimeProvider timeProvider)
     {
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
@@ -68,6 +70,7 @@ public sealed class MeasurementCaptureService : IHostedService
         this.records = records ?? throw new ArgumentNullException(nameof(records));
         this.stepTypes = stepTypes ?? throw new ArgumentNullException(nameof(stepTypes));
         this.alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
+        this.notifications = notifications ?? throw new ArgumentNullException(nameof(notifications));
         this.timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
     }
 
@@ -206,6 +209,7 @@ public sealed class MeasurementCaptureService : IHostedService
                 Stage = StageOf(plans, stepOrder),
             },
             CancellationToken.None).ConfigureAwait(false);
+        this.notifications.Archived();
 
         // 存完清空：不清的话，下一趟没走到的格子会带着上一趟的数混进去。
         this.traces.Clear(SurfaceTraceKind.Diameter);

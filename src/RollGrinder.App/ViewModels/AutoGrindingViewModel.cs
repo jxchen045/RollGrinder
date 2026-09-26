@@ -19,6 +19,7 @@ using RollGrinder.Core.Units;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Measurement;
 using RollGrinder.Services.Calibration;
 using RollGrinder.Services.Jobs;
 using RollGrinder.Services.Manual;
@@ -241,6 +242,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly ISurfaceTraceService traces;
     private readonly IManualCommandService manualCommands;
     private readonly IUserSession userSession;
+    private readonly IMeasurementNotifications measurementNotifications;
+
+    /// <summary>上一次按哪个测量计数刷新的误差曲线与 RMS；计数变了说明后台又存下了一次测量。</summary>
+    private long seenMeasurementVersion;
 
     private readonly LiveValueViewModel probeA;
     private readonly LiveValueViewModel probeB;
@@ -282,11 +287,14 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         ISurfaceTraceService traces,
         IManualCommandService manualCommands,
         IUserSession userSession,
+        IMeasurementNotifications measurementNotifications,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
         : base(alarms, localizer, navigator)
     {
+        this.measurementNotifications = measurementNotifications ?? throw new ArgumentNullException(nameof(measurementNotifications));
+        this.seenMeasurementVersion = measurementNotifications.Version;
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.stepUpdates = stepUpdates ?? throw new ArgumentNullException(nameof(stepUpdates));
         this.stepFlow = stepFlow ?? throw new ArgumentNullException(nameof(stepFlow));
@@ -628,6 +636,28 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         UpdateSequence(snapshot);
         UpdateCompensation(snapshot);
         UpdateStepFlow(nowUtc);
+        RefreshAfterNewMeasurement();
+    }
+
+    /// <summary>
+    /// 测量工序走完（或手动采点）后台存下了一次测量：RMS 跟着换，正在看误差曲线的话曲线也换。
+    /// 不然一支辊磨完、量完，屏幕上还是开磨前的样子，要人点一下曲线键才更新。
+    /// </summary>
+    private void RefreshAfterNewMeasurement()
+    {
+        long version = this.measurementNotifications.Version;
+        if (version == this.seenMeasurementVersion)
+        {
+            return;
+        }
+
+        this.seenMeasurementVersion = version;
+        if (this.activeJob is not null)
+        {
+            _ = RunGuardedAsync(
+                SelectedCurve == CurveKind.Error ? RefreshCurveAsync : RefreshRmsAsync,
+                CancellationToken.None);
+        }
     }
 
     /// <summary>
@@ -1087,7 +1117,6 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         CurvePoints = Array.Empty<(double, double)>();
         CurveHasData = false;
         CurveEmptyText = string.Empty;
-        RmsText = "--";
         CurveShowsTolerance = SelectedCurve == CurveKind.Error;
         CurveYAxisLabel = Localizer[SelectedCurve == CurveKind.GrindingCurrent
             ? "Unit_Ampere"
@@ -1095,10 +1124,14 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         if (this.activeJob is null)
         {
+            RmsText = "--";
             CurveEmptyText = Localizer["Auto_NoActiveJob"];
             CurveChanged?.Invoke(this, EventArgs.Empty);
             return;
         }
+
+        // RMS 是这支辊的状态量，不随看哪条曲线变：切到电流曲线时也照样显示。
+        await RefreshRmsAsync(cancellationToken).ConfigureAwait(true);
 
         switch (SelectedCurve)
         {
@@ -1153,25 +1186,48 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
     private async Task BuildErrorCurveAsync(CancellationToken cancellationToken)
     {
-        MeasurementRecord? measurement = await this.measurements
-            .GetLatestByJobAsync(this.activeJob!.JobId, cancellationToken).ConfigureAwait(true);
-        if (measurement is null)
+        RollProfile? deviation = await LatestDeviationAsync(cancellationToken).ConfigureAwait(true);
+        if (deviation is null)
         {
             CurveEmptyText = Localizer["Auto_NoMeasurementYet"];
             return;
         }
 
-        RollProfile deviation = CompensationCalculator.ComputeDeviation(
-            measurement.Profile, TargetProfile(), this.activeJob.Geometry);
-
         CurvePoints = deviation.Points
             .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)))
             .ToArray();
-        CurveHasData = true;
+        CurveHasData = CurvePoints.Count > 0;
+    }
 
-        double sumOfSquares = CurvePoints.Sum(point => point.Value * point.Value);
-        double rms = Math.Sqrt(sumOfSquares / CurvePoints.Count);
-        RmsText = Localizer.Format("Auto_RmsFormat", rms);
+    /// <summary>最近一次测量相对目标辊形的均方根（直径量 µm）；还没量过显示"--"。</summary>
+    private async Task RefreshRmsAsync(CancellationToken cancellationToken)
+    {
+        RollProfile? deviation = this.activeJob is null
+            ? null
+            : await LatestDeviationAsync(cancellationToken).ConfigureAwait(true);
+        if (deviation is null || deviation.Points.Count == 0)
+        {
+            RmsText = "--";
+            return;
+        }
+
+        double sumOfSquares = deviation.Points.Sum(point =>
+        {
+            double micrometer = UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm);
+            return micrometer * micrometer;
+        });
+        RmsText = Localizer.Format("Auto_RmsFormat", Math.Sqrt(sumOfSquares / deviation.Points.Count));
+    }
+
+    /// <summary>这支辊最近一次测量减目标辊形；还没量过为 null。</summary>
+    private async Task<RollProfile?> LatestDeviationAsync(CancellationToken cancellationToken)
+    {
+        GrindingJob job = this.activeJob!;
+        MeasurementRecord? measurement = await this.measurements
+            .GetLatestByJobAsync(job.JobId, cancellationToken).ConfigureAwait(true);
+        return measurement is null
+            ? null
+            : CompensationCalculator.ComputeDeviation(measurement.Profile, TargetProfile(), job.Geometry);
     }
 
     /// <summary>

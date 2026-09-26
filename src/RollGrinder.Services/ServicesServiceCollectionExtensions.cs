@@ -74,6 +74,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddHostedService<MachineAlarmWatcher>();
 
         // 测量工序走完就把那一趟的读数存成一次测量；同样没有别的入口。
+        services.AddSingleton<IMeasurementNotifications, MeasurementNotifications>();
         services.AddHostedService<MeasurementCaptureService>();
         services.AddHostedService<RecordCompletionService>();
         services.AddHostedService<AlarmArchiveHostedService>();

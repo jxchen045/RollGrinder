@@ -79,8 +79,10 @@ public sealed class ReportService : IReportService
 
         GrindingJob job = stored.Value.Job;
         RollRecord? roll = await this.rolls.GetAsync(job.RollId, cancellationToken).ConfigureAwait(false);
+        // 磨削报告看磨后那一次（和记录页的辊形误差同一口径）；没有分阶段的磨后测量（旧记录）时退回最近一次。
         MeasurementRecord? measurement = await this.measurements
-            .GetLatestByJobAsync(job.JobId, cancellationToken).ConfigureAwait(false);
+                .GetLatestByStageAsync(job.JobId, MeasurementStage.PostGrind, cancellationToken).ConfigureAwait(false)
+            ?? await this.measurements.GetLatestByJobAsync(job.JobId, cancellationToken).ConfigureAwait(false);
 
         var tables = new List<ReportTable> { Steps(job) };
         RollProfile target = job.Profile.Compose(job.Geometry, this.profileTypes, this.settings.ProfileSampleCount);

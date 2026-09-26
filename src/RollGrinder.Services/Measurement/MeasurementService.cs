@@ -37,17 +37,20 @@ public sealed class MeasurementService : IMeasurementService
     private readonly IMachineGateway gateway;
     private readonly IMeasurementRepository repository;
     private readonly MachineDescription machine;
+    private readonly IMeasurementNotifications notifications;
     private readonly TimeProvider timeProvider;
 
     public MeasurementService(
         IMachineGateway gateway,
         IMeasurementRepository repository,
         MachineDescription machine,
+        IMeasurementNotifications notifications,
         TimeProvider timeProvider)
     {
         this.gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
         this.repository = repository ?? throw new ArgumentNullException(nameof(repository));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
+        this.notifications = notifications ?? throw new ArgumentNullException(nameof(notifications));
         this.timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
     }
 
@@ -89,6 +92,7 @@ public sealed class MeasurementService : IMeasurementService
                 source,
                 new MeasuredProfile(points)),
             cancellationToken).ConfigureAwait(false);
+        this.notifications.Archived();
 
         return measurementId;
     }

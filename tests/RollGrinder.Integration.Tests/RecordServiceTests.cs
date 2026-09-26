@@ -126,6 +126,43 @@ public sealed class RecordServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task The_worst_deviation_is_measured_against_the_target_profile_not_the_nominal_diameter()
+    {
+        // 凸度 100 µm 的辊，实测正好磨成凸度：最差偏差应接近 0，而不是凸度本身。
+        await using ServiceProvider services = await BuildAsync();
+        await services.GetRequiredService<IMachineGateway>().ConnectAsync(CancellationToken.None);
+        GrindingJob crowned = GrindingJob.Create(
+            "J-C",
+            "R-C",
+            RollGeometry.FromDiameter(2000.0, 650.0),
+            ProfileTypeKeys.Crown,
+            new CrownProfileType().Schema.CreateDefaults()
+                .With(CrownProfileType.CrownDiameterMicrometerKey, ParameterValue.FromNumber(100.0)),
+            new[] { new GrindingJobStep(1, StepTypeKeys.Finish, new FinishGrindingStepType().Schema.CreateDefaults()) });
+        (await services.GetRequiredService<IJobDownloadService>().DownloadAsync(crowned, CancellationToken.None))
+            .Succeeded.Should().BeTrue();
+
+        // 41 个测点落在凸度曲线上（半径量 = 公称半径 + 凸度/2 · (1 − u²)），末了整体小 2 µm（直径量）。
+        MeasurementPoint[] points = Enumerable.Range(0, 41).Select(i =>
+        {
+            double z = i * 50.0;
+            double u = (z - 1000.0) / 1000.0;
+            double radiusMm = 325.0 + (0.100 / 2.0 * (1.0 - (u * u))) - 0.001;
+            return new MeasurementPoint(z, radiusMm);
+        }).ToArray();
+        long before = services.GetRequiredService<IMeasurementNotifications>().Version;
+        await services.GetRequiredService<IMeasurementService>().SaveAsync("J-C", points, "DiameterGauge", CancellationToken.None);
+        services.GetRequiredService<IMeasurementNotifications>().Version
+            .Should().Be(before + 1, "自动磨削页靠这个计数知道该重读误差曲线与 RMS");
+
+        IReadOnlyList<GrindingRecordView> views = await services.GetRequiredService<IRecordService>()
+            .QueryAsync(DateTimeOffset.UnixEpoch, DateTimeOffset.UtcNow.AddDays(1), 50, CancellationToken.None);
+
+        views.Single(v => v.JobId == "J-C").WorstDeviationDiameterMicrometer
+            .Should().BeApproximately(2.0, 0.2, "只剩整体小的那 2 µm；凸度是目标的一部分，不算偏差");
+    }
+
+    [Fact]
     public async Task Records_export_to_csv_with_invariant_formatting()
     {
         await using ServiceProvider services = await BuildAsync();

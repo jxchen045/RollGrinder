@@ -184,6 +184,15 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             await h.SettleAsync(1000);
         }, new StepOptions(Screenshot: true, TimeoutSeconds: GrindTimeout.TotalSeconds + 30, Tolerant: true));
 
+        await h.StepAsync("After", "AutoPageShowsRmsWithoutClicking", async ctx =>
+        {
+            // 磨后测量存下来后，RMS 自己换上，不用点误差曲线；也不随正在看哪条曲线变成"--"。
+            auto.SelectCurveCommand.Execute(CurveKind.GrindingCurrent);
+            bool shown = await h.WaitUntilAsync(() => auto.RmsText != "--", TimeSpan.FromSeconds(10));
+            ctx.Note("rms=" + auto.RmsText);
+            ctx.Check(shown, "the RMS should appear by itself once the post-grind measurement is stored");
+        });
+
         await h.StepAsync("After", "EditPagesUnlocked", ctx =>
         {
             ctx.Check(!steps.IsReadOnly && !job.IsReadOnly, "program and job pages should unlock after the cycle");
