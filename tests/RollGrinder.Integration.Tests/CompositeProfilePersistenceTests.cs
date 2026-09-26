@@ -168,6 +168,20 @@ public sealed class CompositeProfilePersistenceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_profile_name_is_taken_only_by_another_profile()
+    {
+        await MigratedAsync();
+        var library = new SqliteRollProfileRepository(this.database);
+        await library.SaveAsync(
+            RollProfileDefinition.Create("P-1", "工作辊-凸度300", Geometry.BodyLengthMm, ThreeSegments(), DateTimeOffset.UnixEpoch),
+            CancellationToken.None);
+
+        (await library.IsNameTakenAsync("工作辊-凸度300", null, CancellationToken.None)).Should().BeTrue();
+        (await library.IsNameTakenAsync("工作辊-凸度300 ", "P-2", CancellationToken.None)).Should().BeTrue("另一条不能叫同一个名字");
+        (await library.IsNameTakenAsync("工作辊-凸度300", "P-1", CancellationToken.None)).Should().BeFalse("存回自己不算重名");
+    }
+
+    [Fact]
     public async Task Saving_a_library_profile_twice_replaces_its_segments()
     {
         await MigratedAsync();

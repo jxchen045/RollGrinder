@@ -88,6 +88,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.library = library ?? throw new ArgumentNullException(nameof(library));
+        NamePrompt = new NamePromptViewModel(localizer);
 
         this.geometry = RollGeometry.FromDiameter(
             machine.Workpiece.MinBodyLengthMm, machine.Workpiece.MinDiameterMm);
@@ -507,16 +508,35 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     /// 所以"改了没存就想离开"那道拦截也会用到它。
     /// </summary>
     public override Task<bool> SaveAsync(CancellationToken cancellationToken) =>
-        StoreAsync(ProfileId ?? NewProfileId(), cancellationToken);
+        StoreAsync(ProfileId ?? NewProfileId(), ProfileName, cancellationToken);
 
-    /// <summary>另存一条新辊形，库里原来那条不动。</summary>
+    /// <summary>"另存为"的命名框。</summary>
+    public NamePromptViewModel NamePrompt { get; }
+
+    /// <summary>
+    /// 另存一条新辊形，库里原来那条不动。先起名字：预填"原名-副本"，
+    /// 名字在库里已经有了就留在框里说清楚，不存。
+    /// </summary>
     [RelayCommand]
-    private Task SaveAsAsync(CancellationToken cancellationToken) =>
-        StoreAsync(NewProfileId(), cancellationToken);
+    private void SaveAs() => NamePrompt.Open(
+        Localizer["Profile_SaveAsTitle"],
+        string.IsNullOrWhiteSpace(ProfileName) ? string.Empty : Localizer.Format("Library_CopyNameFormat", ProfileName.Trim()),
+        async (name, token) =>
+        {
+            if (await this.library.IsNameTakenAsync(name, null, token).ConfigureAwait(true))
+            {
+                return Localizer.Format("Library_NameTakenFormat", name);
+            }
 
-    private async Task<bool> StoreAsync(string profileId, CancellationToken cancellationToken)
+            return await StoreAsync(NewProfileId(), name, token).ConfigureAwait(true)
+                ? null
+                : Localizer["Library_SaveFailed"];
+        });
+
+    private async Task<bool> StoreAsync(string profileId, string name, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(ProfileName))
+        name = (name ?? string.Empty).Trim();
+        if (name.Length == 0)
         {
             // 没名字存进去就找不回来了，宁可不存。
             Alarms.Raise(AlarmSeverity.Warning, "Profile_NeedsName", code: AlarmCodes.DomainFailure);
@@ -525,15 +545,20 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
         try
         {
+            // 库里名字唯一：同名的两条分不清哪条是哪条（第一轮甲方测试）。
+            if (await this.library.IsNameTakenAsync(name, profileId, cancellationToken).ConfigureAwait(true))
+            {
+                Alarms.Raise(AlarmSeverity.Warning, "Library_NameTaken", name, AlarmCodes.DomainFailure);
+                return false;
+            }
+
             DateTimeOffset now = DateTimeOffset.UtcNow;
-            RollProfileDefinition? existing = ProfileId is null
-                ? null
-                : await this.library.GetAsync(profileId, cancellationToken).ConfigureAwait(true);
+            RollProfileDefinition? existing = await this.library.GetAsync(profileId, cancellationToken).ConfigureAwait(true);
 
             await this.library.SaveAsync(
                 new RollProfileDefinition(
                     profileId,
-                    ProfileName.Trim(),
+                    name,
                     this.geometry.BodyLengthMm,
                     this.composite,
                     existing?.CreatedAtUtc ?? now,
@@ -541,6 +566,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
                 cancellationToken).ConfigureAwait(true);
 
             ProfileId = profileId;
+            ProfileName = name;
             this.committedComposite = this.composite;
             IsDirty = false;
             Alarms.Raise(AlarmSeverity.Information, "Profile_Saved", ProfileName, AlarmCodes.HandoverCompleted);
@@ -641,8 +667,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     /// <summary>"打开"面板一次列多少条。</summary>
     private const int LibraryListLimit = 200;
 
+    /// <summary>新条目的标识。精确到毫秒：只到秒的话，一秒内另存两次会悄悄盖掉前一条。</summary>
     private static string NewProfileId() =>
-        string.Create(CultureInfo.InvariantCulture, $"P{DateTimeOffset.Now:yyyyMMddHHmmss}");
+        string.Create(CultureInfo.InvariantCulture, $"P{DateTimeOffset.Now:yyyyMMddHHmmssfff}");
 
     /// <summary>放弃修改：回到上次进入本页时的辊形，而不是清空。</summary>
     public override void DiscardChanges()

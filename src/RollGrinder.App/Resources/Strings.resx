@@ -2050,4 +2050,34 @@
   <data name="Alarm_CycleImplausiblyFast" xml:space="preserve">
     <value>这支辊磨得比预计快得多，请检查程序参数与机床</value>
   </data>
+  <data name="NamePrompt_Label" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="NamePrompt_Confirm" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="NamePrompt_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="NamePrompt_Empty" xml:space="preserve">
+    <value>请填一个名字</value>
+  </data>
+  <data name="Profile_SaveAsTitle" xml:space="preserve">
+    <value>另存为新辊形</value>
+  </data>
+  <data name="Program_SaveAsTitle" xml:space="preserve">
+    <value>另存为新程序</value>
+  </data>
+  <data name="Library_CopyNameFormat" xml:space="preserve">
+    <value>{0}-副本</value>
+  </data>
+  <data name="Library_NameTakenFormat" xml:space="preserve">
+    <value>库里已经有一条叫「{0}」的了，请换一个名字</value>
+  </data>
+  <data name="Library_NameTaken" xml:space="preserve">
+    <value>库里已有同名条目，没有保存；请改个名字再存，或用另存为</value>
+  </data>
+  <data name="Library_SaveFailed" xml:space="preserve">
+    <value>没有存成，原因见报警栏</value>
+  </data>
 </root>

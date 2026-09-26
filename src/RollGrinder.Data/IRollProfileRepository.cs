@@ -32,6 +32,12 @@ public interface IRollProfileRepository
     /// <summary>取一条完整辊形；不存在返回 null。</summary>
     Task<RollProfileDefinition?> GetAsync(string profileId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// 库里有没有别的辊形已经叫这个名字（去掉首尾空白、不分大小写）。
+    /// <paramref name="exceptId"/> 是正在保存的那一条自己，不算重名；新建时传 null。
+    /// </summary>
+    Task<bool> IsNameTakenAsync(string name, string? exceptId, CancellationToken cancellationToken);
+
     /// <summary>整条替换式保存（新建或覆盖）。</summary>
     Task SaveAsync(RollProfileDefinition profile, CancellationToken cancellationToken);
 

@@ -95,6 +95,20 @@ public sealed class ProgramLibraryTests : IDisposable
     }
 
     [Fact]
+    public async Task A_name_is_taken_only_by_another_program()
+    {
+        // 第一轮甲方测试：另存为不问名字，库里出了两支 "Test"。现在存之前先问一句。
+        await MigratedAsync();
+        var library = new SqliteProgramRepository(this.database);
+        await library.SaveAsync(Program("G-1", "Test"), CancellationToken.None);
+
+        (await library.IsNameTakenAsync("Test", null, CancellationToken.None)).Should().BeTrue("新建一支同名的不行");
+        (await library.IsNameTakenAsync(" test ", null, CancellationToken.None)).Should().BeTrue("首尾空白、大小写不同也算同名");
+        (await library.IsNameTakenAsync("Test", "G-1", CancellationToken.None)).Should().BeFalse("存回自己不算重名");
+        (await library.IsNameTakenAsync("Test-副本", null, CancellationToken.None)).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Saving_a_program_twice_replaces_its_steps_instead_of_appending()
     {
         await MigratedAsync();

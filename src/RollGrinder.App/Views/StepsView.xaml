@@ -469,5 +469,7 @@
                 </ItemsControl>
             </DockPanel>
         </Border>
+        <!-- 另存为的命名框：盖在最上面。 -->
+        <views:NamePromptOverlay Grid.ColumnSpan="2" DataContext="{Binding NamePrompt}" />
 </Grid>
 </UserControl>

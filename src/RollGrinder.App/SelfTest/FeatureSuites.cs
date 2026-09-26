@@ -27,6 +27,21 @@ internal static class SelfTestNames
     public const string FlowRollId = "SELFTEST-FLOW";
     public const string BodyLengthMm = "2000";
     public const string DiameterMm = "600";
+
+    /// <summary>按"另存为"、在命名框里填名字、按确定。返回命名框是否已关（关了 = 存成了）。</summary>
+    public static async Task<bool> SaveAsAsync(
+        SelfTestHarness h, System.Windows.Input.ICommand saveAs, NamePromptViewModel prompt, string name)
+    {
+        await h.RunAsync(saveAs);
+        if (!prompt.IsOpen)
+        {
+            return false;
+        }
+
+        prompt.Name = name;
+        await h.RunAsync(prompt.ConfirmCommand);
+        return !prompt.IsOpen;
+    }
 }
 
 /// <summary>辊形编辑：每种曲线段都插一次、上移、删除、校验、库的存/取/删、生成点列、导入对照线。</summary>
@@ -81,7 +96,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
         await h.StepAsync("Library", "SaveWithoutNameRefused", async ctx =>
         {
             page.ProfileName = string.Empty;
-            await h.RunAsync(page.SaveAsCommand);
+            await h.PressKeyAsync(ctx, "Fn_Save");
             ctx.Check(page.ProfileId is null || page.IsDirty, "a nameless profile must not be stored");
         }, StepOptions.Expect("Profile_NeedsName"));
 
@@ -90,6 +105,13 @@ internal sealed class ProfileSuite : ISelfTestSuite
             int segments = page.Segments.Count;
             page.ProfileName = SelfTestNames.ProfileA;
             await h.RunAsync(page.SaveAsCommand);
+            ctx.Check(page.NamePrompt.IsOpen, "save-as should ask for a name first");
+            ctx.Check(page.NamePrompt.Name.Contains(SelfTestNames.ProfileA, StringComparison.Ordinal),
+                "the name box should be prefilled from the current name, is " + page.NamePrompt.Name);
+            h.TryScreenshot("profile-save-as");
+            page.NamePrompt.Name = SelfTestNames.ProfileA;
+            await h.RunAsync(page.NamePrompt.ConfirmCommand);
+            ctx.Check(!page.NamePrompt.IsOpen, "a free name should be stored and close the box, error: " + page.NamePrompt.ErrorText);
             ctx.Check(!page.IsDirty && page.ProfileId is not null, "save-as should store and clear the dirty flag");
             await h.RunAsync(page.OpenLibraryCommand);
             ctx.Check(page.IsLibraryOpen, "library panel should open");
@@ -101,10 +123,23 @@ internal sealed class ProfileSuite : ISelfTestSuite
             ctx.Check(!page.IsDirty, "a freshly loaded profile is clean");
         }, StepOptions.Expect("Profile_Saved"));
 
+        await h.StepAsync("Library", "SaveAsRefusesTakenName", async ctx =>
+        {
+            string? idBefore = page.ProfileId;
+            await h.RunAsync(page.SaveAsCommand);
+            page.NamePrompt.Name = SelfTestNames.ProfileA;
+            await h.RunAsync(page.NamePrompt.ConfirmCommand);
+            ctx.Check(page.NamePrompt.IsOpen && page.NamePrompt.ErrorText.Length > 0,
+                "a name already in the library must be refused inside the box");
+            h.TryScreenshot("profile-save-as-taken");
+            await h.RunAsync(page.NamePrompt.CancelCommand);
+            ctx.Check(!page.NamePrompt.IsOpen && page.ProfileId == idBefore, "cancel should leave everything as it was");
+        });
+
         await h.StepAsync("Library", "DeleteSecondProfile", async ctx =>
         {
-            page.ProfileName = SelfTestNames.ProfileB;
-            await h.RunAsync(page.SaveAsCommand);
+            ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveAsCommand, page.NamePrompt, SelfTestNames.ProfileB),
+                "save-as B should go through, error: " + page.NamePrompt.ErrorText);
             await h.RunAsync(page.OpenLibraryCommand);
             page.SelectedLibraryEntry = page.LibraryEntries.First(e => e.Name == SelfTestNames.ProfileB);
             await h.RunAsync(page.DeleteFromLibraryCommand);
@@ -287,7 +322,7 @@ internal sealed class StepsSuite : ISelfTestSuite
         await h.StepAsync("ProgramLibrary", "SaveWithoutNameRefused", async ctx =>
         {
             page.ProgramName = string.Empty;
-            await h.RunAsync(page.SaveProgramAsCommand);
+            await h.PressKeyAsync(ctx, "Fn_SaveProgram");
             ctx.Check(page.IsDirty, "a nameless program must not be stored");
         }, StepOptions.Expect("Program_NeedsName"));
 
@@ -295,7 +330,8 @@ internal sealed class StepsSuite : ISelfTestSuite
         {
             int steps = page.Steps.Count;
             page.ProgramName = SelfTestNames.ProgramA;
-            await h.RunAsync(page.SaveProgramAsCommand);
+            ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveProgramAsCommand, page.NamePrompt, SelfTestNames.ProgramA),
+                "save-as A should go through, error: " + page.NamePrompt.ErrorText);
             await h.RunAsync(page.NewJobCommand);
             ctx.Check(page.Steps.Count == 0, "new job should clear steps");
             ctx.Check(page.ProgramId is null && string.IsNullOrEmpty(page.ProgramName), "new job must not keep the old program's identity");
@@ -310,8 +346,8 @@ internal sealed class StepsSuite : ISelfTestSuite
 
         await h.StepAsync("ProgramLibrary", "DeleteSecondProgram", async ctx =>
         {
-            page.ProgramName = SelfTestNames.ProgramB;
-            await h.RunAsync(page.SaveProgramAsCommand);
+            ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveProgramAsCommand, page.NamePrompt, SelfTestNames.ProgramB),
+                "save-as B should go through, error: " + page.NamePrompt.ErrorText);
             await h.RunAsync(page.OpenProgramLibraryCommand);
             page.SelectedProgramEntry = page.ProgramLibraryEntries.First(p => p.Name == SelfTestNames.ProgramB);
             await h.RunAsync(page.DeleteProgramCommand);

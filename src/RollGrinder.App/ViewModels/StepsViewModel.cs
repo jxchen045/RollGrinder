@@ -300,6 +300,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.profileLibrary = profileLibrary ?? throw new ArgumentNullException(nameof(profileLibrary));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         ArgumentNullException.ThrowIfNull(machine);
+        NamePrompt = new NamePromptViewModel(localizer);
 
         ProfileTypeKeys = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
         // 按槽排序，让下拉里的分组按实机屏幕上的顺序出现——
@@ -803,16 +804,35 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// 所以"改了没存就想离开"那道拦截也会用到它。
     /// </summary>
     public override Task<bool> SaveAsync(CancellationToken cancellationToken) =>
-        StoreProgramAsync(ProgramId ?? NewProgramId(), cancellationToken);
+        StoreProgramAsync(ProgramId ?? NewProgramId(), ProgramName, cancellationToken);
 
-    /// <summary>另存一支新程序，库里原来那支不动。</summary>
+    /// <summary>"另存为"的命名框。</summary>
+    public NamePromptViewModel NamePrompt { get; }
+
+    /// <summary>
+    /// 另存一支新程序，库里原来那支不动。先起名字：预填"原名-副本"，
+    /// 名字在库里已经有了就留在框里说清楚，不存。
+    /// </summary>
     [RelayCommand]
-    private Task SaveProgramAsAsync(CancellationToken cancellationToken) =>
-        StoreProgramAsync(NewProgramId(), cancellationToken);
+    private void SaveProgramAs() => NamePrompt.Open(
+        Localizer["Program_SaveAsTitle"],
+        string.IsNullOrWhiteSpace(ProgramName) ? string.Empty : Localizer.Format("Library_CopyNameFormat", ProgramName.Trim()),
+        async (name, token) =>
+        {
+            if (await this.programs.IsNameTakenAsync(name, null, token).ConfigureAwait(true))
+            {
+                return Localizer.Format("Library_NameTakenFormat", name);
+            }
 
-    private async Task<bool> StoreProgramAsync(string programId, CancellationToken cancellationToken)
+            return await StoreProgramAsync(NewProgramId(), name, token).ConfigureAwait(true)
+                ? null
+                : Localizer["Library_SaveFailed"];
+        });
+
+    private async Task<bool> StoreProgramAsync(string programId, string name, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(ProgramName))
+        name = (name ?? string.Empty).Trim();
+        if (name.Length == 0)
         {
             Alarms.Raise(AlarmSeverity.Warning, "Program_NeedsName", code: AlarmCodes.DomainFailure);
             return false;
@@ -839,17 +859,23 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
         try
         {
+            // 库里名字唯一：同名的两支分不清哪支是哪支（第一轮甲方测试）。
+            if (await this.programs.IsNameTakenAsync(name, programId, cancellationToken).ConfigureAwait(true))
+            {
+                Alarms.Raise(AlarmSeverity.Warning, "Library_NameTaken", name, AlarmCodes.DomainFailure);
+                return false;
+            }
+
             DateTimeOffset now = DateTimeOffset.UtcNow;
-            GrindingProgram? existing = ProgramId is null
-                ? null
-                : await this.programs.GetAsync(programId, cancellationToken).ConfigureAwait(true);
+            GrindingProgram? existing = await this.programs.GetAsync(programId, cancellationToken).ConfigureAwait(true);
 
             await this.programs.SaveAsync(
-                GrindingProgram.Create(programId, ProgramName.Trim(), steps, existing?.CreatedAtUtc ?? now, CollectProgramOptions())
+                GrindingProgram.Create(programId, name, steps, existing?.CreatedAtUtc ?? now, CollectProgramOptions())
                     with { ModifiedAtUtc = now },
                 cancellationToken).ConfigureAwait(true);
 
             ProgramId = programId;
+            ProgramName = name;
             Capture();
             IsDirty = false;
             Alarms.Raise(AlarmSeverity.Information, "Program_Saved", ProgramName, AlarmCodes.HandoverCompleted);
@@ -1043,8 +1069,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// <summary>库面板一次列多少条。</summary>
     private const int LibraryListLimit = 200;
 
+    /// <summary>新条目的标识。精确到毫秒：只到秒的话，一秒内另存两次会悄悄盖掉前一支。</summary>
     private static string NewProgramId() =>
-        string.Create(CultureInfo.InvariantCulture, $"G{DateTimeOffset.Now:yyyyMMddHHmmss}");
+        string.Create(CultureInfo.InvariantCulture, $"G{DateTimeOffset.Now:yyyyMMddHHmmssfff}");
 
     private ParameterSet CollectProgramOptions() => new(ProgramOptions.Select(row =>
         new KeyValuePair<string, ParameterValue>(

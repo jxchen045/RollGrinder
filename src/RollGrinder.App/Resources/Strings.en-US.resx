@@ -2050,4 +2050,34 @@
   <data name="Alarm_CycleImplausiblyFast" xml:space="preserve">
     <value>This roll finished far sooner than estimated; check the program parameters and the machine</value>
   </data>
+  <data name="NamePrompt_Label" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="NamePrompt_Confirm" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="NamePrompt_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="NamePrompt_Empty" xml:space="preserve">
+    <value>Enter a name</value>
+  </data>
+  <data name="Profile_SaveAsTitle" xml:space="preserve">
+    <value>Save as a new profile</value>
+  </data>
+  <data name="Program_SaveAsTitle" xml:space="preserve">
+    <value>Save as a new program</value>
+  </data>
+  <data name="Library_CopyNameFormat" xml:space="preserve">
+    <value>{0} - copy</value>
+  </data>
+  <data name="Library_NameTakenFormat" xml:space="preserve">
+    <value>The library already has an entry named "{0}"; choose another name</value>
+  </data>
+  <data name="Library_NameTaken" xml:space="preserve">
+    <value>An entry with this name already exists; not saved. Rename it or use Save As</value>
+  </data>
+  <data name="Library_SaveFailed" xml:space="preserve">
+    <value>Not saved; see the alarm bar for the reason</value>
+  </data>
 </root>
