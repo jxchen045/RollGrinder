@@ -8,6 +8,8 @@ public sealed class CylindricalProfileType : IRollProfileType
 {
     public string Key => ProfileTypeKeys.Cylindrical;
 
+    public bool IsSelfSymmetric => true;
+
     public ParameterSchema Schema => ParameterSchema.Empty;
 
     public RollProfile CreateProfile(RollGeometry geometry, ParameterSet parameters, int sampleCount)

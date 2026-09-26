@@ -44,8 +44,8 @@ internal static class ProfileSegmentMapping
                 command.CommandText =
                     $"""
                      INSERT INTO {tables.SegmentTable}
-                         ({tables.OwnerColumn}, segment_order, profile_type_key, from_mm, to_mm, is_mirrored)
-                     VALUES ($owner, $order, $type, $from, $to, $mirrored);
+                         ({tables.OwnerColumn}, segment_order, profile_type_key, from_mm, to_mm, is_mirrored, layout)
+                     VALUES ($owner, $order, $type, $from, $to, $mirrored, $layout);
                      """;
                 SqlMapping.AddParameter(command, "$owner", ownerId);
                 SqlMapping.AddParameter(command, "$order", segment.Order);
@@ -53,6 +53,7 @@ internal static class ProfileSegmentMapping
                 SqlMapping.AddParameter(command, "$from", segment.FromMm);
                 SqlMapping.AddParameter(command, "$to", segment.ToMm);
                 SqlMapping.AddParameter(command, "$mirrored", segment.IsMirrored ? 1 : 0);
+                SqlMapping.AddParameter(command, "$layout", (int)profile.Layout);
                 await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
             }
 
@@ -77,7 +78,7 @@ internal static class ProfileSegmentMapping
     }
 
     /// <summary>
-    /// 读回某个属主名下的多段辊形。一段都没有时返回 null——
+    /// 读回某个属主名下的多段辊形，拼法按存的时候的来（旧行是叠加）。一段都没有时返回 null——
     /// 对旧库里的作业，调用方据此回落到单曲线的老表示。
     /// </summary>
     public static async Task<CompositeRollProfile?> ReadAsync(
@@ -90,11 +91,12 @@ internal static class ProfileSegmentMapping
             await ReadParametersAsync(connection, tables, ownerId, cancellationToken).ConfigureAwait(false);
 
         var segments = new List<RollProfileSegment>();
+        var layout = ProfileLayout.Superimposed;
         await using (SqliteCommand command = connection.CreateCommand())
         {
             command.CommandText =
                 $"""
-                 SELECT segment_order, profile_type_key, from_mm, to_mm, is_mirrored
+                 SELECT segment_order, profile_type_key, from_mm, to_mm, is_mirrored, layout
                  FROM {tables.SegmentTable}
                  WHERE {tables.OwnerColumn} = $owner
                  ORDER BY segment_order;
@@ -106,6 +108,7 @@ internal static class ProfileSegmentMapping
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
                 int order = reader.GetInt32(0);
+                layout = (ProfileLayout)reader.GetInt32(5);
                 segments.Add(new RollProfileSegment(
                     order,
                     reader.GetString(1),
@@ -118,7 +121,7 @@ internal static class ProfileSegmentMapping
             }
         }
 
-        return segments.Count == 0 ? null : new CompositeRollProfile(segments);
+        return segments.Count == 0 ? null : new CompositeRollProfile(segments, layout);
     }
 
     /// <summary>删掉某个属主名下的全部段。外键是级联的，这里显式删是为了不依赖 PRAGMA 的开关状态。</summary>

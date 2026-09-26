@@ -14,6 +14,8 @@ public sealed class CrownProfileType : IRollProfileType
 
     public string Key => ProfileTypeKeys.Crown;
 
+    public bool IsSelfSymmetric => true;
+
     public ParameterSchema Schema { get; } = new(new[]
     {
         ParameterDescriptor.Number(CrownDiameterMicrometerKey, ParameterUnit.Micrometer, 0.0, -2000.0, 2000.0),

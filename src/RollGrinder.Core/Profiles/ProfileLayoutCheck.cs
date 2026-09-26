@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
+using RollGrinder.Core.Units;
 
 namespace RollGrinder.Core.Profiles;
 
@@ -22,6 +24,9 @@ public enum ProfileIssueKind
 
     /// <summary>某段的参数不成立（越界、缺失……），详见 <see cref="ProfileIssue.Violation"/>。</summary>
     ParameterInvalid = 4,
+
+    /// <summary>顺接辊形相邻两段在段界上对不上（跳变见 <see cref="ProfileIssue.JumpMicrometer"/>）。</summary>
+    BoundaryJump = 5,
 }
 
 /// <summary>辊形排布上的一条问题。</summary>
@@ -32,6 +37,7 @@ public enum ProfileIssueKind
 /// <param name="FromMm">问题所在区间起点（辊身坐标 mm）。</param>
 /// <param name="ToMm">问题所在区间终点（辊身坐标 mm）。</param>
 /// <param name="Violation">参数不成立时的具体原因。</param>
+/// <param name="JumpMicrometer">段界跳变（直径量 µm，后一段减前一段）。</param>
 public sealed record ProfileIssue(
     ProfileIssueKind Kind,
     bool IsError,
@@ -39,35 +45,42 @@ public sealed record ProfileIssue(
     int? OtherSegmentOrder = null,
     double FromMm = 0.0,
     double ToMm = 0.0,
-    ParameterViolation? Violation = null);
+    ParameterViolation? Violation = null,
+    double JumpMicrometer = 0.0);
 
 /// <summary>
 /// 辊形编辑器每改一次就跑一遍的排布检查（第一轮甲方测试：辊形 1⑥⑨）。
 ///
 /// 甲方那条辊形的设计长度是 300 mm，曲线段却填到了 100–800 mm，预览按 300 mm 画，
 /// 和输入对不上，界面上也没有任何提示。这里把这类问题逐条找出来：
-/// 段伸出辊身、辊身有一截没被覆盖、参数越界都是错误，有错不能保存；
-/// 两段重叠在现在的叠加模型里是正常用法（主辊形上再叠端部锥度），只作提示。
+/// 段伸出辊身、辊身有一截没被覆盖（段长合计不等于设计长度）、参数越界、
+/// 顺接辊形段界跳变都是错误，有错不能保存；
+/// 旧的叠加辊形里两段重叠是正常用法（主辊形上再叠端部锥度），只作提示。
 /// </summary>
 public static class ProfileLayoutCheck
 {
     /// <summary>小于这个长度（mm）的出界、断开、重叠当作数值误差，不报。</summary>
     public const double ToleranceMm = 0.01;
 
+    /// <summary>顺接辊形段界上允许的跳变（直径量 µm）。再大就是一个台阶，磨不出来。</summary>
+    public const double MaxBoundaryJumpMicrometer = 1.0;
+
+    /// <summary>检查一条辊形；<paramref name="profile"/> 为 null 表示一段都没有。</summary>
     public static IReadOnlyList<ProfileIssue> Check(
-        IReadOnlyList<RollProfileSegment> segments,
+        CompositeRollProfile? profile,
         double bodyLengthMm,
         RollProfileTypeRegistry registry)
     {
-        ArgumentNullException.ThrowIfNull(segments);
         ArgumentNullException.ThrowIfNull(registry);
 
         var issues = new List<ProfileIssue>();
-        if (segments.Count == 0)
+        if (profile is null)
         {
             issues.Add(new ProfileIssue(ProfileIssueKind.NoSegments, IsError: true));
             return issues;
         }
+
+        IReadOnlyList<RollProfileSegment> segments = profile.Segments;
 
         foreach (RollProfileSegment segment in segments)
         {
@@ -88,8 +101,33 @@ public static class ProfileLayoutCheck
         }
 
         issues.AddRange(FindUncovered(segments, bodyLengthMm));
-        issues.AddRange(FindOverlaps(segments));
+        if (profile.Layout == ProfileLayout.Superimposed)
+        {
+            issues.AddRange(FindOverlaps(segments));
+        }
+        else
+        {
+            issues.AddRange(FindJumps(profile, bodyLengthMm, registry));
+        }
+
         return issues;
+    }
+
+    private static IEnumerable<ProfileIssue> FindJumps(
+        CompositeRollProfile profile, double bodyLengthMm, RollProfileTypeRegistry registry)
+    {
+        // 段界跳变只看两段曲线在交界处的值，几何里的直径不参与；给一个占位直径即可。
+        RollGeometry geometry = RollGeometry.Create(Math.Max(bodyLengthMm, profile.EndZMm), 1.0);
+        foreach (ProfileBoundary boundary in profile.Boundaries(geometry, registry, 201))
+        {
+            double jumpMicrometer = UnitConversion.RadiusMmToDiameterMicrometer(boundary.JumpRadiusMm);
+            if (Math.Abs(jumpMicrometer) > MaxBoundaryJumpMicrometer)
+            {
+                yield return new ProfileIssue(
+                    ProfileIssueKind.BoundaryJump, true, boundary.RightOrder, boundary.LeftOrder,
+                    boundary.ZMm, boundary.ZMm, null, jumpMicrometer);
+            }
+        }
     }
 
     /// <summary>辊身上没被任何段盖住的地方。</summary>

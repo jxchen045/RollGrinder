@@ -24,7 +24,7 @@ public sealed class ProfileLayoutCheckTests
         RollProfileSegment.Create(order, type, from, to, parameters ?? Registry.Get(type).Schema.CreateDefaults());
 
     private static IReadOnlyList<ProfileIssue> Check(params RollProfileSegment[] segments) =>
-        ProfileLayoutCheck.Check(segments, Body, Registry);
+        ProfileLayoutCheck.Check(segments.Length == 0 ? null : CompositeRollProfile.Superimposed(segments), Body, Registry);
 
     [Fact]
     public void A_full_length_main_profile_with_end_tapers_is_clean_apart_from_overlap_hints()
@@ -59,7 +59,7 @@ public sealed class ProfileLayoutCheckTests
     {
         // 甲方那条：设计长度 300 mm，段填到 100–800 mm。
         IReadOnlyList<ProfileIssue> issues = ProfileLayoutCheck.Check(
-            new[] { Segment(1, ProfileTypeKeys.Crown, 100.0, 800.0), Segment(2, ProfileTypeKeys.Taper, 225.0, 300.0) },
+            CompositeRollProfile.Superimposed(new[] { Segment(1, ProfileTypeKeys.Crown, 100.0, 800.0), Segment(2, ProfileTypeKeys.Taper, 225.0, 300.0) }),
             300.0,
             Registry);
 
@@ -104,7 +104,7 @@ public sealed class ProfileLayoutCheckTests
     [Fact]
     public void Move_down_is_the_mirror_of_move_up()
     {
-        var composite = new CompositeRollProfile(new[]
+        var composite = CompositeRollProfile.Superimposed(new[]
         {
             Segment(1, ProfileTypeKeys.Crown, 0.0, 2000.0),
             Segment(2, ProfileTypeKeys.Taper, 0.0, 150.0),

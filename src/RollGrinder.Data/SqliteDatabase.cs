@@ -286,6 +286,15 @@ public sealed class SqliteDatabase
         ALTER TABLE roll ADD COLUMN head_box_weight_kg      REAL NULL;
         ALTER TABLE roll ADD COLUMN tail_box_weight_kg      REAL NULL;
         """,
+
+        // 9：辊形的拼法（阶段 1）。0 = 叠加（以前存的都是这种，区间可以重叠、重叠处相加），
+        // 1 = 顺接（起点 Z + 段长、首尾相接）。旧行默认 0，读回来照旧按叠加求值，
+        // 已经磨过的辊的记录、下发过的作业快照一个点都不变。
+        // 同一条辊形的各段写同一个值；放在段表上，是因为辊形库和作业快照共用同一套段的读写。
+        """
+        ALTER TABLE roll_profile_segment ADD COLUMN layout INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE job_profile_segment  ADD COLUMN layout INTEGER NOT NULL DEFAULT 0;
+        """,
     };
 
     private readonly string connectionString;

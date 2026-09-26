@@ -118,8 +118,11 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
         this.geometry = RollGeometry.FromDiameter(
             machine.Workpiece.MinBodyLengthMm, machine.Workpiece.MinDiameterMm);
-        this.composite = CompositeRollProfile.Single(
-            ProfileTypeKeys.Cylindrical, this.geometry, ParameterSet.Empty);
+        // 编辑器改成"起点 Z + 段长"之前，仍按阶段 0 的叠加方式编辑（阶段 1 编辑器重做时换掉）。
+        this.composite = CompositeRollProfile.Superimposed(new[]
+        {
+            RollProfileSegment.Create(1, ProfileTypeKeys.Cylindrical, 0.0, this.geometry.BodyLengthMm, ParameterSet.Empty),
+        });
         this.committedComposite = this.composite;
         this.committedBodyLengthMm = this.geometry.BodyLengthMm;
         this.bodyLengthMmText = FormatLength(this.geometry.BodyLengthMm);
@@ -541,7 +544,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             this.geometry.BodyLengthMm,
             profileType.Schema.CreateDefaults());
 
-        this.composite = this.composite is null ? new CompositeRollProfile(new[] { segment }) : this.composite.Add(segment);
+        this.composite = this.composite is null ? CompositeRollProfile.Superimposed(new[] { segment }) : this.composite.Add(segment);
         MarkDirty();
         Rebuild(CurrentSegments.Count);
     }
@@ -976,7 +979,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
 
         var parameterErrors = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (ProfileIssue issue in ProfileLayoutCheck.Check(CurrentSegments, this.geometry.BodyLengthMm, this.profileTypes))
+        foreach (ProfileIssue issue in ProfileLayoutCheck.Check(this.composite, this.geometry.BodyLengthMm, this.profileTypes))
         {
             (issue.IsError ? errors : hints).Add(DescribeIssue(issue, parameterErrors));
             if (issue.IsError && issue.SegmentOrder is int order)
@@ -1066,7 +1069,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
                 .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMm(point.RadiusOffsetMm)))
                 .ToArray();
 
-            var mainOnly = new CompositeRollProfile(new[] { this.composite.Segments[0] });
+            var mainOnly = CompositeRollProfile.Superimposed(new[] { this.composite.Segments[0] });
             RollProfile main = mainOnly.Compose(this.geometry, this.profileTypes, this.settings.ProfileSampleCount);
             MainPoints = main.Points
                 .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMm(point.RadiusOffsetMm)))

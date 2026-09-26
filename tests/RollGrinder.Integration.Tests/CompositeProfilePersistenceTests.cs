@@ -47,7 +47,7 @@ public sealed class CompositeProfilePersistenceTests : IDisposable
         var crown = new CrownProfileType();
         var taper = new TaperProfileType();
 
-        return new CompositeRollProfile(new[]
+        return CompositeRollProfile.Superimposed(new[]
         {
             RollProfileSegment.Create(
                 1,
@@ -69,6 +69,59 @@ public sealed class CompositeProfilePersistenceTests : IDisposable
         Geometry,
         profile,
         new[] { new GrindingJobStep(1, StepTypeKeys.Rough, new RoughGrindingStepType().Schema.CreateDefaults()) });
+
+    /// <summary>阶段 1 的顺接辊形：锥度 150 + 凸度 1700 + 锥度 150。</summary>
+    private static CompositeRollProfile Chained() => CompositeRollProfile.Sequential(0.0, new[]
+    {
+        new SequentialSegment(ProfileTypeKeys.Taper, 150.0, new TaperProfileType().Schema.CreateDefaults(), IsMirrored: true),
+        new SequentialSegment(
+            ProfileTypeKeys.Crown,
+            1700.0,
+            new CrownProfileType().Schema.CreateDefaults()
+                .With(CrownProfileType.CrownDiameterMicrometerKey, ParameterValue.FromNumber(120.0))),
+        new SequentialSegment(ProfileTypeKeys.Taper, 150.0, new TaperProfileType().Schema.CreateDefaults()),
+    });
+
+    [Fact]
+    public async Task A_sequential_profile_keeps_its_layout_in_the_library_and_in_a_job_snapshot()
+    {
+        await MigratedAsync();
+        var library = new SqliteRollProfileRepository(this.database);
+        var jobs = new SqliteJobRepository(this.database);
+
+        await library.SaveAsync(
+            RollProfileDefinition.Create("P-SEQ", "顺接", Geometry.BodyLengthMm, Chained(), DateTimeOffset.UnixEpoch),
+            CancellationToken.None);
+        await jobs.SaveAsync(JobWith(Chained()), JobState.Draft, CancellationToken.None);
+
+        CompositeRollProfile fromLibrary = (await library.GetAsync("P-SEQ", CancellationToken.None))!.Profile;
+        CompositeRollProfile fromJob = (await jobs.GetAsync("J-1", CancellationToken.None))!.Value.Job.Profile;
+
+        fromLibrary.Layout.Should().Be(ProfileLayout.Sequential);
+        fromJob.Layout.Should().Be(ProfileLayout.Sequential);
+        fromLibrary.Segments.Select(s => (s.FromMm, s.ToMm)).Should().Equal((0.0, 150.0), (150.0, 1850.0), (1850.0, 2000.0));
+    }
+
+    [Fact]
+    public async Task Rows_written_before_stage_1_read_back_as_superimposed()
+    {
+        // 升级前存下的段没有 layout 这一列的值：迁移给默认 0，读回来仍按叠加求值，一个点都不变。
+        await MigratedAsync();
+        await new SqliteRollProfileRepository(this.database).SaveAsync(
+            RollProfileDefinition.Create("P-OLD", "旧", Geometry.BodyLengthMm, ThreeSegments(), DateTimeOffset.UnixEpoch),
+            CancellationToken.None);
+        await using (SqliteConnection connection = await this.database.OpenAsync(CancellationToken.None))
+        await using (SqliteCommand command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT DISTINCT layout FROM roll_profile_segment WHERE profile_id = 'P-OLD';";
+            (await command.ExecuteScalarAsync()).Should().Be(0L, "叠加辊形存成 0，和迁移给旧行的默认值一样");
+        }
+
+        CompositeRollProfile loaded = (await new SqliteRollProfileRepository(this.database)
+            .GetAsync("P-OLD", CancellationToken.None))!.Profile;
+        loaded.Layout.Should().Be(ProfileLayout.Superimposed);
+        loaded.Segments.Should().HaveCount(3, "重叠的旧段原样读回");
+    }
 
     [Fact]
     public async Task Every_segment_survives_a_save_and_load()

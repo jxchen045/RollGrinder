@@ -763,7 +763,7 @@ public sealed class GrindingJobValidatorTests
             "J-seg",
             "R-1",
             geometry,
-            new CompositeRollProfile(new[]
+            CompositeRollProfile.Superimposed(new[]
             {
                 RollProfileSegment.Create(1, ProfileTypeKeys.Crown, 0.0, 2000.0, crown.Schema.CreateDefaults()),
                 RollProfileSegment.Create(2, ProfileTypeKeys.Taper, 1900.0, 2400.0, taper.Schema.CreateDefaults()),
@@ -787,7 +787,7 @@ public sealed class GrindingJobValidatorTests
             "J-seg",
             "R-1",
             geometry,
-            new CompositeRollProfile(new[]
+            CompositeRollProfile.Superimposed(new[]
             {
                 RollProfileSegment.Create(1, ProfileTypeKeys.Crown, 0.0, 2000.0, crown.Schema.CreateDefaults()),
                 RollProfileSegment.Create(

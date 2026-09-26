@@ -44,7 +44,7 @@ public sealed class CompositeProfileTests
     [Fact]
     public void A_segment_contributes_nothing_outside_its_range()
     {
-        var composite = new CompositeRollProfile(new[]
+        var composite = CompositeRollProfile.Superimposed(new[]
         {
             RollProfileSegment.Create(1, ProfileTypeKeys.Cylindrical, 0.0, 2000.0, ParameterSet.Empty),
             RollProfileSegment.Create(2, ProfileTypeKeys.Taper, 1850.0, 2000.0, Taper(-200.0)),
@@ -60,7 +60,7 @@ public sealed class CompositeProfileTests
     [Fact]
     public void Segments_add_up_where_they_overlap()
     {
-        var composite = new CompositeRollProfile(new[]
+        var composite = CompositeRollProfile.Superimposed(new[]
         {
             RollProfileSegment.Create(1, ProfileTypeKeys.Crown, 0.0, 2000.0, Crown(100.0)),
             RollProfileSegment.Create(2, ProfileTypeKeys.Crown, 0.0, 2000.0, Crown(40.0)),
@@ -75,11 +75,11 @@ public sealed class CompositeProfileTests
     [Fact]
     public void A_mirrored_segment_runs_the_other_way()
     {
-        var straight = new CompositeRollProfile(new[]
+        var straight = CompositeRollProfile.Superimposed(new[]
         {
             RollProfileSegment.Create(1, ProfileTypeKeys.Taper, 0.0, 2000.0, Taper(200.0)),
         });
-        var mirrored = new CompositeRollProfile(new[]
+        var mirrored = CompositeRollProfile.Superimposed(new[]
         {
             RollProfileSegment.Create(1, ProfileTypeKeys.Taper, 0.0, 2000.0, Taper(200.0), isMirrored: true),
         });
@@ -120,7 +120,7 @@ public sealed class CompositeProfileTests
     [Fact]
     public void A_profile_without_segments_is_rejected()
     {
-        FluentActions.Invoking(() => new CompositeRollProfile(System.Array.Empty<RollProfileSegment>()))
+        FluentActions.Invoking(() => CompositeRollProfile.Superimposed(System.Array.Empty<RollProfileSegment>()))
             .Should().Throw<DomainException>();
     }
 
@@ -133,7 +133,7 @@ public sealed class CompositeProfileTests
         var taper = new TaperProfileType();
         RollGeometry geometry = RollGeometry.FromDiameter(2000.0, 650.0);
 
-        var composite = new CompositeRollProfile(new[]
+        var composite = CompositeRollProfile.Superimposed(new[]
         {
             RollProfileSegment.Create(1, ProfileTypeKeys.Crown, 0.0, 2000.0, crown.Schema.CreateDefaults()),
             RollProfileSegment.Create(2, ProfileTypeKeys.Taper, 1800.0, 2000.0, taper.Schema.CreateDefaults()),

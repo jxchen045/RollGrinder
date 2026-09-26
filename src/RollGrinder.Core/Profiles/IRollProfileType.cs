@@ -17,4 +17,14 @@ public interface IRollProfileType
 
     /// <summary>按参数生成目标辊形（半径量 mm）。</summary>
     RollProfile CreateProfile(RollGeometry geometry, ParameterSet parameters, int sampleCount);
+
+    /// <summary>
+    /// 曲线本身关于段中点对称（圆柱、凸度）。对称编辑时只有这种段能跨在辊身中点上当"中间段"。
+    /// </summary>
+    bool IsSelfSymmetric => false;
+
+    /// <summary>
+    /// 能不能参与对称编辑。CVC 这类本身就是左右不对称的辊形不能——含这种段时"对称"开关置灰。
+    /// </summary>
+    bool SupportsSymmetricEditing => true;
 }

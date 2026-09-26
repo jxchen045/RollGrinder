@@ -18,6 +18,8 @@ public sealed class CvcProfileType : IRollProfileType
 
     public string Key => ProfileTypeKeys.Cvc;
 
+    public bool SupportsSymmetricEditing => false;
+
     public ParameterSchema Schema { get; } = new(new[]
     {
         ParameterDescriptor.Number(A0DiameterMicrometerKey, ParameterUnit.Micrometer, 0.0, -2000.0, 2000.0),

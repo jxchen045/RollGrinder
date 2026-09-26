@@ -257,7 +257,7 @@ public sealed class NcJobTranslatorTests
         var crown = new CrownProfileType();
         var taper = new TaperProfileType();
 
-        var composite = new CompositeRollProfile(new[]
+        var composite = CompositeRollProfile.Superimposed(new[]
         {
             RollProfileSegment.Create(
                 1,
