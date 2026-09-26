@@ -270,7 +270,7 @@
       <h1>RGX 上位机操作测试手册</h1>
       <p class="lede">请甲方的工艺、操作、设备人员按现场习惯，把一支辊从编辑辊形、编工序、下发、磨削、到查记录打报表完整走一遍，对流程、叫法、默认值和按键布局提出意见。本轮上位机连的是仿真机床，不连真机。</p>
       <dl class="meta">
-        <div><dt>软件版本</dt><dd class="mono">提交 cbe190a（2026-09-25）</dd></div>
+        <div><dt>软件版本</dt><dd class="mono">阶段 0 修复版（2026-09-26）</dd></div>
         <div><dt>本手册日期</dt><dd class="mono">2026-09-26</dd></div>
         <div><dt>测试方式</dt><dd>仿真机床，约 2 小时</dd></div>
         <div class="blank"><dt>测试日期 / 地点</dt><dd></dd></div>
@@ -280,6 +280,17 @@
         <div class="blank"><dt>演示密码（admin）</dt><dd></dd></div>
       </dl>
     </header>
+
+    <div class="box">
+      <span class="tag">本版改动 · 阶段 0 缺陷修复</span>
+      <p>第一轮测试后修掉的问题，复测时请重点看这几处（详见《第一轮测试修改稿》）：</p>
+      <ul>
+        <li><strong>启动后不加工（3①）：</strong>程序以"开始"打头时，下发的通用进给取第一道真正走拖板的工序；仿真机床按每道工序自己的进给走，"开始 / 结束"这类工序原地停几秒。一支辊要按预计时间磨，不会再 3 秒"磨完"。磨得比预计快得多（不到四分之一）时，报警条会出黄色警告。</li>
+        <li><strong>库里同名（辊形 1②③、程序同样）：</strong>"另存为"先弹出命名框，默认"原名-副本"；名字在库里已经有了，框里给出"覆盖那一条 / 改名 / 取消"。按"保存"时改的名字撞上别的条目，也走这个框。</li>
+        <li><strong>辊形编辑（1①⑦⑧⑨）：</strong>曲线段可以删到一段不剩（空辊形不能保存）；补了"下移"；去掉功能条上重复的"新建曲线段"；新增"设计长度"一栏；每改一次就校验，问题逐条列在预览上方，出错的段和参数格标红，有错时"保存""另存为"变灰。</li>
+        <li><strong>工序编程（2④⑥）：</strong>每道工序后面加了 ▲ ▼（上移、下移）；左栏加"校验"按钮；保存、另存为之前自动校验，不过不存，原因列在右栏轧辊数据下方。</li>
+      </ul>
+    </div>
 
     <!-- ============================== 1 ============================== -->
     <section id="s1">
@@ -522,17 +533,21 @@
       <!-- B -->
       <div class="scene" id="b">
         <div class="scene-head"><h3>B 编辑辊形并存入辊形库</h3><span class="dur">约 10 分钟</span><span class="who">参加：工艺人员</span></div>
-        <p>页面布局：左边是"曲线段（可叠加）"列表，中上是"辊形预览（直径量）"，下面是所选曲线段的参数和校验结果。辊形类型有四种：圆柱、凸度、锥度、CVC。</p>
+        <p>页面布局：左边是辊形名、设计长度和"曲线段（可叠加）"列表，中上是校验结果和"辊形预览（直径量）"，下面是所选曲线段的参数。辊形类型有四种：圆柱、凸度、锥度、CVC。</p>
+        <p>现在的辊形仍是<strong>逐段叠加</strong>：主辊形铺满全长，端部锥度等再叠在上面，两段重叠处偏差相加。"起点 Z + 段长、自动首尾相接"的新方式在阶段 1 做。</p>
         <ol class="steps">
           <li>按 <kbd>Ctrl</kbd>+<kbd>3</kbd> 进辊形编辑页。</li>
-          <li>在曲线段区选类型"凸度"，按 <span class="key"><span class="f">F3</span>新建曲线段</span>（或列表下方的"插入"）。<span class="expect">列表多一段"凸度"，参数区出现"凸度（直径量）"。</span></li>
-          <li>凸度填 <code>300</code>（µm，直径量）。"区间起点 / 区间终点"默认是整根辊身，先不改。<span class="expect">预览曲线随参数实时变化。</span></li>
-          <li>再插一段"锥度"，填一个小值，比如 <code>50</code> µm。<span class="expect">预览里"合成辊形"是各段叠加后的结果，"主辊形"是第一段。</span></li>
-          <li>试一下"上移""删除"调整曲线段顺序。</li>
-          <li>按 <span class="key"><span class="f">F6</span>校验</span>。<span class="expect">校验区显示最大弦高误差、分段数 / 段长、锥度起点是否对齐、补偿执行轴。</span></li>
-          <li>在"辊形名"填 <code>工作辊-凸度300</code>，按 <span class="key"><span class="f">F2</span>另存为</span>。<span class="expect">报警条提示"辊形已存入库"。没填名字时提示"辊形要先起个名字才能存进库里"。</span></li>
-          <li>按 <span class="key"><span class="f">F7</span>辊形库</span>。<span class="expect">列表里有刚存的辊形（辊形名、主曲线、段数、修改时间），可以打开、删除、关闭。</span></li>
-          <li>（可选）<span class="key"><span class="f">F5</span>生成点列</span> 把辊形导出成点表（CSV）；<span class="key"><span class="f">F4</span>点表导入</span> 导入一份对照点列，看"与对照线最大相差 x µm"。</li>
+          <li>"设计长度"填 <code>2000</code>（mm）。<span class="expect">预览横轴变成 0–2000 mm，原来那段圆柱没铺满，校验结果里马上出现红字"…没有曲线段覆盖（断开）"。</span></li>
+          <li>选中那段圆柱，按左栏"删除"。<span class="expect">可以删到一段不剩；校验结果写"还没有曲线段"，<span class="key"><span class="f">F1</span>保存</span> 和 <span class="key"><span class="f">F2</span>另存为</span> 变灰。</span></li>
+          <li>在类型下拉里选"凸度"，按"插入"。<span class="expect">第一段自动铺满 0–2000 mm，参数区出现"凸度（直径量）"，校验结果变成"校验通过"。</span></li>
+          <li>凸度填 <code>300</code>（µm，直径量）。<span class="expect">预览曲线随参数实时变化，光标一直留在输入框里。</span></li>
+          <li>再插一段"锥度"，区间改成 <code>1850</code>–<code>2000</code>，锥度填 <code>50</code> µm。<span class="expect">校验结果里多一行灰字提示"第 2 段叠加在第 1 段上"，这是正常用法，不影响保存。</span></li>
+          <li>故意把区间终点改成 <code>2500</code>。<span class="expect">立刻出现红字"超出设计长度"，这一段行尾出现红标，保存键变灰。改回 <code>2000</code> 恢复。</span>再试一下凸度填 <code>5000</code>：参数格下面标红说明越界。</li>
+          <li>试一下"上移""下移""删除"。<span class="expect">选中跟着挪动的那一段走，连按几次能一直挪。</span></li>
+          <li>在"辊形名"填 <code>工作辊-凸度300</code>，按 <span class="key"><span class="f">F2</span>另存为</span>。<span class="expect">弹出命名框，名字可以再改，回车或"确定"存进库；Esc 或"取消"不存。报警条提示"辊形已存入库"。</span></li>
+          <li>再按一次 <span class="key"><span class="f">F2</span>另存为</span>，框里默认是"工作辊-凸度300-副本"；把名字改回 <code>工作辊-凸度300</code> 再确定。<span class="expect">框里说明库里已有同名的，给出"覆盖那一条"，也可以改名或取消。</span></li>
+          <li>按 <span class="key"><span class="f">F6</span>辊形库</span>。<span class="expect">列表里只有一条"工作辊-凸度300"（辊形名、主曲线、段数、修改时间），可以打开、删除、关闭。</span></li>
+          <li>（可选）<span class="key"><span class="f">F4</span>生成点列</span> 把辊形导出成点表（CSV）；<span class="key"><span class="f">F3</span>点表导入</span> 导入一份对照点列，看"与对照线最大相差 x µm"。</li>
         </ol>
         <div class="look"><h4>请重点看</h4><ul>
           <li>四种辊形类型够不够；现场常用的辊形有没有缺</li>
@@ -559,13 +574,15 @@
           <li>按 <kbd>Ctrl</kbd>+<kbd>2</kbd> 进工序编程页，按 <span class="key">新建作业</span>。<span class="expect">生成新的作业号（J 开头），工序清空。</span></li>
           <li>填辊件号 <code>R-2026-001</code>、辊身长度 <code>2000</code>、公称直径 <code>600</code>。</li>
           <li><strong>辊形有两种来源：</strong>默认"本页现编"，直接在本页选辊形类型、填辊形参数；或者按 <span class="key"><span class="f">F3</span>选择辊形</span>，从辊形库里选场景 B 存的辊形，按"选用"。<span class="expect">"辊形来源"显示库里的辊形名。按"改回现编"可以恢复本页现编。</span></li>
-          <li>在工序类型下拉里选工序，按 <span class="key">添加工序</span>。下拉按 5 个工序槽分组（粗磨、半精磨、精磨、超精磨、倒角或修整砂轮），另有不占槽的工序（测量、圆度测量、暂停等）。本机未配置的工序显示"（未配置）"。<br>建议顺序：<code>测量 → 粗磨 → 精磨 → 测量 → 圆度测量</code>。<span class="expect">左边工序序列按顺序列出，每道后面有预计时长和"删除"。</span></li>
+          <li>在工序类型下拉里选工序，按 <span class="key">添加工序</span>。下拉按 5 个工序槽分组（粗磨、半精磨、精磨、超精磨、倒角或修整砂轮），另有不占槽的工序（测量、圆度测量、暂停等）。本机未配置的工序显示"（未配置）"。<br>建议顺序：<code>测量 → 粗磨 → 精磨 → 测量 → 圆度测量</code>。<span class="expect">左边工序序列按顺序列出，每道后面有预计时长、▲ ▼（上移、下移）和"删除"。</span></li>
+          <li>用 ▲ ▼ 调一下工序顺序。<span class="expect">序号跟着重排。</span></li>
           <li>在左栏点选"粗磨"，右栏的工序参数区显示它的工艺参数：拖板速度、周期进给或连续进给、磨削道次、光磨道次、砂轮线速度、头架转速、变速设置等。按现场习惯改几项。<span class="expect">填错或超出机床能力的格子当场标出，并说明原因。</span></li>
           <li>看"预计总磨削时间"随工序和参数变化。</li>
           <li>把右栏滚到底，看"程序步骤（自动磨削前取舍）"的 10 个开关：轧辊磨前测量、测量安装误差、轴线前馈补偿、U1 轴自动调平、砂轮自动趋近、允许在线测量、轧辊磨后测量、涡流探伤、打印磨前数据、打印磨后数据。<strong>打开"打印磨前数据"和"打印磨后数据"</strong>，场景 F 会用到。<span class="expect">本机未配置的装置对应的开关变灰，鼠标停留说明原因。</span></li>
           <li>看"补偿设置（制造商权限）"：行程间增益、空间滤波窗口、单次修正限幅、单刀切深上限、辊形公差。这里只显示，不在本页修改。</li>
           <li>按 <span class="key"><span class="f">F4</span>轧辊数据</span>：填启磨点坐标、曲线长度、曲线允许误差、轧辊净重、头架端箱重、尾架端箱重，按"保存轧辊数据"。<span class="expect">吊装总重自动算出；缺任何一项显示"--"。第 8 键显示"返回 工序编程"。</span></li>
-          <li>填程序名（例如 <code>工作辊-精磨-标准</code>），按 <span class="key"><span class="f">F2</span>另存为</span> 存进程序库。之后改了再按 <span class="key primary"><span class="f">F1</span>保存程序</span> 覆盖保存。<span class="key"><span class="f">F6</span>程序库</span> 可以打开、删除已存程序。</li>
+          <li>按左栏"校验"。<span class="expect">和下发前同一套检查（参数范围、机床能力、至少一道走拖板）；轧辊数据标题右侧显示结果，不通过时原因逐条列在轧辊数据下面。</span></li>
+          <li>填程序名（例如 <code>工作辊-精磨-标准</code>），按 <span class="key"><span class="f">F2</span>另存为</span>，在命名框里确认名字存进程序库。之后改了再按 <span class="key primary"><span class="f">F1</span>保存程序</span> 覆盖保存。<span class="key"><span class="f">F6</span>程序库</span> 可以打开、删除已存程序。<span class="expect">保存、另存为之前自动校验，有错不存；重名时和辊形一样给出"覆盖 / 改名 / 取消"。</span></li>
         </ol>
         <div class="look"><h4>请重点看</h4><ul>
           <li>工序种类（开始、测量、粗磨、半精磨、精磨、光磨、短行程、抛光、倒角、砂轮修整、涡流探伤、圆度测量、暂停、结束）和 5 个工序槽，能否覆盖现场的工艺</li>
@@ -796,6 +813,7 @@
         <li>手动页还没做的动作：磁分、纸带、油冷机、中心架托瓦、偏心套。</li>
         <li>界面语言目前是中文和英文两种。</li>
         <li>工控机是触摸屏还是按键面板尚未确认，界面暂按触摸屏设计（见问题 1）。</li>
+        <li>辊形仍是逐段叠加、用"区间起点 / 终点"定位；"起点 Z + 段长、自动接续"、点表类型与插值方式在阶段 1 做。第一轮提的其余结构性意见（作业与程序拆开、竖向软键、工序简图等）见修改稿的分期计划。</li>
       </ul>
     </section>
 
@@ -853,7 +871,7 @@
         <tbody>
           <tr><td>自动磨削</td><td><span class="key start">启动</span></td><td><span class="key">暂停</span></td><td><span class="key danger">工序跳转</span></td><td><span class="key danger">提前结束</span></td><td><span class="key">冷却水</span></td><td><span class="key">补偿设置</span></td><td><span class="key">磨削记录</span></td><td>页面菜单</td></tr>
           <tr><td>工序编程</td><td><span class="key primary">保存程序</span></td><td><span class="key">另存为</span></td><td><span class="key">选择辊形</span></td><td><span class="key">轧辊数据</span></td><td><span class="key">下发 NC</span></td><td><span class="key">程序库</span></td><td><span class="key start">进入自动磨削</span></td><td>返回主页</td></tr>
-          <tr><td>辊形编辑</td><td><span class="key primary">保存</span></td><td><span class="key">另存为</span></td><td><span class="key">新建曲线段</span></td><td><span class="key">点表导入</span></td><td><span class="key">生成点列</span></td><td><span class="key">校验</span></td><td><span class="key">辊形库</span></td><td>返回主页</td></tr>
+          <tr><td>辊形编辑</td><td><span class="key primary">保存</span></td><td><span class="key">另存为</span></td><td><span class="key">点表导入</span></td><td><span class="key">生成点列</span></td><td><span class="key">校验</span></td><td><span class="key">辊形库</span></td><td></td><td>返回主页</td></tr>
           <tr><td>手动与辅助</td><td><span class="key primary">手动磨削</span></td><td><span class="key">校验基准</span></td><td><span class="key">砂轮修整</span></td><td><span class="key">轧辊找正</span></td><td><span class="key">回参考点</span></td><td><span class="key">诊断</span></td><td><span class="key danger">HMI 复位</span></td><td>返回主页</td></tr>
           <tr><td>磨削记录</td><td><span class="key primary">打开记录</span></td><td><span class="key">磨前报表</span></td><td><span class="key">磨削日报</span></td><td><span class="key">磨削月报</span></td><td><span class="key">导出 Excel</span></td><td><span class="key">打印</span></td><td><span class="key">轧辊台账</span></td><td>返回主页</td></tr>
           <tr><td>诊断</td><td><span class="key primary">导出故障快照</span></td><td><span class="key">运行日志</span></td><td><span class="key">变量监视</span></td><td><span class="key">机床配置</span></td><td><span class="key">标签映射</span></td><td><span class="key">审计日志</span></td><td><span class="key">备份与恢复</span></td><td>返回主页</td></tr>

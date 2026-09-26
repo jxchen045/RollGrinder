@@ -2143,4 +2143,7 @@
   <data name="Program_SavedStatus" xml:space="preserve">
     <value>Program validated and saved</value>
   </data>
+  <data name="Steps_Validate" xml:space="preserve">
+    <value>Validate</value>
+  </data>
 </root>

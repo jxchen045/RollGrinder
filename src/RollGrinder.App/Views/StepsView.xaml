@@ -27,13 +27,14 @@
                     <TextBlock Text="{loc:Loc Steps_SequenceHeader}" Style="{StaticResource Text.CardTitle}" />
                 </Border>
 
-                <!-- 两行：下拉框占满一行，两个按钮平分第二行。一行放不下——左栏只有约 345 px，按钮字会被截断。 -->
+                <!-- 两行：下拉框占满一行，三个按钮平分第二行。一行放不下——左栏只有约 345 px，按钮字会被截断。 -->
                 <Grid DockPanel.Dock="Top" Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
@@ -44,7 +45,7 @@
                     -->
                     <ComboBox x:Name="StepTypePicker" SelectedItem="{Binding SelectedStepType}"
                               DisplayMemberPath="DisplayName" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                              Grid.Row="0" Grid.ColumnSpan="2" Height="46" FontSize="17" Margin="0,0,0,8">
+                              Grid.Row="0" Grid.ColumnSpan="3" Height="46" FontSize="17" Margin="0,0,0,8">
                         <ComboBox.GroupStyle>
                             <GroupStyle>
                                 <GroupStyle.HeaderTemplate>
@@ -60,7 +61,10 @@
                     <Button Content="{loc:Loc Steps_AddStep}" Command="{Binding AddStepCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="0" Height="46" Margin="0,0,4,0" />
                     <Button Content="{loc:Loc Steps_NewJob}" Command="{Binding NewJobCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Height="46" Margin="4,0,0,0" />
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Height="46" Margin="4,0,4,0" />
+                    <!-- 校验：和下发前同一套检查，结果列在右栏轧辊数据下面（第一轮甲方测试 工序 2⑥）。只读也能按。 -->
+                    <Button Content="{loc:Loc Steps_Validate}" Command="{Binding ValidateCommand}"
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="2" Height="46" Margin="4,0,0,0" />
                 </Grid>
 
                 <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
@@ -218,6 +222,20 @@
                     </DockPanel>
                 </Border>
 
+                <!-- 校验结果：紧跟在轧辊数据（标题右侧是状态）下面，按"校验""保存""下发"之后不用往下翻就看得到。 -->
+                <ItemsControl ItemsSource="{Binding Violations}" Margin="0,0,0,12">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="4,0,0,6">
+                                <TextBlock Text="{Binding ParameterText}" Width="260" FontSize="17"
+                                           Foreground="{StaticResource Brush.CurrentStep}" />
+                                <TextBlock Text="{Binding ReasonText}" FontSize="17"
+                                           Foreground="{StaticResource Brush.CurrentStep}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
                 <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                     <DockPanel>
                         <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
@@ -349,18 +367,6 @@
                     </DockPanel>
                 </Border>
 
-                <ItemsControl ItemsSource="{Binding Violations}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="4,0,0,6">
-                                <TextBlock Text="{Binding ParameterText}" Width="260" FontSize="17"
-                                           Foreground="{StaticResource Brush.CurrentStep}" />
-                                <TextBlock Text="{Binding ReasonText}" FontSize="17"
-                                           Foreground="{StaticResource Brush.CurrentStep}" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
             </StackPanel>
         </ScrollViewer>
 

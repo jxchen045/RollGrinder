@@ -2143,4 +2143,7 @@
   <data name="Program_SavedStatus" xml:space="preserve">
     <value>程序已校验并保存</value>
   </data>
+  <data name="Steps_Validate" xml:space="preserve">
+    <value>校验</value>
+  </data>
 </root>
