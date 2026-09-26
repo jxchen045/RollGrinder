@@ -251,7 +251,7 @@ internal sealed class PageSweepSuite : ISelfTestSuite
                 int keyIndex = index;
                 await h.StepAsync(area.Key.ToString(), Invariant($"F{keyIndex + 1}_{label}"), async ctx =>
                 {
-                    if (!key.IsEnabled)
+                    if (!h.IsKeyUsable(keyIndex))
                     {
                         ctx.Skip("key is disabled in the default state");
                     }

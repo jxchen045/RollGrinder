@@ -296,9 +296,19 @@ internal sealed partial class SelfTestHarness
     {
         int index = IndexOfKey(labelResourceKey);
         context.Check(index >= 0, "function key " + labelResourceKey + " is not on the bar");
-        context.Check(Shell.FunctionKeys[index].IsEnabled, "function key " + labelResourceKey + " is disabled");
+        context.Check(IsKeyUsable(index), "function key " + labelResourceKey + " is disabled");
         await PressKeyAsync(index, timeout).ConfigureAwait(true);
     }
+
+    /// <summary>
+    /// 这个键现在按得下去吗——和外壳按键时的判断一样：既没被锁（运行中只读、不可用），命令本身也可执行。
+    /// 界面上两者任一不满足，键都是灰的。只看 <see cref="FunctionKeyViewModel.IsEnabled"/> 会把
+    /// "命令不可执行"的灰键当成能按。
+    /// </summary>
+    public bool IsKeyUsable(int index) =>
+        index >= 0 && index < Shell.FunctionKeys.Count
+        && Shell.FunctionKeys[index].IsEnabled
+        && Shell.FunctionKeys[index].Command.CanExecute(null);
 
     /// <summary>功能条上某个键的位置；没有返回 -1。</summary>
     public int IndexOfKey(string labelResourceKey)

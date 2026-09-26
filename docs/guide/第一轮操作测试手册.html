@@ -622,7 +622,7 @@
         <p>作业 = 这一支辊这一次磨：用台账里哪根辊、辊形库里哪条辊形、程序库里哪支程序，这一次开哪些程序步骤。作业页左边是 ① 轧辊、② 辊形、③ 工艺程序、④ 程序步骤、⑤ 核对并下发五步，每步选好后显示摘要；右边是当前这一步的列表。<span class="key"><span class="f">F1</span>上一步</span>、<span class="key primary"><span class="f">F2</span>下一步</span>，这一步没选好"下一步"是灰的。</p>
         <ol class="steps">
           <li>在场景 C 的工艺程序页按 <span class="key"><span class="f">F6</span>用于作业</span>。<span class="expect">进作业页，第 8 键显示"返回 工艺程序"；第 ③ 步已选好这支程序。</span></li>
-          <li><strong>① 轧辊：</strong>台账里还没有这支辊，按 <span class="key"><span class="f">F4</span>新登记轧辊</span>。<span class="expect">跳到磨削记录页的轧辊台账，直接给一张空表。</span>辊号填 <code>R-2026-001</code>，类型选"工作辊"，辊身长度 <code>1900</code>、公称直径 <code>600</code>、当前直径 <code>596</code>，按"保存"。按第 8 键（必要时按两次）回作业页。<span class="expect">这支辊已经选上，摘要显示辊身、公称直径和起磨直径（登记了当前直径就用当前直径）。</span></li>
+          <li><strong>① 轧辊：</strong>台账里还没有这支辊，按 <span class="key"><span class="f">F4</span>新登记轧辊</span>。<span class="expect">跳到磨削记录页的轧辊台账，直接给一张空表。</span>辊号填 <code>R-2026-001</code>，类型选"工作辊"，辊身长度 <code>1900</code>、公称直径 <code>600</code>、当前直径 <code>596</code>，按"保存"。按第 8 键（必要时按两次）回作业页。<span class="expect">这支辊已经选上，摘要显示辊身、公称直径和起磨直径（登记了当前直径就用当前直径）；第 8 键仍是"返回 工艺程序"。</span></li>
           <li>按 <span class="key primary"><span class="f">F2</span>下一步</span>。<strong>② 辊形：</strong>选场景 B 存的"工作辊-凸度300"。<span class="expect">辊形设计长度 2000 与辊身 1900 对不上，显示两者长度，要你选"按比例拉伸"还是"中心对齐、不拉伸"；不选"下一步"是灰的，<strong>不会自己悄悄处理</strong>。</span>选"按比例拉伸"。（长度一样时直接显示"长度一致"。）</li>
           <li><strong>③ 工艺程序：</strong><span class="expect">已经选好，列出各道工序和按这支辊尺寸估出的时间。</span>也可以在列表里换一支。</li>
           <li><strong>④ 程序步骤：</strong><span class="expect">开关照程序里存的默认值来。</span>这一次可以单独改，不影响程序库里那一支。</li>

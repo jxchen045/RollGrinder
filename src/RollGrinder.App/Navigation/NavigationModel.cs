@@ -40,7 +40,9 @@ public sealed record NavigationKeyDescriptor(
 /// 规则：
 /// 1. 区域之间永远是"平的"——从任何区域到任何区域都是一步，不叠历史栈；
 /// 2. 导航槽（第 8 键）只退一级，且标签写明退到哪；
-/// 3. 只有"任务跳转"（A 页派你去 B 页取个东西）才记一个返回点，且只记一个。
+/// 3. 只有"任务跳转"（A 页派你去 B 页取个东西）才记返回点。
+///    A 页自己也是被派来的（工艺程序 → 作业 → 台账登记新辊）时，回到 A 页，A 页原来的返回点还在；
+///    只多记这一层，不是历史栈。
 /// </summary>
 public sealed class NavigationModel
 {
@@ -72,6 +74,12 @@ public sealed class NavigationModel
     /// <summary>任务返回点；null 表示当前不是被"派"来的。</summary>
     public PageKey? TaskReturnArea { get; private set; }
 
+    /// <summary>
+    /// 发起页自己的返回点：任务是从一个"被派来"的页上再派出去的，回到发起页时恢复它。
+    /// 例：工艺程序 → 作业（返回 工艺程序）→ 台账（返回 作业）；登记完回到作业页，第 8 键仍是"返回 工艺程序"。
+    /// </summary>
+    private PageKey? returnAreaOfIssuer;
+
     /// <summary>区域菜单是否展开。</summary>
     public bool IsAreaMenuOpen { get; private set; }
 
@@ -85,6 +93,7 @@ public sealed class NavigationModel
         IsAreaMenuOpen = false;
         CurrentSubViewKey = null;
         TaskReturnArea = null;
+        this.returnAreaOfIssuer = null;
 
         if (CurrentArea == area)
         {
@@ -106,16 +115,22 @@ public sealed class NavigationModel
             return GoToArea(target);
         }
 
+        // 发起页就是当前页、且它自己也是被派来的：记下它的返回点，回来时还给它。
+        PageKey? issuerReturn = CurrentArea == returnTo ? TaskReturnArea : null;
         bool changed = GoToArea(target);
         TaskReturnArea = returnTo;
+        this.returnAreaOfIssuer = issuerReturn == target ? null : issuerReturn;
         return changed;
     }
 
-    /// <summary>任务办完，回发起页。没有返回点时回主页。</summary>
+    /// <summary>任务办完，回发起页（发起页原来的返回点一并恢复）。没有返回点时回主页。</summary>
     public bool CompleteTask()
     {
         PageKey target = TaskReturnArea ?? HomeArea;
-        return GoToArea(target);
+        PageKey? restored = TaskReturnArea is null ? null : this.returnAreaOfIssuer;
+        bool changed = GoToArea(target);
+        TaskReturnArea = restored;
+        return changed;
     }
 
     /// <summary>打开本页的二级子视图。</summary>

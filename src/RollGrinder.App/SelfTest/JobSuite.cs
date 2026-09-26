@@ -124,11 +124,7 @@ internal static class JobWizard
         }
     }
 
-    public static bool IsKeyEnabled(SelfTestHarness h, string key)
-    {
-        int index = h.IndexOfKey(key);
-        return index >= 0 && h.Shell.FunctionKeys[index].IsEnabled;
-    }
+    public static bool IsKeyEnabled(SelfTestHarness h, string key) => h.IsKeyUsable(h.IndexOfKey(key));
 
     private static string Format(double value) => value.ToString("0.###", CultureInfo.CurrentCulture);
 }

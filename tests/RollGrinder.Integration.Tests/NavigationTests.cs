@@ -97,6 +97,45 @@ public sealed class NavigationTests
     }
 
     [Fact]
+    public void A_task_issued_from_a_task_page_gives_that_page_its_return_point_back()
+    {
+        var model = new NavigationModel();
+        model.GoToArea(PageKey.Steps);
+
+        // 工艺程序 →「用于作业」→ 作业页 →「新登记轧辊」→ 台账（记录页的子视图）。
+        model.StartTask(PageKey.Job, PageKey.Steps);
+        model.StartTask(PageKey.Records, PageKey.Job);
+        model.OpenSubView("SubView_RollLedger");
+        model.DescribeNavigationKey().Role.Should().Be(NavigationKeyRole.CloseSubView);
+
+        model.CloseSubView();
+        model.DescribeNavigationKey().TargetArea.Should().Be(PageKey.Job);
+
+        // 登记完回作业页：作业页的"返回 工艺程序"还在。
+        model.CompleteTask();
+        model.CurrentArea.Should().Be(PageKey.Job);
+        model.TaskReturnArea.Should().Be(PageKey.Steps);
+        model.DescribeNavigationKey().Should().Be(
+            new NavigationKeyDescriptor(NavigationKeyRole.BackToTask, "Nav_BackToPageFormat", PageKey.Steps));
+
+        model.CompleteTask();
+        model.CurrentArea.Should().Be(PageKey.Steps);
+        model.TaskReturnArea.Should().BeNull("最外层的返回点用完即清");
+    }
+
+    [Fact]
+    public void A_plain_switch_in_the_middle_of_a_nested_task_drops_every_return_point()
+    {
+        var model = new NavigationModel();
+        model.StartTask(PageKey.Job, PageKey.Steps);
+        model.StartTask(PageKey.Records, PageKey.Job);
+
+        model.GoToArea(PageKey.Settings);
+        model.GoToArea(PageKey.Job);
+        model.TaskReturnArea.Should().BeNull("从菜单切走再回来，旧的任务链全部作废");
+    }
+
+    [Fact]
     public void Task_jump_to_the_page_that_issued_it_is_just_a_plain_switch()
     {
         var model = new NavigationModel();
