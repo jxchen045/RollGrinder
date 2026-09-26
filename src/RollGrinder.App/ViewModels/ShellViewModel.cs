@@ -541,7 +541,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     /// <summary>键盘/软键按下第 n 个功能键（n 从 0 起）。浮层挡着时不透传。</summary>
     public void PressFunctionKey(int index)
     {
-        if (IsOverlayOpen || index < 0 || index >= FunctionKeys.Count)
+        if (IsOverlayOpen || CurrentPage.HasModalPrompt || index < 0 || index >= FunctionKeys.Count)
         {
             return;
         }
@@ -577,6 +577,11 @@ public sealed partial class ShellViewModel : ViewModelBase
         if (IsAreaMenuOpen)
         {
             CloseAreaMenu();
+            return;
+        }
+
+        if (CurrentPage.TryDismissPrompt())
+        {
             return;
         }
 

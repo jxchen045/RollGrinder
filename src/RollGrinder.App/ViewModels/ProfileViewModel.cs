@@ -28,12 +28,18 @@ public sealed partial class SegmentRowViewModel : ObservableObject
 {
     public SegmentRowViewModel(RollProfileSegment segment, string displayName, string purposeText)
     {
-        Segment = segment;
+        this.segment = segment;
         DisplayName = displayName;
-        PurposeText = purposeText;
+        this.purposeText = purposeText;
     }
 
-    public RollProfileSegment Segment { get; }
+    /// <summary>
+    /// 这一行对应的段。改区间、改参数时就地换掉，不重建整张列表——
+    /// 重建会把正在输入的那个框换掉，打一个字光标就丢一次。
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Order), nameof(OrderText))]
+    private RollProfileSegment segment;
 
     public int Order => Segment.Order;
 
@@ -43,11 +49,21 @@ public sealed partial class SegmentRowViewModel : ObservableObject
     public string DisplayName { get; }
 
     /// <summary>区间与用途，例如 "0 – 150 mm · 头架端锥"。</summary>
-    public string PurposeText { get; }
+    [ObservableProperty]
+    private string purposeText;
 
     [ObservableProperty]
     private bool isSelected;
+
+    /// <summary>这一段有错误（出界、参数不成立）：行尾一条红标。</summary>
+    [ObservableProperty]
+    private bool hasError;
 }
+
+/// <summary>问题列表里的一行。</summary>
+/// <param name="Text">说明文字（已本地化）。</param>
+/// <param name="IsError">错误（不能保存）还是提示。</param>
+public sealed record ProfileIssueRowViewModel(string Text, bool IsError);
 
 /// <summary>
 /// 辊形编辑。版面见 docs/design/B-Profile-辊形编辑.html：
@@ -62,17 +78,27 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     private readonly MachineDescription machine;
     private readonly HmiSettings settings;
 
-    private readonly RollGeometry geometry;
+    /// <summary>编辑用的参考几何：辊身长度就是辊形的设计长度，直径只用来算曲线，取机床最小直径。</summary>
+    private RollGeometry geometry;
+
+    private double committedBodyLengthMm;
 
     private readonly IRollProfileRepository library;
 
-    private CompositeRollProfile composite;
+    /// <summary>正在编辑的辊形；一段都没有时为 null（允许删到空，空的不能保存）。</summary>
+    private CompositeRollProfile? composite;
+
+    /// <summary>区间框或参数格里正在输入、还不成立的内容（资源键）；成立了就清掉。</summary>
+    private string? pendingInputErrorKey;
+
+    /// <summary>设计长度框里的内容不成立。</summary>
+    private bool bodyLengthInvalid;
 
     /// <summary>编辑参数行时不要反过来又触发一次回写，否则 Rebuild 里的重建会递归。</summary>
     private bool suppressWriteBack;
 
     /// <summary>上一次"干净"的辊形，供"放弃修改"回退。</summary>
-    private CompositeRollProfile committedComposite;
+    private CompositeRollProfile? committedComposite;
 
     public ProfileViewModel(
         RollProfileTypeRegistry profileTypes,
@@ -95,16 +121,18 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.composite = CompositeRollProfile.Single(
             ProfileTypeKeys.Cylindrical, this.geometry, ParameterSet.Empty);
         this.committedComposite = this.composite;
+        this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+        this.bodyLengthMmText = FormatLength(this.geometry.BodyLengthMm);
 
         AvailableTypes = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
         this.selectedTypeForInsert = AvailableTypes.FirstOrDefault() ?? ProfileTypeKeys.Cylindrical;
 
+        // 有错误时"保存""另存为"变灰。插段在左栏"插入"按钮上，功能条上不再重复一个"新建曲线段"。
+        this.saveKeyCommand = new AsyncRelayCommand(() => SaveAsync(CancellationToken.None), () => !HasErrors);
         SetFunctionKeys(new[]
         {
-            new FunctionKeyViewModel("Fn_Save", new AsyncRelayCommand(
-                () => SaveAsync(CancellationToken.None)), localizer, FunctionKeyKind.Primary, requiresEditable: true),
+            new FunctionKeyViewModel("Fn_Save", this.saveKeyCommand, localizer, FunctionKeyKind.Primary, requiresEditable: true),
             new FunctionKeyViewModel("Fn_SaveAs", SaveAsCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Fn_NewSegment", InsertSegmentCommand, localizer, requiresEditable: true),
             // 两个键都要选文件，对话框在视图里；这里只负责触发与收结果。
             new FunctionKeyViewModel("Fn_ImportPoints", RequestImportPointsCommand, localizer),
             new FunctionKeyViewModel("Fn_GeneratePoints", RequestGeneratePointsCommand, localizer),
@@ -162,6 +190,62 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     /// <summary>对照点列与当前设计差得最多的地方（直径量 µm）；没导入时为空。</summary>
     [ObservableProperty]
     private string referenceDeviationText = string.Empty;
+
+    private readonly AsyncRelayCommand saveKeyCommand;
+
+    /// <summary>每改一次就重新算的问题列表：错误在前，提示在后。</summary>
+    public ObservableCollection<ProfileIssueRowViewModel> Issues { get; } = new();
+
+    /// <summary>有错误：不能保存。</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveAsCommand))]
+    private bool hasErrors;
+
+    partial void OnHasErrorsChanged(bool value) => this.saveKeyCommand.NotifyCanExecuteChanged();
+
+    /// <summary>问题列表上方那一行："有 N 处错误" / "校验通过"。</summary>
+    [ObservableProperty]
+    private string issueSummaryText = string.Empty;
+
+    /// <summary>设计长度（mm）。辊形的区间都在 0 到它之间。</summary>
+    [ObservableProperty]
+    private string bodyLengthMmText;
+
+    partial void OnBodyLengthMmTextChanged(string value)
+    {
+        if (this.suppressWriteBack)
+        {
+            return;
+        }
+
+        WorkpieceLimits limits = this.machine.Workpiece;
+        if (!TryParseDouble(value, out double lengthMm)
+            || lengthMm < limits.MinBodyLengthMm
+            || lengthMm > limits.MaxBodyLengthMm)
+        {
+            this.bodyLengthInvalid = true;
+            RefreshIssues();
+            return;
+        }
+
+        this.bodyLengthInvalid = false;
+        if (Math.Abs(lengthMm - this.geometry.BodyLengthMm) < 1e-9)
+        {
+            RefreshIssues();
+            return;
+        }
+
+        this.geometry = RollGeometry.FromDiameter(lengthMm, limits.MinDiameterMm);
+        MarkDirty();
+        Rebuild(SelectedSegment?.Order);
+    }
+
+    private static string FormatLength(double lengthMm) =>
+        lengthMm.ToString("0.###", CultureInfo.CurrentCulture);
+
+    /// <summary>当前的段；删到空时是空表。</summary>
+    private IReadOnlyList<RollProfileSegment> CurrentSegments =>
+        this.composite?.Segments ?? Array.Empty<RollProfileSegment>();
 
     /// <summary>最近一个动作的结果提示。</summary>
     [ObservableProperty]
@@ -324,6 +408,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             row.IsSelected = ReferenceEquals(row, value);
         }
 
+        // 换了一段，上一段框里没打完的内容作废，它的输入错误也一起清掉。
+        this.pendingInputErrorKey = null;
+
         this.suppressWriteBack = true;
         try
         {
@@ -341,6 +428,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
 
         ShowSegmentParameters(value);
+
+        // 上一段没打完的输入作废了，问题列表跟着更新；新选中段的越界参数就地标红。
+        RefreshIssues();
     }
 
     /// <summary>选中段的区间起点（辊身坐标 mm）。</summary>
@@ -378,7 +468,8 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         if (!TryParseDouble(SegmentFromMmText, out double fromMm)
             || !TryParseDouble(SegmentToMmText, out double toMm))
         {
-            // 正在输入的中间态（空串、只打了一个减号）不报错也不回写，等它打完。
+            // 正在输入的中间态（空串、只打了一个减号）先不回写，但要说出来：边编边校验。
+            ShowInputError("Profile_Issue_InputRange");
             return;
         }
 
@@ -389,6 +480,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             if (value is null)
             {
                 // 这一格现在填的东西还不成立，等它填对了再回写。
+                ShowInputError("Profile_Issue_InputParameter");
                 return;
             }
 
@@ -408,16 +500,28 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
         catch (DomainException)
         {
-            // 区间还没填成立（终点小于起点之类），先不回写；校验会在保存时再报一次。
+            // 区间还没填成立（终点不大于起点、起点小于 0），先不回写，问题列表里写明。
+            ShowInputError("Profile_Issue_InputRange");
             return;
         }
 
-        this.composite = this.composite.Replace(current.Order, updated);
+        this.pendingInputErrorKey = null;
+        this.composite = this.composite!.Replace(current.Order, updated);
         MarkDirty();
 
-        int keepOrder = current.Order;
-        Rebuild();
-        SelectedSegment = Segments.FirstOrDefault(row => row.Order == keepOrder) ?? Segments.FirstOrDefault();
+        // 就地更新这一行，不重建列表与参数格：焦点留在正在输入的框里。
+        RollProfileSegment stored = this.composite.Segments[current.Order - 1];
+        SelectedSegment.Segment = stored;
+        SelectedSegment.PurposeText = RangeText(stored);
+        RefreshPreview();
+        RefreshValidation();
+        RefreshIssues();
+    }
+
+    private void ShowInputError(string resourceKey)
+    {
+        this.pendingInputErrorKey = resourceKey;
+        RefreshIssues();
     }
 
     private static bool TryParseDouble(string text, out double value) =>
@@ -427,49 +531,70 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     [RelayCommand]
     private void InsertSegment()
     {
-        // 新段默认落在辊身后四分之一，现场再按需要改区间。
-        double fromMm = this.geometry.BodyLengthMm * 0.75;
+        // 空辊形插进来的第一段铺满全长；再往上叠的段默认落在辊身后四分之一，现场再按需要改区间。
+        double fromMm = this.composite is null ? 0.0 : this.geometry.BodyLengthMm * 0.75;
         IRollProfileType profileType = this.profileTypes.Get(SelectedTypeForInsert);
-
-        this.composite = this.composite.Add(RollProfileSegment.Create(
-            this.composite.Segments.Count + 1,
+        RollProfileSegment segment = RollProfileSegment.Create(
+            CurrentSegments.Count + 1,
             profileType.Key,
             fromMm,
             this.geometry.BodyLengthMm,
-            profileType.Schema.CreateDefaults()));
+            profileType.Schema.CreateDefaults());
 
+        this.composite = this.composite is null ? new CompositeRollProfile(new[] { segment }) : this.composite.Add(segment);
         MarkDirty();
-        Rebuild();
+        Rebuild(CurrentSegments.Count);
     }
 
+    /// <summary>删掉选中的段。可以删到一段不剩——空辊形不能保存，问题列表会写明。</summary>
     [RelayCommand]
     private void RemoveSegment()
     {
-        if (SelectedSegment is null || this.composite.Segments.Count <= 1)
+        if (SelectedSegment is null || this.composite is null)
         {
             return;
         }
 
-        this.composite = this.composite.RemoveAt(SelectedSegment.Order);
+        int order = SelectedSegment.Order;
+        this.composite = this.composite.Segments.Count <= 1 ? null : this.composite.RemoveAt(order);
         MarkDirty();
-        Rebuild();
+
+        // 选中留在原位置（删的是最后一段就落到新的最后一段），连着按"删除"能一段段删。
+        Rebuild(Math.Min(order, CurrentSegments.Count));
     }
 
     [RelayCommand]
     private void MoveSegmentUp()
     {
-        if (SelectedSegment is null)
+        if (SelectedSegment is null || this.composite is null || SelectedSegment.Order <= 1)
         {
             return;
         }
 
-        this.composite = this.composite.MoveUp(SelectedSegment.Order);
+        int order = SelectedSegment.Order;
+        this.composite = this.composite.MoveUp(order);
         MarkDirty();
-        Rebuild();
+
+        // 选中跟着这一段走，连按几次就能一直往上挪。
+        Rebuild(order - 1);
     }
 
     [RelayCommand]
-    private void Validate() => Rebuild();
+    private void MoveSegmentDown()
+    {
+        if (SelectedSegment is null || this.composite is null || SelectedSegment.Order >= this.composite.Segments.Count)
+        {
+            return;
+        }
+
+        int order = SelectedSegment.Order;
+        this.composite = this.composite.MoveDown(order);
+        MarkDirty();
+        Rebuild(order + 1);
+    }
+
+    [RelayCommand]
+    private void Validate() => Rebuild(SelectedSegment?.Order);
 
     // ── 辊形库 ────────────────────────────────────────────────────────────────
     //
@@ -507,31 +632,90 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     /// 存回当前这条辊形。走的是页面基类的保存契约，
     /// 所以"改了没存就想离开"那道拦截也会用到它。
     /// </summary>
-    public override Task<bool> SaveAsync(CancellationToken cancellationToken) =>
-        StoreAsync(ProfileId ?? NewProfileId(), ProfileName, cancellationToken);
+    public override async Task<bool> SaveAsync(CancellationToken cancellationToken)
+    {
+        string name = ProfileName.Trim();
+        string targetId = ProfileId ?? NewProfileId();
+        if (name.Length > 0 && !HasErrors)
+        {
+            try
+            {
+                // 改了名字撞上库里另一条：不悄悄存成两条同名的，问一句"覆盖 / 改名 / 取消"。
+                if (await this.library.FindIdByNameAsync(name, targetId, cancellationToken).ConfigureAwait(true) is not null)
+                {
+                    NamePrompt.Open(
+                        Localizer["Library_SaveTitle"],
+                        name,
+                        (chosen, overwrite, token) => SaveUnderNameAsync(chosen, targetId, overwrite, token),
+                        Localizer.Format("Library_NameTakenFormat", name));
+                    return false;
+                }
+            }
+            catch (DataStoreException ex)
+            {
+                Alarms.RaiseException(ex);
+                return false;
+            }
+        }
 
-    /// <summary>"另存为"的命名框。</summary>
+        return await StoreAsync(targetId, name, cancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>起名字的框（另存为、保存时撞名）。</summary>
     public NamePromptViewModel NamePrompt { get; }
 
+    public override bool HasModalPrompt => NamePrompt.IsOpen;
+
+    public override bool TryDismissPrompt()
+    {
+        if (!NamePrompt.IsOpen)
+        {
+            return false;
+        }
+
+        NamePrompt.CancelCommand.Execute(null);
+        return true;
+    }
+
     /// <summary>
-    /// 另存一条新辊形，库里原来那条不动。先起名字：预填"原名-副本"，
-    /// 名字在库里已经有了就留在框里说清楚，不存。
+    /// 另存一条新辊形，库里原来那条不动。先起名字：预填"原名-副本"；
+    /// 名字在库里已经有了，框里说清楚，由操作员选覆盖、改名或取消。
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanStore))]
     private void SaveAs() => NamePrompt.Open(
         Localizer["Profile_SaveAsTitle"],
         string.IsNullOrWhiteSpace(ProfileName) ? string.Empty : Localizer.Format("Library_CopyNameFormat", ProfileName.Trim()),
-        async (name, token) =>
-        {
-            if (await this.library.IsNameTakenAsync(name, null, token).ConfigureAwait(true))
-            {
-                return Localizer.Format("Library_NameTakenFormat", name);
-            }
+        (name, overwrite, token) => SaveUnderNameAsync(name, NewProfileId(), overwrite, token));
 
-            return await StoreAsync(NewProfileId(), name, token).ConfigureAwait(true)
-                ? null
-                : Localizer["Library_SaveFailed"];
-        });
+    private bool CanStore() => !HasErrors;
+
+    /// <summary>按指定名字存；名字被库里另一条占了，要么覆盖那一条（存进它的标识），要么退回去让人改名。</summary>
+    private async Task<NamePromptOutcome> SaveUnderNameAsync(
+        string name, string targetId, bool overwrite, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string? holder = await this.library.FindIdByNameAsync(name, targetId, cancellationToken).ConfigureAwait(true);
+            if (holder is not null)
+            {
+                if (!overwrite)
+                {
+                    return NamePromptOutcome.Conflict(Localizer.Format("Library_NameTakenFormat", name));
+                }
+
+                targetId = holder;
+            }
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+            return NamePromptOutcome.Refused(Localizer["Library_SaveFailed"]);
+        }
+
+        return await StoreAsync(targetId, name, cancellationToken).ConfigureAwait(true)
+            ? NamePromptOutcome.Done
+            : NamePromptOutcome.Refused(Localizer["Library_SaveFailed"]);
+    }
 
     private async Task<bool> StoreAsync(string profileId, string name, CancellationToken cancellationToken)
     {
@@ -543,10 +727,17 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             return false;
         }
 
+        if (HasErrors || this.composite is null)
+        {
+            // 有错的辊形不进库：问题列表里逐条写着，改好再存。
+            Alarms.Raise(AlarmSeverity.Warning, "Profile_HasErrors", code: AlarmCodes.DomainFailure);
+            return false;
+        }
+
         try
         {
-            // 库里名字唯一：同名的两条分不清哪条是哪条（第一轮甲方测试）。
-            if (await this.library.IsNameTakenAsync(name, profileId, cancellationToken).ConfigureAwait(true))
+            // 库里名字唯一：同名的两条分不清哪条是哪条（第一轮甲方测试）。兜底，正常走不到这里。
+            if (await this.library.FindIdByNameAsync(name, profileId, cancellationToken).ConfigureAwait(true) is not null)
             {
                 Alarms.Raise(AlarmSeverity.Warning, "Library_NameTaken", name, AlarmCodes.DomainFailure);
                 return false;
@@ -568,6 +759,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             ProfileId = profileId;
             ProfileName = name;
             this.committedComposite = this.composite;
+            this.committedBodyLengthMm = this.geometry.BodyLengthMm;
             IsDirty = false;
             Alarms.Raise(AlarmSeverity.Information, "Profile_Saved", ProfileName, AlarmCodes.HandoverCompleted);
             return true;
@@ -626,11 +818,13 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
             this.composite = definition.Profile;
             this.committedComposite = definition.Profile;
+            SetBodyLength(definition.BodyLengthMm);
+            this.committedBodyLengthMm = this.geometry.BodyLengthMm;
             ProfileId = definition.ProfileId;
             ProfileName = definition.Name;
             IsDirty = false;
             IsLibraryOpen = false;
-            Rebuild();
+            Rebuild(1);
         }
         catch (DataStoreException ex)
         {
@@ -675,12 +869,34 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     public override void DiscardChanges()
     {
         this.composite = this.committedComposite;
+        SetBodyLength(this.committedBodyLengthMm);
+        this.pendingInputErrorKey = null;
         base.DiscardChanges();
-        Rebuild();
+        Rebuild(1);
     }
 
     /// <summary>切到本页时记住当前状态，"放弃修改"才有东西可回。</summary>
-    public override void OnActivated() => this.committedComposite = this.composite;
+    public override void OnActivated()
+    {
+        this.committedComposite = this.composite;
+        this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+    }
+
+    /// <summary>换设计长度（载入、回退），不算一次修改。</summary>
+    private void SetBodyLength(double lengthMm)
+    {
+        this.geometry = RollGeometry.FromDiameter(lengthMm, this.machine.Workpiece.MinDiameterMm);
+        this.bodyLengthInvalid = false;
+        this.suppressWriteBack = true;
+        try
+        {
+            BodyLengthMmText = FormatLength(lengthMm);
+        }
+        finally
+        {
+            this.suppressWriteBack = false;
+        }
+    }
 
     private void ShowSegmentParameters(SegmentRowViewModel? row)
     {
@@ -709,26 +925,139 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
     }
 
-    private void Rebuild()
+    private static string RangeText(RollProfileSegment segment) =>
+        string.Create(CultureInfo.CurrentCulture, $"{segment.FromMm:F0} – {segment.ToMm:F0} mm");
+
+    /// <summary>按当前辊形重建段列表、预览与校验。</summary>
+    /// <param name="selectOrder">重建后选中第几段；null 或找不到时选第一段。</param>
+    private void Rebuild(int? selectOrder = null)
     {
         Segments.Clear();
-        foreach (RollProfileSegment segment in this.composite.Segments)
+        foreach (RollProfileSegment segment in CurrentSegments)
         {
             Segments.Add(new SegmentRowViewModel(
                 segment,
                 Localizer["ProfileType_" + segment.ProfileTypeKey],
-                string.Create(
-                    CultureInfo.CurrentCulture,
-                    $"{segment.FromMm:F0} – {segment.ToMm:F0} mm")));
+                RangeText(segment)));
         }
 
-        SelectedSegment = Segments.FirstOrDefault();
+        SelectedSegment = Segments.FirstOrDefault(row => row.Order == selectOrder) ?? Segments.FirstOrDefault();
         RefreshPreview();
         RefreshValidation();
+        RefreshIssues();
+    }
+
+    /// <summary>
+    /// 边编边校验：每改一次就把问题列表重算一遍（第一轮甲方测试 辊形 1⑥⑨）。
+    /// 错误（出界、断开、参数不成立、正在输入的内容不成立）在前，有错不能保存；
+    /// 两段重叠是提示——现在的辊形逐段叠加，主辊形上叠端部锥度就是这么用的。
+    /// </summary>
+    private void RefreshIssues()
+    {
+        var errors = new List<string>();
+        var hints = new List<string>();
+        var badOrders = new HashSet<int>();
+
+        if (this.bodyLengthInvalid)
+        {
+            errors.Add(Localizer.Format(
+                "Profile_Issue_BodyLengthFormat",
+                this.machine.Workpiece.MinBodyLengthMm,
+                this.machine.Workpiece.MaxBodyLengthMm));
+        }
+
+        if (this.pendingInputErrorKey is not null)
+        {
+            errors.Add(Localizer[this.pendingInputErrorKey]);
+            if (SelectedSegment is not null)
+            {
+                badOrders.Add(SelectedSegment.Order);
+            }
+        }
+
+        var parameterErrors = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (ProfileIssue issue in ProfileLayoutCheck.Check(CurrentSegments, this.geometry.BodyLengthMm, this.profileTypes))
+        {
+            (issue.IsError ? errors : hints).Add(DescribeIssue(issue, parameterErrors));
+            if (issue.IsError && issue.SegmentOrder is int order)
+            {
+                badOrders.Add(order);
+            }
+        }
+
+        foreach (SegmentRowViewModel row in Segments)
+        {
+            row.HasError = badOrders.Contains(row.Order);
+        }
+
+        // 选中段越界的参数就地标在参数格上；解析不了的格子自己已经写着原因，不去盖它。
+        foreach (ParameterRowViewModel row in SegmentParameters)
+        {
+            if (parameterErrors.TryGetValue(row.Key, out string? reason) && string.IsNullOrEmpty(row.ErrorText))
+            {
+                row.ErrorText = reason;
+            }
+        }
+
+        Issues.Clear();
+        foreach (string text in errors)
+        {
+            Issues.Add(new ProfileIssueRowViewModel(text, true));
+        }
+
+        foreach (string text in hints)
+        {
+            Issues.Add(new ProfileIssueRowViewModel(text, false));
+        }
+
+        HasErrors = errors.Count > 0;
+        IssueSummaryText = errors.Count > 0
+            ? Localizer.Format("Profile_IssuesSummaryFormat", errors.Count)
+            : Localizer["Profile_IssuesNone"];
+    }
+
+    private string DescribeIssue(ProfileIssue issue, IDictionary<string, string> selectedSegmentParameterErrors)
+    {
+        switch (issue.Kind)
+        {
+            case ProfileIssueKind.NoSegments:
+                return Localizer["Profile_Issue_NoSegments"];
+
+            case ProfileIssueKind.OutsideBody:
+                return Localizer.Format(
+                    "Profile_Issue_OutsideBodyFormat", issue.SegmentOrder!, issue.FromMm, issue.ToMm, this.geometry.BodyLengthMm);
+
+            case ProfileIssueKind.NotCovered:
+                return Localizer.Format("Profile_Issue_NotCoveredFormat", issue.FromMm, issue.ToMm);
+
+            case ProfileIssueKind.Overlap:
+                return Localizer.Format(
+                    "Profile_Issue_OverlapFormat", issue.SegmentOrder!, issue.OtherSegmentOrder!, issue.FromMm, issue.ToMm);
+
+            default:
+                var violation = new ViolationRowViewModel(issue.Violation!, Localizer);
+                if (issue.SegmentOrder == SelectedSegment?.Order)
+                {
+                    selectedSegmentParameterErrors[issue.Violation!.ParameterKey] = violation.ReasonText;
+                }
+
+                return Localizer.Format(
+                    "Profile_Issue_ParameterFormat", issue.SegmentOrder!, violation.ParameterText, violation.ReasonText);
+        }
     }
 
     private void RefreshPreview()
     {
+        if (this.composite is null)
+        {
+            // 删到空：预览空着，问题列表里写着"还没有曲线段"。
+            ComposedPoints = Array.Empty<(double, double)>();
+            MainPoints = Array.Empty<(double, double)>();
+            RefreshReferenceDeviation();
+            PreviewChanged?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
         try
         {
             RollProfile composed = this.composite.Compose(
@@ -765,7 +1094,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             ? string.Create(CultureInfo.CurrentCulture, $"{EstimateChordErrorMicrometer():F2} µm")
             : "--";
 
-        bool aligned = this.composite.Segments
+        bool aligned = CurrentSegments
             .Skip(1)
             .All(segment => segment.FromMm >= 0.0 && segment.ToMm <= this.geometry.BodyLengthMm);
         TaperAlignmentText = Localizer[aligned ? "Profile_Aligned" : "Profile_NotAligned"];
@@ -781,6 +1110,11 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     /// </summary>
     private double EstimateChordErrorMicrometer()
     {
+        if (this.composite is null)
+        {
+            return 0.0;
+        }
+
         RollProfile fine = this.composite.Compose(
             this.geometry, this.profileTypes, (this.settings.ProfileSampleCount * 2) - 1);
         RollProfile coarse = this.composite.Compose(

@@ -31,10 +31,10 @@ public interface IProgramRepository
     Task<GrindingProgram?> GetAsync(string programId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 库里有没有别的程序已经叫这个名字（去掉首尾空白、不分大小写）。
-    /// <paramref name="exceptId"/> 是正在保存的那一条自己，不算重名；新建时传 null。
+    /// 库里已经叫这个名字的**另一条**的标识（去掉首尾空白、不分大小写）；没有返回 null。
+    /// 用来判重名，也用来"覆盖"那一条。<paramref name="exceptId"/> 是正在保存的那一条自己，不算；新建时传 null。
     /// </summary>
-    Task<bool> IsNameTakenAsync(string name, string? exceptId, CancellationToken cancellationToken);
+    Task<string?> FindIdByNameAsync(string name, string? exceptId, CancellationToken cancellationToken);
 
     /// <summary>整支替换式保存（新建或覆盖）。</summary>
     Task SaveAsync(GrindingProgram program, CancellationToken cancellationToken);

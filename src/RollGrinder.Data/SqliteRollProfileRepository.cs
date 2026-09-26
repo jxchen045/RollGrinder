@@ -128,7 +128,7 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<bool> IsNameTakenAsync(string name, string? exceptId, CancellationToken cancellationToken)
+    public async Task<string?> FindIdByNameAsync(string name, string? exceptId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
 
@@ -136,14 +136,14 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT 1 FROM roll_profile
+            SELECT profile_id FROM roll_profile
             WHERE trim(name) = trim($name) COLLATE NOCASE
               AND ($except IS NULL OR profile_id <> $except)
             LIMIT 1;
             """;
         SqlMapping.AddParameter(command, "$name", name);
         SqlMapping.AddParameter(command, "$except", exceptId);
-        return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is not null;
+        return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) as string;
     }
 
     public async Task DeleteAsync(string profileId, CancellationToken cancellationToken)

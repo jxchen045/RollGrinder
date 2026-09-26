@@ -88,6 +88,27 @@
                                                     RelativeSource={RelativeSource AncestorType=UserControl},
                                                     Converter={StaticResource InverseBool}}"
                                                 Style="{StaticResource SecondaryButton}" FontSize="15" Padding="10,2" Height="32" />
+                                        <!-- 调顺序：往后、往前各一格（第一轮甲方测试：只能删，不能挪）。 -->
+                                        <Button Content="{loc:Loc Steps_MoveStepDown}" DockPanel.Dock="Right"
+                                                ToolTip="{loc:Loc Steps_MoveStepDownTip}"
+                                                Command="{Binding DataContext.MoveStepDownCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"
+                                                IsEnabled="{Binding DataContext.IsReadOnly,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl},
+                                                    Converter={StaticResource InverseBool}}"
+                                                Style="{StaticResource SecondaryButton}" FontSize="15" Width="38" Height="32"
+                                                Padding="0" Margin="0,0,6,0" />
+                                        <Button Content="{loc:Loc Steps_MoveStepUp}" DockPanel.Dock="Right"
+                                                ToolTip="{loc:Loc Steps_MoveStepUpTip}"
+                                                Command="{Binding DataContext.MoveStepUpCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"
+                                                IsEnabled="{Binding DataContext.IsReadOnly,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl},
+                                                    Converter={StaticResource InverseBool}}"
+                                                Style="{StaticResource SecondaryButton}" FontSize="15" Width="38" Height="32"
+                                                Padding="0" Margin="0,0,6,0" />
                                         <TextBlock Text="{Binding DurationText}" DockPanel.Dock="Right" FontSize="{StaticResource Size.Caption}"
                                                    Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center"
                                                    Margin="0,0,12,0" />

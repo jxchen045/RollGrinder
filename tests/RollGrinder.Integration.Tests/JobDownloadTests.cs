@@ -92,6 +92,29 @@ public sealed class JobDownloadTests : IDisposable
     }
 
     [Fact]
+    public async Task A_program_of_every_available_step_with_defaults_passes_validation()
+    {
+        // 工序页"校验"键跑的是这一套；每种工序拿默认值拼一支程序，应该一条问题都没有，
+        // 否则现场一插工序就是红的。自检的 Steps/FullJobValidates 用的也是这样一支。
+        await using ServiceProvider services = await BuildAsync();
+        var stepTypes = services.GetRequiredService<GrindingStepTypeRegistry>();
+        MachineCapability capability = services.GetRequiredService<MachineCapability>();
+        GrindingJobStep[] steps = stepTypes.All
+            .Where(capability.Supports)
+            .Select((type, i) => new GrindingJobStep(i + 1, type.Key, type.Schema.CreateDefaults()))
+            .ToArray();
+        GrindingJob job = GrindingJob.Create(
+            "J-ALL", "R-ALL", RollGeometry.FromDiameter(2000.0, 600.0),
+            ProfileTypeKeys.Cylindrical, new CylindricalProfileType().Schema.CreateDefaults(), steps);
+
+        ParameterValidationResult result = services.GetRequiredService<GrindingJobValidator>().Validate(job, capability);
+
+        result.Violations.Should().BeEmpty();
+        services.GetRequiredService<GrindingJobValidator>()
+            .ValidateSteps(steps, job.Geometry, capability).IsValid.Should().BeTrue("存程序时跑的是工序那一半");
+    }
+
+    [Fact]
     public async Task A_valid_job_is_handed_over_and_archived()
     {
         await using ServiceProvider services = await BuildAsync();

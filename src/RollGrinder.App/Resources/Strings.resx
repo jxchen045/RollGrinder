@@ -439,9 +439,6 @@
   <data name="Fn_MonthlyReport" xml:space="preserve">
     <value>磨削月报</value>
   </data>
-  <data name="Fn_NewSegment" xml:space="preserve">
-    <value>新建曲线段</value>
-  </data>
   <data name="Fn_OpenRecord" xml:space="preserve">
     <value>打开记录</value>
   </data>
@@ -2072,12 +2069,78 @@
     <value>{0}-副本</value>
   </data>
   <data name="Library_NameTakenFormat" xml:space="preserve">
-    <value>库里已经有一条叫「{0}」的了，请换一个名字</value>
+    <value>库里已经有一条叫「{0}」的了：覆盖那一条，或者换一个名字</value>
   </data>
   <data name="Library_NameTaken" xml:space="preserve">
     <value>库里已有同名条目，没有保存；请改个名字再存，或用另存为</value>
   </data>
   <data name="Library_SaveFailed" xml:space="preserve">
     <value>没有存成，原因见报警栏</value>
+  </data>
+  <data name="NamePrompt_Overwrite" xml:space="preserve">
+    <value>覆盖那一条</value>
+  </data>
+  <data name="Library_SaveTitle" xml:space="preserve">
+    <value>保存：名字已被占用</value>
+  </data>
+  <data name="Profile_MoveDown" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="Profile_BodyLength" xml:space="preserve">
+    <value>设计长度</value>
+  </data>
+  <data name="Profile_Issue_NoSegments" xml:space="preserve">
+    <value>还没有曲线段：至少插入一段才能保存</value>
+  </data>
+  <data name="Profile_Issue_OutsideBodyFormat" xml:space="preserve">
+    <value>第 {0} 段 {1:0.#}–{2:0.#} mm 超出设计长度 0–{3:0.#} mm</value>
+  </data>
+  <data name="Profile_Issue_NotCoveredFormat" xml:space="preserve">
+    <value>{0:0.#}–{1:0.#} mm 没有曲线段覆盖（断开）</value>
+  </data>
+  <data name="Profile_Issue_OverlapFormat" xml:space="preserve">
+    <value>提示：第 {0} 段叠加在第 {1} 段上（{2:0.#}–{3:0.#} mm，两段偏差相加）</value>
+  </data>
+  <data name="Profile_Issue_ParameterFormat" xml:space="preserve">
+    <value>第 {0} 段「{1}」：{2}</value>
+  </data>
+  <data name="Profile_Issue_InputRange" xml:space="preserve">
+    <value>选中段的区间没填成立：起点、终点要是数字，起点不小于 0，终点大于起点</value>
+  </data>
+  <data name="Profile_Issue_InputParameter" xml:space="preserve">
+    <value>选中段有参数格没填成立（见标红的格子）</value>
+  </data>
+  <data name="Profile_Issue_BodyLengthFormat" xml:space="preserve">
+    <value>设计长度要是 {0:0}–{1:0} mm 之间的数</value>
+  </data>
+  <data name="Profile_IssuesSummaryFormat" xml:space="preserve">
+    <value>有 {0} 处错误，改好之前不能保存</value>
+  </data>
+  <data name="Profile_IssuesNone" xml:space="preserve">
+    <value>校验通过</value>
+  </data>
+  <data name="Profile_HasErrors" xml:space="preserve">
+    <value>辊形有错误，没有保存；错误逐条列在预览上方</value>
+  </data>
+  <data name="Steps_MoveStepUp" xml:space="preserve">
+    <value>▲</value>
+  </data>
+  <data name="Steps_MoveStepDown" xml:space="preserve">
+    <value>▼</value>
+  </data>
+  <data name="Steps_MoveStepUpTip" xml:space="preserve">
+    <value>上移这道工序</value>
+  </data>
+  <data name="Steps_MoveStepDownTip" xml:space="preserve">
+    <value>下移这道工序</value>
+  </data>
+  <data name="Program_HasErrors" xml:space="preserve">
+    <value>程序有错误，没有保存；原因列在页面的校验结果里</value>
+  </data>
+  <data name="Program_ValidationFailed" xml:space="preserve">
+    <value>程序校验没通过，没有保存：见下方的校验结果</value>
+  </data>
+  <data name="Program_SavedStatus" xml:space="preserve">
+    <value>程序已校验并保存</value>
   </data>
 </root>

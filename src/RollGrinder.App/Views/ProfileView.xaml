@@ -24,7 +24,19 @@
                              Height="46" FontSize="17" VerticalContentAlignment="Center" />
                 </DockPanel>
 
-                <!-- 两行：下拉框占满一行，三个按钮平分第二行。一行放不下——左栏只有约 330 px，按钮字会被截断。 -->
+                <!-- 设计长度：各段区间都在 0 到它之间。以前藏着一个 300 mm，预览按它画，和输入对不上。 -->
+                <DockPanel DockPanel.Dock="Top" Margin="8,8,8,0">
+                    <TextBlock Text="{loc:Loc Profile_BodyLength}" Style="{StaticResource Text.Label}"
+                               VerticalAlignment="Center" Width="72" />
+                    <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
+                               DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
+                    <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
+                             IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                             Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}"
+                             VerticalContentAlignment="Center" />
+                </DockPanel>
+
+                <!-- 两行：类型下拉 + 插入；删除、上移、下移平分第二行。一行放不下——左栏只有约 330 px，按钮字会被截断。 -->
                 <Grid DockPanel.Dock="Top" Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -36,7 +48,7 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <ComboBox ItemsSource="{Binding AvailableTypes}" SelectedItem="{Binding SelectedTypeForInsert}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                              Grid.Row="0" Grid.ColumnSpan="3" Height="46" FontSize="17" Margin="0,0,0,8">
+                              Grid.Row="0" Grid.ColumnSpan="2" Height="46" FontSize="17" Margin="0,0,4,8">
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}, ConverterParameter=ProfileType_}" />
@@ -44,10 +56,12 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
                     <Button Content="{loc:Loc Profile_Insert}" Command="{Binding InsertSegmentCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="0" Height="46" Margin="0,0,4,0" />
+                            Style="{StaticResource SecondaryButton}" Grid.Row="0" Grid.Column="2" Height="46" Margin="4,0,0,8" />
                     <Button Content="{loc:Loc Profile_Delete}" Command="{Binding RemoveSegmentCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Height="46" Margin="4,0,4,0" />
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="0" Height="46" Margin="0,0,4,0" />
                     <Button Content="{loc:Loc Profile_MoveUp}" Command="{Binding MoveSegmentUpCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Height="46" Margin="4,0,4,0" />
+                    <Button Content="{loc:Loc Profile_MoveDown}" Command="{Binding MoveSegmentDownCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="2" Height="46" Margin="4,0,0,0" />
                 </Grid>
 
@@ -120,6 +134,9 @@
                                     </Style>
                                 </Border.Style>
                                 <DockPanel VerticalAlignment="Center">
+                                    <!-- 这一段有错：行尾一条红标，和问题列表里的"第 N 段"对得上。 -->
+                                    <Border DockPanel.Dock="Right" Width="6" Height="34" Background="{StaticResource Brush.CurrentStep}"
+                                            Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}" />
                                     <TextBlock Text="{Binding OrderText}" Width="22" FontFamily="{StaticResource Font.Mono}"
                                                FontSize="15" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
                                     <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
@@ -149,6 +166,44 @@
                             <TextBlock Text="{loc:Loc Profile_LegendComposed}" FontSize="15" Margin="7,0,16,0" VerticalAlignment="Center" />
                             <Rectangle Width="22" Height="3" Fill="{StaticResource Brush.Reference}" VerticalAlignment="Center" />
                             <TextBlock Text="{loc:Loc Profile_LegendMain}" FontSize="15" Margin="7,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <!-- 边编边校验：每改一次就重算。错误红字在前，有错不能保存；提示灰字在后。 -->
+                    <Border DockPanel.Dock="Top" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,0,0,1"
+                            Padding="14,8">
+                        <StackPanel>
+                            <TextBlock Text="{Binding IssueSummaryText}" FontSize="17" FontWeight="SemiBold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasErrors}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <ScrollViewer MaxHeight="118" VerticalScrollBarVisibility="Auto" Margin="0,4,0,0">
+                                <ItemsControl ItemsSource="{Binding Issues}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Text}" FontSize="16" TextWrapping="Wrap" Margin="0,2,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsError}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
                         </StackPanel>
                     </Border>
                     <plot:WpfPlot x:Name="PreviewPlot" />

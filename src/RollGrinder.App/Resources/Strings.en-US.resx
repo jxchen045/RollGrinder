@@ -439,9 +439,6 @@
   <data name="Fn_MonthlyReport" xml:space="preserve">
     <value>Monthly report</value>
   </data>
-  <data name="Fn_NewSegment" xml:space="preserve">
-    <value>New segment</value>
-  </data>
   <data name="Fn_OpenRecord" xml:space="preserve">
     <value>Open record</value>
   </data>
@@ -2072,12 +2069,78 @@
     <value>{0} - copy</value>
   </data>
   <data name="Library_NameTakenFormat" xml:space="preserve">
-    <value>The library already has an entry named "{0}"; choose another name</value>
+    <value>The library already has an entry named "{0}": overwrite it, or choose another name</value>
   </data>
   <data name="Library_NameTaken" xml:space="preserve">
     <value>An entry with this name already exists; not saved. Rename it or use Save As</value>
   </data>
   <data name="Library_SaveFailed" xml:space="preserve">
     <value>Not saved; see the alarm bar for the reason</value>
+  </data>
+  <data name="NamePrompt_Overwrite" xml:space="preserve">
+    <value>Overwrite it</value>
+  </data>
+  <data name="Library_SaveTitle" xml:space="preserve">
+    <value>Save: name already in use</value>
+  </data>
+  <data name="Profile_MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="Profile_BodyLength" xml:space="preserve">
+    <value>Design length</value>
+  </data>
+  <data name="Profile_Issue_NoSegments" xml:space="preserve">
+    <value>No segments yet: insert at least one before saving</value>
+  </data>
+  <data name="Profile_Issue_OutsideBodyFormat" xml:space="preserve">
+    <value>Segment {0} ({1:0.#}–{2:0.#} mm) lies outside the design length 0–{3:0.#} mm</value>
+  </data>
+  <data name="Profile_Issue_NotCoveredFormat" xml:space="preserve">
+    <value>{0:0.#}–{1:0.#} mm is not covered by any segment (gap)</value>
+  </data>
+  <data name="Profile_Issue_OverlapFormat" xml:space="preserve">
+    <value>Note: segment {0} is superimposed on segment {1} ({2:0.#}–{3:0.#} mm; offsets add up)</value>
+  </data>
+  <data name="Profile_Issue_ParameterFormat" xml:space="preserve">
+    <value>Segment {0} "{1}": {2}</value>
+  </data>
+  <data name="Profile_Issue_InputRange" xml:space="preserve">
+    <value>The selected segment's range is not valid: both ends must be numbers, start ≥ 0 and end &gt; start</value>
+  </data>
+  <data name="Profile_Issue_InputParameter" xml:space="preserve">
+    <value>A parameter of the selected segment is not valid (see the cell marked red)</value>
+  </data>
+  <data name="Profile_Issue_BodyLengthFormat" xml:space="preserve">
+    <value>The design length must be a number between {0:0} and {1:0} mm</value>
+  </data>
+  <data name="Profile_IssuesSummaryFormat" xml:space="preserve">
+    <value>{0} error(s): fix them before saving</value>
+  </data>
+  <data name="Profile_IssuesNone" xml:space="preserve">
+    <value>No errors</value>
+  </data>
+  <data name="Profile_HasErrors" xml:space="preserve">
+    <value>The profile has errors and was not saved; they are listed above the preview</value>
+  </data>
+  <data name="Steps_MoveStepUp" xml:space="preserve">
+    <value>▲</value>
+  </data>
+  <data name="Steps_MoveStepDown" xml:space="preserve">
+    <value>▼</value>
+  </data>
+  <data name="Steps_MoveStepUpTip" xml:space="preserve">
+    <value>Move this step up</value>
+  </data>
+  <data name="Steps_MoveStepDownTip" xml:space="preserve">
+    <value>Move this step down</value>
+  </data>
+  <data name="Program_HasErrors" xml:space="preserve">
+    <value>The program has errors and was not saved; see the validation results on the page</value>
+  </data>
+  <data name="Program_ValidationFailed" xml:space="preserve">
+    <value>Program validation failed; not saved. See the results below</value>
+  </data>
+  <data name="Program_SavedStatus" xml:space="preserve">
+    <value>Program validated and saved</value>
   </data>
 </root>

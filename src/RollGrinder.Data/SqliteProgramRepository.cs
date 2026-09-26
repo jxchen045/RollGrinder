@@ -187,7 +187,7 @@ public sealed class SqliteProgramRepository : IProgramRepository
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<bool> IsNameTakenAsync(string name, string? exceptId, CancellationToken cancellationToken)
+    public async Task<string?> FindIdByNameAsync(string name, string? exceptId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
 
@@ -195,14 +195,14 @@ public sealed class SqliteProgramRepository : IProgramRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT 1 FROM program
+            SELECT program_id FROM program
             WHERE trim(name) = trim($name) COLLATE NOCASE
               AND ($except IS NULL OR program_id <> $except)
             LIMIT 1;
             """;
         SqlMapping.AddParameter(command, "$name", name);
         SqlMapping.AddParameter(command, "$except", exceptId);
-        return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is not null;
+        return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) as string;
     }
 
     public async Task DeleteAsync(string programId, CancellationToken cancellationToken)

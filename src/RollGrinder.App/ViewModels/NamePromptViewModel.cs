@@ -7,18 +7,32 @@ using RollGrinder.App.Localization;
 
 namespace RollGrinder.App.ViewModels;
 
+/// <summary>命名框里按"确定"或"覆盖"之后的结果。</summary>
+/// <param name="IsDone">存成了，关框。</param>
+/// <param name="Message">没存成的原因，显示在框里。</param>
+/// <param name="CanOverwrite">原因是名字被库里另一条占了：给出"覆盖"按钮。</param>
+public sealed record NamePromptOutcome(bool IsDone, string? Message, bool CanOverwrite)
+{
+    public static NamePromptOutcome Done { get; } = new(true, null, false);
+
+    public static NamePromptOutcome Refused(string message) => new(false, message, false);
+
+    public static NamePromptOutcome Conflict(string message) => new(false, message, true);
+}
+
 /// <summary>
-/// "另存为"的命名框：盖在页面上，一个输入框加"确定 / 取消"。
+/// 起名字的框：盖在页面上，一个输入框加"确定 / 覆盖 / 取消"。
 ///
 /// 第一轮甲方测试：另存为不问名字，直接复制出一条同名的，库里于是有两条"工作辊-凸度300"，
-/// 分不清哪条是哪条。现在另存为一定先起名字，名字在库里已经有了就留在框里说清楚，不存。
+/// 分不清哪条是哪条。现在另存为一定先起名字；名字在库里已经有了，框里说清楚，
+/// 由操作员选"覆盖"那一条、改个名字，或者取消。
 ///
-/// 谁用谁给一个"确定"时要做的事：成功返回 null 关框；不成功返回要显示的原因，框不关。
+/// 谁用谁给一个存的动作：参数是名字和"是否覆盖同名的那一条"。
 /// </summary>
 public sealed partial class NamePromptViewModel : ObservableObject
 {
     private readonly IStringLocalizer localizer;
-    private Func<string, CancellationToken, Task<string?>>? confirm;
+    private Func<string, bool, CancellationToken, Task<NamePromptOutcome>>? store;
 
     public NamePromptViewModel(IStringLocalizer localizer)
     {
@@ -34,29 +48,58 @@ public sealed partial class NamePromptViewModel : ObservableObject
     [ObservableProperty]
     private string name = string.Empty;
 
-    /// <summary>上一次"确定"没成的原因；空串表示没有。</summary>
+    /// <summary>上一次没存成的原因；空串表示没有。</summary>
     [ObservableProperty]
     private string errorText = string.Empty;
 
-    partial void OnNameChanged(string value) => ErrorText = string.Empty;
+    /// <summary>名字被库里另一条占了：显示"覆盖"。改了名字就收回去。</summary>
+    [ObservableProperty]
+    private bool canOverwrite;
+
+    partial void OnNameChanged(string value)
+    {
+        ErrorText = string.Empty;
+        CanOverwrite = false;
+    }
 
     /// <summary>打开命名框。</summary>
     /// <param name="title">框的标题（已本地化）。</param>
     /// <param name="initialName">预填的名字，打开时整段选中，直接打字就替换掉。</param>
-    /// <param name="onConfirm">按"确定"时做的事：成功返回 null，不成功返回原因。</param>
-    public void Open(string title, string initialName, Func<string, CancellationToken, Task<string?>> onConfirm)
+    /// <param name="onStore">存的动作：名字、是否覆盖同名的那一条。</param>
+    /// <param name="conflictMessage">打开时就已经知道重名（按"保存"撞了名）：直接给出原因和"覆盖"。</param>
+    public void Open(
+        string title,
+        string initialName,
+        Func<string, bool, CancellationToken, Task<NamePromptOutcome>> onStore,
+        string? conflictMessage = null)
     {
-        this.confirm = onConfirm ?? throw new ArgumentNullException(nameof(onConfirm));
+        this.store = onStore ?? throw new ArgumentNullException(nameof(onStore));
         Title = title ?? string.Empty;
         Name = initialName ?? string.Empty;
-        ErrorText = string.Empty;
+        ErrorText = conflictMessage ?? string.Empty;
+        CanOverwrite = conflictMessage is not null;
         IsOpen = true;
     }
 
     [RelayCommand]
-    private async Task ConfirmAsync(CancellationToken cancellationToken)
+    private Task ConfirmAsync(CancellationToken cancellationToken) => StoreAsync(overwrite: false, cancellationToken);
+
+    [RelayCommand]
+    private Task OverwriteAsync(CancellationToken cancellationToken) =>
+        CanOverwrite ? StoreAsync(overwrite: true, cancellationToken) : Task.CompletedTask;
+
+    [RelayCommand]
+    private void Cancel()
     {
-        if (!IsOpen || this.confirm is null)
+        IsOpen = false;
+        this.store = null;
+        ErrorText = string.Empty;
+        CanOverwrite = false;
+    }
+
+    private async Task StoreAsync(bool overwrite, CancellationToken cancellationToken)
+    {
+        if (!IsOpen || this.store is null)
         {
             return;
         }
@@ -68,23 +111,15 @@ public sealed partial class NamePromptViewModel : ObservableObject
             return;
         }
 
-        string? error = await this.confirm(trimmed, cancellationToken).ConfigureAwait(true);
-        if (error is null)
+        NamePromptOutcome outcome = await this.store(trimmed, overwrite, cancellationToken).ConfigureAwait(true);
+        if (outcome.IsDone)
         {
             IsOpen = false;
-            this.confirm = null;
+            this.store = null;
+            return;
         }
-        else
-        {
-            ErrorText = error;
-        }
-    }
 
-    [RelayCommand]
-    private void Cancel()
-    {
-        IsOpen = false;
-        this.confirm = null;
-        ErrorText = string.Empty;
+        ErrorText = outcome.Message ?? string.Empty;
+        CanOverwrite = outcome.CanOverwrite;
     }
 }

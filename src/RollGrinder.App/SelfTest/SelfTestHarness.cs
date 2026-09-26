@@ -386,6 +386,10 @@ internal sealed partial class SelfTestHarness
             profile.CloseLibraryCommand.Execute(null);
         }
 
+        // 起名字的框（另存为、保存撞名）：按"取消"收掉，不存。
+        steps.TryDismissPrompt();
+        profile.TryDismissPrompt();
+
         for (int i = 0; i < 3 && Shell.CurrentPage.ActiveSubViewKey is not null; i++)
         {
             await PressNavigationKeyAsync().ConfigureAwait(true);

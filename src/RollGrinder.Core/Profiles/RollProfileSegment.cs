@@ -174,4 +174,8 @@ public sealed record CompositeRollProfile
         (reordered[order - 1], reordered[order - 2]) = (reordered[order - 2], reordered[order - 1]);
         return new CompositeRollProfile(reordered.Select((segment, index) => segment with { Order = index + 1 }));
     }
+
+    /// <summary>把一段下移一位。</summary>
+    public CompositeRollProfile MoveDown(int order) =>
+        order >= 1 && order < Segments.Count ? MoveUp(order + 1) : this;
 }

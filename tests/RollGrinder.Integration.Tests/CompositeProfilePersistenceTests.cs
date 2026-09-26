@@ -176,9 +176,9 @@ public sealed class CompositeProfilePersistenceTests : IDisposable
             RollProfileDefinition.Create("P-1", "工作辊-凸度300", Geometry.BodyLengthMm, ThreeSegments(), DateTimeOffset.UnixEpoch),
             CancellationToken.None);
 
-        (await library.IsNameTakenAsync("工作辊-凸度300", null, CancellationToken.None)).Should().BeTrue();
-        (await library.IsNameTakenAsync("工作辊-凸度300 ", "P-2", CancellationToken.None)).Should().BeTrue("另一条不能叫同一个名字");
-        (await library.IsNameTakenAsync("工作辊-凸度300", "P-1", CancellationToken.None)).Should().BeFalse("存回自己不算重名");
+        (await library.FindIdByNameAsync("工作辊-凸度300", null, CancellationToken.None)).Should().NotBeNull();
+        (await library.FindIdByNameAsync("工作辊-凸度300 ", "P-2", CancellationToken.None)).Should().NotBeNull("另一条不能叫同一个名字");
+        (await library.FindIdByNameAsync("工作辊-凸度300", "P-1", CancellationToken.None)).Should().BeNull("存回自己不算重名");
     }
 
     [Fact]

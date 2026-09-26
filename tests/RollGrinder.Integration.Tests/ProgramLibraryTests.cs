@@ -102,10 +102,10 @@ public sealed class ProgramLibraryTests : IDisposable
         var library = new SqliteProgramRepository(this.database);
         await library.SaveAsync(Program("G-1", "Test"), CancellationToken.None);
 
-        (await library.IsNameTakenAsync("Test", null, CancellationToken.None)).Should().BeTrue("新建一支同名的不行");
-        (await library.IsNameTakenAsync(" test ", null, CancellationToken.None)).Should().BeTrue("首尾空白、大小写不同也算同名");
-        (await library.IsNameTakenAsync("Test", "G-1", CancellationToken.None)).Should().BeFalse("存回自己不算重名");
-        (await library.IsNameTakenAsync("Test-副本", null, CancellationToken.None)).Should().BeFalse();
+        (await library.FindIdByNameAsync("Test", null, CancellationToken.None)).Should().NotBeNull("新建一支同名的不行");
+        (await library.FindIdByNameAsync(" test ", null, CancellationToken.None)).Should().NotBeNull("首尾空白、大小写不同也算同名");
+        (await library.FindIdByNameAsync("Test", "G-1", CancellationToken.None)).Should().BeNull("存回自己不算重名");
+        (await library.FindIdByNameAsync("Test-副本", null, CancellationToken.None)).Should().BeNull();
     }
 
     [Fact]

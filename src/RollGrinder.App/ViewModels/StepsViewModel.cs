@@ -262,6 +262,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private readonly GrindingStepTypeRegistry stepTypes;
     private readonly IJobDownloadService downloadService;
     private readonly IProgramRepository programs;
+    private readonly GrindingJobValidator validator;
+    private readonly MachineCapability capability;
+    private readonly MachineDescription machine;
     private readonly IRollRepository rolls;
     private readonly IRollProfileRepository profileLibrary;
     private readonly ICalibrationService calibration;
@@ -283,6 +286,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         IRollRepository rolls,
         IRollProfileRepository profileLibrary,
         ICalibrationService calibration,
+        GrindingJobValidator validator,
         MachineDescription machine,
         MachineCapability capability,
         HmiSettings settings,
@@ -291,7 +295,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
         INavigator navigator)
         : base(alarms, localizer, navigator)
     {
-        ArgumentNullException.ThrowIfNull(capability);
+        this.capability = capability ?? throw new ArgumentNullException(nameof(capability));
+        this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
         this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
         this.stepTypes = stepTypes ?? throw new ArgumentNullException(nameof(stepTypes));
         this.downloadService = downloadService ?? throw new ArgumentNullException(nameof(downloadService));
@@ -299,7 +304,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.profileLibrary = profileLibrary ?? throw new ArgumentNullException(nameof(profileLibrary));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
-        ArgumentNullException.ThrowIfNull(machine);
+        this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         NamePrompt = new NamePromptViewModel(localizer);
 
         ProfileTypeKeys = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
@@ -587,14 +592,41 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
 
         Steps.Remove(step);
+        Renumber();
+        MarkEdited();
+
+        RefreshDurations();
+    }
+
+    /// <summary>这道工序往前挪一位（第一轮甲方测试：只能删，不能调顺序）。</summary>
+    [RelayCommand]
+    private void MoveStepUp(StepRowViewModel? step) => MoveStep(step, -1);
+
+    /// <summary>这道工序往后挪一位。</summary>
+    [RelayCommand]
+    private void MoveStepDown(StepRowViewModel? step) => MoveStep(step, +1);
+
+    private void MoveStep(StepRowViewModel? step, int offset)
+    {
+        int from = step is null ? -1 : Steps.IndexOf(step);
+        int to = from + offset;
+        if (from < 0 || to < 0 || to >= Steps.Count)
+        {
+            return;
+        }
+
+        Steps.Move(from, to);
+        Renumber();
+        MarkEdited();
+        RefreshDurations();
+    }
+
+    private void Renumber()
+    {
         for (int i = 0; i < Steps.Count; i++)
         {
             Steps[i].Order = i + 1;
         }
-
-        MarkEdited();
-
-        RefreshDurations();
     }
 
     [RelayCommand]
@@ -623,7 +655,16 @@ public sealed partial class StepsViewModel : PageViewModelBase
             }
 
             RefreshDurations();
-            StatusResourceKey = "Job_ReadyToHandOver";
+
+            // 和下发前同一套校验：参数范围、机床能力、至少一道走拖板。以前这里只看填没填，
+            // 越界的值也会显示"可以下发"，按下发才被打回来。
+            ParameterValidationResult result = this.validator.Validate(job, this.capability);
+            foreach (ParameterViolation violation in result.Violations)
+            {
+                Violations.Add(new ViolationRowViewModel(violation, Localizer));
+            }
+
+            StatusResourceKey = result.IsValid ? "Job_ReadyToHandOver" : "Job_ValidationFailed";
             return Task.CompletedTask;
         }, cancellationToken);
 
@@ -803,31 +844,153 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// 把当前这支程序存回程序库。走页面基类的保存契约，
     /// 所以"改了没存就想离开"那道拦截也会用到它。
     /// </summary>
-    public override Task<bool> SaveAsync(CancellationToken cancellationToken) =>
-        StoreProgramAsync(ProgramId ?? NewProgramId(), ProgramName, cancellationToken);
-
-    /// <summary>"另存为"的命名框。</summary>
-    public NamePromptViewModel NamePrompt { get; }
-
-    /// <summary>
-    /// 另存一支新程序，库里原来那支不动。先起名字：预填"原名-副本"，
-    /// 名字在库里已经有了就留在框里说清楚，不存。
-    /// </summary>
-    [RelayCommand]
-    private void SaveProgramAs() => NamePrompt.Open(
-        Localizer["Program_SaveAsTitle"],
-        string.IsNullOrWhiteSpace(ProgramName) ? string.Empty : Localizer.Format("Library_CopyNameFormat", ProgramName.Trim()),
-        async (name, token) =>
+    public override async Task<bool> SaveAsync(CancellationToken cancellationToken)
+    {
+        string name = ProgramName.Trim();
+        string targetId = ProgramId ?? NewProgramId();
+        if (name.Length > 0)
         {
-            if (await this.programs.IsNameTakenAsync(name, null, token).ConfigureAwait(true))
+            if (CheckProgram() is null)
             {
-                return Localizer.Format("Library_NameTakenFormat", name);
+                return false;
             }
 
-            return await StoreProgramAsync(NewProgramId(), name, token).ConfigureAwait(true)
-                ? null
-                : Localizer["Library_SaveFailed"];
-        });
+            try
+            {
+                // 改了名字撞上库里另一支：不悄悄存成两支同名的，问一句"覆盖 / 改名 / 取消"。
+                if (await this.programs.FindIdByNameAsync(name, targetId, cancellationToken).ConfigureAwait(true) is not null)
+                {
+                    NamePrompt.Open(
+                        Localizer["Library_SaveTitle"],
+                        name,
+                        (chosen, overwrite, token) => SaveUnderNameAsync(chosen, targetId, overwrite, token),
+                        Localizer.Format("Library_NameTakenFormat", name));
+                    return false;
+                }
+            }
+            catch (DataStoreException ex)
+            {
+                Alarms.RaiseException(ex);
+                return false;
+            }
+        }
+
+        return await StoreProgramAsync(targetId, name, cancellationToken).ConfigureAwait(true);
+    }
+
+    /// <summary>起名字的框（另存为、保存时撞名）。</summary>
+    public NamePromptViewModel NamePrompt { get; }
+
+    public override bool HasModalPrompt => NamePrompt.IsOpen;
+
+    public override bool TryDismissPrompt()
+    {
+        if (!NamePrompt.IsOpen)
+        {
+            return false;
+        }
+
+        NamePrompt.CancelCommand.Execute(null);
+        return true;
+    }
+
+    /// <summary>
+    /// 另存一支新程序，库里原来那支不动。先校验——有错就不必起名字了；
+    /// 再起名字：预填"原名-副本"，名字在库里已经有了，由操作员选覆盖、改名或取消。
+    /// </summary>
+    [RelayCommand]
+    private void SaveProgramAs()
+    {
+        if (CheckProgram() is null)
+        {
+            return;
+        }
+
+        NamePrompt.Open(
+            Localizer["Program_SaveAsTitle"],
+            string.IsNullOrWhiteSpace(ProgramName) ? string.Empty : Localizer.Format("Library_CopyNameFormat", ProgramName.Trim()),
+            (name, overwrite, token) => SaveUnderNameAsync(name, NewProgramId(), overwrite, token));
+    }
+
+    /// <summary>按指定名字存；名字被库里另一支占了，要么覆盖那一支（存进它的标识），要么退回去让人改名。</summary>
+    private async Task<NamePromptOutcome> SaveUnderNameAsync(
+        string name, string targetId, bool overwrite, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string? holder = await this.programs.FindIdByNameAsync(name, targetId, cancellationToken).ConfigureAwait(true);
+            if (holder is not null)
+            {
+                if (!overwrite)
+                {
+                    return NamePromptOutcome.Conflict(Localizer.Format("Library_NameTakenFormat", name));
+                }
+
+                targetId = holder;
+            }
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+            return NamePromptOutcome.Refused(Localizer["Library_SaveFailed"]);
+        }
+
+        return await StoreProgramAsync(targetId, name, cancellationToken).ConfigureAwait(true)
+            ? NamePromptOutcome.Done
+            : NamePromptOutcome.Refused(Localizer["Library_SaveFailed"]);
+    }
+
+    /// <summary>
+    /// 存程序前的校验（第一轮甲方测试 工序 2⑥）：每道参数成立、在范围内、机床装得了、
+    /// 展开后不超机床能力、至少一道走拖板。不过就不存，原因列在页面的校验结果里。
+    /// 程序不带辊，按本页填的辊身与直径展开；那两格没填成立时按机床允许的最小辊展开。
+    /// </summary>
+    /// <returns>校验通过的工序；不通过返回 null。</returns>
+    private List<GrindingJobStep>? CheckProgram()
+    {
+        Violations.Clear();
+        var steps = new List<GrindingJobStep>(Steps.Count);
+        foreach (StepRowViewModel step in Steps)
+        {
+            ParameterSet? stepParameters = Collect(step.Parameters);
+            if (stepParameters is null)
+            {
+                StatusResourceKey = "Job_ParametersInvalid";
+                Alarms.Raise(AlarmSeverity.Warning, "Program_HasErrors", code: AlarmCodes.DomainFailure);
+                return null;
+            }
+
+            steps.Add(new GrindingJobStep(step.Order, step.StepTypeKey, stepParameters));
+        }
+
+        if (steps.Count == 0)
+        {
+            StatusResourceKey = "Job_NoSteps";
+            Alarms.Raise(AlarmSeverity.Warning, "Program_HasErrors", code: AlarmCodes.DomainFailure);
+            return null;
+        }
+
+        RollGeometry reference =
+            TryParseDouble(BodyLengthMmText, out double bodyLengthMm) && bodyLengthMm > 0.0
+            && TryParseDouble(NominalDiameterMmText, out double diameterMm) && diameterMm > 0.0
+                ? RollGeometry.FromDiameter(bodyLengthMm, diameterMm)
+                : RollGeometry.FromDiameter(this.machine.Workpiece.MinBodyLengthMm, this.machine.Workpiece.MinDiameterMm);
+
+        ParameterValidationResult result = this.validator.ValidateSteps(steps, reference, this.capability);
+        if (!result.IsValid)
+        {
+            foreach (ParameterViolation violation in result.Violations)
+            {
+                Violations.Add(new ViolationRowViewModel(violation, Localizer));
+            }
+
+            StatusResourceKey = "Program_ValidationFailed";
+            Alarms.Raise(AlarmSeverity.Warning, "Program_HasErrors", code: AlarmCodes.DomainFailure);
+            return null;
+        }
+
+        return steps;
+    }
 
     private async Task<bool> StoreProgramAsync(string programId, string name, CancellationToken cancellationToken)
     {
@@ -838,29 +1001,16 @@ public sealed partial class StepsViewModel : PageViewModelBase
             return false;
         }
 
-        var steps = new List<GrindingJobStep>(Steps.Count);
-        foreach (StepRowViewModel step in Steps)
+        List<GrindingJobStep>? steps = CheckProgram();
+        if (steps is null)
         {
-            ParameterSet? stepParameters = Collect(step.Parameters);
-            if (stepParameters is null)
-            {
-                StatusResourceKey = "Job_ParametersInvalid";
-                return false;
-            }
-
-            steps.Add(new GrindingJobStep(step.Order, step.StepTypeKey, stepParameters));
-        }
-
-        if (steps.Count == 0)
-        {
-            StatusResourceKey = "Job_NoSteps";
             return false;
         }
 
         try
         {
-            // 库里名字唯一：同名的两支分不清哪支是哪支（第一轮甲方测试）。
-            if (await this.programs.IsNameTakenAsync(name, programId, cancellationToken).ConfigureAwait(true))
+            // 库里名字唯一：同名的两支分不清哪支是哪支（第一轮甲方测试）。兜底，正常走不到这里。
+            if (await this.programs.FindIdByNameAsync(name, programId, cancellationToken).ConfigureAwait(true) is not null)
             {
                 Alarms.Raise(AlarmSeverity.Warning, "Library_NameTaken", name, AlarmCodes.DomainFailure);
                 return false;
@@ -878,6 +1028,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
             ProgramName = name;
             Capture();
             IsDirty = false;
+            StatusResourceKey = "Program_SavedStatus";
             Alarms.Raise(AlarmSeverity.Information, "Program_Saved", ProgramName, AlarmCodes.HandoverCompleted);
             return true;
         }

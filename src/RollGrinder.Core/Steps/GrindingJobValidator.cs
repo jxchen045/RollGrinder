@@ -35,9 +35,26 @@ public sealed class GrindingJobValidator
         violations.AddRange(ProgramOptionCatalog.Schema.Validate(job.ProgramOptions).Violations);
         violations.AddRange(ValidateProgramOptions(job, capability));
 
+        violations.AddRange(ValidateSteps(job.Steps, job.Geometry, capability).Violations);
+
+        return new ParameterValidationResult(violations);
+    }
+
+    /// <summary>
+    /// 只校验工序：各道参数是否符合 schema、机床装没装、展开后是否超出机床能力、有没有一道走拖板。
+    /// 程序库里的程序不带辊，存程序时拿一个参考几何来展开（见 <see cref="Validate"/> 用的是作业自己的几何）。
+    /// </summary>
+    public ParameterValidationResult ValidateSteps(
+        IReadOnlyList<GrindingJobStep> steps, RollGeometry geometry, MachineCapability capability)
+    {
+        ArgumentNullException.ThrowIfNull(steps);
+        ArgumentNullException.ThrowIfNull(geometry);
+        ArgumentNullException.ThrowIfNull(capability);
+
+        var violations = new List<ParameterViolation>();
         bool anyTraverse = false;
         bool allPlanned = true;
-        foreach (GrindingJobStep step in job.Steps)
+        foreach (GrindingJobStep step in steps)
         {
             IGrindingStepType stepType = this.stepTypes.Get(step.StepTypeKey);
 
@@ -58,14 +75,14 @@ public sealed class GrindingJobValidator
                 continue;
             }
 
-            GrindingStepPlan plan = stepType.CreatePlan(job.Geometry, step.Parameters);
+            GrindingStepPlan plan = stepType.CreatePlan(geometry, step.Parameters);
             anyTraverse |= plan.FeedMmPerMin > 0.0;
             violations.AddRange(ValidatePlan(plan, capability));
         }
 
         // 每道都展开了、却没有一道拖板在走：只有开始 / 结束 / 暂停这类工序。
         // 下发下去 NC 拿不到可用的进给（F0），也磨不到任何东西。有别的错时先让人改那些。
-        if (job.Steps.Count > 0 && allPlanned && !anyTraverse)
+        if (steps.Count > 0 && allPlanned && !anyTraverse)
         {
             violations.Add(new ParameterViolation(StepParameterKeys.FeedMmPerMin, ParameterViolationKind.NoTraversingStep));
         }

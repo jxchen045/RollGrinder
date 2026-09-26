@@ -83,14 +83,54 @@ internal sealed class ProfileSuite : ISelfTestSuite
             ctx.Note("status=" + page.StatusResourceKey + ", maxChordError=" + page.MaxChordErrorText);
         }, new StepOptions(Tolerant: true));
 
-        await h.StepAsync("Segments", "MoveUpAndRemove", async ctx =>
+        await h.StepAsync("Segments", "MoveUpDownAndRemove", async ctx =>
         {
             int count = page.Segments.Count;
             page.SelectedSegment = page.Segments.Last();
+            string movedType = page.SelectedSegment.Segment.ProfileTypeKey;
             await h.RunAsync(page.MoveSegmentUpCommand);
-            page.SelectedSegment = page.Segments.Last();
+            ctx.Check(page.SelectedSegment?.Order == count - 1 && page.SelectedSegment.Segment.ProfileTypeKey == movedType,
+                "after moving up the selection should follow the moved segment");
+            await h.RunAsync(page.MoveSegmentDownCommand);
+            ctx.Check(page.SelectedSegment?.Order == count && page.SelectedSegment.Segment.ProfileTypeKey == movedType,
+                "move down should bring it back to the end");
             await h.RunAsync(page.RemoveSegmentCommand);
             ctx.Check(page.Segments.Count == count - 1, "remove should drop one segment");
+        });
+
+        await h.StepAsync("Segments", "LiveValidationBlocksSave", async ctx =>
+        {
+            int saveKey = h.IndexOfKey("Fn_Save");
+            page.SelectedSegment = page.Segments.Last();
+            string originalTo = page.SegmentToMmText;
+            ctx.Check(!page.HasErrors, "the profile should start without errors: " + string.Join(" | ", page.Issues.Select(i => i.Text)));
+
+            // 终点伸出设计长度：立刻报错、段标红、保存与另存为变灰。
+            page.SegmentToMmText = Invariant($"{double.Parse(page.BodyLengthMmText, CultureInfo.CurrentCulture) + 500.0}");
+            await h.SettleAsync(50);
+            ctx.Check(page.HasErrors && page.Issues.Any(i => i.IsError), "a segment outside the body must show an error at once");
+            ctx.Check(page.SelectedSegment?.HasError == true, "the offending segment should be marked");
+            ctx.Check(!h.Shell.FunctionKeys[saveKey].Command.CanExecute(null), "save must be disabled while there are errors");
+            ctx.Check(!page.SaveAsCommand.CanExecute(null), "save-as must be disabled while there are errors");
+            h.TryScreenshot("profile-live-errors");
+
+            // 正在输入、还不成立的内容也要说出来。
+            page.SegmentToMmText = "-";
+            await h.SettleAsync(50);
+            ctx.Check(page.HasErrors, "an unfinished range should be reported while typing");
+
+            page.SegmentToMmText = originalTo;
+            await h.SettleAsync(50);
+            ctx.Check(!page.HasErrors, "restoring the range should clear the error: " + string.Join(" | ", page.Issues.Select(i => i.Text)));
+            ctx.Check(h.Shell.FunctionKeys[saveKey].Command.CanExecute(null), "save should be enabled again");
+
+            string originalLength = page.BodyLengthMmText;
+            page.BodyLengthMmText = "1";
+            await h.SettleAsync(50);
+            ctx.Check(page.HasErrors, "a design length below the machine minimum is an error");
+            page.BodyLengthMmText = originalLength;
+            await h.SettleAsync(50);
+            ctx.Check(!page.HasErrors, "restoring the design length should clear the error");
         });
 
         await h.StepAsync("Library", "SaveWithoutNameRefused", async ctx =>
@@ -193,6 +233,25 @@ internal sealed class ProfileSuite : ISelfTestSuite
             await h.PressKeyAsync(ctx, "Fn_ImportPoints");
             ctx.Check(page.StatusResourceKey == before, "cancelling the file dialog should change nothing");
         });
+
+        await h.StepAsync("Segments", "DeleteToEmptyCannotSave", async ctx =>
+        {
+            int before = page.Segments.Count;
+            while (page.Segments.Count > 0)
+            {
+                page.SelectedSegment = page.Segments.Last();
+                await h.RunAsync(page.RemoveSegmentCommand);
+            }
+
+            ctx.Check(page.Segments.Count == 0, "every segment should be removable");
+            ctx.Check(page.HasErrors && page.Issues.Any(i => i.IsError), "an empty profile must be reported");
+            ctx.Check(!page.SaveAsCommand.CanExecute(null), "an empty profile must not be saved");
+            h.TryScreenshot("profile-empty");
+
+            page.DiscardChanges();
+            await h.SettleAsync();
+            ctx.Check(page.Segments.Count == before && !page.HasErrors, "discard should bring the loaded profile back");
+        });
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
@@ -254,6 +313,23 @@ internal sealed class StepsSuite : ISelfTestSuite
             page.RemoveStepCommand.Execute(page.Steps.Last());
             await h.SettleAsync();
             ctx.Check(page.Steps.Count == count - 1, "remove should drop one step");
+        });
+
+        await h.StepAsync("StepTypes", "MoveUpAndDown", async ctx =>
+        {
+            ctx.Check(page.Steps.Count >= 2, "need two steps to reorder");
+            StepRowViewModel first = page.Steps[0];
+            StepRowViewModel second = page.Steps[1];
+            page.MoveStepDownCommand.Execute(first);
+            await h.SettleAsync();
+            ctx.Check(page.Steps[0] == second && page.Steps[1] == first, "move down should swap with the next step");
+            ctx.Check(page.Steps[0].Order == 1 && page.Steps[1].Order == 2, "orders should be renumbered");
+            page.MoveStepUpCommand.Execute(first);
+            await h.SettleAsync();
+            ctx.Check(page.Steps[0] == first && page.Steps[1] == second, "move up should swap it back");
+            page.MoveStepUpCommand.Execute(first);
+            await h.SettleAsync();
+            ctx.Check(page.Steps[0] == first, "the first step cannot move further up");
         });
 
         await h.StepAsync("Validation", "MissingRollIdReported", async ctx =>
@@ -325,6 +401,23 @@ internal sealed class StepsSuite : ISelfTestSuite
             await h.PressKeyAsync(ctx, "Fn_SaveProgram");
             ctx.Check(page.IsDirty, "a nameless program must not be stored");
         }, StepOptions.Expect("Program_NeedsName"));
+
+        await h.StepAsync("ProgramLibrary", "InvalidProgramNotSaved", async ctx =>
+        {
+            // 把一道工序的一格改到范围外：保存要被拒，原因列在校验结果里。
+            ParameterRowViewModel cell = page.Steps
+                .SelectMany(step => step.Parameters)
+                .First(row => row.Kind == RollGrinder.Core.Parameters.ParameterValueKind.Number && row.RangeText.Length > 0);
+            string original = cell.Text;
+            cell.Text = "999999";
+            page.ProgramName = SelfTestNames.ProgramA;
+            await h.PressKeyAsync(ctx, "Fn_SaveProgram");
+            ctx.Check(page.ProgramId is null || page.IsDirty, "an out-of-range program must not be stored");
+            ctx.Check(page.Violations.Count > 0, "the reason should be listed");
+            h.TryScreenshot("steps-save-refused");
+            cell.Text = original;
+            await h.SettleAsync();
+        }, StepOptions.Expect("Program_HasErrors"));
 
         await h.StepAsync("ProgramLibrary", "SaveAsNewJobLoad", async ctx =>
         {

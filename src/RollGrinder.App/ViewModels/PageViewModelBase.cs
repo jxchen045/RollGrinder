@@ -90,6 +90,15 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// <summary>丢掉未保存的修改（操作员在离开确认框里选了"放弃"）。</summary>
     public virtual void DiscardChanges() => IsDirty = false;
 
+    /// <summary>
+    /// 本页有没有开着一个要先答完的框（例如另存为的命名框）。开着的时候外壳不响应功能键，
+    /// 免得框还没答完又按出别的动作。
+    /// </summary>
+    public virtual bool HasModalPrompt => false;
+
+    /// <summary>Esc：本页有开着的框就收掉并返回 true；没有返回 false，外壳再按"退一级"处理。</summary>
+    public virtual bool TryDismissPrompt() => false;
+
     /// <summary>切到本页时调用。</summary>
     public virtual void OnActivated()
     {

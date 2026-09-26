@@ -151,7 +151,7 @@ internal sealed class NavigationSuite : ISelfTestSuite
         {
             await h.GoToAsync(PageKey.Profile, ctx);
             ProfileViewModel profile = h.Page<ProfileViewModel>();
-            await h.PressKeyAsync(ctx, "Fn_NewSegment");
+            await h.RunAsync(profile.InsertSegmentCommand);
             ctx.Check(profile.IsDirty, "adding a segment should mark the profile page dirty");
             shell.AreaMenuItems.First(i => i.Key == PageKey.Records).Command.Execute(null);
             await h.SettleAsync();
@@ -313,7 +313,9 @@ internal sealed class PageSweepSuite : ISelfTestSuite
     private static bool PageOverlayOpen(SelfTestHarness h) =>
         h.Page<StepsViewModel>().IsProgramLibraryOpen
         || h.Page<StepsViewModel>().IsProfileLibraryOpen
-        || h.Page<ProfileViewModel>().IsLibraryOpen;
+        || h.Page<ProfileViewModel>().IsLibraryOpen
+        || h.Page<StepsViewModel>().NamePrompt.IsOpen
+        || h.Page<ProfileViewModel>().NamePrompt.IsOpen;
 
     private static async Task ReturnToAsync(SelfTestHarness h, PageKey origin, StepContext ctx)
     {
