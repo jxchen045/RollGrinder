@@ -392,9 +392,13 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     [ObservableProperty]
     private string segmentLengthText = string.Empty;
 
-    /// <summary>选中段是否沿段中点镜像——头架端的锥度就是尾架端锥度的镜像。</summary>
+    /// <summary>选中段是否沿段中点镜像（点表、CVC 等）。</summary>
     [ObservableProperty]
     private bool segmentIsMirrored;
+
+    /// <summary>选中段能不能镜像。锥度（端部减薄）按所在半边自动朝向端面，镜像对它无效，勾选框置灰。</summary>
+    [ObservableProperty]
+    private bool canMirrorSegment;
 
     /// <summary>选中段是点表：参数区显示点表格子。</summary>
     [ObservableProperty]
@@ -426,7 +430,8 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             IsFirstSegmentSelected = value?.Order == 1;
             SegmentStartText = value?.StartText ?? string.Empty;
             SegmentLengthText = segment is null ? string.Empty : FormatLength(segment.LengthMm);
-            SegmentIsMirrored = segment?.IsMirrored ?? false;
+            CanMirrorSegment = segment is not null && !this.profileTypes.Get(segment.ProfileTypeKey).IsEndRelief;
+            SegmentIsMirrored = CanMirrorSegment && segment!.IsMirrored;
         }
         finally
         {
@@ -494,7 +499,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         {
             LengthMm = lengthMm,
             Parameters = new ParameterSet(pairs),
-            IsMirrored = SegmentIsMirrored,
+            IsMirrored = CanMirrorSegment && SegmentIsMirrored,
         };
         MarkDirty();
         RecomputeComposite();
@@ -661,7 +666,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             profileType.Key == ProfileTypeKeys.PointTable
                 ? PointTableProfileType.DefaultsFor(lengthMm)
                 : profileType.Schema.CreateDefaults(),
-            isMirrored);
+            isMirrored && !profileType.IsEndRelief);
 
     // ── 点表 ──────────────────────────────────────────────────────────────────
 

@@ -21,6 +21,7 @@ public sealed class SequentialProfileTests
     private static RollProfileTypeRegistry Registry => new(new IRollProfileType[]
     {
         new CylindricalProfileType(), new TaperProfileType(), new CrownProfileType(), new CvcProfileType(),
+        new PointTableProfileType(),
     });
 
     private static SequentialSegment Crown(double lengthMm, double micrometer) => new(
@@ -29,12 +30,21 @@ public sealed class SequentialProfileTests
         new CrownProfileType().Schema.CreateDefaults()
             .With(CrownProfileType.CrownDiameterMicrometerKey, ParameterValue.FromNumber(micrometer)));
 
-    /// <summary>锥度：不镜像时在段终点最大（尾架端的锥度），镜像后在段起点最大（头架端的锥度）。</summary>
+    /// <summary>锥度 = 端部减薄：端面比相邻段低 <paramref name="micrometer"/>，朝向由所在半边定；镜像标志对它无效。</summary>
     private static SequentialSegment Taper(double lengthMm, double micrometer, bool mirrored = false) => new(
         ProfileTypeKeys.Taper,
         lengthMm,
         new TaperProfileType().Schema.CreateDefaults()
             .With(TaperProfileType.TaperDiameterMicrometerKey, ParameterValue.FromNumber(micrometer)),
+        mirrored);
+
+    /// <summary>点表段：两点连直线。</summary>
+    private static SequentialSegment Line(double lengthMm, double startMicrometer, double endMicrometer, bool mirrored = false) => new(
+        ProfileTypeKeys.PointTable,
+        lengthMm,
+        PointTableProfileType.DefaultsFor(lengthMm).With(
+            PointTableProfileType.PointsKey,
+            ParameterValue.FromPoints(new[] { new TablePoint(0.0, startMicrometer), new TablePoint(lengthMm, endMicrometer) })),
         mirrored);
 
     private static SequentialSegment Cvc(double lengthMm) => new(
@@ -45,7 +55,7 @@ public sealed class SequentialProfileTests
 
     /// <summary>修改稿 5.2 的例子：锥度 150 + 凸度 1700 + 锥度 150。</summary>
     private static CompositeRollProfile DesignExample() => CompositeRollProfile.Sequential(
-        0.0, new[] { Taper(150.0, -50.0, mirrored: true), Crown(1700.0, 300.0), Taper(150.0, -50.0) });
+        0.0, new[] { Taper(150.0, 50.0), Crown(1700.0, 300.0), Taper(150.0, 50.0) });
 
     private static double Micrometer(RollProfile profile, double zMm) =>
         UnitConversion.RadiusMmToDiameterMicrometer(profile.RadiusOffsetAtMm(zMm));
@@ -69,6 +79,24 @@ public sealed class SequentialProfileTests
         Micrometer(composed, 150.0).Should().BeApproximately(0.0, 1e-6);
         Micrometer(composed, 1000.0).Should().BeApproximately(300.0, 1e-6, "凸度在它那一段的中点最高");
         Micrometer(composed, 2000.0).Should().BeApproximately(-50.0, 1e-6, "尾架端锥度在端面最低");
+    }
+
+    [Fact]
+    public void A_taper_is_an_end_relief_that_faces_the_end_of_its_half_whatever_the_mirror_flag()
+    {
+        CompositeRollProfile flagged = CompositeRollProfile.Sequential(
+            0.0, new[] { Taper(150.0, 50.0, mirrored: true), Crown(1700.0, 300.0), Taper(150.0, 50.0, mirrored: true) });
+        RollProfile composed = flagged.Compose(Geometry, Registry, 401);
+
+        Micrometer(composed, 0.0).Should().BeApproximately(-50.0, 1e-6, "镜像标志对锥度无效：头架端照样在端面最低");
+        Micrometer(composed, 75.0).Should().BeApproximately(-25.0, 1e-6, "线性回到交界处");
+        Micrometer(composed, 2000.0).Should().BeApproximately(-50.0, 1e-6);
+        ProfileLayoutCheck.Check(flagged, Body, Registry).Should().BeEmpty("端部减薄在交界处是 0，正好接上凸度");
+
+        // 一段锥度铺满全长：中点正好在正中，算头架半边，端面在头架侧。
+        RollProfile whole = CompositeRollProfile.Sequential(0.0, new[] { Taper(Body, 80.0) }).Compose(Geometry, Registry, 401);
+        Micrometer(whole, 0.0).Should().BeApproximately(-80.0, 1e-6);
+        Micrometer(whole, Body).Should().BeApproximately(0.0, 1e-6);
     }
 
     [Fact]
@@ -121,9 +149,9 @@ public sealed class SequentialProfileTests
     [Fact]
     public void A_step_between_two_segments_is_an_error_with_its_size()
     {
-        // 尾架端锥度忘了勾镜像：它从 −50 起步，而凸度在段终点是 0——交界处跳 50 µm。
+        // 尾架端用点表从 −50 起步，而凸度在段终点是 0——交界处跳 50 µm。
         CompositeRollProfile profile = CompositeRollProfile.Sequential(
-            0.0, new[] { Crown(1850.0, 300.0), Taper(150.0, -50.0, mirrored: true) });
+            0.0, new[] { Crown(1850.0, 300.0), Line(150.0, -50.0, -80.0) });
 
         ProfileIssue jump = ProfileLayoutCheck.Check(profile, Body, Registry).Should()
             .ContainSingle(i => i.Kind == ProfileIssueKind.BoundaryJump).Subject;
@@ -137,11 +165,11 @@ public sealed class SequentialProfileTests
     public void Symmetric_editing_mirrors_the_headstock_side_around_a_centre_segment()
     {
         SymmetryResult result = ProfileSymmetry.Expand(
-            Body, 0.0, new[] { Taper(150.0, -50.0, mirrored: true), Crown(1700.0, 300.0) }, Registry);
+            Body, 0.0, new[] { Taper(150.0, 50.0), Crown(1700.0, 300.0) }, Registry);
 
         result.Failure.Should().Be(SymmetryFailure.None);
         result.Profile!.Segments.Select(s => (s.ProfileTypeKey, s.FromMm, s.ToMm, s.IsMirrored)).Should().Equal(
-            (ProfileTypeKeys.Taper, 0.0, 150.0, true),
+            (ProfileTypeKeys.Taper, 0.0, 150.0, false),
             (ProfileTypeKeys.Crown, 150.0, 1850.0, false),
             (ProfileTypeKeys.Taper, 1850.0, 2000.0, false));
         result.Profile.Should().BeEquivalentTo(DesignExample(), "展开的结果就是两个独立的段，和手工编的一样");
@@ -151,19 +179,27 @@ public sealed class SequentialProfileTests
     public void Symmetric_editing_without_a_centre_segment_mirrors_everything()
     {
         SymmetryResult result = ProfileSymmetry.Expand(
-            Body, 0.0, new[] { Taper(150.0, -50.0, mirrored: true), Taper(850.0, 100.0) }, Registry);
+            Body, 0.0, new[] { Taper(150.0, 50.0), Line(850.0, 0.0, 100.0) }, Registry);
 
-        result.Profile!.Segments.Select(s => (s.FromMm, s.IsMirrored)).Should().Equal(
-            (0.0, true), (150.0, false), (1000.0, true), (1850.0, false));
+        // 点表段镜像一份（标志翻过来）；锥度不设镜像标志，靠位置朝向尾架端面。
+        result.Profile!.Segments.Select(s => (s.ProfileTypeKey, s.FromMm, s.IsMirrored)).Should().Equal(
+            (ProfileTypeKeys.Taper, 0.0, false),
+            (ProfileTypeKeys.PointTable, 150.0, false),
+            (ProfileTypeKeys.PointTable, 1000.0, true),
+            (ProfileTypeKeys.Taper, 1850.0, false));
+        RollProfile composed = result.Profile.Compose(Geometry, Registry, 401);
+        Micrometer(composed, 1000.0).Should().BeApproximately(100.0, 1e-6);
+        Micrometer(composed, 1850.0).Should().BeApproximately(0.0, 1e-6);
+        Micrometer(composed, 2000.0).Should().BeApproximately(-50.0, 1e-6);
     }
 
     [Fact]
     public void Symmetric_editing_explains_why_it_cannot_expand()
     {
-        ProfileSymmetry.Expand(Body, 0.0, new[] { Taper(150.0, -50.0, true), Crown(1000.0, 300.0) }, Registry)
+        ProfileSymmetry.Expand(Body, 0.0, new[] { Taper(150.0, 50.0), Crown(1000.0, 300.0) }, Registry)
             .Should().Match<SymmetryResult>(r => r.Failure == SymmetryFailure.DoesNotReachCenter && r.Profile == null);
 
-        ProfileSymmetry.Expand(Body, 0.0, new[] { Taper(150.0, -50.0, true), Taper(1700.0, 10.0) }, Registry)
+        ProfileSymmetry.Expand(Body, 0.0, new[] { Taper(150.0, 50.0), Taper(1700.0, 10.0) }, Registry)
             .Failure.Should().Be(SymmetryFailure.CenterNotSelfSymmetric, "跨中点的锥度本身不对称");
 
         ProfileSymmetry.Expand(Body, 0.0, new[] { Cvc(1000.0) }, Registry)
@@ -179,7 +215,7 @@ public sealed class SequentialProfileTests
         half!.Select(s => s.ProfileTypeKey).Should().Equal(ProfileTypeKeys.Taper, ProfileTypeKeys.Crown);
 
         CompositeRollProfile lopsided = CompositeRollProfile.Sequential(
-            0.0, new[] { Taper(150.0, -50.0, mirrored: true), Crown(1700.0, 300.0), Taper(150.0, -40.0) });
+            0.0, new[] { Taper(150.0, 50.0), Crown(1700.0, 300.0), Taper(150.0, 40.0) });
         ProfileSymmetry.TryFold(lopsided, Body, Registry).Should().BeNull("两端锥度不一样");
     }
 
@@ -195,5 +231,21 @@ public sealed class SequentialProfileTests
         });
 
         Micrometer(old.Compose(Geometry, Registry, 101), 1000.0).Should().BeApproximately(140.0, 1e-3);
+    }
+
+    [Fact]
+    public void A_taper_in_an_old_superimposed_profile_keeps_its_old_curve()
+    {
+        // 旧作业快照、磨削记录里的锥度仍是"从段起点到终点线性变化、正为终点大"，不能跟着新含义变。
+        var old = CompositeRollProfile.Superimposed(new[]
+        {
+            RollProfileSegment.Create(1, ProfileTypeKeys.Taper, 1850.0, 2000.0,
+                new TaperProfileType().Schema.CreateDefaults().With(TaperProfileType.TaperDiameterMicrometerKey, ParameterValue.FromNumber(-50.0))),
+        });
+        RollProfile composed = old.Compose(Geometry, Registry, 401);
+
+        Micrometer(composed, 1850.0).Should().BeApproximately(0.0, 1e-6);
+        Micrometer(composed, 2000.0).Should().BeApproximately(-50.0, 1e-6);
+        Micrometer(composed, 100.0).Should().BeApproximately(0.0, 1e-6);
     }
 }

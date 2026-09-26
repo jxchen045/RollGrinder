@@ -689,7 +689,7 @@
     <value>磨削量</value>
   </data>
   <data name="Parameter_taperDiameterMicrometer" xml:space="preserve">
-    <value>锥度（直径量）</value>
+    <value>端部减薄量（直径量，端面比相邻段低）</value>
   </data>
   <data name="Parameter_wheelSpeedRpm" xml:space="preserve">
     <value>砂轮转速</value>
@@ -2376,5 +2376,8 @@
   </data>
   <data name="Fn_NewJob" xml:space="preserve">
     <value>新作业</value>
+  </data>
+  <data name="Profile_MirrorNotForRelief" xml:space="preserve">
+    <value>点表、CVC 等可以镜像；锥度按所在半边自动朝向端面，不用镜像</value>
   </data>
 </root>

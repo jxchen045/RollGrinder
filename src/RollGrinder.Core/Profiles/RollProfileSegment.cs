@@ -76,7 +76,7 @@ public enum ProfileLayout
 /// <param name="ProfileTypeKey">曲线类型键。</param>
 /// <param name="LengthMm">段长（mm），大于 0。</param>
 /// <param name="Parameters">该段参数（界面量）。</param>
-/// <param name="IsMirrored">是否沿段中点镜像（头架端的锥度就是尾架端锥度的镜像）。</param>
+/// <param name="IsMirrored">是否沿段中点镜像（点表、CVC 等）。锥度按所在半边朝向端面，不看它。</param>
 public sealed record SequentialSegment(
     string ProfileTypeKey,
     double LengthMm,
@@ -186,7 +186,7 @@ public sealed record CompositeRollProfile
         ArgumentNullException.ThrowIfNull(registry);
 
         Func<double, double>[] contributions = Segments
-            .Select(segment => SegmentCurve(segment, geometry, registry, sampleCount))
+            .Select(segment => SegmentCurve(segment, Layout, geometry, registry, sampleCount))
             .ToArray();
 
         return RollProfile.Sample(
@@ -215,8 +215,8 @@ public sealed record CompositeRollProfile
                 left.Order,
                 right.Order,
                 right.FromMm,
-                SegmentCurve(left, geometry, registry, sampleCount)(left.ToMm),
-                SegmentCurve(right, geometry, registry, sampleCount)(right.FromMm)));
+                SegmentCurve(left, Layout, geometry, registry, sampleCount)(left.ToMm),
+                SegmentCurve(right, Layout, geometry, registry, sampleCount)(right.FromMm)));
         }
 
         return boundaries;
@@ -237,9 +237,12 @@ public sealed record CompositeRollProfile
         return 0.0;
     }
 
-    /// <summary>一段在辊身坐标上的曲线；区间外为 0。</summary>
+    /// <summary>
+    /// 一段在辊身坐标上的曲线；区间外为 0。
+    /// 顺接辊形里的端部减薄段（锥度）按位置朝向端面，不看镜像标志；叠加辊形保持旧含义。
+    /// </summary>
     private static Func<double, double> SegmentCurve(
-        RollProfileSegment segment, RollGeometry geometry, RollProfileTypeRegistry registry, int sampleCount)
+        RollProfileSegment segment, ProfileLayout layout, RollGeometry geometry, RollProfileTypeRegistry registry, int sampleCount)
     {
         IRollProfileType profileType = registry.Get(segment.ProfileTypeKey);
         RollGeometry segmentGeometry = RollGeometry.Create(segment.LengthMm, geometry.NominalRadiusMm);
@@ -248,12 +251,17 @@ public sealed record CompositeRollProfile
         int segmentSamples = Math.Max(
             2,
             (int)Math.Round(sampleCount * segment.LengthMm / geometry.BodyLengthMm, MidpointRounding.AwayFromZero));
-        RollProfile segmentProfile = profileType.CreateProfile(segmentGeometry, segment.Parameters, segmentSamples);
+        bool endRelief = layout == ProfileLayout.Sequential && profileType.IsEndRelief;
+        RollProfile segmentProfile = endRelief
+            ? profileType.CreateEndRelief(segmentGeometry, segment.Parameters, segmentSamples)
+            : profileType.CreateProfile(segmentGeometry, segment.Parameters, segmentSamples);
 
         double fromMm = segment.FromMm;
         double toMm = segment.ToMm;
         double lengthMm = segment.LengthMm;
-        bool mirrored = segment.IsMirrored;
+
+        // 端部减薄的曲线以段起点为端面：在头架半边正好；在尾架半边倒过来，端面落到段终点。
+        bool mirrored = endRelief ? IsOnTailSide(segment, geometry) : segment.IsMirrored;
 
         return bodyPositionMm =>
         {
@@ -265,6 +273,14 @@ public sealed record CompositeRollProfile
             double withinSegmentMm = bodyPositionMm - fromMm;
             return segmentProfile.RadiusOffsetAtMm(mirrored ? lengthMm - withinSegmentMm : withinSegmentMm);
         };
+    }
+
+    /// <summary>段中点在辊身尾架半边（正中算头架半边）。</summary>
+    public static bool IsOnTailSide(RollProfileSegment segment, RollGeometry geometry)
+    {
+        ArgumentNullException.ThrowIfNull(segment);
+        ArgumentNullException.ThrowIfNull(geometry);
+        return (segment.FromMm + segment.ToMm) / 2.0 > (geometry.BodyLengthMm / 2.0) + ProfileSymmetry.ToleranceMm;
     }
 
     /// <summary>加一段，接在最后（顺接辊形从上一段终点起）。</summary>

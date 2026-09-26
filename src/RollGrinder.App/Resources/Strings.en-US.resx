@@ -689,7 +689,7 @@
     <value>Stock removal</value>
   </data>
   <data name="Parameter_taperDiameterMicrometer" xml:space="preserve">
-    <value>Taper (diameter)</value>
+    <value>End relief (diameter; end face below the adjacent segment)</value>
   </data>
   <data name="Parameter_wheelSpeedRpm" xml:space="preserve">
     <value>Wheel speed</value>
@@ -2376,5 +2376,8 @@
   </data>
   <data name="Fn_NewJob" xml:space="preserve">
     <value>New job</value>
+  </data>
+  <data name="Profile_MirrorNotForRelief" xml:space="preserve">
+    <value>Point tables, CVC etc. can be mirrored; a taper always faces the end of the half it sits in</value>
   </data>
 </root>

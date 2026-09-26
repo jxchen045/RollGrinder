@@ -95,7 +95,8 @@
                                      VerticalContentAlignment="Center" />
                         </DockPanel>
                         <CheckBox Content="{loc:Loc Profile_SegmentMirrored}" IsChecked="{Binding SegmentIsMirrored}"
-                                  FontSize="16" />
+                                  IsEnabled="{Binding CanMirrorSegment}" ToolTip="{loc:Loc Profile_MirrorNotForRelief}"
+                                  ToolTipService.ShowOnDisabled="True" FontSize="16" />
                     </StackPanel>
                 </Border>
 

@@ -30,6 +30,20 @@ public interface IRollProfileType
     bool SupportsSymmetricEditing => true;
 
     /// <summary>
+    /// 端部减薄类（锥度）：在顺接辊形里，参数是"端面处比相邻段低多少"，朝哪一端由这段在辊身上的位置定——
+    /// 段中点在头架半边（含正中）朝头架端面，在尾架半边朝尾架端面。段上的"镜像"标志对它无效。
+    /// 叠加辊形（旧格式）不按这个含义算，保持原来的曲线。
+    /// </summary>
+    bool IsEndRelief => false;
+
+    /// <summary>
+    /// 端部减薄类在顺接辊形里的曲线（半径量 mm），段内坐标以段起点为端面：起点最低、终点为 0。
+    /// 只对 <see cref="IsEndRelief"/> 为真的类型有意义。
+    /// </summary>
+    RollProfile CreateEndRelief(RollGeometry segmentGeometry, ParameterSet parameters, int sampleCount) =>
+        CreateProfile(segmentGeometry, parameters, sampleCount);
+
+    /// <summary>
     /// schema 管不到、要结合段长才能判断的检查（例如点表有没有从段起点排到段终点）。
     /// 大多数类型没有，默认什么都不报。
     /// </summary>

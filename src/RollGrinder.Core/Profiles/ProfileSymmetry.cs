@@ -42,7 +42,8 @@ public sealed record SymmetryResult(CompositeRollProfile? Profile, SymmetryFailu
 ///   <item>最后一段跨在中点上、中点正好在它的正中：它是"中间段"，本身要对称（圆柱、凸度），不复制；
 ///         其余段镜像接在它后面。</item>
 /// </list>
-/// 镜像 = 次序倒过来、每段的"镜像"标志翻一下（头架端锥度在头架侧最低，尾架端锥度在尾架侧最低）。
+/// 镜像 = 次序倒过来、每段的"镜像"标志翻一下。锥度（端部减薄）不看镜像标志：它按所在半边朝向端面，
+/// 头架端的在头架端面最低，尾架端的在尾架端面最低。
 /// </summary>
 public static class ProfileSymmetry
 {
@@ -82,7 +83,7 @@ public static class ProfileSymmetry
 
         if (Math.Abs(allEnd - centerMm) <= ToleranceMm)
         {
-            return Built(startZMm, headSide, headSide);
+            return Built(startZMm, headSide, headSide, registry);
         }
 
         SequentialSegment last = headSide[^1];
@@ -90,7 +91,7 @@ public static class ProfileSymmetry
         if (Math.Abs(lastMiddle - centerMm) <= ToleranceMm)
         {
             return registry.Get(last.ProfileTypeKey).IsSelfSymmetric
-                ? Built(startZMm, headSide, headSide.Take(headSide.Count - 1).ToArray())
+                ? Built(startZMm, headSide, headSide.Take(headSide.Count - 1).ToArray(), registry)
                 : new SymmetryResult(null, SymmetryFailure.CenterNotSelfSymmetric);
         }
 
@@ -135,12 +136,21 @@ public static class ProfileSymmetry
         string.Equals(head.ProfileTypeKey, tail.ProfileTypeKey, StringComparison.Ordinal)
         && Math.Abs(head.LengthMm - tail.LengthMm) <= ToleranceMm
         && head.Parameters.ToOrderedPairs().SequenceEqual(tail.Parameters.ToOrderedPairs())
-        && (registry.Get(head.ProfileTypeKey).IsSelfSymmetric || head.IsMirrored != tail.IsMirrored);
+        && (registry.Get(head.ProfileTypeKey).IsSelfSymmetric
+            || registry.Get(head.ProfileTypeKey).IsEndRelief
+            || head.IsMirrored != tail.IsMirrored);
 
     private static SymmetryResult Built(
-        double startZMm, IReadOnlyList<SequentialSegment> headSide, IReadOnlyList<SequentialSegment> mirrored)
+        double startZMm,
+        IReadOnlyList<SequentialSegment> headSide,
+        IReadOnlyList<SequentialSegment> mirrored,
+        RollProfileTypeRegistry registry)
     {
-        IEnumerable<SequentialSegment> tailSide = mirrored.Reverse().Select(segment => segment with { IsMirrored = !segment.IsMirrored });
+        // 端部减薄段（锥度）按位置定方向，镜像标志对它无效，展开后照样不设。
+        IEnumerable<SequentialSegment> tailSide = mirrored.Reverse().Select(segment => segment with
+        {
+            IsMirrored = !registry.Get(segment.ProfileTypeKey).IsEndRelief && !segment.IsMirrored,
+        });
         return new SymmetryResult(CompositeRollProfile.Sequential(startZMm, headSide.Concat(tailSide)), SymmetryFailure.None);
     }
 }

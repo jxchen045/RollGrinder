@@ -202,12 +202,12 @@ internal sealed class ProfileSuite : ISelfTestSuite
             await h.SettleAsync(50);
             ctx.Check(page.IsSymmetric, "symmetric editing should switch on for an empty profile");
 
-            // 头架端：锥度 150 mm（镜像，端面最低 −50 µm），再一段跨中点的凸度 1700 mm。
+            // 头架端：锥度 150 mm（端部减薄 50 µm，自动朝头架端面），再一段跨中点的凸度 1700 mm。
             page.SelectedTypeForInsert = ProfileTypeKeys.Taper;
             await h.RunAsync(page.InsertSegmentCommand);
+            ctx.Check(!page.CanMirrorSegment, "a taper faces the end by itself; its mirror box should be disabled");
             page.SegmentLengthText = 150.0.ToString(CultureInfo.CurrentCulture);
-            page.SegmentIsMirrored = true;
-            page.SegmentParameters.First().Text = "-50";
+            page.SegmentParameters.First().Text = "50";
             page.SelectedTypeForInsert = ProfileTypeKeys.Crown;
             await h.RunAsync(page.InsertSegmentCommand);
             page.SegmentLengthText = 1700.0.ToString(CultureInfo.CurrentCulture);
@@ -218,7 +218,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
             ctx.Check(!page.HasErrors, "the design example should be clean: " + Issues(page));
             ctx.Check(page.Composite?.Segments.Count == 3 && page.Composite.Segments[2].IsMirrored == false
                 && page.Composite.Segments[2].FromMm == 1850.0,
-                "the tailstock taper should be generated as an independent mirrored segment");
+                "the tailstock taper should be generated as an independent segment (tapers carry no mirror flag)");
             h.TryScreenshot("profile-symmetric");
 
             page.SelectedTypeForInsert = ProfileTypeKeys.Cvc;

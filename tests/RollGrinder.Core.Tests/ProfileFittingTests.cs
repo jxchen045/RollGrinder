@@ -17,15 +17,15 @@ public sealed class ProfileFittingTests
         new PointTableProfileType(),
     });
 
-    /// <summary>设计长度 2000：锥度 150（头架端最低 −50）+ 凸度 1700（300 µm）+ 锥度 150。</summary>
+    /// <summary>设计长度 2000：锥度 150（端部减薄 50）+ 凸度 1700（300 µm）+ 锥度 150。</summary>
     private static CompositeRollProfile Design() => CompositeRollProfile.Sequential(0.0, new[]
     {
         new SequentialSegment(ProfileTypeKeys.Taper, 150.0,
-            new TaperProfileType().Schema.CreateDefaults().With(TaperProfileType.TaperDiameterMicrometerKey, ParameterValue.FromNumber(-50.0)), true),
+            new TaperProfileType().Schema.CreateDefaults().With(TaperProfileType.TaperDiameterMicrometerKey, ParameterValue.FromNumber(50.0))),
         new SequentialSegment(ProfileTypeKeys.Crown, 1700.0,
             new CrownProfileType().Schema.CreateDefaults().With(CrownProfileType.CrownDiameterMicrometerKey, ParameterValue.FromNumber(300.0))),
         new SequentialSegment(ProfileTypeKeys.Taper, 150.0,
-            new TaperProfileType().Schema.CreateDefaults().With(TaperProfileType.TaperDiameterMicrometerKey, ParameterValue.FromNumber(-50.0))),
+            new TaperProfileType().Schema.CreateDefaults().With(TaperProfileType.TaperDiameterMicrometerKey, ParameterValue.FromNumber(50.0))),
     });
 
     private static double Micrometer(CompositeRollProfile profile, double bodyLengthMm, double zMm) =>
