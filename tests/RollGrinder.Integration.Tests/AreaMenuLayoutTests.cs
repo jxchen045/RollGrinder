@@ -17,8 +17,9 @@ public sealed class AreaMenuLayoutTests
     public void Every_page_is_in_the_menu_exactly_once()
     {
         AreaMenuLayout.DefaultOrder.Should().OnlyHaveUniqueItems();
-        AreaMenuLayout.DefaultOrder.Should().BeEquivalentTo(Enum.GetValues<PageKey>(),
-            "新增页面必须排进菜单，否则只能靠任务跳转进去，等于没有入口");
+        AreaMenuLayout.DefaultOrder.Concat(AreaMenuLayout.TaskPages).Should().BeEquivalentTo(Enum.GetValues<PageKey>(),
+            "新增页面要么排进菜单，要么明确登记为任务页（由别的页跳进去），不能悄悄没有入口");
+        AreaMenuLayout.DefaultOrder.Should().NotIntersectWith(AreaMenuLayout.TaskPages);
     }
 
     [Fact]

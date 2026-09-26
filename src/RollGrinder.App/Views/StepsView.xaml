@@ -4,18 +4,6 @@
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              xmlns:views="clr-namespace:RollGrinder.App.Views">
     <Grid>
-        <Grid.Resources>
-            <!-- 轧辊数据子视图：这支辊本身的登记项，与工艺参数分开 -->
-            <Style x:Key="RollDataPanel" TargetType="Border" BasedOn="{StaticResource Card}">
-                <Setter Property="Visibility" Value="Collapsed" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_RollData">
-                        <Setter Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </Grid.Resources>
-
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="360" />
             <ColumnDefinition Width="*" />
@@ -27,7 +15,7 @@
                     <TextBlock Text="{loc:Loc Steps_SequenceHeader}" Style="{StaticResource Text.CardTitle}" />
                 </Border>
 
-                <!-- 两行：下拉框占满一行，三个按钮平分第二行。一行放不下——左栏只有约 345 px，按钮字会被截断。 -->
+                <!-- 两行：下拉框占满一行，"添加工序""校验"平分第二行。新添的工序插在"结束"前面。 -->
                 <Grid DockPanel.Dock="Top" Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -60,11 +48,9 @@
                     </ComboBox>
                     <Button Content="{loc:Loc Steps_AddStep}" Command="{Binding AddStepCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                             Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="0" Height="46" Margin="0,0,4,0" />
-                    <Button Content="{loc:Loc Steps_NewJob}" Command="{Binding NewJobCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Height="46" Margin="4,0,4,0" />
-                    <!-- 校验：和下发前同一套检查，结果列在右栏轧辊数据下面（第一轮甲方测试 工序 2⑥）。只读也能按。 -->
+                    <!-- 校验：和存程序、下发前同一套检查，结果列在右栏程序卡片下面（第一轮甲方测试 工序 2⑥）。只读也能按。 -->
                     <Button Content="{loc:Loc Steps_Validate}" Command="{Binding ValidateCommand}"
-                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="2" Height="46" Margin="4,0,0,0" />
+                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Height="46" Margin="4,0,0,0" />
                 </Grid>
 
                 <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
@@ -85,6 +71,7 @@
                                         <TextBlock Text="{Binding Order}" Width="24" FontFamily="{StaticResource Font.Mono}"
                                                    FontSize="15" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
                                         <Button Content="{loc:Loc Steps_RemoveStep}" DockPanel.Dock="Right"
+                                                Visibility="{Binding CanBeMoved, Converter={StaticResource BoolToVisibility}}"
                                                 Command="{Binding DataContext.RemoveStepCommand,
                                                     RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                 CommandParameter="{Binding}"
@@ -94,6 +81,7 @@
                                                 Style="{StaticResource SecondaryButton}" FontSize="15" Padding="10,2" Height="32" />
                                         <!-- 调顺序：往后、往前各一格（第一轮甲方测试：只能删，不能挪）。 -->
                                         <Button Content="{loc:Loc Steps_MoveStepDown}" DockPanel.Dock="Right"
+                                                Visibility="{Binding CanBeMoved, Converter={StaticResource BoolToVisibility}}"
                                                 ToolTip="{loc:Loc Steps_MoveStepDownTip}"
                                                 Command="{Binding DataContext.MoveStepDownCommand,
                                                     RelativeSource={RelativeSource AncestorType=ItemsControl}}"
@@ -104,6 +92,7 @@
                                                 Style="{StaticResource SecondaryButton}" FontSize="15" Width="38" Height="32"
                                                 Padding="0" Margin="0,0,6,0" />
                                         <Button Content="{loc:Loc Steps_MoveStepUp}" DockPanel.Dock="Right"
+                                                Visibility="{Binding CanBeMoved, Converter={StaticResource BoolToVisibility}}"
                                                 ToolTip="{loc:Loc Steps_MoveStepUpTip}"
                                                 Command="{Binding DataContext.MoveStepUpCommand,
                                                     RelativeSource={RelativeSource AncestorType=ItemsControl}}"
@@ -129,13 +118,12 @@
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
+                <!-- 程序：名字，以及估算时长用的参考辊（不属于程序、不存）。辊号、尺寸、辊形在作业页选。 -->
                 <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                     <DockPanel>
                         <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                             <DockPanel>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{loc:Loc Steps_RollHeader}" Style="{StaticResource Text.CardTitle}" />
-                                </StackPanel>
+                                <TextBlock Text="{loc:Loc Program_Header}" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.CardTitle}"
                                            HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
                             </DockPanel>
@@ -143,86 +131,36 @@
                         <ItemsControl Background="{StaticResource Brush.GridLine}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <UniformGrid Columns="5" />
+                                    <UniformGrid Columns="3" />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <Border Style="{StaticResource ParameterCell}">
                                 <StackPanel>
-                                    <TextBlock Text="{loc:Loc Job_JobIdLabel}" Style="{StaticResource Text.Label}" />
-                                    <TextBox Text="{Binding JobId, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBlock Text="{loc:Loc Program_Name}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding ProgramName, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
                                              Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
                                 </StackPanel>
                             </Border>
                             <Border Style="{StaticResource ParameterCell}">
                                 <StackPanel>
-                                    <TextBlock Text="{loc:Loc Job_RollIdLabel}" Style="{StaticResource Text.Label}" />
-                                    <TextBox Text="{Binding RollId, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource ParameterCell}">
-                                <StackPanel>
-                                    <TextBlock Text="{loc:Loc Job_BodyLengthLabel}" Style="{StaticResource Text.Label}" />
+                                    <TextBlock Text="{loc:Loc Program_ReferenceBodyLength}" Style="{StaticResource Text.Label}" />
                                     <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
                                              Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
                                 </StackPanel>
                             </Border>
                             <Border Style="{StaticResource ParameterCell}">
                                 <StackPanel>
-                                    <TextBlock Text="{loc:Loc Job_DiameterLabel}" Style="{StaticResource Text.Label}" />
+                                    <TextBlock Text="{loc:Loc Program_ReferenceDiameter}" Style="{StaticResource Text.Label}" />
                                     <TextBox Text="{Binding NominalDiameterMmText, UpdateSourceTrigger=PropertyChanged}"
                                              Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource ParameterCell}">
-                                <StackPanel>
-                                    <TextBlock Text="{loc:Loc Program_Name}" Style="{StaticResource Text.Label}" />
-                                    <TextBox Text="{Binding ProgramName, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource ParameterCell}">
-                                <StackPanel>
-                                    <TextBlock Text="{loc:Loc Job_ProfileTypeLabel}" Style="{StaticResource Text.Label}" />
-                                    <ComboBox ItemsSource="{Binding ProfileTypeKeys}" SelectedItem="{Binding SelectedProfileTypeKey}"
-                                              IsEnabled="{Binding CanEditInlineProfile}"
-                                              Height="46" FontSize="18" Margin="0,8,0,0">
-                                        <ComboBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}, ConverterParameter=ProfileType_}" />
-                                            </DataTemplate>
-                                        </ComboBox.ItemTemplate>
-                                    </ComboBox>
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource ParameterCell}">
-                                <StackPanel>
-                                    <TextBlock Text="{loc:Loc Steps_ProfileSource}" Style="{StaticResource Text.Label}" />
-                                    <DockPanel Margin="0,8,0,0">
-                                        <Button DockPanel.Dock="Right" Content="{loc:Loc Steps_ClearProfile}"
-                                                Command="{Binding ClearProfileSelectionCommand}"
-                                                Visibility="{Binding UsesLibraryProfile, Converter={StaticResource BoolToVisibility}}"
-                                                Style="{StaticResource SecondaryButton}" Height="46" Width="96" Margin="8,0,0,0" />
-                                        <TextBlock VerticalAlignment="Center" FontSize="17" TextTrimming="CharacterEllipsis">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Text" Value="{loc:Loc Steps_ProfileInline}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding UsesLibraryProfile}" Value="True">
-                                                            <Setter Property="Text" Value="{Binding SelectedProfileName}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </DockPanel>
                                 </StackPanel>
                             </Border>
                         </ItemsControl>
                     </DockPanel>
                 </Border>
 
-                <!-- 校验结果：紧跟在轧辊数据（标题右侧是状态）下面，按"校验""保存""下发"之后不用往下翻就看得到。 -->
+                <!-- 校验结果：紧跟在程序卡片（标题右侧是状态）下面，按"校验""保存"之后不用往下翻就看得到。 -->
                 <ItemsControl ItemsSource="{Binding Violations}" Margin="0,0,0,12">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -235,34 +173,6 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-
-                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
-                    <DockPanel>
-                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                            <TextBlock Text="{loc:Loc Job_ProfileParametersHeader}" Style="{StaticResource Text.CardTitle}" />
-                        </Border>
-                        <ItemsControl ItemsSource="{Binding ProfileParameters}"
-                                      Background="{StaticResource Brush.GridLine}"
-                                      IsEnabled="{Binding CanEditInlineProfile}"
-                                      ItemTemplate="{StaticResource ParameterCellTemplate}">
-                            <ItemsControl.Style>
-                                <Style TargetType="ItemsControl">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding UsesLibraryProfile}" Value="True">
-                                            <!-- 辊形来自库里，这一格压暗：留在原位，只是按不动。 -->
-                                            <Setter Property="Opacity" Value="0.6" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ItemsControl.Style>
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Columns="4" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                    </DockPanel>
-                </Border>
 
                 <ItemsControl ItemsSource="{Binding Steps}">
                     <ItemsControl.ItemTemplate>
@@ -415,87 +325,6 @@
             </Border>
         </Border>
 
-        <!-- 辊形库：在这里选一条辊形给本支作业用 -->
-        <Border Grid.ColumnSpan="2" Background="#CC101418"
-                Visibility="{Binding IsProfileLibraryOpen, Converter={StaticResource BoolToVisibility}}">
-            <Border Style="{StaticResource Card}" Width="720" Height="520"
-                    HorizontalAlignment="Center" VerticalAlignment="Center">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Profile_Library}" Style="{StaticResource Text.CardTitle}" />
-                    </Border>
-                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
-                                HorizontalAlignment="Right" Margin="14">
-                        <Button Content="{loc:Loc Steps_UseThisProfile}" Command="{Binding UseProfileFromLibraryCommand}"
-                                Style="{StaticResource PrimaryButton}" Height="52" Width="110" Margin="0,0,10,0" />
-                        <Button Content="{loc:Loc Profile_LibraryClose}" Command="{Binding CloseProfileLibraryCommand}"
-                                Style="{StaticResource SecondaryButton}" Height="52" Width="110" />
-                    </StackPanel>
-                    <TextBlock Text="{loc:Loc Profile_LibraryEmpty}"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Label}">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ProfileLibraryEntries.Count}" Value="0">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <DataGrid ItemsSource="{Binding ProfileLibraryEntries}" SelectedItem="{Binding SelectedProfileEntry}"
-                              AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
-                              Margin="14,8" FontSize="16" RowHeight="44">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="{loc:Loc Profile_LibraryColumnName}" Binding="{Binding Name}" Width="*" />
-                            <DataGridTextColumn Header="{loc:Loc Profile_LibraryColumnType}" Binding="{Binding ProfileTypeKey}" Width="140" />
-                            <DataGridTextColumn Header="{loc:Loc Profile_LibraryColumnSegments}" Binding="{Binding SegmentCount}" Width="80" />
-                            <DataGridTextColumn Header="{loc:Loc Profile_LibraryColumnModified}"
-                                                Binding="{Binding ModifiedAtUtc, StringFormat=yyyy-MM-dd HH:mm}" Width="170" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </DockPanel>
-            </Border>
-        </Border>
-    
-        <Border Grid.Column="0" Grid.ColumnSpan="3" Style="{StaticResource RollDataPanel}">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
-                    <TextBlock Text="{loc:Loc Steps_RollDataHeader}" Style="{StaticResource Text.CardTitle}"
-                               VerticalAlignment="Center" />
-                </Border>
-
-                <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
-                        BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="20,14">
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="{loc:Loc Steps_SaveRollData}" Command="{Binding SaveRollDataCommand}"
-                                Style="{StaticResource PrimaryButton}" Height="46" Padding="24,0" />
-                        <TextBlock Text="{loc:Loc RollData_TotalWeight}" Style="{StaticResource Text.Label}"
-                                   VerticalAlignment="Center" Margin="24,0,8,0" />
-                        <TextBlock Text="{Binding TotalWeightText}" FontFamily="{StaticResource Font.Mono}"
-                                   FontSize="18" VerticalAlignment="Center"
-                                   Foreground="{StaticResource Brush.Accent}" />
-                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.Label}"
-                                   VerticalAlignment="Center" Margin="24,0,0,0" />
-                    </StackPanel>
-                </Border>
-
-                <ItemsControl ItemsSource="{Binding RollData}" Margin="20,16">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <DockPanel Margin="0,0,0,12">
-                                <TextBlock Text="{Binding Label}" Width="240" FontSize="17"
-                                           VerticalAlignment="Center" />
-                                <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource ValueTextBox}" Width="200"
-                                         HorizontalAlignment="Left" />
-                            </DockPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </DockPanel>
-        </Border>
         <!-- 另存为的命名框：盖在最上面。 -->
         <views:NamePromptOverlay Grid.ColumnSpan="2" DataContext="{Binding NamePrompt}" />
 </Grid>

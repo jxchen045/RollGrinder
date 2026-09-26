@@ -394,9 +394,6 @@
   <data name="Fn_CalibrateDatum" xml:space="preserve">
     <value>Calibrate datum</value>
   </data>
-  <data name="Fn_CompensationSettings" xml:space="preserve">
-    <value>Compensation</value>
-  </data>
   <data name="Fn_Coolant" xml:space="preserve">
     <value>Coolant</value>
   </data>
@@ -463,9 +460,6 @@
   <data name="Fn_RollAlign" xml:space="preserve">
     <value>Align roll</value>
   </data>
-  <data name="Fn_RollData" xml:space="preserve">
-    <value>Roll data</value>
-  </data>
   <data name="Fn_RollLedger" xml:space="preserve">
     <value>Roll ledger</value>
   </data>
@@ -480,9 +474,6 @@
   </data>
   <data name="Fn_SaveProgram" xml:space="preserve">
     <value>Save program</value>
-  </data>
-  <data name="Fn_SelectProfile" xml:space="preserve">
-    <value>Select profile</value>
   </data>
   <data name="Fn_SkipStep" xml:space="preserve">
     <value>Skip step</value>
@@ -514,20 +505,8 @@
   <data name="JobState_Handed" xml:space="preserve">
     <value>Handed over</value>
   </data>
-  <data name="Job_BodyLengthLabel" xml:space="preserve">
-    <value>Body length (mm)</value>
-  </data>
-  <data name="Job_DiameterLabel" xml:space="preserve">
-    <value>Nominal diameter (mm)</value>
-  </data>
-  <data name="Job_GeometryInvalid" xml:space="preserve">
-    <value>Body length or diameter is not a number</value>
-  </data>
   <data name="Job_HandedOver" xml:space="preserve">
     <value>Handed over; the NC runs the job now</value>
-  </data>
-  <data name="Job_IdentifiersMissing" xml:space="preserve">
-    <value>Job ID and roll ID are required</value>
   </data>
   <data name="Job_JobIdLabel" xml:space="preserve">
     <value>Job ID</value>
@@ -537,12 +516,6 @@
   </data>
   <data name="Job_ParametersInvalid" xml:space="preserve">
     <value>One of the parameters is not valid</value>
-  </data>
-  <data name="Job_ProfileParametersHeader" xml:space="preserve">
-    <value>Profile parameters</value>
-  </data>
-  <data name="Job_ProfileTypeLabel" xml:space="preserve">
-    <value>Profile type</value>
   </data>
   <data name="Job_ReadyToHandOver" xml:space="preserve">
     <value>Parameters are ready to hand over</value>
@@ -674,7 +647,7 @@
     <value>Records</value>
   </data>
   <data name="Page_Steps" xml:space="preserve">
-    <value>Program</value>
+    <value>Process program</value>
   </data>
   <data name="Parameter_BodyLengthMm" xml:space="preserve">
     <value>Body length</value>
@@ -807,18 +780,6 @@
   </data>
   <data name="Program_Saved" xml:space="preserve">
     <value>Program saved to the library</value>
-  </data>
-  <data name="Steps_ClearProfile" xml:space="preserve">
-    <value>Edit here instead</value>
-  </data>
-  <data name="Steps_ProfileInline" xml:space="preserve">
-    <value>Edited here</value>
-  </data>
-  <data name="Steps_ProfileSource" xml:space="preserve">
-    <value>Profile source</value>
-  </data>
-  <data name="Steps_UseThisProfile" xml:space="preserve">
-    <value>Use</value>
   </data>
   <data name="Choice_touchMode_automatic" xml:space="preserve">
     <value>Automatic</value>
@@ -1168,14 +1129,8 @@
   <data name="Steps_CompensationHeader" xml:space="preserve">
     <value>Compensation settings (manufacturer)</value>
   </data>
-  <data name="Steps_NewJob" xml:space="preserve">
-    <value>New job</value>
-  </data>
   <data name="Steps_RemoveStep" xml:space="preserve">
     <value>Remove</value>
-  </data>
-  <data name="Steps_RollHeader" xml:space="preserve">
-    <value>Roll data</value>
   </data>
   <data name="Steps_SequenceHeader" xml:space="preserve">
     <value>Step sequence (freely ordered)</value>
@@ -1310,7 +1265,7 @@
     <value>History, curves and reports</value>
   </data>
   <data name="Menu_StepsHint" xml:space="preserve">
-    <value>Step sequence, process parameters, NC download</value>
+    <value>Start → steps → End, step parameters and program-step defaults</value>
   </data>
   <data name="Nav_AreaMenu" xml:space="preserve">
     <value>Page menu</value>
@@ -1607,7 +1562,7 @@
     <value>Profile</value>
   </data>
   <data name="Report_Program" xml:space="preserve">
-    <value>Program</value>
+    <value>Process program</value>
   </data>
   <data name="Report_StartedAt" xml:space="preserve">
     <value>Started</value>
@@ -1918,21 +1873,6 @@
   <data name="Profile_ReferenceDeviationFormat" xml:space="preserve">
     <value>Up to {0:F1} µm from the reference</value>
   </data>
-  <data name="SubView_RollData" xml:space="preserve">
-    <value>Roll data</value>
-  </data>
-  <data name="Steps_RollDataHeader" xml:space="preserve">
-    <value>Roll data (properties of this roll itself)</value>
-  </data>
-  <data name="Steps_SaveRollData" xml:space="preserve">
-    <value>Save roll data</value>
-  </data>
-  <data name="Steps_RollIdMissing" xml:space="preserve">
-    <value>Enter the roll identifier first</value>
-  </data>
-  <data name="Steps_RollDataSaved" xml:space="preserve">
-    <value>Roll data saved</value>
-  </data>
   <data name="RollData_GrindStart" xml:space="preserve">
     <value>Grind start position (mm)</value>
   </data>
@@ -1950,9 +1890,6 @@
   </data>
   <data name="RollData_TailBoxWeight" xml:space="preserve">
     <value>Tail-end box weight (kg)</value>
-  </data>
-  <data name="RollData_TotalWeight" xml:space="preserve">
-    <value>Total lifting weight (kg)</value>
   </data>
   <data name="Action_ManualGrinding" xml:space="preserve">
     <value>Manual grinding</value>
@@ -2310,5 +2247,134 @@
   </data>
   <data name="RollKind_BackupRoll" xml:space="preserve">
     <value>Backup roll</value>
+  </data>
+  <data name="Page_Job" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="Fn_Job" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="Fn_PreviousStep" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Fn_NextStep" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Fn_RegisterRoll" xml:space="preserve">
+    <value>Register roll</value>
+  </data>
+  <data name="Fn_NewProgram" xml:space="preserve">
+    <value>New program</value>
+  </data>
+  <data name="Fn_UseForJob" xml:space="preserve">
+    <value>Use for a job</value>
+  </data>
+  <data name="Job_StepsHeader" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="Job_StepRoll" xml:space="preserve">
+    <value>Roll</value>
+  </data>
+  <data name="Job_StepProfile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Job_StepProgram" xml:space="preserve">
+    <value>Process program</value>
+  </data>
+  <data name="Job_StepOptions" xml:space="preserve">
+    <value>Program steps</value>
+  </data>
+  <data name="Job_StepReview" xml:space="preserve">
+    <value>Check and download</value>
+  </data>
+  <data name="Job_StepHint" xml:space="preserve">
+    <value>F1 previous, F2 next; download only after step 5 finds no errors</value>
+  </data>
+  <data name="Job_PickRoll" xml:space="preserve">
+    <value>Pick the roll from the ledger (press F4 to register a new one)</value>
+  </data>
+  <data name="Job_PickProfile" xml:space="preserve">
+    <value>Pick a profile from the library</value>
+  </data>
+  <data name="Job_PickProgram" xml:space="preserve">
+    <value>Pick a process program from the library</value>
+  </data>
+  <data name="Job_PickOptions" xml:space="preserve">
+    <value>Program steps for this job (defaults come from the program)</value>
+  </data>
+  <data name="Job_DesignLengthColumn" xml:space="preserve">
+    <value>Design length</value>
+  </data>
+  <data name="Job_FitStretch" xml:space="preserve">
+    <value>Stretch to fit</value>
+  </data>
+  <data name="Job_FitCenter" xml:space="preserve">
+    <value>Centre, no stretch</value>
+  </data>
+  <data name="Job_RollSummaryFormat" xml:space="preserve">
+    <value>Body {0:0} mm · nominal dia. {1:0.#} mm · start dia. {2:0.#} mm</value>
+  </data>
+  <data name="Job_LengthMatchFormat" xml:space="preserve">
+    <value>Profile design length {0:0} mm matches the body</value>
+  </data>
+  <data name="Job_LengthMismatchFormat" xml:space="preserve">
+    <value>Profile design length {0:0} mm, body {1:0} mm: they differ; choose stretch or centre (or pick another profile)</value>
+  </data>
+  <data name="Job_LengthStretchFormat" xml:space="preserve">
+    <value>Profile {0:0} mm stretched to the {1:0} mm body</value>
+  </data>
+  <data name="Job_LengthCenterFormat" xml:space="preserve">
+    <value>Profile {0:0} mm centred on the {1:0} mm body without stretching (ends held or cropped)</value>
+  </data>
+  <data name="Job_OptionsOnFormat" xml:space="preserve">
+    <value>{0} on</value>
+  </data>
+  <data name="Job_Incomplete" xml:space="preserve">
+    <value>The job is incomplete: roll, profile (with length handling) and program are needed</value>
+  </data>
+  <data name="Job_ReviewRollSize" xml:space="preserve">
+    <value>Roll size</value>
+  </data>
+  <data name="Job_ReviewProfile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Job_ReviewLength" xml:space="preserve">
+    <value>Length check</value>
+  </data>
+  <data name="Job_ReviewProgram" xml:space="preserve">
+    <value>Process program</value>
+  </data>
+  <data name="Job_ReviewDuration" xml:space="preserve">
+    <value>Estimated time</value>
+  </data>
+  <data name="Job_ReviewOptions" xml:space="preserve">
+    <value>Program steps on</value>
+  </data>
+  <data name="Job_ListSeparator" xml:space="preserve">
+    <value>, </value>
+  </data>
+  <data name="Program_Header" xml:space="preserve">
+    <value>Process program</value>
+  </data>
+  <data name="Program_ReferenceBodyLength" xml:space="preserve">
+    <value>Reference body length mm</value>
+  </data>
+  <data name="Program_ReferenceDiameter" xml:space="preserve">
+    <value>Reference diameter mm</value>
+  </data>
+  <data name="Program_FrameFixed" xml:space="preserve">
+    <value>Start and End are fixed first and last; they cannot be removed, moved or added</value>
+  </data>
+  <data name="Program_FrameAdded" xml:space="preserve">
+    <value>Start/End were missing or misplaced and have been fixed; please save</value>
+  </data>
+  <data name="Program_Valid" xml:space="preserve">
+    <value>Program is valid</value>
+  </data>
+  <data name="Program_SaveBeforeUse" xml:space="preserve">
+    <value>Save the program first; jobs use the program in the library</value>
+  </data>
+  <data name="Fn_NewJob" xml:space="preserve">
+    <value>New job</value>
   </data>
 </root>

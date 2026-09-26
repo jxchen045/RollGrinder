@@ -22,6 +22,9 @@
         <DataTemplate DataType="{x:Type vm:StepsViewModel}">
             <views:StepsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:JobViewModel}">
+            <views:JobView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:RecordsViewModel}">
             <views:RecordsView />
         </DataTemplate>

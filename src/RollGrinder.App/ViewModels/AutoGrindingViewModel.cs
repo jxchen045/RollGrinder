@@ -335,9 +335,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             // 冷却水就是手动页那一个动作，换个地方按——磨着磨着要开关冷却水，
             // 不该为此切到手动页去。
             new FunctionKeyViewModel("Fn_Coolant", ToggleCoolantCommand, localizer),
-            // 补偿设置住在工序编程页：派过去，导航槽会显示"返回 自动磨削"。
+            // 作业：选辊、辊形、程序，核对后下发。派过去，导航槽会显示"返回 自动磨削"。
+            // （以前这里是"补偿设置"，跳到工序页——第一轮甲方测试 3②：补偿不该跑到工序里去。）
             FunctionKeyViewModel.ForAction(
-                "Fn_CompensationSettings", localizer, () => Navigator.StartTask(PageKey.Steps, PageKey.AutoGrinding)),
+                "Fn_Job", localizer, () => Navigator.StartTask(PageKey.Job, PageKey.AutoGrinding)),
             FunctionKeyViewModel.ForAction("Fn_Records", localizer, () => Navigator.GoToArea(PageKey.Records)),
         });
     }

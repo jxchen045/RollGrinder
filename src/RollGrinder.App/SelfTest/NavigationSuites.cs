@@ -118,14 +118,14 @@ internal sealed class NavigationSuite : ISelfTestSuite
             });
         }
 
-        // 任务跳转：自动磨削 →「补偿设置」→ 工序编程，导航槽送回。离线时自动页进不去，改走记录页的子视图。
+        // 任务跳转：自动磨削 →「作业」→ 作业页，导航槽送回。离线时自动页进不去，改走记录页的子视图。
         if (available.Any(i => i.Key == PageKey.AutoGrinding))
         {
-            await h.StepAsync("TaskJump", "CompensationSettingsAndBack", async ctx =>
+            await h.StepAsync("TaskJump", "JobAndBack", async ctx =>
             {
                 await h.GoToAsync(PageKey.AutoGrinding, ctx);
-                await h.PressKeyAsync(ctx, "Fn_CompensationSettings");
-                ctx.Check(shell.CurrentPage.Key == PageKey.Steps, "compensation settings should open the steps page");
+                await h.PressKeyAsync(ctx, "Fn_Job");
+                ctx.Check(shell.CurrentPage.Key == PageKey.Job, "'job' should open the job page");
                 ctx.Check(h.NavigationKeyLabel == "Nav_BackToPageFormat", "F8 should read 'back to <origin>'");
                 ctx.Note("nav key=" + shell.FunctionKeys[PageViewModelBase.PageFunctionKeyCount].Label);
                 await h.PressNavigationKeyAsync();
@@ -312,7 +312,6 @@ internal sealed class PageSweepSuite : ISelfTestSuite
 
     private static bool PageOverlayOpen(SelfTestHarness h) =>
         h.Page<StepsViewModel>().IsProgramLibraryOpen
-        || h.Page<StepsViewModel>().IsProfileLibraryOpen
         || h.Page<ProfileViewModel>().IsLibraryOpen
         || h.Page<StepsViewModel>().NamePrompt.IsOpen
         || h.Page<ProfileViewModel>().NamePrompt.IsOpen;

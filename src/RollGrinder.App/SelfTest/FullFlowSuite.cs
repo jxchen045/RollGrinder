@@ -13,7 +13,8 @@ namespace RollGrinder.App.SelfTest;
 
 /// <summary>
 /// 一支辊的全流程（仿真机床）：
-/// 建作业 → 校验 → 下发 → 开磨 → 运行中编辑页锁只读、下发键变灰 → 运行中的操作（启动两下、保持、冷却、
+/// 编工艺程序并存库 → 用于作业 → 在作业页登记辊、选辊形、核对 → 下发（自动进自动加工页）→ 开磨
+/// → 运行中编辑页锁只读 → 运行中的操作（启动两下、保持、冷却、
 /// 曲线、跳步/提前结束）→ 磨完 → 自动打印报表 → 生成磨削记录。
 ///
 /// 注意：仿真机床收到下发的"参数有效"就直接开磨，不等循环启动信号；真 NC 会等。
@@ -30,20 +31,14 @@ internal sealed class FullFlowSuite : ISelfTestSuite
     {
         ShellViewModel shell = h.Shell;
         StepsViewModel steps = h.Page<StepsViewModel>();
+        JobViewModel job = h.Page<JobViewModel>();
         AutoGrindingViewModel auto = h.Page<AutoGrindingViewModel>();
         int printsBefore = h.Interaction.Produced.Count(p => p.Contains("-auto-", StringComparison.Ordinal));
 
-        await h.StepAsync("Prepare", "BuildJob", async ctx =>
+        await h.StepAsync("Prepare", "BuildProgram", async ctx =>
         {
             await h.GoToAsync(PageKey.Steps, ctx);
-            await h.RunAsync(steps.NewJobCommand);
-            steps.RollId = SelfTestNames.FlowRollId;
-            steps.BodyLengthMmText = SelfTestNames.BodyLengthMm;
-            steps.NominalDiameterMmText = SelfTestNames.DiameterMm;
-            if (steps.UsesLibraryProfile)
-            {
-                await h.RunAsync(steps.ClearProfileSelectionCommand);
-            }
+            await h.PressKeyAsync(ctx, "Fn_NewProgram");
 
             // 磨前测量 → 粗磨 → 磨后测量 → 圆度：把测量分阶段落库、圆度存档都走一遍。
             string[] sequence = { StepTypeKeys.Measure, StepTypeKeys.Rough, StepTypeKeys.Measure, StepTypeKeys.Roundness };
@@ -68,17 +63,36 @@ internal sealed class FullFlowSuite : ISelfTestSuite
                 }
             }
 
-            await h.RunAsync(steps.ValidateCommand);
-            ctx.Check(steps.StatusResourceKey == "Job_ReadyToHandOver", "job should validate, status " + steps.StatusResourceKey);
-            ctx.Note("job " + steps.JobId + ", steps " + string.Join(">", sequence) + ", duration " + steps.TotalDurationText);
+            await h.PressKeyAsync(ctx, "Fn_Validate");
+            ctx.Check(steps.StatusResourceKey == "Program_Valid", "program should validate, status " + steps.StatusResourceKey);
+            ctx.Check(await SelfTestNames.SaveAsAsync(h, steps.SaveProgramAsCommand, steps.NamePrompt, SelfTestNames.FlowProgram),
+                "the flow program should be saved, error: " + steps.NamePrompt.ErrorText);
+            ctx.Note("steps " + string.Join(">", sequence) + ", duration " + steps.TotalDurationText);
+        }, StepOptions.Shot);
+
+        await h.StepAsync("Prepare", "BuildJob", async ctx =>
+        {
+            await JobWizard.EnterFromProgramAsync(h, ctx, SelfTestNames.FlowProgram);
+            await h.PressKeyAsync(ctx, "Fn_NewJob");
+            await JobWizard.RegisterRollAsync(h, ctx, SelfTestNames.FlowRollId, 2000, 600, 600);
+            await h.PressKeyAsync(ctx, "Fn_NextStep");
+            await JobWizard.ChooseProfileAsync(h, ctx, SelfTestNames.ProfileA);
+            await h.PressKeyAsync(ctx, "Fn_NextStep");
+            job.SelectedProgram = job.Programs.FirstOrDefault(p => p.Name == SelfTestNames.FlowProgram);
+            await h.SettleAsync(300);
+            await JobWizard.NextUntilReviewAsync(h, ctx);
+            ctx.Check(job.StatusResourceKey == "Job_ReadyToHandOver", "job should validate, status " + job.StatusResourceKey
+                + (job.Violations.Count > 0 ? ", first violation " + job.Violations[0].ParameterText + " " + job.Violations[0].ReasonText : string.Empty));
+            ctx.Note("job " + job.JobId + ", " + job.TotalDurationText);
         }, StepOptions.Shot);
 
         StepStatus download = await h.StepAsync("Run", "DownloadToNc", async ctx =>
         {
             await h.PressKeyAsync(ctx, "Fn_DownloadNc");
-            ctx.Check(steps.StatusResourceKey == "Job_HandedOver", "download should succeed, status " + steps.StatusResourceKey
-                + (steps.Violations.Count > 0 ? ", first violation " + steps.Violations[0].ParameterText + " " + steps.Violations[0].ReasonText : string.Empty));
-            ctx.Check(!steps.IsDirty, "after a successful download the page matches the machine and is clean");
+            bool moved = await h.WaitUntilAsync(() => shell.CurrentPage.Key == PageKey.AutoGrinding, TimeSpan.FromSeconds(10));
+            ctx.Check(moved, "a successful download should open the auto page, status " + job.StatusResourceKey
+                + (job.Violations.Count > 0 ? ", first violation " + job.Violations[0].ParameterText + " " + job.Violations[0].ReasonText : string.Empty));
+            ctx.Check(job.StatusResourceKey == "Job_HandedOver", "status should say handed over, is " + job.StatusResourceKey);
         }, StepOptions.Shot);
 
         if (download != StepStatus.Pass && download != StepStatus.Warn)
@@ -87,10 +101,8 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             return;
         }
 
-        await h.StepAsync("Run", "EnterAutoAndStart", async ctx =>
+        await h.StepAsync("Run", "GrindingStarts", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_EnterAuto");
-            ctx.Check(shell.CurrentPage.Key == PageKey.AutoGrinding, "'enter auto' should open the auto page");
             bool running = await h.WaitUntilAsync(() => shell.IsMachineRunning, TimeSpan.FromSeconds(15));
             ctx.Check(running, "the simulated machine should start grinding after the download");
             ctx.Note(Invariant($"sequence rows={auto.Sequence.Count}, live values={auto.LiveValues.Count}"));
@@ -98,11 +110,10 @@ internal sealed class FullFlowSuite : ISelfTestSuite
 
         await h.StepAsync("RunLock", "EditPagesReadOnly", async ctx =>
         {
-            ctx.Check(steps.IsReadOnly, "steps page must be read-only while the cycle runs");
+            ctx.Check(steps.IsReadOnly, "program page must be read-only while the cycle runs");
+            ctx.Check(job.IsReadOnly, "job page must be read-only while the cycle runs");
             ctx.Check(h.Page<ProfileViewModel>().IsReadOnly, "profile page must be read-only while the cycle runs");
             await h.GoToAsync(PageKey.Steps, ctx);
-            int downloadKey = h.IndexOfKey("Fn_DownloadNc");
-            ctx.Check(downloadKey >= 0 && !shell.FunctionKeys[downloadKey].IsEnabled, "download must be disabled while running");
             h.TryScreenshot("runlock-steps");
             await h.GoToAsync(PageKey.AutoGrinding, ctx);
         });
@@ -175,7 +186,7 @@ internal sealed class FullFlowSuite : ISelfTestSuite
 
         await h.StepAsync("After", "EditPagesUnlocked", ctx =>
         {
-            ctx.Check(!steps.IsReadOnly, "steps page should unlock after the cycle");
+            ctx.Check(!steps.IsReadOnly && !job.IsReadOnly, "program and job pages should unlock after the cycle");
             return Task.CompletedTask;
         });
 

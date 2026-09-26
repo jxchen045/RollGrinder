@@ -62,6 +62,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         IRecordService recordService,
         IReportService reportService,
         IRollLedgerService ledgerService,
+        JobDraft jobDraft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
@@ -70,6 +71,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         this.recordService = recordService ?? throw new ArgumentNullException(nameof(recordService));
         this.reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
         this.ledgerService = ledgerService ?? throw new ArgumentNullException(nameof(ledgerService));
+        this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
 
         this.toDate = DateTime.Today;
         this.fromDate = DateTime.Today.AddDays(-7);
@@ -97,7 +99,26 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
     public override string MenuHintResourceKey => "Menu_RecordsHint";
 
-    public override void OnActivated() => _ = QueryAsync(CancellationToken.None);
+    public override void OnActivated()
+    {
+        if (this.jobDraft.RegisterNewRollRequested)
+        {
+            // 作业页派来登记一支新辊：直接开台账、给一张新表；存好后按导航槽回作业页就选上它。
+            this.jobDraft.RegisterNewRollRequested = false;
+            this.registeringForJob = true;
+            _ = RunGuardedAsync(
+                async token =>
+                {
+                    await ReloadLedgerAsync(null, token).ConfigureAwait(true);
+                    NewLedgerRoll();
+                    Navigator.OpenSubView(LedgerSubView);
+                },
+                CancellationToken.None);
+            return;
+        }
+
+        _ = QueryAsync(CancellationToken.None);
+    }
 
     public ObservableCollection<RecordRowViewModel> Records { get; } = new();
 

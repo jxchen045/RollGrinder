@@ -23,6 +23,10 @@ public sealed partial class RecordsViewModel
     private const int HistoryLimit = 50;
 
     private readonly IRollLedgerService ledgerService;
+    private readonly JobDraft jobDraft;
+
+    /// <summary>这张新表是作业页派来登记的：存好后把辊号递回作业页。</summary>
+    private bool registeringForJob;
 
     /// <summary>正在编辑的那支辊原来的样子（改已有的辊时保留登记时间与编号）。</summary>
     private RollRecord? editingRoll;
@@ -156,6 +160,12 @@ public sealed partial class RecordsViewModel
             }
 
             StatusResourceKey = "Ledger_Saved";
+            if (this.registeringForJob)
+            {
+                this.jobDraft.RegisteredRollId = roll.RollId.Trim();
+                this.registeringForJob = false;
+            }
+
             await ReloadLedgerAsync(roll.RollId.Trim(), token).ConfigureAwait(true);
         }, cancellationToken);
 

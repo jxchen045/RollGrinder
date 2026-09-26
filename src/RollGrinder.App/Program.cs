@@ -197,6 +197,8 @@ public static class Program
         builder.Services.AddSingleton<PageViewModelBase, ManualViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, DiagnosticsViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, SettingsViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, JobViewModel>();
+        builder.Services.AddSingleton<JobDraft>();
 
         builder.Services.AddSingleton<ShellViewModel>();
         builder.Services.AddSingleton<ShellWindow>();

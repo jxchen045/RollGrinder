@@ -94,6 +94,9 @@ public sealed partial class StepRowViewModel : ObservableObject
 
     public IGrindingStepType StepType { get; }
 
+    /// <summary>开始、结束固定在首尾：没有上移、下移、删除按钮。</summary>
+    public bool CanBeMoved => !ProgramFrame.IsFixed(StepTypeKey);
+
     public string DisplayName { get; }
 
     public ObservableCollection<ParameterRowViewModel> Parameters { get; }
@@ -231,46 +234,33 @@ internal sealed record StepSnapshot(string TypeKey, IReadOnlyList<string> Parame
 
 /// <summary>整支程序的快照。</summary>
 internal sealed record StepsSnapshot(
-    string JobId,
-    string RollId,
-    string BodyLengthMmText,
-    string NominalDiameterMmText,
-    string SelectedProfileTypeKey,
-    IReadOnlyList<string> ProfileParameterTexts,
+    string? ProgramId,
+    string ProgramName,
     IReadOnlyList<StepSnapshot> Steps,
     IReadOnlyList<bool> ProgramOptions)
 {
     /// <summary>空快照：还没进过本页时用。</summary>
     public static StepsSnapshot Empty { get; } = new(
+        null,
         string.Empty,
-        string.Empty,
-        string.Empty,
-        string.Empty,
-        string.Empty,
-        Array.Empty<string>(),
         Array.Empty<StepSnapshot>(),
         Array.Empty<bool>());
 }
 
 /// <summary>
-/// 工艺编排：辊件几何、目标辊形、工序序列的编辑与下发。
-/// 界面按注册表与 schema 生成，新增一类辊形或工序不改这里。
+/// 工艺程序（阶段 1，修改稿 5.3；原"工序编程"）：开始 → 若干工序 → 结束，每道的参数，
+/// 程序步骤开关的默认值。不含辊号、尺寸、辊形——那些属于作业（作业页）与轧辊（台账）。
+/// 界面按注册表与 schema 生成，新增一类工序不改这里。
 /// </summary>
 public sealed partial class StepsViewModel : PageViewModelBase
 {
-    private readonly RollProfileTypeRegistry profileTypes;
     private readonly GrindingStepTypeRegistry stepTypes;
-    private readonly IJobDownloadService downloadService;
     private readonly IProgramRepository programs;
     private readonly GrindingJobValidator validator;
     private readonly MachineCapability capability;
     private readonly MachineDescription machine;
-    private readonly IRollRepository rolls;
-    private readonly IRollProfileRepository profileLibrary;
     private readonly ICalibrationService calibration;
-
-    /// <summary>从辊形库选中的那条辊形；没选（现编现用）时为 null。</summary>
-    private RollProfileDefinition? selectedProfileDefinition;
+    private readonly JobDraft jobDraft;
 
     /// <summary>进入本页时的程序快照，供"放弃修改"回退。</summary>
     private StepsSnapshot committed = StepsSnapshot.Empty;
@@ -279,13 +269,10 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private bool suppressDirty;
 
     public StepsViewModel(
-        RollProfileTypeRegistry profileTypes,
         GrindingStepTypeRegistry stepTypes,
-        IJobDownloadService downloadService,
         IProgramRepository programs,
-        IRollRepository rolls,
-        IRollProfileRepository profileLibrary,
         ICalibrationService calibration,
+        JobDraft jobDraft,
         GrindingJobValidator validator,
         MachineDescription machine,
         MachineCapability capability,
@@ -297,17 +284,13 @@ public sealed partial class StepsViewModel : PageViewModelBase
     {
         this.capability = capability ?? throw new ArgumentNullException(nameof(capability));
         this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
-        this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
         this.stepTypes = stepTypes ?? throw new ArgumentNullException(nameof(stepTypes));
-        this.downloadService = downloadService ?? throw new ArgumentNullException(nameof(downloadService));
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
-        this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
-        this.profileLibrary = profileLibrary ?? throw new ArgumentNullException(nameof(profileLibrary));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
+        this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         NamePrompt = new NamePromptViewModel(localizer);
 
-        ProfileTypeKeys = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
         // 按槽排序，让下拉里的分组按实机屏幕上的顺序出现——
         // 不排的话粗磨会跟在精磨后面，和操作工脑子里的顺序对不上。
         StepTypeOptions = new ObservableCollection<StepTypeOptionViewModel>(
@@ -315,15 +298,11 @@ public sealed partial class StepsViewModel : PageViewModelBase
                 .Select(type => new StepTypeOptionViewModel(type, capability.Supports(type), localizer))
                 .OrderBy(option => option.SlotOrder));
 
-        this.bodyLengthMmText = machine.Workpiece.MinBodyLengthMm.ToString("F1", CultureInfo.InvariantCulture);
-        this.nominalDiameterMmText = machine.Workpiece.MinDiameterMm.ToString("F1", CultureInfo.InvariantCulture);
-        this.selectedProfileTypeKey = ProfileTypeKeys.FirstOrDefault() ?? string.Empty;
-        this.selectedStepType = StepTypeOptions.FirstOrDefault(option => option.IsAvailable)
+        // 估算时长与存程序前的校验要一支参考辊来展开；程序本身不带辊。默认取机床的最大辊身与最大直径。
+        this.bodyLengthMmText = machine.Workpiece.MaxBodyLengthMm.ToString("F0", CultureInfo.CurrentCulture);
+        this.nominalDiameterMmText = machine.Workpiece.MaxDiameterMm.ToString("F0", CultureInfo.CurrentCulture);
+        this.selectedStepType = StepTypeOptions.FirstOrDefault(option => option.IsAvailable && !ProgramFrame.IsFixed(option.Key))
             ?? StepTypeOptions.FirstOrDefault();
-        this.jobId = NewJobId();
-        this.rollId = string.Empty;
-
-        RebuildProfileParameters();
 
         ProgramOptions = new ObservableCollection<ProgramOptionRowViewModel>(
             ProgramOptionCatalog.All.Select(option => new ProgramOptionRowViewModel(
@@ -350,142 +329,16 @@ public sealed partial class StepsViewModel : PageViewModelBase
             new FunctionKeyViewModel("Fn_SaveProgram", new AsyncRelayCommand(
                 () => SaveAsync(CancellationToken.None)), localizer, FunctionKeyKind.Primary, requiresEditable: true),
             new FunctionKeyViewModel("Fn_SaveAs", SaveProgramAsCommand, localizer, requiresEditable: true),
-
-            // 派去辊形编辑页选一个辊形，办完由导航槽送回本页。
-            new FunctionKeyViewModel("Fn_SelectProfile", OpenProfileLibraryCommand, localizer),
-            new FunctionKeyViewModel("Fn_RollData", OpenRollDataCommand, localizer, requiresEditable: true),
-
-            // 下发是唯一的写机床通道；自动循环挂着程序时锁掉，免得把运行中的程序改了。
-            new FunctionKeyViewModel("Fn_DownloadNc", DownloadCommand, localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_ProgramLibrary", OpenProgramLibraryCommand, localizer),
-            FunctionKeyViewModel.ForAction(
-                "Fn_EnterAuto", localizer, () => Navigator.GoToArea(PageKey.AutoGrinding), FunctionKeyKind.Start),
+            new FunctionKeyViewModel("Fn_NewProgram", NewProgramCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
+
+            // 用这支程序去拼一份作业：派到作业页，导航槽会显示"返回 工艺程序"。
+            new FunctionKeyViewModel("Fn_UseForJob", UseForJobCommand, localizer, FunctionKeyKind.Start),
         });
-    }
 
-    /// <summary>轧辊数据子视图的资源键，同时用作面包屑文案。</summary>
-    public const string RollDataSubView = "SubView_RollData";
-
-    /// <summary>
-    /// 轧辊数据：实机"轧辊数据"屏上属于这支辊本身的那几项。
-    ///
-    /// 与几何（长度、直径）分开：几何是算辊形要用的，这些是吊装、找正、
-    /// 验收要用的。全部可空——现场不一定每支辊都登记得齐，逼着填只会让人
-    /// 乱填一个数，而一个乱填的重量会让中心架托瓦按错的压力顶上去。
-    /// </summary>
-    public ObservableCollection<RollDataRowViewModel> RollData { get; } = new();
-
-    /// <summary>吊装总重那一行；缺一项就是 "--"。</summary>
-    [ObservableProperty]
-    private string totalWeightText = "--";
-
-    [RelayCommand]
-    private Task OpenRollDataAsync(CancellationToken cancellationToken) =>
-        RunGuardedAsync(async token =>
-        {
-            if (string.IsNullOrWhiteSpace(RollId))
-            {
-                StatusResourceKey = "Steps_RollIdMissing";
-                return;
-            }
-
-            RollRecord? roll = await this.rolls.GetAsync(RollId, token).ConfigureAwait(true);
-            ShowRollData(roll?.Data ?? RollDataSheet.Empty);
-            Navigator.OpenSubView(RollDataSubView);
-        }, cancellationToken);
-
-    /// <summary>把轧辊数据存回辊件档案。辊件不存在时先建一条。</summary>
-    [RelayCommand]
-    private Task SaveRollDataAsync(CancellationToken cancellationToken) =>
-        RunGuardedAsync(async token =>
-        {
-            if (string.IsNullOrWhiteSpace(RollId))
-            {
-                StatusResourceKey = "Steps_RollIdMissing";
-                return;
-            }
-
-            RollRecord? existing = await this.rolls.GetAsync(RollId, token).ConfigureAwait(true);
-            if (existing is null && !TryParseDouble(BodyLengthMmText, out _))
-            {
-                // 辊件还不存在时要用界面上的几何新建一条；几何填得不对就先别建。
-                StatusResourceKey = "Job_GeometryInvalid";
-                return;
-            }
-
-            RollRecord roll = existing ?? new RollRecord(
-                RollId,
-                RollId,
-                RollGeometry.FromDiameter(
-                    ParseOrZero(BodyLengthMmText), ParseOrZero(NominalDiameterMmText)),
-                null,
-                DateTimeOffset.UtcNow);
-
-            await this.rolls.UpsertAsync(roll with { Data = ReadRollData() }, token).ConfigureAwait(true);
-            StatusResourceKey = "Steps_RollDataSaved";
-        }, cancellationToken);
-
-    private void ShowRollData(RollDataSheet sheet)
-    {
-        RollData.Clear();
-        Add("RollData_GrindStart", sheet.GrindStartPositionMm, "F1");
-        Add("RollData_CurveLength", sheet.CurveLengthMm, "F1");
-        Add("RollData_CurveTolerance", sheet.CurveToleranceMicrometer, "F1");
-        Add("RollData_NetWeight", sheet.NetWeightKg, "F0");
-        Add("RollData_HeadBoxWeight", sheet.HeadBoxWeightKg, "F0");
-        Add("RollData_TailBoxWeight", sheet.TailBoxWeightKg, "F0");
-
-        RefreshTotalWeight();
-
-        void Add(string key, double? value, string format)
-        {
-            var row = new RollDataRowViewModel(
-                key,
-                Localizer[key],
-                value is null ? string.Empty : value.Value.ToString(format, CultureInfo.CurrentCulture));
-
-            // 吊装总重跟着输入走：填完三项重量当场就看得到，不用存了再重开。
-            row.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(RollDataRowViewModel.Text))
-                {
-                    RefreshTotalWeight();
-                }
-            };
-            RollData.Add(row);
-        }
-    }
-
-    /// <summary>按格子里现在的值算吊装总重；缺一项就是 "--"。</summary>
-    private void RefreshTotalWeight() =>
-        TotalWeightText = ReadRollData().TotalWeightKg is double total
-            ? total.ToString("F0", CultureInfo.CurrentCulture)
-            : "--";
-
-    private static double ParseOrZero(string text) =>
-        TryParseDouble(text, out double value) ? value : 0.0;
-
-    private RollDataSheet ReadRollData() => new(
-        Read("RollData_GrindStart"),
-        Read("RollData_CurveLength"),
-        Read("RollData_CurveTolerance"),
-        Read("RollData_NetWeight"),
-        Read("RollData_HeadBoxWeight"),
-        Read("RollData_TailBoxWeight"));
-
-    /// <summary>
-    /// 空格子读回来仍然是"没登记"，不是 0——存一个 0 会让人以为量过了。
-    /// </summary>
-    private double? Read(string key)
-    {
-        RollDataRowViewModel? row = RollData
-            .FirstOrDefault(candidate => string.Equals(candidate.Key, key, StringComparison.Ordinal));
-
-        return row is null || string.IsNullOrWhiteSpace(row.Text)
-            ? null
-            : double.TryParse(row.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double value)
-                ? value
-                : null;
+        ResetToEmptyProgram();
+        Capture();
     }
 
     public override PageKey Key => PageKey.Steps;
@@ -500,11 +353,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// <summary>离线可用：只和数据库与配置打交道，不碰机床。</summary>
     public override bool WorksOffline => true;
 
-    public ObservableCollection<string> ProfileTypeKeys { get; }
-
     public ObservableCollection<StepTypeOptionViewModel> StepTypeOptions { get; }
-
-    public ObservableCollection<ParameterRowViewModel> ProfileParameters { get; } = new();
 
     public ObservableCollection<StepRowViewModel> Steps { get; } = new();
 
@@ -519,20 +368,13 @@ public sealed partial class StepsViewModel : PageViewModelBase
     [ObservableProperty]
     private string totalDurationText = "--";
 
-    [ObservableProperty]
-    private string jobId;
-
-    [ObservableProperty]
-    private string rollId;
-
+    /// <summary>估算用的参考辊身长度（mm）。不属于程序，不存、不算修改。</summary>
     [ObservableProperty]
     private string bodyLengthMmText;
 
+    /// <summary>估算用的参考直径（mm）。</summary>
     [ObservableProperty]
     private string nominalDiameterMmText;
-
-    [ObservableProperty]
-    private string selectedProfileTypeKey;
 
     [ObservableProperty]
     private StepTypeOptionViewModel? selectedStepType;
@@ -545,19 +387,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     partial void OnStatusResourceKeyChanged(string value) => OnPropertyChanged(nameof(StatusText));
 
-    partial void OnSelectedProfileTypeKeyChanged(string value)
-    {
-        RebuildProfileParameters();
-        MarkEdited();
-    }
+    partial void OnBodyLengthMmTextChanged(string value) => RefreshDurations();
 
-    partial void OnJobIdChanged(string value) => MarkEdited();
-
-    partial void OnRollIdChanged(string value) => MarkEdited();
-
-    partial void OnBodyLengthMmTextChanged(string value) => MarkEdited();
-
-    partial void OnNominalDiameterMmTextChanged(string value) => MarkEdited();
+    partial void OnNominalDiameterMmTextChanged(string value) => RefreshDurations();
 
     [RelayCommand]
     private void AddStep()
@@ -577,8 +409,18 @@ public sealed partial class StepsViewModel : PageViewModelBase
             return;
         }
 
+        if (ProgramFrame.IsFixed(SelectedStepType.Key))
+        {
+            // 开始、结束固定在首尾，各一个，已经在了。
+            StatusResourceKey = "Program_FrameFixed";
+            return;
+        }
+
+        // 插在"结束"前面：结束永远是最后一道。
         IGrindingStepType stepType = this.stepTypes.Get(SelectedStepType.Key);
-        Steps.Add(Track(new StepRowViewModel(Steps.Count + 1, stepType, stepType.Schema.CreateDefaults(), Localizer)));
+        int position = Steps.Count > 0 && Steps[^1].StepTypeKey == StepTypeKeys.End ? Steps.Count - 1 : Steps.Count;
+        Steps.Insert(position, Track(new StepRowViewModel(position + 1, stepType, stepType.Schema.CreateDefaults(), Localizer)));
+        Renumber();
         RefreshDurations();
         MarkEdited();
     }
@@ -588,6 +430,12 @@ public sealed partial class StepsViewModel : PageViewModelBase
     {
         if (step is null)
         {
+            return;
+        }
+
+        if (ProgramFrame.IsFixed(step.StepTypeKey))
+        {
+            StatusResourceKey = "Program_FrameFixed";
             return;
         }
 
@@ -615,6 +463,13 @@ public sealed partial class StepsViewModel : PageViewModelBase
             return;
         }
 
+        // 开始、结束不挪，别的也挪不过它们。
+        if (ProgramFrame.IsFixed(Steps[from].StepTypeKey) || ProgramFrame.IsFixed(Steps[to].StepTypeKey))
+        {
+            StatusResourceKey = "Program_FrameFixed";
+            return;
+        }
+
         Steps.Move(from, to);
         Renumber();
         MarkEdited();
@@ -629,151 +484,75 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
     }
 
+    /// <summary>新建一支程序：只有开始与结束，开关回到默认。</summary>
     [RelayCommand]
-    private void NewJob()
+    private void NewProgram()
     {
-        JobId = NewJobId();
-
-        // 工序清空了，就不再是哪个程序了：留着程序名，这支辊的记录会写成"用的是某某程序"，
-        // 而那个程序可能根本没被用过、甚至已经删了。
-        ProgramId = null;
-        ProgramName = string.Empty;
-        Steps.Clear();
-        Violations.Clear();
-        StatusResourceKey = string.Empty;
+        ResetToEmptyProgram();
         MarkEdited();
     }
 
-    [RelayCommand]
-    private Task ValidateAsync(CancellationToken cancellationToken) =>
-        RunGuardedAsync(_ =>
+    private void ResetToEmptyProgram()
+    {
+        this.suppressDirty = true;
+        try
         {
-            GrindingJob? job = TryBuildJob();
-            if (job is null)
+            ProgramId = null;
+            ProgramName = string.Empty;
+            Steps.Clear();
+            foreach (GrindingJobStep step in ProgramFrame.Normalize(Array.Empty<GrindingJobStep>(), this.stepTypes))
             {
-                return Task.CompletedTask;
+                Steps.Add(Track(new StepRowViewModel(step.Order, this.stepTypes.Get(step.StepTypeKey), step.Parameters, Localizer)));
             }
 
-            RefreshDurations();
-
-            // 和下发前同一套校验：参数范围、机床能力、至少一道走拖板。以前这里只看填没填，
-            // 越界的值也会显示"可以下发"，按下发才被打回来。
-            ParameterValidationResult result = this.validator.Validate(job, this.capability);
-            foreach (ParameterViolation violation in result.Violations)
+            foreach (ProgramOptionRowViewModel row in ProgramOptions)
             {
-                Violations.Add(new ViolationRowViewModel(violation, Localizer));
+                row.IsOn = row.Descriptor.DefaultEnabled && row.IsAvailable;
             }
-
-            StatusResourceKey = result.IsValid ? "Job_ReadyToHandOver" : "Job_ValidationFailed";
-            return Task.CompletedTask;
-        }, cancellationToken);
-
-    [RelayCommand]
-    private Task DownloadAsync(CancellationToken cancellationToken) =>
-        RunGuardedAsync(async token =>
-        {
-            GrindingJob? job = TryBuildJob();
-            if (job is null)
-            {
-                return;
-            }
-
-            JobDownloadResult result = await this.downloadService.DownloadAsync(job, token).ConfigureAwait(true);
 
             Violations.Clear();
-            foreach (ParameterViolation violation in result.Violations)
-            {
-                Violations.Add(new ViolationRowViewModel(violation, Localizer));
-            }
-
-            if (result.Succeeded)
-            {
-                StatusResourceKey = "Job_HandedOver";
-
-                // 下发成功 = 机床上的程序与界面一致，本页不再是脏的。
-                Capture();
-                MarkClean();
-                return;
-            }
-
-            StatusResourceKey = result.MissingTags.Count > 0 ? "Job_TagMapIncomplete" : "Job_ValidationFailed";
-            foreach (string missing in result.MissingTags)
-            {
-                Alarms.Raise(AlarmSeverity.Error, "Alarm_TagMissing", missing);
-            }
-        }, cancellationToken);
-
-    private GrindingJob? TryBuildJob()
-    {
-        Violations.Clear();
-        StatusResourceKey = string.Empty;
-
-        if (!TryParseDouble(BodyLengthMmText, out double bodyLengthMm)
-            || !TryParseDouble(NominalDiameterMmText, out double nominalDiameterMm))
+            StatusResourceKey = string.Empty;
+        }
+        finally
         {
-            StatusResourceKey = "Job_GeometryInvalid";
-            return null;
+            this.suppressDirty = false;
         }
 
-        if (string.IsNullOrWhiteSpace(JobId) || string.IsNullOrWhiteSpace(RollId))
-        {
-            StatusResourceKey = "Job_IdentifiersMissing";
-            return null;
-        }
-
-        if (Steps.Count == 0)
-        {
-            StatusResourceKey = "Job_NoSteps";
-            return null;
-        }
-
-        // 辊形有两条来路：从辊形库选一条（多段叠加），或者在本页现编一条单曲线。
-        // 选了库里的就用库里的，并把来源记进作业——记录要记当时用的是哪一条。
-        CompositeRollProfile? libraryProfile = this.selectedProfileDefinition?.Profile;
-        ParameterSet? profileParameters = null;
-        if (libraryProfile is null)
-        {
-            profileParameters = Collect(ProfileParameters);
-            if (profileParameters is null)
-            {
-                StatusResourceKey = "Job_ParametersInvalid";
-                return null;
-            }
-        }
-
-        var steps = new List<GrindingJobStep>(Steps.Count);
-        foreach (StepRowViewModel step in Steps)
-        {
-            ParameterSet? stepParameters = Collect(step.Parameters);
-            if (stepParameters is null)
-            {
-                StatusResourceKey = "Job_ParametersInvalid";
-                return null;
-            }
-
-            steps.Add(new GrindingJobStep(step.Order, step.StepTypeKey, stepParameters));
-        }
-
-        RollGeometry geometry = RollGeometry.FromDiameter(bodyLengthMm, nominalDiameterMm);
-
-        GrindingJob job = libraryProfile is not null
-            ? GrindingJob.Create(JobId, RollId, geometry, libraryProfile, steps, CollectProgramOptions())
-            : GrindingJob.Create(
-                JobId, RollId, geometry, SelectedProfileTypeKey, profileParameters!, steps, CollectProgramOptions());
-
-        return job with
-        {
-            ProfileId = this.selectedProfileDefinition?.ProfileId,
-            ProfileName = this.selectedProfileDefinition?.Name,
-            ProgramId = ProgramId,
-            ProgramName = string.IsNullOrWhiteSpace(ProgramName) ? null : ProgramName.Trim(),
-        };
+        RefreshDurations();
     }
 
-    // ── 程序库与辊形库 ────────────────────────────────────────────────────────
+    /// <summary>校验这支程序：每道参数、机床能力、至少一道走拖板（与存程序、下发前同一套）。</summary>
+    [RelayCommand]
+    private void Validate()
+    {
+        RefreshDurations();
+        if (CheckProgram() is not null)
+        {
+            StatusResourceKey = "Program_Valid";
+        }
+    }
+
+    /// <summary>
+    /// 用这支程序拼一份作业。程序得先存进库里——作业引用的是库里那一支，
+    /// 没存或改了没存，作业里用的就不是眼前这一份了。
+    /// </summary>
+    [RelayCommand]
+    private void UseForJob()
+    {
+        if (ProgramId is null || IsDirty)
+        {
+            StatusResourceKey = "Program_SaveBeforeUse";
+            return;
+        }
+
+        this.jobDraft.PendingProgramId = ProgramId;
+        Navigator.StartTask(PageKey.Job, PageKey.Steps);
+    }
+
+    // ── 程序库 ────────────────────────────────────────────────────────────────
     //
-    // 程序与辊形都是**可复用的模板**，作业只是"这支辊用哪条辊形、哪支程序"。
-    // 作业引用它们的时候复制一份快照，库里之后改了不会动已经磨过的那支辊的记录。
+    // 程序是**可复用的模板**，作业只是"这支辊用哪条辊形、哪支程序"。
+    // 作业引用它的时候复制一份快照，库里之后改了不会动已经磨过的那支辊的记录。
 
     /// <summary>当前程序的名字，库里按这个名字找。</summary>
     [ObservableProperty]
@@ -791,45 +570,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     [ObservableProperty]
     private ProgramSummary? selectedProgramEntry;
-
-    /// <summary>库里现有的辊形。</summary>
-    public ObservableCollection<RollProfileSummary> ProfileLibraryEntries { get; } = new();
-
-    [ObservableProperty]
-    private bool isProfileLibraryOpen;
-
-    [ObservableProperty]
-    private RollProfileSummary? selectedProfileEntry;
-
-    /// <summary>
-    /// 这支作业用的辊形是从库里选的还是现编的。选了库里的，下面那个单曲线参数格就压暗——
-    /// 两边同时能改会让人搞不清最后下发的是哪一条。
-    /// </summary>
-    [ObservableProperty]
-    private bool usesLibraryProfile;
-
-    /// <summary>选中的辊形名，界面上显示；现编现用时是空的。</summary>
-    [ObservableProperty]
-    private string selectedProfileName = string.Empty;
-
-    /// <summary>
-    /// 本页那条现编的单曲线还能不能改：只读时不能，选了库里的辊形时也不能——
-    /// 两处同时能改会让人搞不清最后下发的是哪一条。
-    /// </summary>
-    public bool CanEditInlineProfile => !IsReadOnly && !UsesLibraryProfile;
-
-    partial void OnUsesLibraryProfileChanged(bool value) => OnPropertyChanged(nameof(CanEditInlineProfile));
-
-    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        base.OnPropertyChanged(e);
-
-        // IsReadOnly 在基类里，改不了它的 partial 钩子，只能在这里接一手。
-        if (e.PropertyName == nameof(IsReadOnly))
-        {
-            OnPropertyChanged(nameof(CanEditInlineProfile));
-        }
-    }
 
     partial void OnProgramNameChanged(string value)
     {
@@ -1099,14 +839,17 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     private void ApplyProgram(GrindingProgram program)
     {
+        bool framed;
         this.suppressDirty = true;
         try
         {
             ProgramId = program.ProgramId;
             ProgramName = program.Name;
 
+            // 以前存的程序可能没有开始 / 结束，或者不在首尾：整理成"开始 … 结束"，并提示存一次。
+            framed = ProgramFrame.IsNormalized(program.Steps);
             Steps.Clear();
-            foreach (GrindingJobStep step in program.Steps)
+            foreach (GrindingJobStep step in ProgramFrame.Normalize(program.Steps, this.stepTypes))
             {
                 IGrindingStepType stepType = this.stepTypes.Get(step.StepTypeKey);
                 Steps.Add(Track(new StepRowViewModel(step.Order, stepType, step.Parameters, Localizer)));
@@ -1123,7 +866,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
 
         Capture();
-        IsDirty = false;
+        IsDirty = !framed;
+        StatusResourceKey = framed ? string.Empty : "Program_FrameAdded";
+        Violations.Clear();
         RefreshDurations();
     }
 
@@ -1152,71 +897,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
     }
 
-    [RelayCommand]
-    private async Task OpenProfileLibraryAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            IReadOnlyList<RollProfileSummary> entries =
-                await this.profileLibrary.ListAsync(LibraryListLimit, cancellationToken).ConfigureAwait(true);
-
-            ProfileLibraryEntries.Clear();
-            foreach (RollProfileSummary entry in entries)
-            {
-                ProfileLibraryEntries.Add(entry);
-            }
-
-            SelectedProfileEntry = ProfileLibraryEntries.FirstOrDefault();
-            IsProfileLibraryOpen = true;
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    [RelayCommand]
-    private void CloseProfileLibrary() => IsProfileLibraryOpen = false;
-
-    /// <summary>选用库里的那条辊形。多段曲线就是这样进到作业里的。</summary>
-    [RelayCommand]
-    private async Task UseProfileFromLibraryAsync(CancellationToken cancellationToken)
-    {
-        if (SelectedProfileEntry is null)
-        {
-            return;
-        }
-
-        try
-        {
-            this.selectedProfileDefinition = await this.profileLibrary
-                .GetAsync(SelectedProfileEntry.ProfileId, cancellationToken).ConfigureAwait(true);
-            if (this.selectedProfileDefinition is null)
-            {
-                return;
-            }
-
-            UsesLibraryProfile = true;
-            SelectedProfileName = this.selectedProfileDefinition.Name;
-            IsProfileLibraryOpen = false;
-            MarkEdited();
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    /// <summary>改回现编现用：下面那个单曲线参数格重新可用。</summary>
-    [RelayCommand]
-    private void ClearProfileSelection()
-    {
-        this.selectedProfileDefinition = null;
-        UsesLibraryProfile = false;
-        SelectedProfileName = string.Empty;
-        MarkEdited();
-    }
-
     /// <summary>库面板一次列多少条。</summary>
     private const int LibraryListLimit = 200;
 
@@ -1240,12 +920,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     /// <summary>把当前程序存成"干净"版本。</summary>
     private void Capture() => this.committed = new StepsSnapshot(
-        JobId,
-        RollId,
-        BodyLengthMmText,
-        NominalDiameterMmText,
-        SelectedProfileTypeKey,
-        ProfileParameters.Select(row => row.Text).ToArray(),
+        ProgramId,
+        ProgramName,
         Steps.Select(step => new StepSnapshot(
             step.StepTypeKey,
             step.Parameters.Select(row => row.Text).ToArray())).ToArray(),
@@ -1256,15 +932,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.suppressDirty = true;
         try
         {
-            JobId = snapshot.JobId;
-            RollId = snapshot.RollId;
-            BodyLengthMmText = snapshot.BodyLengthMmText;
-            NominalDiameterMmText = snapshot.NominalDiameterMmText;
-
-            // 换类型会重建参数行，所以要先换类型、再回填文本。
-            SelectedProfileTypeKey = snapshot.SelectedProfileTypeKey;
-            RebuildProfileParameters();
-            ApplyTexts(ProfileParameters, snapshot.ProfileParameterTexts);
+            ProgramId = snapshot.ProgramId;
+            ProgramName = snapshot.ProgramName;
 
             Steps.Clear();
             for (int i = 0; i < snapshot.Steps.Count; i++)
@@ -1351,22 +1020,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
 
         return new ParameterSet(values);
-    }
-
-    private void RebuildProfileParameters()
-    {
-        ProfileParameters.Clear();
-        if (string.IsNullOrEmpty(SelectedProfileTypeKey))
-        {
-            return;
-        }
-
-        IRollProfileType profileType = this.profileTypes.Get(SelectedProfileTypeKey);
-        ParameterSet defaults = profileType.Schema.CreateDefaults();
-        foreach (ParameterDescriptor descriptor in profileType.Schema.Descriptors)
-        {
-            ProfileParameters.Add(Track(new ParameterRowViewModel(descriptor, defaults.Get(descriptor.Key), Localizer)));
-        }
     }
 
     /// <summary>按当前参数重算每道工序与总的预计时长。</summary>

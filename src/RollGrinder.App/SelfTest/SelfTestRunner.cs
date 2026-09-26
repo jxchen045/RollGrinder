@@ -115,6 +115,7 @@ internal sealed class SelfTestRunner
         yield return new PageSweepSuite();
         yield return new ProfileSuite();
         yield return new StepsSuite();
+        yield return new JobSuite();
         yield return new SettingsSuite();
         if (!offline)
         {

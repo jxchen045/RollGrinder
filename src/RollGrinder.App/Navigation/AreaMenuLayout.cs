@@ -35,6 +35,15 @@ public static class AreaMenuLayout
         PageKey.Settings,
     };
 
+    /// <summary>
+    /// 不占菜单格、只从别的页"任务跳转"进去的页（导航槽送回发起页）。
+    /// 作业页：7 格已满；从工艺程序页"用于作业"、自动加工页"作业"两处进。
+    /// </summary>
+    public static IReadOnlyList<PageKey> TaskPages { get; } = new[]
+    {
+        PageKey.Job,
+    };
+
     /// <summary>排出菜单态的区域格。</summary>
     /// <param name="areas">要列出的区域，按顺序（通常是 <see cref="DefaultOrder"/> 里实际注册了的那些）。</param>
     /// <param name="currentArea">当前区域。</param>

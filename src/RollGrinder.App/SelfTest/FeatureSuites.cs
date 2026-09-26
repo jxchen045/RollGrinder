@@ -12,6 +12,7 @@ using RollGrinder.App.ViewModels;
 using RollGrinder.Core.Calibration;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
+using RollGrinder.Core.Steps;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Records;
 
@@ -28,6 +29,8 @@ internal static class SelfTestNames
     public const string ProgramB = "SelfTest Program B";
     public const string RollId = "SELFTEST-R1";
     public const string FlowRollId = "SELFTEST-FLOW";
+    public const string JobRollId = "SELFTEST-JOB";
+    public const string FlowProgram = "SelfTest Flow Program";
     public const string BodyLengthMm = "2000";
     public const string DiameterMm = "600";
 
@@ -43,6 +46,12 @@ internal static class SelfTestNames
 
         prompt.Name = name;
         await h.RunAsync(prompt.ConfirmCommand);
+        if (prompt.IsOpen && prompt.CanOverwrite)
+        {
+            // 同一个数据目录上次自检留下的同名条目：按"覆盖"。
+            await h.RunAsync(prompt.OverwriteCommand);
+        }
+
         return !prompt.IsOpen;
     }
 }
@@ -417,7 +426,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
     }
 }
 
-/// <summary>工序编程：新作业、每种工序、程序步骤开关、校验、轧辊数据、程序库、从辊形库选辊形。离线时验证下发被拒。</summary>
+/// <summary>工艺程序：新程序只有开始/结束、每种工序、首尾固定、程序步骤开关、校验、程序库、没存不能用于作业。</summary>
 internal sealed class StepsSuite : ISelfTestSuite
 {
     public string Name => "Steps";
@@ -427,11 +436,13 @@ internal sealed class StepsSuite : ISelfTestSuite
         StepsViewModel page = h.Page<StepsViewModel>();
         await h.GoToAsync(PageKey.Steps);
 
-        await h.StepAsync("Job", "NewJob", async ctx =>
+        await h.StepAsync("Program", "NewProgramHasFrame", async ctx =>
         {
-            await h.RunAsync(page.NewJobCommand);
-            ctx.Check(!string.IsNullOrWhiteSpace(page.JobId), "a new job id should be generated");
-            ctx.Check(page.Steps.Count == 0, "a new job starts with no steps");
+            await h.PressKeyAsync(ctx, "Fn_NewProgram");
+            ctx.Check(page.Steps.Count == 2, Invariant($"a new program holds start and end only, has {page.Steps.Count}"));
+            ctx.Check(page.Steps[0].StepTypeKey == StepTypeKeys.Start && page.Steps[^1].StepTypeKey == StepTypeKeys.End,
+                "start first, end last");
+            ctx.Check(page.ProgramId is null && page.ProgramName.Length == 0, "a new program has no identity yet");
         });
 
         await h.StepAsync("StepTypes", "GroupedBySlotInOrder", ctx =>
@@ -444,16 +455,39 @@ internal sealed class StepsSuite : ISelfTestSuite
 
         await h.StepAsync("StepTypes", "AddEveryAvailableType", async ctx =>
         {
-            foreach (StepTypeOptionViewModel option in page.StepTypeOptions.Where(o => o.IsAvailable).ToList())
+            List<StepTypeOptionViewModel> addable = page.StepTypeOptions
+                .Where(o => o.IsAvailable && !ProgramFrame.IsFixed(o.Key))
+                .ToList();
+            foreach (StepTypeOptionViewModel option in addable)
             {
                 page.SelectedStepType = option;
                 await h.RunAsync(page.AddStepCommand);
             }
 
-            int expected = page.StepTypeOptions.Count(o => o.IsAvailable);
+            int expected = addable.Count + 2;
             ctx.Check(page.Steps.Count == expected, Invariant($"expected {expected} steps, got {page.Steps.Count}"));
+            ctx.Check(page.Steps[^1].StepTypeKey == StepTypeKeys.End, "new steps go in before the end, which stays last");
             ctx.Note("total duration " + page.TotalDurationText);
         }, StepOptions.Shot);
+
+        await h.StepAsync("StepTypes", "FrameTypesRefused", async ctx =>
+        {
+            int count = page.Steps.Count;
+            page.SelectedStepType = page.StepTypeOptions.FirstOrDefault(o => o.Key == StepTypeKeys.Start);
+            if (page.SelectedStepType is null)
+            {
+                ctx.Skip("the start step is not offered in the list");
+            }
+
+            await h.RunAsync(page.AddStepCommand);
+            ctx.Check(page.Steps.Count == count, "a second start must not be added");
+            ctx.Check(page.StatusResourceKey == "Program_FrameFixed", "status should say start/end are fixed, is " + page.StatusResourceKey);
+
+            page.RemoveStepCommand.Execute(page.Steps[0]);
+            await h.SettleAsync();
+            ctx.Check(page.Steps.Count == count && page.Steps[0].StepTypeKey == StepTypeKeys.Start, "the start must not be removed");
+            ctx.Check(!page.Steps[0].CanBeMoved && !page.Steps[^1].CanBeMoved, "start and end show no move/remove buttons");
+        });
 
         StepTypeOptionViewModel? unavailable = page.StepTypeOptions.FirstOrDefault(o => !o.IsAvailable);
         if (unavailable is not null)
@@ -470,51 +504,36 @@ internal sealed class StepsSuite : ISelfTestSuite
         await h.StepAsync("StepTypes", "RemoveStep", async ctx =>
         {
             int count = page.Steps.Count;
-            page.RemoveStepCommand.Execute(page.Steps.Last());
+            page.RemoveStepCommand.Execute(page.Steps[^2]);
             await h.SettleAsync();
             ctx.Check(page.Steps.Count == count - 1, "remove should drop one step");
+            ctx.Check(page.Steps[^1].StepTypeKey == StepTypeKeys.End, "the end stays last");
         });
 
         await h.StepAsync("StepTypes", "MoveUpAndDown", async ctx =>
         {
-            ctx.Check(page.Steps.Count >= 2, "need two steps to reorder");
-            StepRowViewModel first = page.Steps[0];
-            StepRowViewModel second = page.Steps[1];
+            ctx.Check(page.Steps.Count >= 4, "need two steps between start and end to reorder");
+            StepRowViewModel first = page.Steps[1];
+            StepRowViewModel second = page.Steps[2];
             page.MoveStepDownCommand.Execute(first);
             await h.SettleAsync();
-            ctx.Check(page.Steps[0] == second && page.Steps[1] == first, "move down should swap with the next step");
-            ctx.Check(page.Steps[0].Order == 1 && page.Steps[1].Order == 2, "orders should be renumbered");
+            ctx.Check(page.Steps[1] == second && page.Steps[2] == first, "move down should swap with the next step");
+            ctx.Check(page.Steps[1].Order == 2 && page.Steps[2].Order == 3, "orders should be renumbered");
             page.MoveStepUpCommand.Execute(first);
             await h.SettleAsync();
-            ctx.Check(page.Steps[0] == first && page.Steps[1] == second, "move up should swap it back");
+            ctx.Check(page.Steps[1] == first && page.Steps[2] == second, "move up should swap it back");
             page.MoveStepUpCommand.Execute(first);
             await h.SettleAsync();
-            ctx.Check(page.Steps[0] == first, "the first step cannot move further up");
+            ctx.Check(page.Steps[1] == first && page.Steps[0].StepTypeKey == StepTypeKeys.Start, "nothing moves in front of the start");
+            ctx.Check(page.StatusResourceKey == "Program_FrameFixed", "status should say start/end are fixed, is " + page.StatusResourceKey);
         });
 
-        await h.StepAsync("Validation", "MissingRollIdReported", async ctx =>
+        await h.StepAsync("Validation", "ProgramValidates", async ctx =>
         {
-            page.RollId = string.Empty;
-            await h.RunAsync(page.ValidateCommand);
-            ctx.Check(page.StatusResourceKey == "Job_IdentifiersMissing", "status should flag missing ids, is " + page.StatusResourceKey);
-        });
-
-        await h.StepAsync("Validation", "BadGeometryReported", async ctx =>
-        {
-            page.RollId = SelfTestNames.RollId;
-            page.BodyLengthMmText = "abc";
-            await h.RunAsync(page.ValidateCommand);
-            ctx.Check(page.StatusResourceKey == "Job_GeometryInvalid", "status should flag bad geometry, is " + page.StatusResourceKey);
-        });
-
-        await h.StepAsync("Validation", "FullJobValidates", async ctx =>
-        {
-            page.BodyLengthMmText = SelfTestNames.BodyLengthMm;
-            page.NominalDiameterMmText = SelfTestNames.DiameterMm;
-            await h.RunAsync(page.ValidateCommand);
+            await h.PressKeyAsync(ctx, "Fn_Validate");
             ctx.Note("status=" + page.StatusResourceKey + ", violations=" + page.Violations.Count);
-            ctx.Check(page.StatusResourceKey == "Job_ReadyToHandOver",
-                "a job built from default parameters of every step type should validate; status " + page.StatusResourceKey
+            ctx.Check(page.StatusResourceKey == "Program_Valid",
+                "a program built from default parameters of every step type should validate; status " + page.StatusResourceKey
                 + (page.Violations.Count > 0 ? ", first violation: " + page.Violations[0].ParameterText + " " + page.Violations[0].ReasonText : string.Empty));
         }, StepOptions.Shot);
 
@@ -534,25 +553,11 @@ internal sealed class StepsSuite : ISelfTestSuite
             ctx.Check(toggled > 0, "at least one program option should be available");
         });
 
-        await h.StepAsync("RollData", "EditSaveReopen", async ctx =>
+        await h.StepAsync("UseForJob", "UnsavedProgramRefused", async ctx =>
         {
-            page.RollId = SelfTestNames.RollId;
-            await h.PressKeyAsync(ctx, "Fn_RollData");
-            ctx.Check(page.ActiveSubViewKey == StepsViewModel.RollDataSubView, "roll data sub view should open");
-            ctx.Check(page.RollData.Count > 0, "roll data rows should be listed");
-            foreach (RollDataRowViewModel row in page.RollData)
-            {
-                row.Text = "100";
-            }
-
-            await h.RunAsync(page.SaveRollDataCommand);
-            ctx.Check(page.StatusResourceKey == "Steps_RollDataSaved", "status should say saved, is " + page.StatusResourceKey);
-            ctx.Note("total weight " + page.TotalWeightText);
-            h.TryScreenshot("steps-rolldata");
-            await h.PressNavigationKeyAsync();
-            await h.PressKeyAsync(ctx, "Fn_RollData");
-            ctx.Check(page.RollData.All(r => r.Text.StartsWith("100", StringComparison.Ordinal)), "saved roll data should come back");
-            await h.PressNavigationKeyAsync();
+            await h.PressKeyAsync(ctx, "Fn_UseForJob");
+            ctx.Check(h.Shell.CurrentPage.Key == PageKey.Steps, "an unsaved program must not be handed to a job");
+            ctx.Check(page.StatusResourceKey == "Program_SaveBeforeUse", "status should ask to save first, is " + page.StatusResourceKey);
         });
 
         await h.StepAsync("ProgramLibrary", "SaveWithoutNameRefused", async ctx =>
@@ -567,7 +572,7 @@ internal sealed class StepsSuite : ISelfTestSuite
             // 把一道工序的一格改到范围外：保存要被拒，原因列在校验结果里。
             ParameterRowViewModel cell = page.Steps
                 .SelectMany(step => step.Parameters)
-                .First(row => row.Kind == RollGrinder.Core.Parameters.ParameterValueKind.Number && row.RangeText.Length > 0);
+                .First(row => row.Kind == ParameterValueKind.Number && row.RangeText.Length > 0);
             string original = cell.Text;
             cell.Text = "999999";
             page.ProgramName = SelfTestNames.ProgramA;
@@ -579,15 +584,15 @@ internal sealed class StepsSuite : ISelfTestSuite
             await h.SettleAsync();
         }, StepOptions.Expect("Program_HasErrors"));
 
-        await h.StepAsync("ProgramLibrary", "SaveAsNewJobLoad", async ctx =>
+        await h.StepAsync("ProgramLibrary", "SaveAsNewProgramLoad", async ctx =>
         {
             int steps = page.Steps.Count;
             page.ProgramName = SelfTestNames.ProgramA;
             ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveProgramAsCommand, page.NamePrompt, SelfTestNames.ProgramA),
                 "save-as A should go through, error: " + page.NamePrompt.ErrorText);
-            await h.RunAsync(page.NewJobCommand);
-            ctx.Check(page.Steps.Count == 0, "new job should clear steps");
-            ctx.Check(page.ProgramId is null && string.IsNullOrEmpty(page.ProgramName), "new job must not keep the old program's identity");
+            await h.PressKeyAsync(ctx, "Fn_NewProgram");
+            ctx.Check(page.Steps.Count == 2, "a new program keeps only start and end");
+            ctx.Check(page.ProgramId is null && string.IsNullOrEmpty(page.ProgramName), "a new program must not keep the old program's identity");
             await h.PressKeyAsync(ctx, "Fn_ProgramLibrary");
             ctx.Check(page.IsProgramLibraryOpen, "program library should open");
             h.TryScreenshot("steps-program-library");
@@ -595,6 +600,7 @@ internal sealed class StepsSuite : ISelfTestSuite
             ctx.Check(page.SelectedProgramEntry is not null, "saved program should be listed");
             await h.RunAsync(page.LoadProgramCommand);
             ctx.Check(page.Steps.Count == steps, Invariant($"loaded program should have {steps} steps, has {page.Steps.Count}"));
+            ctx.Check(!page.IsDirty, "a freshly loaded program is clean");
         }, StepOptions.Expect("Program_Saved"));
 
         await h.StepAsync("ProgramLibrary", "DeleteSecondProgram", async ctx =>
@@ -607,34 +613,6 @@ internal sealed class StepsSuite : ISelfTestSuite
             ctx.Check(page.ProgramLibraryEntries.All(p => p.Name != SelfTestNames.ProgramB), "deleted program should disappear");
             await h.RunAsync(page.CloseProgramLibraryCommand);
         }, StepOptions.Expect("Program_Saved"));
-
-        await h.StepAsync("ProfileFromLibrary", "UseAndClear", async ctx =>
-        {
-            await h.PressKeyAsync(ctx, "Fn_SelectProfile");
-            ctx.Check(page.IsProfileLibraryOpen, "profile library panel should open");
-            page.SelectedProfileEntry = page.ProfileLibraryEntries.FirstOrDefault(p => p.Name == SelfTestNames.ProfileA);
-            if (page.SelectedProfileEntry is null)
-            {
-                ctx.Skip("profile saved by the Profile suite is not in the library");
-            }
-
-            await h.RunAsync(page.UseProfileFromLibraryCommand);
-            ctx.Check(page.UsesLibraryProfile && !page.CanEditInlineProfile, "library profile should replace the inline one");
-            h.TryScreenshot("steps-library-profile");
-            await h.RunAsync(page.ClearProfileSelectionCommand);
-            ctx.Check(!page.UsesLibraryProfile && page.CanEditInlineProfile, "clearing should bring back the inline profile");
-        });
-
-        if (h.Services.GetRequiredService<RollGrinder.Contracts.IAppOptions>().IsOffline)
-        {
-            await h.StepAsync("Download", "RefusedWithoutMachine", async ctx =>
-            {
-                page.RollId = SelfTestNames.RollId;
-                await h.PressKeyAsync(ctx, "Fn_DownloadNc");
-                ctx.Check(page.StatusResourceKey != "Job_HandedOver", "download must not claim success without a machine");
-                ctx.Note("status=" + page.StatusResourceKey);
-            }, StepOptions.Expect("*"));
-        }
 
         page.DiscardChanges();
     }

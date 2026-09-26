@@ -375,11 +375,6 @@ internal sealed partial class SelfTestHarness
             steps.CloseProgramLibraryCommand.Execute(null);
         }
 
-        if (steps.IsProfileLibraryOpen)
-        {
-            steps.CloseProfileLibraryCommand.Execute(null);
-        }
-
         ProfileViewModel profile = Page<ProfileViewModel>();
         if (profile.IsLibraryOpen)
         {
