@@ -61,6 +61,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     public RecordsViewModel(
         IRecordService recordService,
         IReportService reportService,
+        IRollLedgerService ledgerService,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
@@ -68,6 +69,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     {
         this.recordService = recordService ?? throw new ArgumentNullException(nameof(recordService));
         this.reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
+        this.ledgerService = ledgerService ?? throw new ArgumentNullException(nameof(ledgerService));
 
         this.toDate = DateTime.Today;
         this.fromDate = DateTime.Today.AddDays(-7);
@@ -364,12 +366,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         RunGuardedAsync(async token =>
         {
             Ledger.Clear();
-            foreach (RollLedgerRow row in await this.recordService
-                .LoadLedgerAsync(500, token).ConfigureAwait(true))
-            {
-                Ledger.Add(new RollLedgerRowViewModel(row));
-            }
-
+            await ReloadLedgerAsync(null, token).ConfigureAwait(true);
             StatusResourceKey = Ledger.Count == 0 ? "Records_LedgerEmpty" : string.Empty;
             Navigator.OpenSubView(LedgerSubView);
         }, cancellationToken);

@@ -25,6 +25,25 @@ public sealed record RollRecord(
     /// 而一个乱填的重量会让中心架托瓦按错的压力顶上去。
     /// </summary>
     public RollDataSheet Data { get; init; } = RollDataSheet.Empty;
+
+    /// <summary>工作辊还是支承辊。旧库里的辊没登记过，是 <see cref="RollKind.Unspecified"/>。</summary>
+    public RollKind Kind { get; init; } = RollKind.Unspecified;
+
+    /// <summary>当前直径（mm）：每磨一次小一点，公称直径是新辊时的尺寸。没登记为 null。</summary>
+    public double? CurrentDiameterMm { get; init; }
+}
+
+/// <summary>轧辊类型。</summary>
+public enum RollKind
+{
+    /// <summary>没登记。</summary>
+    Unspecified = 0,
+
+    /// <summary>工作辊。</summary>
+    WorkRoll = 1,
+
+    /// <summary>支承辊。</summary>
+    BackupRoll = 2,
 }
 
 /// <summary>

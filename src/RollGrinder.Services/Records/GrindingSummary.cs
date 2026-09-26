@@ -1,5 +1,7 @@
 using System;
 
+using RollGrinder.Data.Model;
+
 namespace RollGrinder.Services.Records;
 
 /// <summary>
@@ -41,6 +43,8 @@ public sealed record GrindingSummary(
 /// <param name="Material">材质；没登记时为 null。</param>
 /// <param name="GrindCount">磨过几次。</param>
 /// <param name="LastGroundAtUtc">最近一次是什么时候；一次都没磨过为 null。</param>
+/// <param name="Kind">工作辊 / 支承辊。</param>
+/// <param name="CurrentDiameterMm">当前直径（mm）；没登记为 null。</param>
 public sealed record RollLedgerRow(
     string RollId,
     string Code,
@@ -48,4 +52,6 @@ public sealed record RollLedgerRow(
     double BodyLengthMm,
     string? Material,
     int GrindCount,
-    DateTimeOffset? LastGroundAtUtc);
+    DateTimeOffset? LastGroundAtUtc,
+    RollKind Kind = RollKind.Unspecified,
+    double? CurrentDiameterMm = null);

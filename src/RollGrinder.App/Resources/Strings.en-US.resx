@@ -2242,4 +2242,73 @@
   <data name="Profile_Issue_SymmetryType" xml:space="preserve">
     <value>Symmetric editing: a segment is not symmetric (CVC); switch symmetric editing off first</value>
   </data>
+  <data name="Ledger_New" xml:space="preserve">
+    <value>Register roll</value>
+  </data>
+  <data name="Ledger_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Ledger_Kind" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Ledger_CurrentDiameter" xml:space="preserve">
+    <value>Current dia. (mm)</value>
+  </data>
+  <data name="Ledger_BodyLengthLabel" xml:space="preserve">
+    <value>Body length mm</value>
+  </data>
+  <data name="Ledger_DiameterLabel" xml:space="preserve">
+    <value>Nominal dia. mm</value>
+  </data>
+  <data name="Ledger_CurrentDiameterLabel" xml:space="preserve">
+    <value>Current dia. mm</value>
+  </data>
+  <data name="Ledger_TotalWeight" xml:space="preserve">
+    <value>Total lift weight kg</value>
+  </data>
+  <data name="Ledger_HistoryHeader" xml:space="preserve">
+    <value>Grinding history</value>
+  </data>
+  <data name="Ledger_HistoryStarted" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="Ledger_HistoryJob" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="Ledger_HistoryState" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="Ledger_HistoryDuration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="Ledger_Saved" xml:space="preserve">
+    <value>Saved to the ledger</value>
+  </data>
+  <data name="Ledger_Problem_NotANumber" xml:space="preserve">
+    <value>Some fields are not numbers: body length and nominal diameter are required, the rest may be left empty</value>
+  </data>
+  <data name="Ledger_Problem_MissingRollId" xml:space="preserve">
+    <value>Enter a roll number</value>
+  </data>
+  <data name="Ledger_Problem_RollIdTaken" xml:space="preserve">
+    <value>This roll number is already in the ledger</value>
+  </data>
+  <data name="Ledger_Problem_BodyLength" xml:space="preserve">
+    <value>The body length is outside what this machine can grind</value>
+  </data>
+  <data name="Ledger_Problem_Diameter" xml:space="preserve">
+    <value>The nominal diameter is outside what this machine can grind</value>
+  </data>
+  <data name="Ledger_Problem_CurrentDiameter" xml:space="preserve">
+    <value>The current diameter is outside what this machine can grind</value>
+  </data>
+  <data name="Ledger_Problem_NegativeWeight" xml:space="preserve">
+    <value>Weights cannot be negative</value>
+  </data>
+  <data name="RollKind_WorkRoll" xml:space="preserve">
+    <value>Work roll</value>
+  </data>
+  <data name="RollKind_BackupRoll" xml:space="preserve">
+    <value>Backup roll</value>
+  </data>
 </root>

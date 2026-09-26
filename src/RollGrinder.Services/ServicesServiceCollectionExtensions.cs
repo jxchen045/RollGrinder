@@ -63,6 +63,7 @@ public static class ServicesServiceCollectionExtensions
 
         services.AddSingleton<ICompensationService, CompensationService>();
         services.AddSingleton<IRecordService, RecordService>();
+        services.AddSingleton<IRollLedgerService, RollLedgerService>();
         services.AddSingleton<IReportService, ReportService>();
         services.AddSingleton<IReportPrintQueue, ReportPrintQueue>();
         services.AddSingleton<Diagnostics.IDiagnosticsExportService, Diagnostics.DiagnosticsExportService>();

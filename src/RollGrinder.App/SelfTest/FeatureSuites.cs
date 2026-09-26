@@ -23,6 +23,7 @@ internal static class SelfTestNames
     public const string ProfileA = "SelfTest Profile A";
     public const string ProfileB = "SelfTest Profile B";
     public const string OldProfile = "SelfTest Old Profile";
+    public const string LedgerRollId = "SELFTEST-BR1";
     public const string ProgramA = "SelfTest Program A";
     public const string ProgramB = "SelfTest Program B";
     public const string RollId = "SELFTEST-R1";
@@ -886,6 +887,44 @@ internal sealed class RecordsSuite : ISelfTestSuite
             ctx.Check(page.ActiveSubViewKey is not null, "ledger sub view should open");
             ctx.Note(Invariant($"{page.Ledger.Count} rolls, {page.SummaryLineText}"));
             h.TryScreenshot("records-ledger");
+            await h.PressNavigationKeyAsync();
+        });
+
+        await h.StepAsync("Ledger", "RegisterEditAndRefuseDuplicate", async ctx =>
+        {
+            await h.PressKeyAsync(ctx, "Fn_RollLedger");
+
+            // 登记一支新辊：尺寸、类型、当前直径、重量都在台账里填。
+            await h.RunAsync(page.NewLedgerRollCommand);
+            ctx.Check(page.IsNewLedgerRoll && page.LedgerRollId.Length == 0, "a new roll starts from an empty form");
+            page.LedgerRollId = SelfTestNames.LedgerRollId;
+            page.SetLedgerKindCommand.Execute(RollGrinder.Data.Model.RollKind.BackupRoll);
+            page.LedgerBodyLengthText = "2000";
+            page.LedgerDiameterText = "1200";
+            page.LedgerCurrentDiameterText = "1188";
+            page.LedgerNetWeightText = "30000";
+            page.LedgerHeadBoxWeightText = "2500";
+            page.LedgerTailBoxWeightText = "2400";
+            ctx.Check(page.LedgerTotalWeightText.Length > 2, "the total lift weight should be summed");
+            await h.RunAsync(page.SaveLedgerRollCommand);
+            ctx.Check(page.LedgerProblems.Count == 0, "a valid roll should be saved: " + string.Join(" | ", page.LedgerProblems));
+            ctx.Check(page.SelectedLedgerRow?.RollId == SelfTestNames.LedgerRollId && !page.IsNewLedgerRoll,
+                "the saved roll should be selected for editing");
+            h.TryScreenshot("records-ledger-edit");
+
+            // 改当前直径：同一支辊，不算重号。
+            page.LedgerCurrentDiameterText = "1180";
+            await h.RunAsync(page.SaveLedgerRollCommand);
+            ctx.Check(page.LedgerProblems.Count == 0 && page.SelectedLedgerRow?.CurrentDiameterText.StartsWith("1180", StringComparison.Ordinal) == true,
+                "editing an existing roll should be saved");
+
+            // 再登记一支同号的：拒绝并说明。
+            await h.RunAsync(page.NewLedgerRollCommand);
+            page.LedgerRollId = SelfTestNames.LedgerRollId;
+            page.LedgerBodyLengthText = "2000";
+            page.LedgerDiameterText = "650";
+            await h.RunAsync(page.SaveLedgerRollCommand);
+            ctx.Check(page.LedgerProblems.Count == 1, "a duplicate roll number must be refused with its reason");
             await h.PressNavigationKeyAsync();
         });
 

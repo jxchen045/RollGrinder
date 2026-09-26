@@ -295,6 +295,13 @@ public sealed class SqliteDatabase
         ALTER TABLE roll_profile_segment ADD COLUMN layout INTEGER NOT NULL DEFAULT 0;
         ALTER TABLE job_profile_segment  ADD COLUMN layout INTEGER NOT NULL DEFAULT 0;
         """,
+
+        // 10：轧辊台账（阶段 1）。尺寸属于轧辊本身，在台账里登记、修改：
+        // 补上类型（工作辊 / 支承辊，旧辊 0 = 没登记）与当前直径（磨一次小一点）。
+        """
+        ALTER TABLE roll ADD COLUMN roll_kind           INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE roll ADD COLUMN current_diameter_mm REAL NULL;
+        """,
     };
 
     private readonly string connectionString;

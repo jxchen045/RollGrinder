@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
+             xmlns:model="clr-namespace:RollGrinder.Data.Model;assembly=RollGrinder.Data"
              xmlns:rec="clr-namespace:RollGrinder.Services.Records;assembly=RollGrinder.Services"
              xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
     <Grid>
@@ -194,25 +195,140 @@
             </Border>
         </Grid>
 
-        <!-- 轧辊台账：每支辊磨过几次、上次什么时候 -->
+        <!-- 轧辊台账：左边所有辊，右边选中那支的登记表与磨削履历。尺寸在这里登记、修改，作业只是选一支辊。 -->
         <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource LedgerPanel}">
             <DockPanel>
                 <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
-                    <TextBlock Text="{loc:Loc Records_LedgerHeader}" Style="{StaticResource Text.CardTitle}"
-                               VerticalAlignment="Center" />
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="{loc:Loc Ledger_New}" Command="{Binding NewLedgerRollCommand}"
+                                    Style="{StaticResource SecondaryButton}" Height="44" Padding="16,0" Margin="0,0,10,0" />
+                            <Button Content="{loc:Loc Ledger_Save}" Command="{Binding SaveLedgerRollCommand}"
+                                    Style="{StaticResource PrimaryButton}" Height="44" Padding="20,0" />
+                        </StackPanel>
+                        <TextBlock Text="{loc:Loc Records_LedgerHeader}" Style="{StaticResource Text.CardTitle}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding StatusText}" FontSize="15" Margin="16,0,0,0" VerticalAlignment="Center"
+                                   Foreground="{StaticResource Brush.TextSecondary}" />
+                    </DockPanel>
                 </Border>
-                <DataGrid ItemsSource="{Binding Ledger}" AutoGenerateColumns="False" IsReadOnly="True"
-                          HeadersVisibility="Column" Margin="12" FontSize="16"
-                          Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Divider}">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="{loc:Loc Ledger_Code}" Binding="{Binding Code}" Width="*" />
-                        <DataGridTextColumn Header="{loc:Loc Ledger_Diameter}" Binding="{Binding DiameterText}" Width="*" />
-                        <DataGridTextColumn Header="{loc:Loc Ledger_BodyLength}" Binding="{Binding BodyLengthText}" Width="*" />
-                        <DataGridTextColumn Header="{loc:Loc Ledger_Material}" Binding="{Binding MaterialText}" Width="*" />
-                        <DataGridTextColumn Header="{loc:Loc Ledger_GrindCount}" Binding="{Binding GrindCountText}" Width="*" />
-                        <DataGridTextColumn Header="{loc:Loc Ledger_LastGround}" Binding="{Binding LastGroundText}" Width="1.6*" />
-                    </DataGrid.Columns>
-                </DataGrid>
+                <Grid Margin="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="620" />
+                    </Grid.ColumnDefinitions>
+
+                    <DataGrid ItemsSource="{Binding Ledger}" SelectedItem="{Binding SelectedLedgerRow}"
+                              AutoGenerateColumns="False" IsReadOnly="True" Style="{StaticResource DataTable}"
+                              HeadersVisibility="Column" FontSize="16" Margin="0,0,12,0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{loc:Loc Ledger_Code}" Binding="{Binding RollId}" Width="1.2*" />
+                            <DataGridTextColumn Header="{loc:Loc Ledger_Kind}" Binding="{Binding KindText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Ledger_Diameter}" Binding="{Binding DiameterText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Ledger_CurrentDiameter}" Binding="{Binding CurrentDiameterText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Ledger_BodyLength}" Binding="{Binding BodyLengthText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Ledger_GrindCount}" Binding="{Binding GrindCountText}" Width="0.8*" />
+                            <DataGridTextColumn Header="{loc:Loc Ledger_LastGround}" Binding="{Binding LastGroundText}" Width="1.5*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.Resources>
+                                    <Style x:Key="LedgerLabel" TargetType="TextBlock" BasedOn="{StaticResource Text.Label}">
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                        <Setter Property="Margin" Value="0,0,8,0" />
+                                    </Style>
+                                    <Style x:Key="LedgerBox" TargetType="TextBox" BasedOn="{StaticResource ValueTextBox}">
+                                        <Setter Property="Margin" Value="0,0,0,8" />
+                                    </Style>
+                                </Grid.Resources>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- 辊号：新登记时可填；已有的辊不能改号（作业与记录都按它找）。 -->
+                                <TextBlock Grid.Row="0" Text="{loc:Loc Ledger_Code}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding LedgerRollId, UpdateSourceTrigger=PropertyChanged}"
+                                         IsEnabled="{Binding IsNewLedgerRoll}" Style="{StaticResource LedgerBox}" />
+                                <TextBlock Grid.Row="0" Grid.Column="3" Text="{loc:Loc Ledger_Kind}" Style="{StaticResource LedgerLabel}" />
+                                <UniformGrid Grid.Row="0" Grid.Column="4" Rows="1" Margin="0,0,0,8">
+                                    <Button Content="{loc:Loc RollKind_WorkRoll}" Command="{Binding SetLedgerKindCommand}"
+                                            CommandParameter="{x:Static model:RollKind.WorkRoll}"
+                                            Style="{StaticResource SegmentButton}" Height="46" Margin="0,0,6,0"
+                                            ctl:ButtonStates.IsSelected="{Binding LedgerIsWorkRoll}" />
+                                    <Button Content="{loc:Loc RollKind_BackupRoll}" Command="{Binding SetLedgerKindCommand}"
+                                            CommandParameter="{x:Static model:RollKind.BackupRoll}"
+                                            Style="{StaticResource SegmentButton}" Height="46"
+                                            ctl:ButtonStates.IsSelected="{Binding LedgerIsBackupRoll}" />
+                                </UniformGrid>
+
+                                <TextBlock Grid.Row="1" Text="{loc:Loc Ledger_BodyLengthLabel}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding LedgerBodyLengthText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+                                <TextBlock Grid.Row="1" Grid.Column="3" Text="{loc:Loc Ledger_Material}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="1" Grid.Column="4" Text="{Binding LedgerMaterial, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+
+                                <TextBlock Grid.Row="2" Text="{loc:Loc Ledger_DiameterLabel}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding LedgerDiameterText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+                                <TextBlock Grid.Row="2" Grid.Column="3" Text="{loc:Loc Ledger_CurrentDiameterLabel}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="2" Grid.Column="4" Text="{Binding LedgerCurrentDiameterText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+
+                                <TextBlock Grid.Row="3" Text="{loc:Loc RollData_GrindStart}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding LedgerGrindStartText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+                                <TextBlock Grid.Row="3" Grid.Column="3" Text="{loc:Loc RollData_CurveLength}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="3" Grid.Column="4" Text="{Binding LedgerCurveLengthText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+
+                                <TextBlock Grid.Row="4" Text="{loc:Loc RollData_CurveTolerance}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding LedgerCurveToleranceText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+                                <TextBlock Grid.Row="4" Grid.Column="3" Text="{loc:Loc RollData_NetWeight}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="4" Grid.Column="4" Text="{Binding LedgerNetWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+
+                                <TextBlock Grid.Row="5" Text="{loc:Loc RollData_HeadBoxWeight}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding LedgerHeadBoxWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+                                <TextBlock Grid.Row="5" Grid.Column="3" Text="{loc:Loc RollData_TailBoxWeight}" Style="{StaticResource LedgerLabel}" />
+                                <TextBox Grid.Row="5" Grid.Column="4" Text="{Binding LedgerTailBoxWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+
+                                <TextBlock Grid.Row="6" Grid.Column="3" Text="{loc:Loc Ledger_TotalWeight}" Style="{StaticResource LedgerLabel}" />
+                                <TextBlock Grid.Row="6" Grid.Column="4" Text="{Binding LedgerTotalWeightText}" FontFamily="{StaticResource Font.Mono}"
+                                           FontSize="18" VerticalAlignment="Center" />
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding LedgerProblems}" Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" FontSize="16" TextWrapping="Wrap" Margin="0,2,0,0"
+                                                   Foreground="{StaticResource Brush.CurrentStep}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Text="{loc:Loc Ledger_HistoryHeader}" Style="{StaticResource Text.Label}" Margin="0,16,0,6" />
+                            <DataGrid ItemsSource="{Binding LedgerHistory}" AutoGenerateColumns="False" IsReadOnly="True"
+                                      Style="{StaticResource DataTable}" HeadersVisibility="Column" FontSize="15" MaxHeight="260">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{loc:Loc Ledger_HistoryStarted}" Binding="{Binding StartedText}" Width="1.4*" />
+                                    <DataGridTextColumn Header="{loc:Loc Ledger_HistoryJob}" Binding="{Binding JobId}" Width="1.4*" />
+                                    <DataGridTextColumn Header="{loc:Loc Ledger_HistoryState}" Binding="{Binding StateText}" Width="*" />
+                                    <DataGridTextColumn Header="{loc:Loc Ledger_HistoryDuration}" Binding="{Binding DurationText}" Width="0.8*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
             </DockPanel>
         </Border>
 

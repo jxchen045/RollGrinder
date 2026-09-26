@@ -621,7 +621,9 @@ public sealed class RecordService : IRecordService
                 roll.Geometry.BodyLengthMm,
                 roll.Material,
                 history.Count,
-                last));
+                last,
+                roll.Kind,
+                roll.CurrentDiameterMm));
         }
 
         return rows;

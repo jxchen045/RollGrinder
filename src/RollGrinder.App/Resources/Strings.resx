@@ -2242,4 +2242,73 @@
   <data name="Profile_Issue_SymmetryType" xml:space="preserve">
     <value>对称编辑：含本身不对称的段（CVC），请先关掉对称</value>
   </data>
+  <data name="Ledger_New" xml:space="preserve">
+    <value>登记新辊</value>
+  </data>
+  <data name="Ledger_Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Ledger_Kind" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="Ledger_CurrentDiameter" xml:space="preserve">
+    <value>当前直径 (mm)</value>
+  </data>
+  <data name="Ledger_BodyLengthLabel" xml:space="preserve">
+    <value>辊身长度 mm</value>
+  </data>
+  <data name="Ledger_DiameterLabel" xml:space="preserve">
+    <value>公称直径 mm</value>
+  </data>
+  <data name="Ledger_CurrentDiameterLabel" xml:space="preserve">
+    <value>当前直径 mm</value>
+  </data>
+  <data name="Ledger_TotalWeight" xml:space="preserve">
+    <value>吊装总重 kg</value>
+  </data>
+  <data name="Ledger_HistoryHeader" xml:space="preserve">
+    <value>磨削履历</value>
+  </data>
+  <data name="Ledger_HistoryStarted" xml:space="preserve">
+    <value>开始</value>
+  </data>
+  <data name="Ledger_HistoryJob" xml:space="preserve">
+    <value>作业</value>
+  </data>
+  <data name="Ledger_HistoryState" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="Ledger_HistoryDuration" xml:space="preserve">
+    <value>用时</value>
+  </data>
+  <data name="Ledger_Saved" xml:space="preserve">
+    <value>已存入台账</value>
+  </data>
+  <data name="Ledger_Problem_NotANumber" xml:space="preserve">
+    <value>有格子不是数：辊身长度与公称直径必填，其余可空</value>
+  </data>
+  <data name="Ledger_Problem_MissingRollId" xml:space="preserve">
+    <value>请填辊号</value>
+  </data>
+  <data name="Ledger_Problem_RollIdTaken" xml:space="preserve">
+    <value>台账里已经有这个辊号了</value>
+  </data>
+  <data name="Ledger_Problem_BodyLength" xml:space="preserve">
+    <value>辊身长度超出本机能磨的范围</value>
+  </data>
+  <data name="Ledger_Problem_Diameter" xml:space="preserve">
+    <value>公称直径超出本机能磨的范围</value>
+  </data>
+  <data name="Ledger_Problem_CurrentDiameter" xml:space="preserve">
+    <value>当前直径超出本机能磨的范围</value>
+  </data>
+  <data name="Ledger_Problem_NegativeWeight" xml:space="preserve">
+    <value>重量不能是负数</value>
+  </data>
+  <data name="RollKind_WorkRoll" xml:space="preserve">
+    <value>工作辊</value>
+  </data>
+  <data name="RollKind_BackupRoll" xml:space="preserve">
+    <value>支承辊</value>
+  </data>
 </root>
