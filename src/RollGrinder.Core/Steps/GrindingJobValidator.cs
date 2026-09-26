@@ -35,6 +35,8 @@ public sealed class GrindingJobValidator
         violations.AddRange(ProgramOptionCatalog.Schema.Validate(job.ProgramOptions).Violations);
         violations.AddRange(ValidateProgramOptions(job, capability));
 
+        bool anyTraverse = false;
+        bool allPlanned = true;
         foreach (GrindingJobStep step in job.Steps)
         {
             IGrindingStepType stepType = this.stepTypes.Get(step.StepTypeKey);
@@ -43,6 +45,7 @@ public sealed class GrindingJobValidator
             {
                 // 这台机床没装这道工序要用的装置：参数再对也没用，不再往下展开。
                 violations.Add(new ParameterViolation(stepType.Key, ParameterViolationKind.MachineOptionMissing));
+                allPlanned = false;
                 continue;
             }
 
@@ -51,11 +54,20 @@ public sealed class GrindingJobValidator
             if (!schemaResult.IsValid)
             {
                 // 参数本身不合法时不再展开计划，避免二次报错掩盖根因。
+                allPlanned = false;
                 continue;
             }
 
-            violations.AddRange(ValidatePlan(
-                stepType.CreatePlan(job.Geometry, step.Parameters), capability));
+            GrindingStepPlan plan = stepType.CreatePlan(job.Geometry, step.Parameters);
+            anyTraverse |= plan.FeedMmPerMin > 0.0;
+            violations.AddRange(ValidatePlan(plan, capability));
+        }
+
+        // 每道都展开了、却没有一道拖板在走：只有开始 / 结束 / 暂停这类工序。
+        // 下发下去 NC 拿不到可用的进给（F0），也磨不到任何东西。有别的错时先让人改那些。
+        if (job.Steps.Count > 0 && allPlanned && !anyTraverse)
+        {
+            violations.Add(new ParameterViolation(StepParameterKeys.FeedMmPerMin, ParameterViolationKind.NoTraversingStep));
         }
 
         return new ParameterValidationResult(violations);

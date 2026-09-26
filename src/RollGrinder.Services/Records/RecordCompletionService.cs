@@ -28,12 +28,14 @@ public sealed class RecordCompletionService : IHostedService
     public const string AbandonedResourceKey = "Alarm_RecordAbandoned";
     public const string NeedsOperatorResourceKey = "Alarm_RecordNeedsManualFinish";
     public const string FailedResourceKey = "Alarm_RecordFinishFailed";
+    public const string ImplausiblyFastResourceKey = "Alarm_CycleImplausiblyFast";
 
     private readonly IMachineMonitor monitor;
     private readonly IGrindingRecordRepository records;
     private readonly IRecordService recordService;
     private readonly IAlarmSink alarms;
     private readonly TimeProvider timeProvider;
+    private readonly CyclePlausibilityMonitor plausibility;
     private readonly CycleCompletionDetector detector = new();
     private readonly object gate = new();
     private readonly SemaphoreSlim serial = new(1, 1);
@@ -43,13 +45,15 @@ public sealed class RecordCompletionService : IHostedService
         IGrindingRecordRepository records,
         IRecordService recordService,
         IAlarmSink alarms,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        CyclePlausibilityMonitor plausibility)
     {
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.records = records ?? throw new ArgumentNullException(nameof(records));
         this.recordService = recordService ?? throw new ArgumentNullException(nameof(recordService));
         this.alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
         this.timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+        this.plausibility = plausibility ?? throw new ArgumentNullException(nameof(plausibility));
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -106,6 +110,7 @@ public sealed class RecordCompletionService : IHostedService
                     await this.recordService
                         .FinishAsync(open.RecordId, JobState.Completed, note: null, cancellationToken).ConfigureAwait(false);
                     this.alarms.Raise(AlarmSeverity.Information, CompletedResourceKey, open.JobId, AlarmCodes.RecordCompleted);
+                    WarnIfImplausiblyFast(open.JobId);
                     break;
 
                 case CycleCompletionDecision.Abandoned:
@@ -130,6 +135,22 @@ public sealed class RecordCompletionService : IHostedService
         finally
         {
             this.serial.Release();
+        }
+    }
+
+    /// <summary>
+    /// 磨得比预计快得多：多半是下发的参数有问题（进给写成 0、道次不对……），让人看一眼。
+    /// 记录照样收尾——NC 说磨完了就是磨完了，上位机只提醒。
+    /// </summary>
+    private void WarnIfImplausiblyFast(string jobId)
+    {
+        CyclePlausibility? verdict = this.plausibility.OnCompleted(jobId, this.timeProvider.GetUtcNow());
+        if (verdict is { IsImplausible: true })
+        {
+            string detail = string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"{jobId} · {verdict.Estimated.TotalMinutes:0} min → {verdict.Actual.TotalSeconds:0} s");
+            this.alarms.Raise(AlarmSeverity.Warning, ImplausiblyFastResourceKey, detail, AlarmCodes.CycleImplausiblyFast);
         }
     }
 

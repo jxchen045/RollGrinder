@@ -63,6 +63,44 @@ public sealed class SimulatedCycleCompletionTests
     }
 
     [Fact]
+    public async Task A_program_that_starts_with_a_non_traversing_step_takes_real_time()
+    {
+        // 第一轮甲方测试：程序以"开始"打头（进给 0），仿真把它当成每一拍走完一刀，
+        // 9 道工序 3 秒就"磨完"。现在按每道自己的进给走，拖板不走的工序原地停一会儿。
+        using var workspace = new TempWorkspace();
+        SimulatedMachine sim = await BuildAsync(workspace);
+        Write(sim, MachineTagKeys.JobRollRadiusMm, 300.0);
+        Write(sim, MachineTagKeys.JobBodyLengthMm, 2000.0);
+        Write(sim, MachineTagKeys.JobFeedMmPerMin, 0.0);
+        Write(sim, MachineTagKeys.JobStepCount, 3.0);
+        double[] feeds = { 0.0, 2300.0, 0.0 };
+        double[] passes = { 0.0, 10.0, 0.0 };
+        for (int i = 0; i < 3; i++)
+        {
+            Write(sim, TagKeySyntax.Indexed(MachineTagKeys.JobStepFeedMmPerMin, i), feeds[i]);
+            Write(sim, TagKeySyntax.Indexed(MachineTagKeys.JobStepPassCount, i), passes[i]);
+            Write(sim, TagKeySyntax.Indexed(MachineTagKeys.JobStepInfeedPerPassRadiusMm, i), i == 1 ? 0.0025 : 0.0);
+        }
+
+        Write(sim, MachineTagKeys.JobParametersValid, true);
+
+        double seconds = 0.0;
+        while (sim.ChannelState == NcChannelState.Running && seconds < 3600.0)
+        {
+            sim.Advance(TimeSpan.FromSeconds(0.1));
+            seconds += 0.1;
+            if (seconds is > 29.95 and < 30.05)
+            {
+                sim.ChannelState.Should().Be(NcChannelState.Running, "30 秒时粗磨才刚开始第一刀");
+            }
+        }
+
+        // 开始 5 s + 粗磨 10 刀 × (2000 mm / 2300 mm/min ≈ 52 s) + 结束 5 s ≈ 532 s。
+        seconds.Should().BeInRange(500.0, 560.0);
+        CycleComplete(sim).Should().Be(1);
+    }
+
+    [Fact]
     public async Task An_aborted_program_resets_without_the_flag()
     {
         using var workspace = new TempWorkspace();

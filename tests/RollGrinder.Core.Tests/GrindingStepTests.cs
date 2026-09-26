@@ -456,6 +456,30 @@ public sealed class GrindingJobValidatorTests
         steps,
         AllProgramOptionsOff);
 
+    [Fact]
+    public void A_job_where_no_step_moves_the_carriage_is_refused()
+    {
+        // 只有开始、结束：下发下去 NC 拿不到进给，也磨不到任何东西。
+        var validator = new GrindingJobValidator(
+            new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType() }),
+            new GrindingStepTypeRegistry(new IGrindingStepType[] { new StartStepType(), new EndStepType(), new RoughGrindingStepType() }));
+
+        ParameterValidationResult onlyMarkers = validator.Validate(
+            JobWith(
+                new GrindingJobStep(1, StepTypeKeys.Start, new StartStepType().Schema.CreateDefaults()),
+                new GrindingJobStep(2, StepTypeKeys.End, new EndStepType().Schema.CreateDefaults())),
+            Capability);
+        onlyMarkers.Violations.Should().ContainSingle(v => v.Kind == ParameterViolationKind.NoTraversingStep);
+
+        ParameterValidationResult withGrinding = validator.Validate(
+            JobWith(
+                new GrindingJobStep(1, StepTypeKeys.Start, new StartStepType().Schema.CreateDefaults()),
+                new GrindingJobStep(2, StepTypeKeys.Rough, new RoughGrindingStepType().Schema.CreateDefaults()),
+                new GrindingJobStep(3, StepTypeKeys.End, new EndStepType().Schema.CreateDefaults())),
+            Capability);
+        withGrinding.Violations.Should().NotContain(v => v.Kind == ParameterViolationKind.NoTraversingStep);
+    }
+
     private static GrindingJobValidator CreateValidator() => new(
         new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType(), new CrownProfileType(), new TaperProfileType() }),
         new GrindingStepTypeRegistry(new IGrindingStepType[] { new RoughGrindingStepType(), new SparkOutStepType() }));

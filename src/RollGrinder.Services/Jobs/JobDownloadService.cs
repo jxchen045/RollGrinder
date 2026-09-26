@@ -66,6 +66,7 @@ public sealed class JobDownloadService : IJobDownloadService
     private readonly IReportPrintQueue printQueue;
     private readonly IAlarmSink alarms;
     private readonly TimeProvider timeProvider;
+    private readonly Records.CyclePlausibilityMonitor plausibility;
 
     public JobDownloadService(
         IMachineGateway gateway,
@@ -80,7 +81,8 @@ public sealed class JobDownloadService : IJobDownloadService
         IReportService reports,
         IReportPrintQueue printQueue,
         IAlarmSink alarms,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        Records.CyclePlausibilityMonitor plausibility)
     {
         this.gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
         this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
@@ -95,6 +97,7 @@ public sealed class JobDownloadService : IJobDownloadService
         this.printQueue = printQueue ?? throw new ArgumentNullException(nameof(printQueue));
         this.alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
         this.timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+        this.plausibility = plausibility ?? throw new ArgumentNullException(nameof(plausibility));
     }
 
     public async Task<JobDownloadResult> DownloadAsync(GrindingJob job, CancellationToken cancellationToken)
@@ -138,6 +141,8 @@ public sealed class JobDownloadService : IJobDownloadService
         }
 
         this.alarms.Raise(AlarmSeverity.Information, HandoverCompletedResourceKey, job.JobId, AlarmCodes.HandoverCompleted);
+        this.plausibility.OnHandedOver(
+            job.JobId, Records.CyclePlausibilityMonitor.Estimate(download.Plans, job.Geometry), now);
 
         await QueuePreGrindReportAsync(job, recordId, cancellationToken).ConfigureAwait(false);
 

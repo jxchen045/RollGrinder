@@ -36,6 +36,11 @@ public static class MachineAccessServiceCollectionExtensions
         services.AddSingleton(tagMap);
         services.AddSingleton<IMachineConfigProvider>(_ => new JsonMachineConfigProvider(options));
         services.AddSingleton(MachineCapabilityFactory.Create(machine));
+
+        // 仿真加速时机床时间比墙上时间快：判"磨得快得不可能"时要按这个倍数换算。
+        services.AddSingleton(options.Gateway == GatewayKind.Sim && options.SimulationSpeed > 1.0
+            ? new MachineTimeScale(options.SimulationSpeed)
+            : MachineTimeScale.RealTime);
         services.AddSingleton<IMachineGateway>(provider => CreateGateway(
             options,
             machine,

@@ -70,6 +70,56 @@ public sealed class NcJobTranslatorTests
             System.Globalization.CultureInfo.InvariantCulture);
 
     [Fact]
+    public void The_general_feed_comes_from_the_first_step_that_actually_traverses()
+    {
+        // 第一轮甲方测试：程序以"开始"打头，"开始"没有拖板进给。以前通用进给取第一道工序，
+        // 写下去的是 F0，仿真机床因此 3 秒"磨完"一支辊。应当取第一道真正走刀的工序。
+        GrindingJob job = GrindingJob.Create(
+            "J-start",
+            "R-1",
+            Geometry,
+            ProfileTypeKeys.Cylindrical,
+            new CylindricalProfileType().Schema.CreateDefaults(),
+            new[]
+            {
+                new GrindingJobStep(1, StepTypeKeys.Start, new StartStepType().Schema.CreateDefaults()),
+                new GrindingJobStep(
+                    2,
+                    StepTypeKeys.Rough,
+                    new RoughGrindingStepType().Schema.CreateDefaults()
+                        .With(StepParameterKeys.FeedMmPerMin, ParameterValue.FromNumber(2300.0))),
+                new GrindingJobStep(3, StepTypeKeys.End, new EndStepType().Schema.CreateDefaults()),
+            });
+        MachineDescription machine = CreateMachine(new Dictionary<string, int>
+        {
+            [StepTypeKeys.Start] = 10,
+            [StepTypeKeys.Rough] = 1,
+            [StepTypeKeys.End] = 11,
+        });
+        var translator = new NcJobTranslator(
+            new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType() }),
+            new GrindingStepTypeRegistry(new IGrindingStepType[] { new StartStepType(), new RoughGrindingStepType(), new EndStepType() }),
+            FakeTagMap.Complete(),
+            machine);
+
+        NcDownload download = translator.Translate(job, null, 21, Now);
+
+        NumberOf(download, MachineTagKeys.JobFeedMmPerMin).Should().Be(2300.0, "开始没有进给，通用进给要取粗磨的");
+    }
+
+    [Fact]
+    public void Without_any_traversing_step_there_is_no_leading_plan()
+    {
+        var plans = new[]
+        {
+            new StartStepType().CreatePlan(Geometry, new StartStepType().Schema.CreateDefaults()),
+            new EndStepType().CreatePlan(Geometry, new EndStepType().Schema.CreateDefaults()),
+        };
+
+        NcJobTranslator.LeadingTraversePlan(plans).Should().BeNull();
+    }
+
+    [Fact]
     public void A_chamfer_hands_its_geometry_over_in_the_extras_block()
     {
         // 倒角几何先前根本没下发：NC 收不到长度与高度，只能按自己的默认值倒。

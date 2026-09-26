@@ -2041,4 +2041,13 @@
   <data name="Users_NotFound" xml:space="preserve">
     <value>User does not exist</value>
   </data>
+  <data name="Violation_NoTraversingStep" xml:space="preserve">
+    <value>No step in the job moves the carriage</value>
+  </data>
+  <data name="Violation_NoTraversingStep_WithLimit" xml:space="preserve">
+    <value>No step in the job moves the carriage ({0})</value>
+  </data>
+  <data name="Alarm_CycleImplausiblyFast" xml:space="preserve">
+    <value>This roll finished far sooner than estimated; check the program parameters and the machine</value>
+  </data>
 </root>

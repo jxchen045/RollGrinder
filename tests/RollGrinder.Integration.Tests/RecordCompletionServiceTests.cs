@@ -125,6 +125,24 @@ public sealed class RecordCompletionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_cycle_that_finishes_far_sooner_than_estimated_raises_a_warning_but_still_closes()
+    {
+        await using ServiceProvider services = await BuildAsync();
+        await SeedOpenRecordAsync(services);
+        RecordCompletionService service = Service(services);
+        services.GetRequiredService<CyclePlausibilityMonitor>()
+            .OnHandedOver(JobId, TimeSpan.FromMinutes(64), DateTimeOffset.UtcNow);
+
+        service.Observe(Snapshot(NcChannelState.Running, 0));
+        await service.ApplyAsync(service.Observe(Snapshot(NcChannelState.Reset, 1)), CancellationToken.None);
+
+        (await RecordAsync(services))!.State.Should().Be(JobState.Completed, "NC 说磨完了就是磨完了，上位机只提醒");
+        services.GetRequiredService<IAlarmLog>().Snapshot()
+            .Should().Contain(a => a.MessageResourceKey == RecordCompletionService.ImplausiblyFastResourceKey
+                && a.Code == AlarmCodes.CycleImplausiblyFast);
+    }
+
+    [Fact]
     public async Task A_reset_before_completion_closes_the_record_as_abandoned_without_a_report()
     {
         await using ServiceProvider services = await BuildAsync();

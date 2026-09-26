@@ -87,7 +87,11 @@ public sealed class NcJobTranslator
         AddInteger(writes, MachineTagKeys.JobProfilePointCount, targetProfile.Points.Count, timestampUtc);
 
         // 首道磨削工序的进给同时写到通用进给变量，方便老程序直接引用。
-        GrindingStepPlan? leadingPlan = plans.FirstOrDefault();
+        //
+        // 必须挑"真的走刀"的那一道：开始、结束、暂停这类工序没有拖板进给（0）。
+        // 以前直接取第一道，程序以"开始"打头时这里写的是 F0——第一轮甲方测试里
+        // 仿真机床因此 3 秒"磨完"一支辊。没有进给的道次一律跳过。
+        GrindingStepPlan? leadingPlan = LeadingTraversePlan(plans);
         if (leadingPlan is not null)
         {
             AddNumber(writes, MachineTagKeys.JobFeedMmPerMin, leadingPlan.FeedMmPerMin, timestampUtc);
@@ -159,6 +163,14 @@ public sealed class NcJobTranslator
         AppendStep(writes, step, plan, index, timestampUtc);
         return writes;
     }
+
+    /// <summary>
+    /// 第一道真正走刀的工序：优先有切入进给的磨削工序，其次任何拖板在动的工序（如测量）。
+    /// 一道都没有就返回 null，此时不写通用进给变量——作业校验会先把这种作业拦下来。
+    /// </summary>
+    public static GrindingStepPlan? LeadingTraversePlan(IReadOnlyList<GrindingStepPlan> plans) =>
+        plans.FirstOrDefault(p => p.FeedMmPerMin > 0.0 && p.FeedMode != StepFeedMode.None)
+        ?? plans.FirstOrDefault(p => p.FeedMmPerMin > 0.0);
 
     /// <summary>一道工序的全部参数写入。全量下发与单道更新共用这一份，免得两边漂移。</summary>
     private void AppendStep(

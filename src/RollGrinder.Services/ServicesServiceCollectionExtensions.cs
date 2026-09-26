@@ -51,6 +51,9 @@ public static class ServicesServiceCollectionExtensions
             provider.GetRequiredService<GrindingStepTypeRegistry>(),
             provider.GetRequiredService<ITagMap>(),
             provider.GetRequiredService<MachineDescription>()));
+        // 机床时间倍率：仿真开了加速时由组合根另行注册；没注册就是真机的 1 倍。
+        services.AddSingleton(provider => new Records.CyclePlausibilityMonitor(
+            provider.GetService<MachineTimeScale>() ?? MachineTimeScale.RealTime));
         services.AddSingleton<IJobDownloadService, JobDownloadService>();
         services.AddSingleton<IMeasurementService, MeasurementService>();
         services.AddSingleton<ICentringService, CentringService>();

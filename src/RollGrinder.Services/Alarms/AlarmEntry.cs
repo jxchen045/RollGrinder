@@ -73,6 +73,9 @@ public static class AlarmCodes
     /// <summary>循环结束了但 NC 没提供结束位，记录要操作员手动收尾。</summary>
     public const int RecordNeedsManualFinish = 800028;
 
+    /// <summary>一支辊磨得比预计快得多，多半是下发的参数有问题。</summary>
+    public const int CycleImplausiblyFast = 800029;
+
     /// <summary>号是否落在本系统号段内。</summary>
     public static bool IsHmiCode(int code) => code is >= RangeStart and <= RangeEnd;
 }

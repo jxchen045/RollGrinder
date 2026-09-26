@@ -2041,4 +2041,13 @@
   <data name="Users_NotFound" xml:space="preserve">
     <value>用户不存在</value>
   </data>
+  <data name="Violation_NoTraversingStep" xml:space="preserve">
+    <value>整支作业没有一道拖板在走的工序</value>
+  </data>
+  <data name="Violation_NoTraversingStep_WithLimit" xml:space="preserve">
+    <value>整支作业没有一道拖板在走的工序（{0}）</value>
+  </data>
+  <data name="Alarm_CycleImplausiblyFast" xml:space="preserve">
+    <value>这支辊磨得比预计快得多，请检查程序参数与机床</value>
+  </data>
 </root>

@@ -32,6 +32,12 @@ public enum ParameterViolationKind
 
     /// <summary>本台机床没装这道工序要用的装置（探伤器、修整器、测头等）。</summary>
     MachineOptionMissing = 8,
+
+    /// <summary>
+    /// 整支作业没有一道拖板在走的工序（只有开始、结束、暂停这类）。
+    /// 下发下去 NC 拿不到可用的进给，也磨不到任何东西。
+    /// </summary>
+    NoTraversingStep = 9,
 }
 
 /// <summary>一条参数校验失败记录。</summary>

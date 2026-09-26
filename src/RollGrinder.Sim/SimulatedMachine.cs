@@ -27,11 +27,26 @@ public sealed class SimulatedMachine
     /// <summary>没有下发作业时每道工序假定的走刀次数。</summary>
     public const int FallbackPassCount = 10;
 
+    /// <summary>
+    /// 拖板不走的工序（开始、结束、暂停……）在仿真里停留多久（仿真秒）。
+    /// 真 NC 上这些工序也要花时间（换参数、等确认），不会是 0。
+    /// </summary>
+    public const double NonTraverseStepSeconds = 5.0;
+
+    /// <summary>下发进来的每道工序拖板进给（mm/min），按工序下标（从 0 起）。</summary>
+    private readonly Dictionary<int, double> stepFeeds = new();
+
+    /// <summary>拖板不走的工序已经停了多久（仿真秒）。</summary>
+    private double stepDwellSeconds;
+
     private readonly MachineDescription machine;
     private readonly Dictionary<string, TagValue> writtenValues = new(StringComparer.Ordinal);
 
     /// <summary>下发进来的每道工序走刀次数，按工序下标（从 0 起）。</summary>
     private readonly Dictionary<int, int> stepPassCounts = new();
+
+    /// <summary>下发进来的每道工序光磨道数（不进刀、照样走拖板），按工序下标。</summary>
+    private readonly Dictionary<int, int> stepSparkOutCounts = new();
 
     /// <summary>下发进来的每道工序有没有进给（每刀进给或连续进给大于 0）。测量、暂停这类工序没有，不去除材料。</summary>
     private readonly Dictionary<int, bool> stepCuts = new();
@@ -156,6 +171,18 @@ public sealed class SimulatedMachine
                 return;
             }
 
+            if (string.Equals(baseKey, MachineTagKeys.JobStepSparkOutPassCount, StringComparison.Ordinal))
+            {
+                this.stepSparkOutCounts[index] = Math.Max(0, (int?)ToDouble(value.Raw) ?? 0);
+                return;
+            }
+
+            if (string.Equals(baseKey, MachineTagKeys.JobStepFeedMmPerMin, StringComparison.Ordinal))
+            {
+                this.stepFeeds[index] = ToDouble(value.Raw) ?? 0.0;
+                return;
+            }
+
             if (string.Equals(baseKey, MachineTagKeys.JobStepInfeedPerPassRadiusMm, StringComparison.Ordinal)
                 || string.Equals(baseKey, MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin, StringComparison.Ordinal))
             {
@@ -216,8 +243,25 @@ public sealed class SimulatedMachine
 
         double minutes = delta.TotalMinutes;
 
-        // 纵向拖板在辊身两端之间往复。
-        double travelMm = this.feedMmPerMin * minutes;
+        // 拖板不走的工序：原地停一段时间再进下一道。
+        // 以前按"进给 0"照样判端点，拖板停在 0 位，每一拍都算走完一刀——
+        // 以"开始"打头的程序因此 3 秒就"磨完"了（第一轮甲方测试）。
+        double feedMmPerMin = CurrentFeedMmPerMin;
+        if (feedMmPerMin <= 0.0)
+        {
+            this.stepDwellSeconds += delta.TotalSeconds;
+            if (this.stepDwellSeconds >= NonTraverseStepSeconds)
+            {
+                this.stepDwellSeconds = 0.0;
+                this.currentPass = 0;
+                AdvanceToNextStep();
+            }
+
+            return;
+        }
+
+        // 纵向拖板在辊身两端之间往复，速度按当前这道工序自己的进给。
+        double travelMm = feedMmPerMin * minutes;
         this.carriagePositionMm += travelMm * this.carriageDirection;
         if (this.carriagePositionMm >= this.bodyLengthMm)
         {
@@ -242,6 +286,12 @@ public sealed class SimulatedMachine
             this.surface.Remove(removalMm);
         }
     }
+
+    /// <summary>
+    /// 当前工序的拖板进给。下发过逐道进给就用这一道的；没下发过（老式调用）用通用进给。
+    /// </summary>
+    private double CurrentFeedMmPerMin =>
+        this.stepFeeds.TryGetValue(this.currentStepOrder - 1, out double feed) ? feed : this.feedMmPerMin;
 
     /// <summary>当前工序去不去除材料。没下发过进给信息的（老式调用）按会去除处理。</summary>
     private bool CurrentStepCuts =>
@@ -373,13 +423,14 @@ public sealed class SimulatedMachine
     }
 
     /// <summary>
-    /// 当前工序要走几刀。下发过就用下发的值，没下发过按 <see cref="FallbackPassCount"/> 走，
+    /// 当前工序要走几刀（进刀道 + 光磨道）。下发过就用下发的值，没下发过按 <see cref="FallbackPassCount"/> 走，
     /// 免得仿真在没有作业时原地不动。
     /// </summary>
     private int CurrentStepTotalPasses =>
-        this.stepPassCounts.TryGetValue(this.currentStepOrder - 1, out int passCount) && passCount > 0
+        (this.stepPassCounts.TryGetValue(this.currentStepOrder - 1, out int passCount) && passCount > 0
             ? passCount
-            : FallbackPassCount;
+            : FallbackPassCount)
+        + (this.stepSparkOutCounts.TryGetValue(this.currentStepOrder - 1, out int sparkOut) ? sparkOut : 0);
 
     private void CompleteStroke()
     {
@@ -392,7 +443,13 @@ public sealed class SimulatedMachine
         }
 
         this.currentPass = 0;
+        AdvanceToNextStep();
+    }
+
+    private void AdvanceToNextStep()
+    {
         this.currentStepOrder++;
+        this.stepDwellSeconds = 0.0;
 
         // 最后一道工序走完，程序结束——和真机一样，上位机不需要参与。
         // 结束前置"循环正常结束"位，对应 NC 程序里 M30 之前那一句 R124=1。
@@ -431,6 +488,7 @@ public sealed class SimulatedMachine
         this.carriageDirection = 1;
         this.currentStepOrder = 1;
         this.currentPass = 0;
+        this.stepDwellSeconds = 0.0;
         this.strokeVersion = 0;
         ChannelState = NcChannelState.Running;
         ProgramName = string.Create(
