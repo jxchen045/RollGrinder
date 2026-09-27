@@ -3,6 +3,7 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Localization;
+using RollGrinder.Services.Session;
 
 namespace RollGrinder.App.ViewModels;
 
@@ -72,6 +73,9 @@ public sealed partial class FunctionKeyViewModel : ObservableObject
 
     /// <summary>这个键会改数据；自动循环运行期间要锁掉。</summary>
     public bool RequiresEditable { get; }
+
+    /// <summary>按这个键要的权限；null 表示跟着本页的编辑权限走（见 PageViewModelBase.EditPermission）。</summary>
+    public Permission? RequiredPermission { get; init; }
 
     /// <summary>标签。带 {0} 的键用 <see cref="LabelArgument"/> 填空。</summary>
     public string Label => LabelArgument is null

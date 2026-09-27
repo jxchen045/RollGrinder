@@ -553,12 +553,6 @@
   <data name="Live_WorkpieceSpeed" xml:space="preserve">
     <value>头架转速 r/min</value>
   </data>
-  <data name="Live_XPosition" xml:space="preserve">
-    <value>X 轴位置</value>
-  </data>
-  <data name="Live_ZPosition" xml:space="preserve">
-    <value>Z 轴位置</value>
-  </data>
   <data name="Manual_AlignHeadInward" xml:space="preserve">
     <value>两端差 {0:F3} mm，超出公差，建议向内调整头架侧中心架</value>
   </data>
@@ -2601,5 +2595,155 @@
   </data>
   <data name="ParamHelp_wheelWidthMm" xml:space="preserve">
     <value>砂轮宽度 B。</value>
+  </data>
+  <data name="Shell_ReadOnlyRoleFormat" xml:space="preserve">
+    <value>只读 · 要{0}权限才能改</value>
+  </data>
+  <data name="Band_Mode" xml:space="preserve">
+    <value>方式</value>
+  </data>
+  <data name="Band_Channel" xml:space="preserve">
+    <value>通道</value>
+  </data>
+  <data name="Band_Program" xml:space="preserve">
+    <value>程序</value>
+  </data>
+  <data name="Band_X" xml:space="preserve">
+    <value>X mm</value>
+  </data>
+  <data name="Band_Z" xml:space="preserve">
+    <value>Z mm</value>
+  </data>
+  <data name="Band_WheelRpm" xml:space="preserve">
+    <value>砂轮 r/min</value>
+  </data>
+  <data name="Band_HeadstockRpm" xml:space="preserve">
+    <value>头架 r/min</value>
+  </data>
+  <data name="Mode_Jog" xml:space="preserve">
+    <value>JOG</value>
+  </data>
+  <data name="Mode_Mda" xml:space="preserve">
+    <value>MDA</value>
+  </data>
+  <data name="Mode_Auto" xml:space="preserve">
+    <value>AUTO</value>
+  </data>
+  <data name="Status_coolant" xml:space="preserve">
+    <value>切削液</value>
+  </data>
+  <data name="Status_coolant_On" xml:space="preserve">
+    <value>开</value>
+  </data>
+  <data name="Status_coolant_Off" xml:space="preserve">
+    <value>关</value>
+  </data>
+  <data name="Status_wheelRunning" xml:space="preserve">
+    <value>砂轮</value>
+  </data>
+  <data name="Status_wheelRunning_On" xml:space="preserve">
+    <value>运转</value>
+  </data>
+  <data name="Status_wheelRunning_Off" xml:space="preserve">
+    <value>停</value>
+  </data>
+  <data name="Status_headstockForward" xml:space="preserve">
+    <value>头架正转</value>
+  </data>
+  <data name="Status_headstockForward_On" xml:space="preserve">
+    <value>转</value>
+  </data>
+  <data name="Status_headstockForward_Off" xml:space="preserve">
+    <value>停</value>
+  </data>
+  <data name="Status_headstockReverse" xml:space="preserve">
+    <value>头架反转</value>
+  </data>
+  <data name="Status_headstockReverse_On" xml:space="preserve">
+    <value>转</value>
+  </data>
+  <data name="Status_headstockReverse_Off" xml:space="preserve">
+    <value>停</value>
+  </data>
+  <data name="Status_outerArm" xml:space="preserve">
+    <value>外测量臂</value>
+  </data>
+  <data name="Status_outerArm_On" xml:space="preserve">
+    <value>放下</value>
+  </data>
+  <data name="Status_outerArm_Off" xml:space="preserve">
+    <value>收起</value>
+  </data>
+  <data name="Status_innerArm" xml:space="preserve">
+    <value>内测量臂</value>
+  </data>
+  <data name="Status_innerArm_On" xml:space="preserve">
+    <value>放下</value>
+  </data>
+  <data name="Status_innerArm_Off" xml:space="preserve">
+    <value>收起</value>
+  </data>
+  <data name="Status_measuringArm" xml:space="preserve">
+    <value>测量臂</value>
+  </data>
+  <data name="Status_measuringArm_On" xml:space="preserve">
+    <value>放下</value>
+  </data>
+  <data name="Status_measuringArm_Off" xml:space="preserve">
+    <value>收起</value>
+  </data>
+  <data name="Status_quill" xml:space="preserve">
+    <value>套筒</value>
+  </data>
+  <data name="Status_quill_On" xml:space="preserve">
+    <value>伸出到位</value>
+  </data>
+  <data name="Status_quill_Off" xml:space="preserve">
+    <value>缩回</value>
+  </data>
+  <data name="Status_tailstock" xml:space="preserve">
+    <value>尾架</value>
+  </data>
+  <data name="Status_tailstock_On" xml:space="preserve">
+    <value>前进到位</value>
+  </data>
+  <data name="Status_tailstock_Off" xml:space="preserve">
+    <value>后退</value>
+  </data>
+  <data name="Status_driver" xml:space="preserve">
+    <value>拨盘</value>
+  </data>
+  <data name="Status_driver_On" xml:space="preserve">
+    <value>伸出到位</value>
+  </data>
+  <data name="Status_driver_Off" xml:space="preserve">
+    <value>收回</value>
+  </data>
+  <data name="Status_softLandingHeadstock" xml:space="preserve">
+    <value>头架侧托瓦</value>
+  </data>
+  <data name="Status_softLandingHeadstock_On" xml:space="preserve">
+    <value>升起</value>
+  </data>
+  <data name="Status_softLandingHeadstock_Off" xml:space="preserve">
+    <value>落下</value>
+  </data>
+  <data name="Status_softLandingTailstock" xml:space="preserve">
+    <value>尾架侧托瓦</value>
+  </data>
+  <data name="Status_softLandingTailstock_On" xml:space="preserve">
+    <value>升起</value>
+  </data>
+  <data name="Status_softLandingTailstock_Off" xml:space="preserve">
+    <value>落下</value>
+  </data>
+  <data name="Status_steadyRest" xml:space="preserve">
+    <value>中心架</value>
+  </data>
+  <data name="Status_steadyRest_On" xml:space="preserve">
+    <value>顶升</value>
+  </data>
+  <data name="Status_steadyRest_Off" xml:space="preserve">
+    <value>落下</value>
   </data>
 </root>

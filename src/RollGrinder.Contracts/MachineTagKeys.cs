@@ -61,6 +61,32 @@ public static class MachineTagKeys
         ManualCommandState("wheel.run"),
     };
 
+    /// <summary>NC 操作方式（0 JOG / 1 MDA / 2 AUTO，与 SINUMERIK 的 opMode 取值一致）。</summary>
+    public const string OperatingMode = "machine.operatingMode";
+
+    /// <summary>机构到位状态位的逻辑名前缀（修改稿问题 Q7）。物理地址由电气给出、写进 tagmap。</summary>
+    public const string StatusPrefix = "status.";
+
+    /// <summary>某个机构状态位的逻辑名。</summary>
+    public static string Status(string key) => StatusPrefix + key;
+
+    /// <summary>
+    /// 状态带与手动页"到位"显示要读的机构状态位。和手动动作目录一样，
+    /// 这一份与 RollGrinder.Services 里的状态目录两边各列一次，有测试盯着一致。
+    /// 没映射的读不到，界面上画虚框，不当成"关"。
+    /// </summary>
+    public static System.Collections.Generic.IReadOnlyList<string> StatusIndicatorKeys { get; } = new[]
+    {
+        Status("outerArm.lowered"),
+        Status("innerArm.lowered"),
+        Status("quill.extended"),
+        Status("tailstock.forward"),
+        Status("driver.extended"),
+        Status("softLanding.headstock.raised"),
+        Status("softLanding.tailstock.raised"),
+        Status("steadyRest.engaged"),
+    };
+
     /// <summary>本次作业的工序数。</summary>
     public const string JobStepCount = "job.stepCount";
 
@@ -319,6 +345,10 @@ public static class MachineTagKeys
         // 保持型手动动作的状态回读：界面要按它点亮"冷却水开着"这类指示。
         // 逻辑名在这里出现，物理地址在 tagmap.json 里——没映射就读不到，界面显示"--"。
         keys.AddRange(ManualToggleStateKeys);
+
+        // 状态带：操作方式与机构到位状态位（Q7）。
+        keys.Add(OperatingMode);
+        keys.AddRange(StatusIndicatorKeys);
 
         foreach (AxisDescription axis in machine.Axes)
         {

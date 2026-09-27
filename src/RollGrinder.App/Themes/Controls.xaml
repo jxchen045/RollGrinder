@@ -451,4 +451,45 @@
     <Setter Property="Padding" Value="16,11" />
   </Style>
 
+  <!-- 状态灯（修改稿 5.5 状态带、5.6 手动页到位显示）：开为绿、关为灰、读不到画虚框。 -->
+  <DataTemplate x:Key="StatusLampTemplate">
+    <Grid Margin="0,0,8,0" MinWidth="104" Height="46">
+      <Border x:Name="LampFill" Background="{StaticResource Brush.StepIdle}" />
+      <Rectangle x:Name="LampDash" Stroke="{StaticResource Brush.TextMuted}" StrokeThickness="1.5"
+                 StrokeDashArray="3 2" Visibility="Collapsed" />
+      <StackPanel Margin="10,2" VerticalAlignment="Center">
+        <TextBlock x:Name="LampLabel" Text="{Binding Label}" FontSize="{StaticResource Size.Caption}"
+                   Foreground="{StaticResource Brush.TextSecondary}" />
+        <TextBlock x:Name="LampState" Text="{Binding StateText}" FontSize="17" FontWeight="SemiBold"
+                   Foreground="{StaticResource Brush.TextPrimary}" />
+      </StackPanel>
+    </Grid>
+    <DataTemplate.Triggers>
+      <DataTrigger Binding="{Binding IsOn}" Value="True">
+        <Setter TargetName="LampFill" Property="Background" Value="{StaticResource Brush.Normal}" />
+        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+        <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+      </DataTrigger>
+      <DataTrigger Binding="{Binding IsUnknown}" Value="True">
+        <Setter TargetName="LampFill" Property="Background" Value="Transparent" />
+        <Setter TargetName="LampDash" Property="Visibility" Value="Visible" />
+        <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+      </DataTrigger>
+    </DataTemplate.Triggers>
+  </DataTemplate>
+
+  <!-- 状态带上的一格文字：小字标签在上，值在下。 -->
+  <DataTemplate x:Key="StatusFieldTemplate">
+    <StackPanel Margin="0,0,22,0" VerticalAlignment="Center">
+      <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" />
+      <TextBlock x:Name="FieldValue" Text="{Binding ValueText}" FontSize="18" FontWeight="SemiBold"
+                 Foreground="{StaticResource Brush.TextPrimary}" />
+    </StackPanel>
+    <DataTemplate.Triggers>
+      <DataTrigger Binding="{Binding IsMonospaced}" Value="True">
+        <Setter TargetName="FieldValue" Property="FontFamily" Value="{StaticResource Font.Mono}" />
+      </DataTrigger>
+    </DataTemplate.Triggers>
+  </DataTemplate>
+
 </ResourceDictionary>

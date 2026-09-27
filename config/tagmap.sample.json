@@ -157,6 +157,13 @@
       "description": "NC 正在执行第几道工序"
     },
     {
+      "key": "job.cycleComplete",
+      "address": "ns=2;s=/Channel/Parameter/R[124]",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "循环正常结束：NC 程序开头 R124=0，M30 之前 R124=1。上位机据此自动收尾磨削记录"
+    },
+    {
       "key": "job.feedMmPerMin",
       "address": "ns=2;s=/Channel/Parameter/R[102]",
       "dataType": "Double",
@@ -432,13 +439,6 @@
       "description": "工序数"
     },
     {
-      "key": "job.cycleComplete",
-      "address": "ns=2;s=/Channel/Parameter/R[124]",
-      "dataType": "Int32",
-      "access": "Read",
-      "description": "循环正常结束：NC 程序开头 R124=0，M30 之前 R124=1。上位机据此自动收尾磨削记录"
-    },
-    {
       "key": "job.totalPasses",
       "address": "ns=2;s=/Channel/Parameter/R[123]",
       "dataType": "Int32",
@@ -475,6 +475,13 @@
       "dataType": "Int32",
       "access": "Read",
       "description": "NC channel status"
+    },
+    {
+      "key": "machine.operatingMode",
+      "address": "ns=2;s=/Bag/State/opMode[u1]",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "NC 操作方式：0 JOG / 1 MDA / 2 AUTO（状态带）"
     },
     {
       "key": "machine.programName",
@@ -765,6 +772,62 @@
       "access": "Read",
       "unit": "µm",
       "description": "当前截面的圆度（峰谷值），由测量系统算出"
+    },
+    {
+      "key": "status.driver.extended",
+      "address": "ns=3;s=\"HMI_State\".\"driver_extended\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "头架拨盘伸出到位（地址待电气确认，Q7）"
+    },
+    {
+      "key": "status.innerArm.lowered",
+      "address": "ns=3;s=\"HMI_State\".\"inner_arm_lowered\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "内测量臂放下到位（I113 一组，地址待电气确认，Q7）"
+    },
+    {
+      "key": "status.outerArm.lowered",
+      "address": "ns=3;s=\"HMI_State\".\"outer_arm_lowered\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "外测量臂放下到位（I113 一组，地址待电气确认，Q7）"
+    },
+    {
+      "key": "status.quill.extended",
+      "address": "ns=3;s=\"HMI_State\".\"quill_extended\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "套筒伸出到位（地址待电气确认，Q7）"
+    },
+    {
+      "key": "status.softLanding.headstock.raised",
+      "address": "ns=3;s=\"HMI_State\".\"soft_landing_head_up\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "头架侧软着陆托瓦升起到位（地址待电气确认，Q7）"
+    },
+    {
+      "key": "status.softLanding.tailstock.raised",
+      "address": "ns=3;s=\"HMI_State\".\"soft_landing_tail_up\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "尾架侧软着陆托瓦升起到位（地址待电气确认，Q7）"
+    },
+    {
+      "key": "status.steadyRest.engaged",
+      "address": "ns=3;s=\"HMI_State\".\"steady_rest_engaged\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "中心架顶升到位（中心架托瓦待补，地址待电气确认，Q7）"
+    },
+    {
+      "key": "status.tailstock.forward",
+      "address": "ns=3;s=\"HMI_State\".\"tailstock_forward\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "尾架前进到位（地址待电气确认，Q7）"
     },
     {
       "key": "wheel.diameterMm",

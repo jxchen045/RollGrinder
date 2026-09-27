@@ -119,6 +119,43 @@ public sealed class SimulatedMachine
     /// <summary>状态回读变量的后缀，与 <see cref="MachineTagKeys.ManualCommandState"/> 保持一致。</summary>
     private const string ManualStateSuffix = ".state";
 
+    /// <summary>
+    /// 脉冲型手动动作落到哪个机构到位状态（Q7 的状态位）：仿真机床收到"套筒伸出"就把"套筒伸出到位"置上，
+    /// 手动页与状态带的灯才有东西可读。一个动作可以动几个机构（"双臂到轧辊"）。
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, (string Status, bool Value)[]> PulseEffects =
+        new Dictionary<string, (string, bool)[]>(StringComparer.Ordinal)
+        {
+            ["outerArm.lower"] = new[] { ("outerArm.lowered", true) },
+            ["outerArm.raise"] = new[] { ("outerArm.lowered", false) },
+            ["innerArm.lower"] = new[] { ("innerArm.lowered", true) },
+            ["innerArm.raise"] = new[] { ("innerArm.lowered", false) },
+            ["arms.toRoll"] = new[] { ("outerArm.lowered", true), ("innerArm.lowered", true) },
+            ["arms.home"] = new[] { ("outerArm.lowered", false), ("innerArm.lowered", false) },
+            ["quill.extend"] = new[] { ("quill.extended", true) },
+            ["quill.retract"] = new[] { ("quill.extended", false) },
+            ["tailstock.forward"] = new[] { ("tailstock.forward", true) },
+            ["tailstock.backward"] = new[] { ("tailstock.forward", false) },
+            ["driver.extend"] = new[] { ("driver.extended", true) },
+            ["driver.retract"] = new[] { ("driver.extended", false) },
+            ["softLanding.headstock.up"] = new[] { ("softLanding.headstock.raised", true) },
+            ["softLanding.headstock.down"] = new[] { ("softLanding.headstock.raised", false) },
+            ["softLanding.tailstock.up"] = new[] { ("softLanding.tailstock.raised", true) },
+            ["softLanding.tailstock.down"] = new[] { ("softLanding.tailstock.raised", false) },
+        };
+
+    /// <summary>机构到位状态。开机时辊子已装好：套筒伸出、尾架前进、拨盘伸出，测量臂收起、托瓦落下。</summary>
+    private readonly Dictionary<string, bool> statuses = new(StringComparer.Ordinal)
+    {
+        ["outerArm.lowered"] = false,
+        ["innerArm.lowered"] = false,
+        ["quill.extended"] = true,
+        ["tailstock.forward"] = true,
+        ["driver.extended"] = true,
+        ["softLanding.headstock.raised"] = false,
+        ["softLanding.tailstock.raised"] = false,
+    };
+
     /// <summary>接受一次写入。参数有效标志置真即开始模拟磨削。</summary>
     public void Write(string logicalName, TagValue value)
     {
@@ -135,6 +172,15 @@ public sealed class SimulatedMachine
         {
             string stateName = logicalName + ManualStateSuffix;
             this.writtenValues[stateName] = value with { Key = stateName };
+            if (value.Raw is true
+                && PulseEffects.TryGetValue(logicalName[MachineTagKeys.ManualCommandPrefix.Length..], out (string Status, bool Value)[]? effects))
+            {
+                foreach ((string status, bool on) in effects)
+                {
+                    this.statuses[status] = on;
+                }
+            }
+
             return;
         }
 
@@ -313,6 +359,25 @@ public sealed class SimulatedMachine
         if (logicalName == MachineTagKeys.ProgramName)
         {
             return ProgramName;
+        }
+
+        // 挂着程序就是 AUTO，空闲时按 JOG 报（真机上由操作面板的方式选择决定）。
+        if (logicalName == MachineTagKeys.OperatingMode)
+        {
+            return ChannelState == NcChannelState.Reset ? 0 : 2;
+        }
+
+        if (logicalName.StartsWith(MachineTagKeys.StatusPrefix, StringComparison.Ordinal))
+        {
+            string status = logicalName[MachineTagKeys.StatusPrefix.Length..];
+
+            // 中心架没有手动动作（托瓦待补），仿真里磨削时顶上、空闲时落下。
+            if (status == "steadyRest.engaged")
+            {
+                return ChannelState != NcChannelState.Reset;
+            }
+
+            return this.statuses.TryGetValue(status, out bool on) ? on : null;
         }
 
         if (logicalName == MachineTagKeys.MeasuredDiameterMm)

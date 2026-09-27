@@ -553,12 +553,6 @@
   <data name="Live_WorkpieceSpeed" xml:space="preserve">
     <value>Workpiece speed rpm</value>
   </data>
-  <data name="Live_XPosition" xml:space="preserve">
-    <value>X position</value>
-  </data>
-  <data name="Live_ZPosition" xml:space="preserve">
-    <value>Z position</value>
-  </data>
   <data name="Manual_AlignHeadInward" xml:space="preserve">
     <value>Ends differ by {0:F3} mm, beyond tolerance; adjust the headstock-side steady rest inward</value>
   </data>
@@ -2601,5 +2595,155 @@
   </data>
   <data name="ParamHelp_wheelWidthMm" xml:space="preserve">
     <value>Wheel width B.</value>
+  </data>
+  <data name="Shell_ReadOnlyRoleFormat" xml:space="preserve">
+    <value>Read-only · needs {0} to edit</value>
+  </data>
+  <data name="Band_Mode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Band_Channel" xml:space="preserve">
+    <value>Channel</value>
+  </data>
+  <data name="Band_Program" xml:space="preserve">
+    <value>Program</value>
+  </data>
+  <data name="Band_X" xml:space="preserve">
+    <value>X mm</value>
+  </data>
+  <data name="Band_Z" xml:space="preserve">
+    <value>Z mm</value>
+  </data>
+  <data name="Band_WheelRpm" xml:space="preserve">
+    <value>Wheel r/min</value>
+  </data>
+  <data name="Band_HeadstockRpm" xml:space="preserve">
+    <value>Headstock r/min</value>
+  </data>
+  <data name="Mode_Jog" xml:space="preserve">
+    <value>JOG</value>
+  </data>
+  <data name="Mode_Mda" xml:space="preserve">
+    <value>MDA</value>
+  </data>
+  <data name="Mode_Auto" xml:space="preserve">
+    <value>AUTO</value>
+  </data>
+  <data name="Status_coolant" xml:space="preserve">
+    <value>Coolant</value>
+  </data>
+  <data name="Status_coolant_On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Status_coolant_Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Status_wheelRunning" xml:space="preserve">
+    <value>Wheel</value>
+  </data>
+  <data name="Status_wheelRunning_On" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Status_wheelRunning_Off" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="Status_headstockForward" xml:space="preserve">
+    <value>Headstock fwd</value>
+  </data>
+  <data name="Status_headstockForward_On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Status_headstockForward_Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Status_headstockReverse" xml:space="preserve">
+    <value>Headstock rev</value>
+  </data>
+  <data name="Status_headstockReverse_On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Status_headstockReverse_Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Status_outerArm" xml:space="preserve">
+    <value>Outer arm</value>
+  </data>
+  <data name="Status_outerArm_On" xml:space="preserve">
+    <value>Lowered</value>
+  </data>
+  <data name="Status_outerArm_Off" xml:space="preserve">
+    <value>Raised</value>
+  </data>
+  <data name="Status_innerArm" xml:space="preserve">
+    <value>Inner arm</value>
+  </data>
+  <data name="Status_innerArm_On" xml:space="preserve">
+    <value>Lowered</value>
+  </data>
+  <data name="Status_innerArm_Off" xml:space="preserve">
+    <value>Raised</value>
+  </data>
+  <data name="Status_measuringArm" xml:space="preserve">
+    <value>Gauge arms</value>
+  </data>
+  <data name="Status_measuringArm_On" xml:space="preserve">
+    <value>Lowered</value>
+  </data>
+  <data name="Status_measuringArm_Off" xml:space="preserve">
+    <value>Raised</value>
+  </data>
+  <data name="Status_quill" xml:space="preserve">
+    <value>Quill</value>
+  </data>
+  <data name="Status_quill_On" xml:space="preserve">
+    <value>Extended</value>
+  </data>
+  <data name="Status_quill_Off" xml:space="preserve">
+    <value>Retracted</value>
+  </data>
+  <data name="Status_tailstock" xml:space="preserve">
+    <value>Tailstock</value>
+  </data>
+  <data name="Status_tailstock_On" xml:space="preserve">
+    <value>Forward</value>
+  </data>
+  <data name="Status_tailstock_Off" xml:space="preserve">
+    <value>Back</value>
+  </data>
+  <data name="Status_driver" xml:space="preserve">
+    <value>Driver</value>
+  </data>
+  <data name="Status_driver_On" xml:space="preserve">
+    <value>Extended</value>
+  </data>
+  <data name="Status_driver_Off" xml:space="preserve">
+    <value>Retracted</value>
+  </data>
+  <data name="Status_softLandingHeadstock" xml:space="preserve">
+    <value>Head-side pad</value>
+  </data>
+  <data name="Status_softLandingHeadstock_On" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="Status_softLandingHeadstock_Off" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="Status_softLandingTailstock" xml:space="preserve">
+    <value>Tail-side pad</value>
+  </data>
+  <data name="Status_softLandingTailstock_On" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="Status_softLandingTailstock_Off" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="Status_steadyRest" xml:space="preserve">
+    <value>Steady rest</value>
+  </data>
+  <data name="Status_steadyRest_On" xml:space="preserve">
+    <value>Engaged</value>
+  </data>
+  <data name="Status_steadyRest_Off" xml:space="preserve">
+    <value>Released</value>
   </data>
 </root>

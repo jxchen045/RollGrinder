@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Session;
 
 namespace RollGrinder.App.ViewModels;
 
@@ -90,9 +91,32 @@ public abstract partial class PageViewModelBase : ViewModelBase
     [ObservableProperty]
     private bool isDirty;
 
-    /// <summary>当前是否只读（自动循环运行中）。</summary>
+    /// <summary>当前是否只读：自动循环运行中（<see cref="IsRunLocked"/>），或当前权限改不了本页（<see cref="IsRoleLocked"/>）。</summary>
     [ObservableProperty]
     private bool isReadOnly;
+
+    /// <summary>自动循环运行中，本页落了只读锁。</summary>
+    [ObservableProperty]
+    private bool isRunLocked;
+
+    /// <summary>当前登录的权限改不了本页（只能看）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RoleLockText))]
+    private bool isRoleLocked;
+
+    /// <summary>改本页的内容要哪项权限；null 表示本页没有要按权限锁的编辑内容。</summary>
+    public virtual Permission? EditPermission => null;
+
+    /// <summary>顶栏"只读"标记上的字：要哪一级才能改。</summary>
+    public string RoleLockText => EditPermission is { } permission
+        ? Localizer.Format("Shell_ReadOnlyRoleFormat", Localizer["Role_" + PermissionPolicy.MinimumRole(permission)])
+        : string.Empty;
+
+    // 外壳登录后推进来的权限判断。外壳推之前（单元测试里直接造页面）按"都有"算。
+    private Func<Permission, bool> grants = _ => true;
+
+    /// <summary>当前登录有没有这项权限。</summary>
+    public bool Can(Permission permission) => this.grants(permission);
 
     /// <summary>当前打开的二级子视图资源键；null 表示停在本页根部。</summary>
     [ObservableProperty]
@@ -134,7 +158,23 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// <summary>外壳按机床状态刷新只读锁，并同步功能键的可用性。</summary>
     public void ApplyRunState(bool machineRunning)
     {
-        IsReadOnly = LocksDuringRun && machineRunning;
+        IsRunLocked = LocksDuringRun && machineRunning;
+        IsReadOnly = IsRunLocked || IsRoleLocked;
+    }
+
+    /// <summary>外壳在登录、签退、改权限时推进来：本页按它决定能不能改、哪些键可按。</summary>
+    public void ApplyAccess(Func<Permission, bool> can)
+    {
+        this.grants = can ?? throw new ArgumentNullException(nameof(can));
+        IsRoleLocked = EditPermission is { } permission && !can(permission);
+        IsReadOnly = IsRunLocked || IsRoleLocked;
+        ApplyKeyEnablement();
+        OnAccessChanged();
+    }
+
+    /// <summary>权限变了。页面里有按权限显示的东西（例如只有制造商能改的格子）就在这里刷新。</summary>
+    protected virtual void OnAccessChanged()
+    {
     }
 
     /// <summary>登记功能键。多于 7 个直接抛——设计稿就是 8 格，超了应该在编译期之外立刻暴露。</summary>
@@ -255,15 +295,25 @@ public abstract partial class PageViewModelBase : ViewModelBase
     {
         foreach (FunctionKeyViewModel key in FunctionKeys)
         {
-            key.IsEnabled = !(key.RequiresEditable && IsReadOnly);
+            key.IsEnabled = IsKeyAllowed(key);
         }
 
         foreach (FunctionKeyViewModel key in VerticalKeys)
         {
             if (key.LabelResourceKey != "Fn_Empty")
             {
-                key.IsEnabled = !(key.RequiresEditable && IsReadOnly);
+                key.IsEnabled = IsKeyAllowed(key);
             }
         }
     }
+
+    /// <summary>
+    /// 键自己点名了权限的，按那项权限（运行锁照样管改数据的键）；没点名的，改数据的键跟着本页的只读走。
+    /// </summary>
+    private bool IsKeyAllowed(FunctionKeyViewModel key) => key.RequiredPermission is { } permission
+        ? Can(permission) && !(key.RequiresEditable && IsRunLocked)
+        : !(key.RequiresEditable && IsReadOnly);
+
+    /// <summary>页面里按权限变化的键（例如补偿子视图里只有制造商能按的"保存"）改完权限后重算一遍。</summary>
+    protected void RefreshKeyEnablement() => ApplyKeyEnablement();
 }

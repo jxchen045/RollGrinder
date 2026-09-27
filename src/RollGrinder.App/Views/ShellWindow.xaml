@@ -108,8 +108,20 @@
                         Background="{StaticResource Brush.AccentDark}"
                         Height="32" Padding="10,0" Margin="0,0,20,0"
                         VerticalAlignment="Center"
-                        Visibility="{Binding CurrentPage.IsReadOnly, Converter={StaticResource BoolToVisibility}}">
+                        Visibility="{Binding CurrentPage.IsRunLocked, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="{loc:Loc Shell_ReadOnlyRunning}"
+                               FontSize="15"
+                               Foreground="{StaticResource Brush.OnAccent}"
+                               VerticalAlignment="Center" />
+                </Border>
+
+                <!-- 当前权限改不了这一页：写明要哪一级（修改稿 Q9） -->
+                <Border x:Name="RoleLockBadge" DockPanel.Dock="Left"
+                        Background="{StaticResource Brush.AccentDark}"
+                        Height="32" Padding="10,0" Margin="0,0,20,0"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding CurrentPage.IsRoleLocked, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding CurrentPage.RoleLockText}"
                                FontSize="15"
                                Foreground="{StaticResource Brush.OnAccent}"
                                VerticalAlignment="Center" />

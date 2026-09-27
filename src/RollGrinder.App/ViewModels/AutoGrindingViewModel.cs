@@ -250,8 +250,6 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly LiveValueViewModel probeA;
     private readonly LiveValueViewModel probeB;
     private readonly LiveValueViewModel centringDeviation;
-    private readonly LiveValueViewModel xPosition;
-    private readonly LiveValueViewModel zPosition;
     private readonly LiveValueViewModel wheelDiameter;
     private readonly LiveValueViewModel grindingCurrent;
     private readonly LiveValueViewModel currentPass;
@@ -313,16 +311,16 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         this.probeA = new LiveValueViewModel("Live_ProbeA", localizer);
         this.probeB = new LiveValueViewModel("Live_ProbeB", localizer);
         this.centringDeviation = new LiveValueViewModel("Live_CentringDeviation", localizer, highlight: true);
-        this.xPosition = new LiveValueViewModel("Live_XPosition", localizer);
-        this.zPosition = new LiveValueViewModel("Live_ZPosition", localizer);
         this.wheelDiameter = new LiveValueViewModel("Live_WheelDiameter", localizer);
         this.grindingCurrent = new LiveValueViewModel("Live_GrindingCurrent", localizer);
         this.currentPass = new LiveValueViewModel("Live_CurrentPass", localizer);
 
+        // X、Z 挪到了顶上的状态带里（修改稿 5.5），右栏只留测量与过程量。
+        StatusBand = new StatusBandViewModel(machine, localizer);
+
         LiveValues = new ObservableCollection<LiveValueViewModel>
         {
             this.probeA, this.probeB, this.centringDeviation,
-            this.xPosition, this.zPosition,
             this.wheelDiameter, this.grindingCurrent, this.currentPass,
         };
 
@@ -362,6 +360,9 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
     /// <summary>右栏：实时数据。</summary>
     public ObservableCollection<LiveValueViewModel> LiveValues { get; }
+
+    /// <summary>顶上常驻的状态带：方式、通道、程序、X、Z、转速与四盏机构灯（修改稿 3③）。</summary>
+    public StatusBandViewModel StatusBand { get; }
 
     /// <summary>
     /// 参数矩阵的列头：一道工序一列，红色是正在跑的那一道，黄色是下一道。
@@ -621,8 +622,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             ? "--"
             : FormatOrDash((probeAValue.Value - probeBValue.Value) / 2.0, "F4", showSign: true);
 
-        this.xPosition.ValueText = FormatOrDash(AxisPosition(snapshot, MachineAxisRoles.InfeedRadius), "F3", showSign: true);
-        this.zPosition.ValueText = FormatOrDash(AxisPosition(snapshot, MachineAxisRoles.Carriage), "F2");
+        StatusBand.Update(snapshot);
         this.wheelDiameter.ValueText = FormatOrDash(snapshot.GetNumberOrNull(MachineTagKeys.WheelDiameterMm), "F2");
         this.grindingCurrent.ValueText = FormatOrDash(snapshot.GetNumberOrNull(MachineTagKeys.GrindingCurrentA), "F1");
 
@@ -972,14 +972,6 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         RealtimeOffsetText = FormatOrDash(
             snapshot.GetNumberOrNull(MachineTagKeys.CompensationRealtimeOffsetMm), "F4", showSign: true);
-    }
-
-    private double? AxisPosition(MachineStateSnapshot snapshot, string role)
-    {
-        AxisDescription? axis = this.machine.Axes.FirstOrDefault(candidate =>
-            candidate.IsPresent && string.Equals(candidate.Role, role, StringComparison.Ordinal));
-
-        return axis is null ? null : snapshot.GetNumberOrNull(MachineTagKeys.AxisActualPositionMm(axis.Name));
     }
 
     private async Task LoadActiveJobAsync(CancellationToken cancellationToken)

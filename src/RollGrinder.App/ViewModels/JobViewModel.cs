@@ -18,6 +18,7 @@ using RollGrinder.Core.Steps;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Session;
 using RollGrinder.Services.Jobs;
 using RollGrinder.Services.Records;
 
@@ -166,6 +167,9 @@ public sealed partial class JobViewModel : PageViewModelBase
 
     /// <summary>自动循环挂着程序时落只读锁：正在磨的那支辊不能被换掉。</summary>
     public override bool LocksDuringRun => true;
+
+    /// <summary>建作业、登记轧辊、下发：操作者就能做（Q9）。</summary>
+    public override Permission? EditPermission => Permission.EditJobs;
 
     /// <summary>离线也能拼作业、核对；只有下发要机床。</summary>
     public override bool WorksOffline => true;

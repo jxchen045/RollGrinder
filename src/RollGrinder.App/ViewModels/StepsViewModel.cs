@@ -18,6 +18,7 @@ using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Session;
 using RollGrinder.Services.Calibration;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
@@ -372,6 +373,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     /// <summary>编辑页：自动循环挂着程序时落只读锁。</summary>
     public override bool LocksDuringRun => true;
+
+    /// <summary>工艺程序库归管理员（Q9）。</summary>
+    public override Permission? EditPermission => Permission.EditPrograms;
 
     /// <summary>离线可用：只和数据库与配置打交道，不碰机床。</summary>
     public override bool WorksOffline => true;
@@ -752,7 +756,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     }
 
     /// <summary>有名字才谈得上保存——没名字存进库里就找不回来了。</summary>
-    public override bool CanSave => !string.IsNullOrWhiteSpace(ProgramName);
+    public override bool CanSave => !IsRoleLocked && !string.IsNullOrWhiteSpace(ProgramName);
 
     /// <summary>
     /// 把当前这支程序存回程序库。走页面基类的保存契约，

@@ -203,6 +203,11 @@ public sealed partial class SettingsViewModel : PageViewModelBase
     /// <summary>自动循环挂着程序时落只读锁：标定值一改，正在跑的程序算出来的位置就变了。</summary>
     public override bool LocksDuringRun => true;
 
+    /// <summary>标定、砂轮与修整参数归管理员（Q9）。</summary>
+    public override Permission? EditPermission => Permission.EditCalibration;
+
+    protected override void OnAccessChanged() => OnPropertyChanged(nameof(CanEdit));
+
     /// <summary>离线可用：只和数据库与配置打交道，不碰机床。</summary>
     public override bool WorksOffline => true;
 
@@ -224,7 +229,7 @@ public sealed partial class SettingsViewModel : PageViewModelBase
     /// 管理员以上才改得动。操作工看得见但改不了——
     /// 藏起来只会让人以为软件少做，标出来才知道是权限不够。
     /// </summary>
-    public bool CanEdit => this.userSession.HasAtLeast(UserRole.Administrator) && !IsReadOnly;
+    public bool CanEdit => this.userSession.Can(Permission.EditCalibration) && !IsRunLocked;
 
     public override bool CanSave => CanEdit && IsDirty;
 

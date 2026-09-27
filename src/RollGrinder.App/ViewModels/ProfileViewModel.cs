@@ -20,6 +20,7 @@ using RollGrinder.Core.Profiles;
 using RollGrinder.Data;
 using RollGrinder.Core.Units;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Session;
 
 namespace RollGrinder.App.ViewModels;
 
@@ -201,6 +202,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
     /// <summary>编辑页：自动循环挂着程序时落只读锁，免得改了辊形以为机床会跟着变。</summary>
     public override bool LocksDuringRun => true;
+
+    /// <summary>辊形库归管理员（Q9）。</summary>
+    public override Permission? EditPermission => Permission.EditProfiles;
 
     /// <summary>离线可用：只和数据库与配置打交道，不碰机床。</summary>
     public override bool WorksOffline => true;
@@ -947,7 +951,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     }
 
     /// <summary>有名字才谈得上保存——没名字存进库里就找不回来了。</summary>
-    public override bool CanSave => !string.IsNullOrWhiteSpace(ProfileName);
+    public override bool CanSave => !IsRoleLocked && !string.IsNullOrWhiteSpace(ProfileName);
 
     /// <summary>
     /// 存回当前这条辊形。走的是页面基类的保存契约，

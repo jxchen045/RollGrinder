@@ -119,8 +119,22 @@ public sealed class LocalizationTests
     {
         "StepType_", "ProfileType_", "Parameter_", "Choice_", "Unit_", "AxisRole_",
         "JobState_", "StepSlot_", "Option_", "Role_", "Severity_", "Violation_",
-        "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_", "WheelEvent_", "WheelSource_",
+        "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_", "WheelEvent_", "WheelSource_", "Status_",
     };
+
+    [Fact]
+    public void Every_status_lamp_has_a_name_and_both_states_in_both_languages()
+    {
+        IReadOnlySet<string> english = LoadKeys("Strings.en-US.resx");
+        IEnumerable<string> keys = RollGrinder.Services.Monitoring.MachineStatusCatalog.All
+            .SelectMany(indicator => new[] { indicator.LabelResourceKey, indicator.OnResourceKey, indicator.OffResourceKey })
+            .Concat(new[] { "Status_measuringArm", "Status_measuringArm_On", "Status_measuringArm_Off" });
+        foreach (string key in keys)
+        {
+            NeutralKeys.Should().Contain(key);
+            english.Should().Contain(key);
+        }
+    }
 
     [Fact]
     public void Every_value_on_the_wheel_page_has_a_help_line_in_both_languages()

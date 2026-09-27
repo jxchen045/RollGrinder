@@ -119,9 +119,22 @@ public sealed partial class ShellViewModel : ViewModelBase
         this.navigator.Requested += (_, request) => Handle(request);
 
         this.currentPage = this.pages[this.model.HomeArea];
+        this.userSession.SessionChanged += (_, _) => OnUiThread(ApplyAccess);
+        ApplyAccess();
         RebuildFunctionKeys();
         SyncNavigation();
         this.currentPage.OnActivated();
+    }
+
+    /// <summary>登录、签退、改权限后，把"当前能做什么"推给每一页（修改稿 Q9，权限表见 PermissionPolicy）。</summary>
+    private void ApplyAccess()
+    {
+        foreach (PageViewModelBase page in this.pages.Values)
+        {
+            page.ApplyAccess(this.userSession.Can);
+        }
+
+        OnPropertyChanged(nameof(CanManageUsers));
     }
 
     /// <summary>界面刷新周期。</summary>
@@ -295,7 +308,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     private UserRole newUserRole;
 
     /// <summary>管理员以上才看得到"用户管理"。</summary>
-    public bool CanManageUsers => this.userSession.HasAtLeast(UserRole.Administrator);
+    public bool CanManageUsers => this.userSession.Can(Permission.ManageUsers);
 
     /// <summary>新用户可选的权限。</summary>
     public IReadOnlyList<UserRole> AssignableRoles { get; } =
