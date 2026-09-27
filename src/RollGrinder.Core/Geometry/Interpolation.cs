@@ -19,6 +19,7 @@ public enum InterpolationMethod
     /// <summary>
     /// 平滑样条（Reinsch）：不强求过每个点，在"贴近点"与"曲线光顺"之间取舍，给带噪声的测量数据用。
     /// 平滑度 0 就是自然三次样条，越大越平，到 1 趋于一条最小二乘直线。
+    /// 用在点表辊形段里时首末两点另外钉住（它们是和相邻段的交界），见 PointTableProfileType。
     /// </summary>
     SmoothingSpline = 3,
 }

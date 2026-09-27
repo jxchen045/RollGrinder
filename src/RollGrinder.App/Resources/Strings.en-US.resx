@@ -2348,13 +2348,13 @@
     <value>« Back</value>
   </data>
   <data name="Vk_ShortcutFormat" xml:space="preserve">
-    <value>⇧F{0}</value>
+    <value>Shift+F{0}</value>
   </data>
   <data name="Profile_EditOnVerticalKeys" xml:space="preserve">
     <value>Insert, delete, reorder and retype segments with the vertical soft keys on the right (Shift+F1…F8)</value>
   </data>
   <data name="Vk_InsertSegment" xml:space="preserve">
-    <value>Insert ▸</value>
+    <value>Insert ▸</value>
   </data>
   <data name="Vk_InsertSegmentTitle" xml:space="preserve">
     <value>Insert segment: type</value>
@@ -2372,13 +2372,13 @@
     <value>Copy</value>
   </data>
   <data name="Vk_ChangeType" xml:space="preserve">
-    <value>Change type ▸</value>
+    <value>Change type ▸</value>
   </data>
   <data name="Vk_ChangeTypeTitle" xml:space="preserve">
     <value>Change type to</value>
   </data>
   <data name="Vk_Interpolation" xml:space="preserve">
-    <value>Interpolation ▸</value>
+    <value>Interpolation ▸</value>
   </data>
   <data name="Vk_InterpolationTitle" xml:space="preserve">
     <value>Interpolation</value>
@@ -2390,7 +2390,7 @@
     <value>Insert, delete, reorder and copy with the vertical soft keys (Shift+F1…F8); arrow keys select a step</value>
   </data>
   <data name="Vk_InsertStep" xml:space="preserve">
-    <value>Insert step ▸</value>
+    <value>Insert step ▸</value>
   </data>
   <data name="Vk_InsertStepTitle" xml:space="preserve">
     <value>Insert step: category</value>
@@ -2402,10 +2402,10 @@
     <value>Copy</value>
   </data>
   <data name="Vk_CatGrinding" xml:space="preserve">
-    <value>Grinding ▸</value>
+    <value>Grinding ▸</value>
   </data>
   <data name="Vk_CatMeasuring" xml:space="preserve">
-    <value>Measuring ▸</value>
+    <value>Measuring ▸</value>
   </data>
   <data name="Vk_CatDress" xml:space="preserve">
     <value>Wheel dressing</value>
@@ -2420,7 +2420,7 @@
     <value>Pause</value>
   </data>
   <data name="Vk_CatOther" xml:space="preserve">
-    <value>Other ▸</value>
+    <value>Other ▸</value>
   </data>
   <data name="StepType_Auxiliary" xml:space="preserve">
     <value>Auxiliary action</value>

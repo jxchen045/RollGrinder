@@ -2348,13 +2348,13 @@
     <value>« 返回</value>
   </data>
   <data name="Vk_ShortcutFormat" xml:space="preserve">
-    <value>⇧F{0}</value>
+    <value>Shift+F{0}</value>
   </data>
   <data name="Profile_EditOnVerticalKeys" xml:space="preserve">
     <value>段的插入、删除、调序、改类型在右侧竖向软键（Shift+F1…F8）</value>
   </data>
   <data name="Vk_InsertSegment" xml:space="preserve">
-    <value>插入段 ▸</value>
+    <value>插入段 ▸</value>
   </data>
   <data name="Vk_InsertSegmentTitle" xml:space="preserve">
     <value>插入段：选类型</value>
@@ -2372,13 +2372,13 @@
     <value>复制段</value>
   </data>
   <data name="Vk_ChangeType" xml:space="preserve">
-    <value>改类型 ▸</value>
+    <value>改类型 ▸</value>
   </data>
   <data name="Vk_ChangeTypeTitle" xml:space="preserve">
     <value>改类型：选类型</value>
   </data>
   <data name="Vk_Interpolation" xml:space="preserve">
-    <value>插值方式 ▸</value>
+    <value>插值方式 ▸</value>
   </data>
   <data name="Vk_InterpolationTitle" xml:space="preserve">
     <value>插值方式</value>
@@ -2390,7 +2390,7 @@
     <value>插入、删除、调序、复制在右侧竖向软键（Shift+F1…F8）；上下键选工序</value>
   </data>
   <data name="Vk_InsertStep" xml:space="preserve">
-    <value>插入工序 ▸</value>
+    <value>插入工序 ▸</value>
   </data>
   <data name="Vk_InsertStepTitle" xml:space="preserve">
     <value>插入工序：选类别</value>
@@ -2402,10 +2402,10 @@
     <value>复制</value>
   </data>
   <data name="Vk_CatGrinding" xml:space="preserve">
-    <value>磨削 ▸</value>
+    <value>磨削 ▸</value>
   </data>
   <data name="Vk_CatMeasuring" xml:space="preserve">
-    <value>测量 ▸</value>
+    <value>测量 ▸</value>
   </data>
   <data name="Vk_CatDress" xml:space="preserve">
     <value>砂轮修整</value>
@@ -2420,7 +2420,7 @@
     <value>暂停</value>
   </data>
   <data name="Vk_CatOther" xml:space="preserve">
-    <value>其他 ▸</value>
+    <value>其他 ▸</value>
   </data>
   <data name="StepType_Auxiliary" xml:space="preserve">
     <value>辅助动作</value>

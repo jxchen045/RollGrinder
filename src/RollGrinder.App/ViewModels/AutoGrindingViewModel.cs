@@ -327,7 +327,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         };
 
         RefreshTolerance();
-        calibration.Changed += (_, _) => RefreshTolerance();
+        calibration.Changed += (_, _) => OnUiThread(RefreshTolerance);
 
         SetFunctionKeys(new[]
         {

@@ -57,13 +57,32 @@ public sealed class PointTableProfileType : IRollProfileType
         }
 
         var method = Enum.Parse<InterpolationMethod>(parameters.GetChoice(InterpolationKey));
-        Func<double, double> curve = Interpolation.Build(
-            method,
-            points.Select(point => point.X).ToArray(),
-            points.Select(point => UnitConversion.DiameterMicrometerToRadiusMm(point.Y)).ToArray(),
-            parameters.GetNumberOrDefault(SmoothingKey, 0.0));
+        double[] xs = points.Select(point => point.X).ToArray();
+        double[] ys = points.Select(point => UnitConversion.DiameterMicrometerToRadiusMm(point.Y)).ToArray();
+        Func<double, double> curve = Interpolation.Build(method, xs, ys, parameters.GetNumberOrDefault(SmoothingKey, 0.0));
+        if (method == InterpolationMethod.SmoothingSpline)
+        {
+            curve = PinEnds(curve, xs[0], ys[0], xs[^1], ys[^1]);
+        }
 
         return RollProfile.Sample(geometry.BodyLengthMm, sampleCount, curve);
+    }
+
+    /// <summary>
+    /// 平滑样条不过数据点，两端也会偏开几 µm——段与段就接不上了（交界跳变 &gt; 1 µm 是错误）。
+    /// 首末两点是和相邻段的交界，必须钉住：叠加一条直线把两端的差补掉。
+    /// 直线的二阶导为 0，平滑样条的曲率（光顺程度）一点不变。
+    /// </summary>
+    private static Func<double, double> PinEnds(Func<double, double> curve, double x0, double y0, double x1, double y1)
+    {
+        double startGap = y0 - curve(x0);
+        double endGap = y1 - curve(x1);
+        double span = x1 - x0;
+        return x =>
+        {
+            double t = Math.Clamp((x - x0) / span, 0.0, 1.0);
+            return curve(x) + startGap + ((endGap - startGap) * t);
+        };
     }
 
     public IEnumerable<ParameterViolation> ValidateShape(ParameterSet parameters, double segmentLengthMm)

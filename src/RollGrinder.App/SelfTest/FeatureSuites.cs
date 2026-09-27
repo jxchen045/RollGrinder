@@ -572,7 +572,7 @@ internal sealed class StepsSuite : ISelfTestSuite
             if (page.StepTypeOptions.Any(o => o.Key == StepTypeKeys.Auxiliary))
             {
                 await h.PressVerticalKeyAsync(ctx, "Vk_InsertStep");
-                await h.PressVerticalKeyAsync(ctx, "Vk_CatAuxiliary");
+                await h.PressVerticalKeyAsync(ctx, "StepType_" + StepTypeKeys.Auxiliary);
                 ctx.Check(page.SelectedStep?.StepTypeKey == StepTypeKeys.Auxiliary, "the auxiliary action should be inserted and selected");
                 ctx.Check(page.SelectedStep!.Parameters.Any(p => p.Key == StepParameterKeys.AuxAction && p.Choices.Count >= 2),
                     "the actions registered in machine.json should be offered");

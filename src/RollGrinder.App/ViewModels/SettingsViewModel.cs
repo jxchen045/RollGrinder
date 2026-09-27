@@ -73,9 +73,11 @@ public sealed partial class SettingsViewModel : PageViewModelBase
             : "--";
 
         Rebuild();
-        this.calibration.Changed += (_, _) => Rebuild();
-        this.wheelChange.Changed += (_, _) => RefreshWheelChange();
-        this.wheelHistory.Changed += (_, _) => _ = RunGuardedAsync(RefreshWheelHistoryAsync, CancellationToken.None);
+        this.calibration.Changed += (_, _) => OnUiThread(Rebuild);
+        this.wheelChange.Changed += (_, _) => OnUiThread(RefreshWheelChange);
+
+        // 程序里的修整由后台服务记账，事件在后台线程上来：只记一笔"旧了"，由界面节拍去刷。
+        this.wheelHistory.Changed += (_, _) => this.wheelHistoryStale = true;
     }
 
     // ── 砂轮页（修改稿 5.7）：砂轮数据、修整参数、修整与更换记录 ──────────────────
@@ -153,6 +155,18 @@ public sealed partial class SettingsViewModel : PageViewModelBase
         foreach (Data.Model.WheelEvent entry in events)
         {
             WheelHistory.Add(new WheelEventRowViewModel(entry, Localizer));
+        }
+    }
+
+    private volatile bool wheelHistoryStale;
+
+    public override void OnTick(DateTimeOffset nowUtc)
+    {
+        base.OnTick(nowUtc);
+        if (this.wheelHistoryStale && !IsBusy)
+        {
+            this.wheelHistoryStale = false;
+            _ = RunGuardedAsync(RefreshWheelHistoryAsync, CancellationToken.None);
         }
     }
 

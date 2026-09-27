@@ -110,6 +110,33 @@ public sealed class PointTableTests
     }
 
     [Fact]
+    public void A_smoothed_point_table_still_joins_its_neighbours_at_both_ends()
+    {
+        // 自检里暴露的：中间点抬高后选平滑样条，两端偏开 4 µm，前后两段就"接不上"了。
+        ParameterSet table = PointTableProfileType.DefaultsFor(100.0)
+            .With(PointTableProfileType.PointsKey, ParameterValue.FromPoints(new[]
+            {
+                new TablePoint(0.0, 0.0), new TablePoint(30.0, 20.0), new TablePoint(60.0, -10.0), new TablePoint(100.0, 0.0),
+            }))
+            .With(PointTableProfileType.InterpolationKey, ParameterValue.FromChoice(nameof(InterpolationMethod.SmoothingSpline)))
+            .With(PointTableProfileType.SmoothingKey, ParameterValue.FromNumber(0.8));
+        CompositeRollProfile profile = CompositeRollProfile.Sequential(0.0, new[]
+        {
+            new SequentialSegment(ProfileTypeKeys.Cylindrical, 900.0, ParameterSet.Empty),
+            new SequentialSegment(ProfileTypeKeys.PointTable, 100.0, table),
+            new SequentialSegment(ProfileTypeKeys.Cylindrical, 1000.0, ParameterSet.Empty),
+        });
+
+        ProfileLayoutCheck.Check(profile, 2000.0, Registry).Should().BeEmpty("首末两点是交界，平滑样条也要钉住");
+
+        RollProfile composed = profile.Compose(RollGeometry.FromDiameter(2000.0, 600.0), Registry, 2001);
+        composed.RadiusOffsetAtMm(900.0).Should().BeApproximately(0.0, 1e-9);
+        composed.RadiusOffsetAtMm(1000.0).Should().BeApproximately(0.0, 1e-9);
+        UnitConversion.RadiusMmToDiameterMicrometer(composed.RadiusOffsetAtMm(930.0))
+            .Should().BeInRange(0.5, 19.5, "中间仍然是平滑过的：不贴点，但朝点那边鼓");
+    }
+
+    [Fact]
     public void Point_tables_that_are_too_short_unordered_or_not_spanning_the_segment_are_errors()
     {
         var type = new PointTableProfileType();

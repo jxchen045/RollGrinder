@@ -18,12 +18,32 @@ public abstract partial class ViewModelBase : ObservableObject
     protected ViewModelBase(IAlarmSink alarms)
     {
         Alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
+        this.uiContext = SynchronizationContext.Current;
     }
+
+    // 构造时所在线程（界面线程）的同步上下文；单元测试里没有，就地执行。
+    private readonly SynchronizationContext? uiContext;
 
     protected IAlarmSink Alarms { get; }
 
     [ObservableProperty]
     private bool isBusy;
+
+    /// <summary>
+    /// 服务层的事件可能在后台线程上触发（后台服务、ConfigureAwait(false) 之后）；
+    /// 界面集合只能在界面线程上改，所以事件处理一律经这里回到界面线程。
+    /// </summary>
+    protected void OnUiThread(Action action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        if (this.uiContext is null || SynchronizationContext.Current == this.uiContext)
+        {
+            action();
+            return;
+        }
+
+        this.uiContext.Post(_ => action(), null);
+    }
 
     /// <summary>执行一段可能失败的界面操作；失败转报警并返回 false。</summary>
     protected async Task<bool> RunGuardedAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken)

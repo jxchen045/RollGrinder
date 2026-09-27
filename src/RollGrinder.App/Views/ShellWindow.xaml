@@ -282,7 +282,7 @@
 
         <!-- 右侧竖向软键 8 格（修改稿原则 1）：本页的编辑动作；带 ▸ 的开一层子菜单，子菜单第 8 格是"返回"。
              键盘 Shift+F1…F8。子菜单打开时顶上写着它是什么菜单。 -->
-        <Border DockPanel.Dock="Right" Width="178" Padding="8,10"
+        <Border DockPanel.Dock="Right" Width="200" Padding="8,10"
                 Background="{StaticResource Brush.FunctionBar}"
                 BorderBrush="{StaticResource Brush.Divider}" BorderThickness="2,0,0,0"
                 IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}">

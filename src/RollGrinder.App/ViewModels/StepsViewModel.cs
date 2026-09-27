@@ -327,7 +327,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         BuildCompensationSettings(settings, machine);
 
         // 公差是现场标定值，设置页上随时能改——改完这张卡片要跟着变。
-        calibration.Changed += (_, _) => BuildCompensationSettings(settings, machine);
+        calibration.Changed += (_, _) => OnUiThread(() => BuildCompensationSettings(settings, machine));
 
         // 竖向软键：对选中的工序操作。插入工序 ▸ 先选类别、再选工序，插在选中工序之后（修改稿 5.3）。
         SetVerticalKeys(new[]

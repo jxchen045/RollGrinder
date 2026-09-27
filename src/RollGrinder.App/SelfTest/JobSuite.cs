@@ -182,6 +182,11 @@ internal sealed class JobSuite : ISelfTestSuite
         {
             await h.PressKeyAsync(ctx, "Fn_NextStep");
             ctx.Check(job.ActiveStep == JobViewModel.ProgramStep, "should be on the program step");
+
+            // "新建作业"把带进来的程序也清掉了，这里重新选（和操作员一样在列表里点）。
+            job.SelectedProgram = job.Programs.FirstOrDefault(p => p.Name == SelfTestNames.ProgramA);
+            await h.SettleAsync();
+            ctx.Check(job.SelectedProgram is not null, "program '" + SelfTestNames.ProgramA + "' should be offered on the program step");
             ctx.Check(job.ProgramSteps.Count >= 2, "the chosen program's steps should be listed");
             ctx.Note(job.ProgramSteps.Count + " steps, " + job.TotalDurationText);
             await h.PressKeyAsync(ctx, "Fn_NextStep");

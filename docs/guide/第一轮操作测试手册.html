@@ -453,7 +453,7 @@
             <div>左栏</div>
             <div>中间主区</div>
             <div>右栏</div>
-            <div class="vk"><span>⇧F1</span><span>⇧F2</span><span>⇧F3</span><span>⇧F4</span><span>⇧F5</span><span>⇧F6</span><span>⇧F7</span><span>⇧F8</span></div>
+            <div class="vk"><span>Shift+F1</span><span>Shift+F2</span><span>Shift+F3</span><span>Shift+F4</span><span>Shift+F5</span><span>Shift+F6</span><span>Shift+F7</span><span>Shift+F8</span></div>
           </div>
           <div class="label">底部功能条（8 个软键，F1–F8）</div>
           <div class="fn">
@@ -575,7 +575,7 @@
           <li>取消"对称编辑"。<span class="expect">表里变成展开后的三段：锥度 0–150、凸度 150–1850、锥度 1850–2000，两个锥度都填着 50，尾架端那段自动朝尾架端面。两端从此各自独立，存进库的就是这三段。</span></li>
           <li>把第 2 段长度改成 <code>1800</code>。<span class="expect">后面的段跟着往后挪，第 3 段终点变成 2100，立刻出现红字"超出设计长度"，保存键变灰。</span>改回 <code>1700</code>。</li>
           <li><strong>点表：</strong>选中第 2 段，按 <span class="key">改类型 ▸</span> → <span class="key">点表</span>。<span class="expect">这一段变成点表，长度不变；参数区出现点的表格（Z mm、直径偏差 µm，Z 从这一段的起点算）、插值方式、平滑度，默认两点 (0, 0) 和 (1700, 0)。</span></li>
-          <li>点选第一个点，按"加点"。<span class="expect">在两点正中插一行 (850, 0)。</span>把偏差改成 <code>300</code>。按 <span class="key">插值方式 ▸</span>，依次选"折线、三次样条、保形三次、平滑样条"（参数区的分段键也能点），平滑样条时再改改平滑度。选中别的类型的段时，<span class="key">插值方式 ▸</span> 是灰的。<span class="expect">预览跟着变，表里的点画在曲线上。</span></li>
+          <li>点选第一个点，按"加点"。<span class="expect">在两点正中插一行 (850, 0)。</span>把偏差改成 <code>300</code>。按 <span class="key">插值方式 ▸</span>，依次选"折线、三次样条、保形三次、平滑样条"（参数区的分段键也能点），平滑样条时再改改平滑度。选中别的类型的段时，<span class="key">插值方式 ▸</span> 是灰的。<span class="expect">预览跟着变，表里的点画在曲线上。平滑样条不贴中间的点，但首末两点（和相邻段的交界）始终钉住：换成平滑样条后不会出现"交界跳变、接不上"。</span></li>
           <li>把第一个点的偏差改成 <code>20</code>。<span class="expect">出现红字"第 1、2 段交界（Z 150 mm）跳变 … µm，接不上"：相邻两段在交界处差超过 1 µm 就算接不上。</span>改回 <code>0</code>。</li>
           <li>在"辊形名"填 <code>工作辊-凸度300</code>，按 <span class="key"><span class="f">F2</span>另存为</span>。<span class="expect">弹出命名框，回车或"确定"存进库；Esc 或"取消"不存。报警条提示"辊形已存入库"。</span>再另存一次、把名字改回同名：<span class="expect">框里给出"覆盖那一条"，也可以改名或取消。</span></li>
           <li>按 <span class="key"><span class="f">F6</span>辊形库</span>。<span class="expect">列表有辊形名、主曲线、段数、修改时间，可以打开、删除、关闭。上一轮存的旧辊形打开时，状态栏说明"已按原来的曲线转成一段点表，形状不变"。</span></li>
@@ -931,7 +931,7 @@
 
       <h3>右侧竖向软键（Shift+F1…F8）</h3>
       <div class="tw"><table>
-        <thead><tr><th>页面</th><th class="num">⇧F1</th><th class="num">⇧F2</th><th class="num">⇧F3</th><th class="num">⇧F4</th><th class="num">⇧F5</th><th class="num">⇧F6</th><th class="num">⇧F7</th><th class="num">⇧F8</th></tr></thead>
+        <thead><tr><th>页面</th><th class="num">Shift+F1</th><th class="num">Shift+F2</th><th class="num">Shift+F3</th><th class="num">Shift+F4</th><th class="num">Shift+F5</th><th class="num">Shift+F6</th><th class="num">Shift+F7</th><th class="num">Shift+F8</th></tr></thead>
         <tbody>
           <tr><td>辊形编辑</td><td><span class="key">插入段 ▸</span></td><td><span class="key">删除段</span></td><td><span class="key">上移</span></td><td><span class="key">下移</span></td><td><span class="key">复制段</span></td><td><span class="key">改类型 ▸</span></td><td><span class="key">插值方式 ▸</span></td><td><span class="key danger">清空</span></td></tr>
           <tr><td>工艺程序</td><td><span class="key">插入工序 ▸</span></td><td><span class="key">删除</span></td><td><span class="key">上移</span></td><td><span class="key">下移</span></td><td><span class="key">复制</span></td><td></td><td></td><td></td></tr>

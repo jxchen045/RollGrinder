@@ -488,7 +488,8 @@ internal sealed partial class SelfTestHarness
         {
             foreach (TextBlock text in FindVisuals<TextBlock>(button).Where(t => t.IsVisible && !string.IsNullOrEmpty(t.Text)))
             {
-                double needed = MeasureText(text);
+                // 允许换行的字（竖向软键）：换成两行不算截断，只要最长的一个词放得下。
+                double needed = text.TextWrapping == TextWrapping.NoWrap ? MeasureText(text) : MeasureLongestWord(text);
                 if (needed > text.ActualWidth + 1.5)
                 {
                     clipped.Add(Invariant($"'{text.Text}' needs {needed:0} px, has {text.ActualWidth:0}"));
@@ -520,17 +521,25 @@ internal sealed partial class SelfTestHarness
         return clipped.Distinct().ToList();
     }
 
-    private static double MeasureText(TextBlock text)
+    private static double MeasureText(TextBlock text) => MeasureText(text, text.Text);
+
+    /// <summary>换行只在空格处断（不换行空格连着的算一个词），最长的那个词就是最少要的宽度。</summary>
+    private static double MeasureLongestWord(TextBlock text) =>
+        text.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(word => MeasureText(text, word)).DefaultIfEmpty(0.0).Max();
+
+    private static double MeasureText(TextBlock text, string content) =>
+        Format(text, content).WidthIncludingTrailingWhitespace + text.Padding.Left + text.Padding.Right;
+
+    private static FormattedText Format(TextBlock text, string content)
     {
-        var formatted = new FormattedText(
-            text.Text,
+        return new FormattedText(
+            content,
             CultureInfo.CurrentUICulture,
             text.FlowDirection,
             new Typeface(text.FontFamily, text.FontStyle, text.FontWeight, text.FontStretch),
             text.FontSize,
             Brushes.Black,
             VisualTreeHelper.GetDpi(text).PixelsPerDip);
-        return formatted.WidthIncludingTrailingWhitespace + text.Padding.Left + text.Padding.Right;
     }
 
     /// <summary>元素有没有超出某一级容器（或窗口）的边界；超出了返回"哪边、多少像素"。滚动区里的不算。</summary>
