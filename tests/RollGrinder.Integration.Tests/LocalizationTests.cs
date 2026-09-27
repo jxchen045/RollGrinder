@@ -119,8 +119,24 @@ public sealed class LocalizationTests
     {
         "StepType_", "ProfileType_", "Parameter_", "Choice_", "Unit_", "AxisRole_",
         "JobState_", "StepSlot_", "Option_", "Role_", "Severity_", "Violation_",
-        "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_",
+        "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_", "WheelEvent_", "WheelSource_",
     };
+
+    [Fact]
+    public void Every_value_on_the_wheel_page_has_a_help_line_in_both_languages()
+    {
+        IReadOnlySet<string> english = LoadKeys("Strings.en-US.resx");
+        foreach (string key in new[]
+        {
+            CalibrationKeys.WheelDiameterMm, CalibrationKeys.NewWheelDiameterMm, CalibrationKeys.WheelWidthMm,
+            CalibrationKeys.DressInfeedRadiusMicrometer, CalibrationKeys.DressPassCount,
+            CalibrationKeys.DressFeedMmPerMin, CalibrationKeys.DressIntervalRolls,
+        })
+        {
+            NeutralKeys.Should().Contain("ParamHelp_" + key);
+            english.Should().Contain("ParamHelp_" + key);
+        }
+    }
 
     [Fact]
     public void Every_step_parameter_has_a_help_line_in_both_languages()

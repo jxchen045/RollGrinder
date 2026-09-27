@@ -794,6 +794,33 @@ internal sealed class SettingsSuite : ISelfTestSuite
             ctx.Check(page.StatusResourceKey == "WheelChange_Done", "status should say done, is " + page.StatusResourceKey);
         }, new StepOptions(ExpectedAlarms: machineWrites));
 
+        await h.StepAsync("Wheel", "DataDressingAndHistory", async ctx =>
+        {
+            // 砂轮页（修改稿 5.7）：砂轮数据、修整参数各配简图，光标所在参数亮起、说明行写全；换砂轮记进记录。
+            await h.PressKeyAsync(ctx, "Fn_Wheel");
+            ctx.Check(page.ActiveSubViewKey == SettingsViewModel.WheelSubView, "the wheel sub view should open");
+            ctx.Check(page.WheelRows.Count == 3 && page.DressRows.Count == 4, "wheel data and dressing rows should be listed");
+            foreach (ParameterRowViewModel row in page.WheelRows.Concat(page.DressRows))
+            {
+                page.FocusedWheelKey = row.Key;
+                ctx.Check(page.WheelHelpText.Length > 0 && !page.WheelHelpText.Contains('!'),
+                    row.Key + " has an incomplete help line: " + page.WheelHelpText);
+            }
+
+            page.FocusedWheelKey = RollGrinder.Core.Calibration.CalibrationKeys.DressInfeedRadiusMicrometer;
+            await h.WaitUntilAsync(() => page.WheelHistory.Count > 0, TimeSpan.FromSeconds(5));
+            ctx.Note(page.WheelHistory.Count + " history rows, max surface speed " + page.MaxSurfaceSpeedText);
+            if (!offline)
+            {
+                ctx.Check(page.WheelHistory.Any(entry => entry.KindText == page.Localizer["WheelEvent_Change"]),
+                    "the wheel change finished above should be in the history");
+            }
+
+            h.TryScreenshot("wheel-page");
+            await h.PressNavigationKeyAsync();
+            ctx.Check(page.ActiveSubViewKey is null, "the navigation key should close the wheel sub view");
+        });
+
         await h.StepAsync("WheelChange", "CancelHalfway", async ctx =>
         {
             await h.PressKeyAsync(ctx, "Fn_NewWheel");

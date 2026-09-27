@@ -2545,4 +2545,61 @@
   <data name="ParamHelp_scanPitchMm" xml:space="preserve">
     <value>扫查螺距：探头每转沿辊身前进的距离。</value>
   </data>
+  <data name="Parameter_dressIntervalRolls" xml:space="preserve">
+    <value>修整间隔（支）</value>
+  </data>
+  <data name="ParamHelp_dressIntervalRolls" xml:space="preserve">
+    <value>每磨几支辊修一次砂轮；0 表示按需要修。只作提示，不会自动插修整工序。</value>
+  </data>
+  <data name="Fn_Wheel" xml:space="preserve">
+    <value>砂轮</value>
+  </data>
+  <data name="SubView_Wheel" xml:space="preserve">
+    <value>砂轮</value>
+  </data>
+  <data name="Wheel_DataHeader" xml:space="preserve">
+    <value>砂轮数据</value>
+  </data>
+  <data name="Wheel_DressHeader" xml:space="preserve">
+    <value>修整参数</value>
+  </data>
+  <data name="Wheel_HistoryHeader" xml:space="preserve">
+    <value>修整与更换记录</value>
+  </data>
+  <data name="Wheel_HistoryEmpty" xml:space="preserve">
+    <value>还没有修整或换砂轮的记录</value>
+  </data>
+  <data name="Wheel_MaxSurfaceSpeed" xml:space="preserve">
+    <value>最高线速度（机床）</value>
+  </data>
+  <data name="Wheel_MaxSurfaceSpeedFormat" xml:space="preserve">
+    <value>{0:0.#} m/s</value>
+  </data>
+  <data name="Wheel_DressDefaultsNote" xml:space="preserve">
+    <value>程序里插入"砂轮修整"时，照这里的切深、道次、走刀速度填；改完按"保存"。</value>
+  </data>
+  <data name="WheelEvent_Change" xml:space="preserve">
+    <value>换砂轮</value>
+  </data>
+  <data name="WheelEvent_Dress" xml:space="preserve">
+    <value>修整</value>
+  </data>
+  <data name="WheelSource_Wizard" xml:space="preserve">
+    <value>换砂轮向导</value>
+  </data>
+  <data name="WheelSource_Program" xml:space="preserve">
+    <value>程序</value>
+  </data>
+  <data name="WheelSource_Manual" xml:space="preserve">
+    <value>手动</value>
+  </data>
+  <data name="ParamHelp_wheelDiameterMm" xml:space="preserve">
+    <value>当前砂轮直径 D：换砂轮向导按试磨结果修正，之后修整会慢慢变小。</value>
+  </data>
+  <data name="ParamHelp_newWheelDiameterMm" xml:space="preserve">
+    <value>新砂轮直径 D0：这片砂轮装上时的直径，算磨损用。</value>
+  </data>
+  <data name="ParamHelp_wheelWidthMm" xml:space="preserve">
+    <value>砂轮宽度 B。</value>
+  </data>
 </root>

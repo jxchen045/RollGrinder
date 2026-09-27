@@ -29,6 +29,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<IUserSession, UserSession>();
         services.AddSingleton<IUserDirectory, UserDirectory>();
         services.AddSingleton<ICalibrationService, CalibrationService>();
+        services.AddSingleton<IWheelHistory, WheelHistory>();
         services.AddSingleton<IWheelChangeService, WheelChangeService>();
         services.AddSingleton<IStepParameterUpdateService, StepParameterUpdateService>();
         services.AddSingleton<IStepFlowControlService, StepFlowControlService>();
@@ -76,6 +77,7 @@ public static class ServicesServiceCollectionExtensions
         // 测量工序走完就把那一趟的读数存成一次测量；同样没有别的入口。
         services.AddSingleton<IMeasurementNotifications, MeasurementNotifications>();
         services.AddHostedService<MeasurementCaptureService>();
+        services.AddHostedService<WheelDressCaptureService>();
         services.AddHostedService<RecordCompletionService>();
         services.AddHostedService<AlarmArchiveHostedService>();
 

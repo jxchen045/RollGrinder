@@ -21,6 +21,7 @@ namespace RollGrinder.Services.Manual;
 /// </summary>
 public sealed class ManualCommandService : IManualCommandService
 {
+    private readonly Calibration.IWheelHistory wheelHistory;
     private readonly IMachineGateway gateway;
     private readonly IMachineMonitor monitor;
     private readonly ITagMap tagMap;
@@ -32,8 +33,10 @@ public sealed class ManualCommandService : IManualCommandService
         IMachineMonitor monitor,
         ITagMap tagMap,
         HmiSettings settings,
+        Calibration.IWheelHistory wheelHistory,
         TimeProvider timeProvider)
     {
+        this.wheelHistory = wheelHistory ?? throw new ArgumentNullException(nameof(wheelHistory));
         this.gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.tagMap = tagMap ?? throw new ArgumentNullException(nameof(tagMap));
@@ -137,6 +140,7 @@ public sealed class ManualCommandService : IManualCommandService
             await WriteAsync(logicalName, true, cancellationToken).ConfigureAwait(false);
             await Task.Delay(this.pulseWidth, this.timeProvider, cancellationToken).ConfigureAwait(false);
             await WriteAsync(logicalName, false, cancellationToken).ConfigureAwait(false);
+            await RecordWheelDressAsync(command, cancellationToken).ConfigureAwait(false);
             return ManualCommandResult.Sent;
         }
         catch (OperationCanceledException)
@@ -151,6 +155,35 @@ public sealed class ManualCommandService : IManualCommandService
             return new ManualCommandResult(ManualCommandOutcome.WriteFailed, WriteFailedResourceKey);
         }
     }
+
+    /// <summary>手动按了"砂轮修整"循环：记进砂轮的修整记录（记账失败不影响动作本身）。</summary>
+    private async Task RecordWheelDressAsync(ManualCommandDescriptor command, CancellationToken cancellationToken)
+    {
+        if (!string.Equals(command.Key, WheelDressCommandKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            await this.wheelHistory.RecordAsync(
+                Data.Model.WheelEventKind.Dress,
+                Data.Model.WheelEventSource.Manual,
+                this.monitor.Current.GetNumberOrNull(MachineTagKeys.WheelDiameterMm),
+                string.Empty,
+                string.Empty,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Data.DataStoreException)
+        {
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+        }
+    }
+
+    /// <summary>手动页"砂轮修整"循环的动作键。</summary>
+    public const string WheelDressCommandKey = "cycle.wheelDress";
 
     public bool? ReadState(ManualCommandDescriptor command)
     {

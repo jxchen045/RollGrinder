@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RollGrinder.App.Navigation;
 using RollGrinder.App.ViewModels;
 using RollGrinder.Core.Steps;
@@ -42,10 +44,22 @@ internal sealed class FullFlowSuite : ISelfTestSuite
 
             // 磨前测量 → 粗磨 → 辅助动作（样例机床登记了动作时）→ 磨后测量 → 圆度：
             // 把测量分阶段落库、圆度存档、辅助动作的下发与原地停留都走一遍。
+            // 机床有修整装置时再加一道砂轮修整：NC 走完它，砂轮页的修整记录里要多一行。
             bool hasAuxiliary = steps.StepTypeOptions.Any(o => o.Key == StepTypeKeys.Auxiliary);
-            string[] sequence = hasAuxiliary
-                ? new[] { StepTypeKeys.Measure, StepTypeKeys.Rough, StepTypeKeys.Auxiliary, StepTypeKeys.Measure, StepTypeKeys.Roundness }
-                : new[] { StepTypeKeys.Measure, StepTypeKeys.Rough, StepTypeKeys.Measure, StepTypeKeys.Roundness };
+            bool hasDresser = steps.StepTypeOptions.Any(o => o.Key == StepTypeKeys.WheelDress && o.IsAvailable);
+            var sequenceList = new List<string> { StepTypeKeys.Measure, StepTypeKeys.Rough };
+            if (hasAuxiliary)
+            {
+                sequenceList.Add(StepTypeKeys.Auxiliary);
+            }
+
+            if (hasDresser)
+            {
+                sequenceList.Add(StepTypeKeys.WheelDress);
+            }
+
+            sequenceList.AddRange(new[] { StepTypeKeys.Measure, StepTypeKeys.Roundness });
+            string[] sequence = sequenceList.ToArray();
             foreach (string key in sequence)
             {
                 StepTypeOptionViewModel? option = steps.StepTypeOptions.FirstOrDefault(o => o.Key == key);
@@ -195,6 +209,21 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             bool shown = await h.WaitUntilAsync(() => auto.RmsText != "--", TimeSpan.FromSeconds(10));
             ctx.Note("rms=" + auto.RmsText);
             ctx.Check(shown, "the RMS should appear by itself once the post-grind measurement is stored");
+        });
+
+        await h.StepAsync("After", "ProgramDressIsInTheWheelHistory", async ctx =>
+        {
+            if (!steps.Steps.Any(step => step.StepTypeKey == StepTypeKeys.WheelDress))
+            {
+                ctx.Skip("this machine has no wheel dresser");
+            }
+
+            IReadOnlyList<RollGrinder.Data.Model.WheelEvent> history = await h.Services
+                .GetRequiredService<RollGrinder.Services.Calibration.IWheelHistory>()
+                .ListAsync(20, default);
+            ctx.Check(history.Any(entry => entry.Kind == RollGrinder.Data.Model.WheelEventKind.Dress
+                    && entry.Source == RollGrinder.Data.Model.WheelEventSource.Program),
+                "the dressing step the NC ran should be recorded in the wheel history");
         });
 
         await h.StepAsync("After", "EditPagesUnlocked", ctx =>

@@ -51,10 +51,12 @@ public interface IWheelChangeService
 public sealed class WheelChangeService : IWheelChangeService
 {
     private readonly ICalibrationService calibration;
+    private readonly IWheelHistory history;
 
-    public WheelChangeService(ICalibrationService calibration)
+    public WheelChangeService(ICalibrationService calibration, IWheelHistory history)
     {
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
+        this.history = history ?? throw new ArgumentNullException(nameof(history));
     }
 
     public WheelChangeWizard? Current { get; private set; }
@@ -133,6 +135,15 @@ public sealed class WheelChangeService : IWheelChangeService
             .With(CalibrationKeys.TouchMode, ParameterValue.FromChoice(wizard.OriginalTouchMode));
 
         await this.calibration.SaveAsync(values, changedBy, cancellationToken).ConfigureAwait(false);
+
+        // 砂轮页的"修整与更换记录"：哪天换的、换成多大。
+        await this.history.RecordAsync(
+            Data.Model.WheelEventKind.Change,
+            Data.Model.WheelEventSource.Wizard,
+            wizard.NewWheelDiameterMm,
+            changedBy,
+            string.Empty,
+            cancellationToken).ConfigureAwait(false);
 
         Current = wizard.Advance();
         Raise();

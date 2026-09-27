@@ -16,6 +16,21 @@ public static class CalibrationKeys
     /// <summary>砂轮宽度（mm）。</summary>
     public const string WheelWidthMm = "wheelWidthMm";
 
+    /// <summary>
+    /// 修整参数（砂轮页，修改稿 5.7）：这台机床修砂轮的常用切深、道次、走刀速度。
+    /// 键与"砂轮修整"工序的参数键一样——程序里插一道修整时照这里的值填，工序简图也认得它们。
+    /// </summary>
+    public const string DressInfeedRadiusMicrometer = Steps.StepParameterKeys.DressInfeedRadiusMicrometer;
+
+    /// <summary>修整道次的常用值。</summary>
+    public const string DressPassCount = Steps.StepParameterKeys.DressPassCount;
+
+    /// <summary>修整走刀速度的常用值（mm/min）。</summary>
+    public const string DressFeedMmPerMin = Steps.StepParameterKeys.DressFeedMmPerMin;
+
+    /// <summary>每磨几支辊修一次砂轮；0 表示不定期，按需要修。只作提示，不自动插工序。</summary>
+    public const string DressIntervalRolls = "dressIntervalRolls";
+
     /// <summary>基准盘直径（mm）：测量臂标定用的那个基准，靠精密量具量出来。</summary>
     public const string ReferenceDiscDiameterMm = "referenceDiscDiameterMm";
 
@@ -81,6 +96,12 @@ public sealed record MachineCalibration
         ParameterDescriptor.Number(CalibrationKeys.WheelDiameterMm, ParameterUnit.Millimeter, 900.0, 1.0, 2000.0),
         ParameterDescriptor.Number(CalibrationKeys.NewWheelDiameterMm, ParameterUnit.Millimeter, 1000.0, 1.0, 2000.0),
         ParameterDescriptor.Number(CalibrationKeys.WheelWidthMm, ParameterUnit.Millimeter, 100.0, 1.0, 500.0),
+
+        // 修整参数：范围与"砂轮修整"工序同一口径，填进工序也不会越界。
+        ParameterDescriptor.Number(CalibrationKeys.DressInfeedRadiusMicrometer, ParameterUnit.Micrometer, 20.0, 1.0, 200.0),
+        ParameterDescriptor.Number(CalibrationKeys.DressPassCount, ParameterUnit.Count, 2.0, 1.0, 20.0),
+        ParameterDescriptor.Number(CalibrationKeys.DressFeedMmPerMin, ParameterUnit.MillimeterPerMinute, 200.0, 1.0, 3000.0),
+        ParameterDescriptor.Number(CalibrationKeys.DressIntervalRolls, ParameterUnit.Count, 0.0, 0.0, 100.0),
         ParameterDescriptor.Number(CalibrationKeys.ReferenceDiscDiameterMm, ParameterUnit.Millimeter, 0.0, 0.0, 1000.0),
         ParameterDescriptor.Number(CalibrationKeys.ReferenceDiscOffsetMm, ParameterUnit.Millimeter, 0.0, 0.0, 10000.0),
         ParameterDescriptor.Number(CalibrationKeys.DresserOffsetMm, ParameterUnit.Millimeter, 0.0, 0.0, 10000.0),

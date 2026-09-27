@@ -2545,4 +2545,61 @@
   <data name="ParamHelp_scanPitchMm" xml:space="preserve">
     <value>Scan pitch: probe advance along the barrel per revolution.</value>
   </data>
+  <data name="Parameter_dressIntervalRolls" xml:space="preserve">
+    <value>Dress interval (rolls)</value>
+  </data>
+  <data name="ParamHelp_dressIntervalRolls" xml:space="preserve">
+    <value>Dress the wheel every this many rolls; 0 means as needed. A reminder only; no step is inserted automatically.</value>
+  </data>
+  <data name="Fn_Wheel" xml:space="preserve">
+    <value>Wheel</value>
+  </data>
+  <data name="SubView_Wheel" xml:space="preserve">
+    <value>Wheel</value>
+  </data>
+  <data name="Wheel_DataHeader" xml:space="preserve">
+    <value>Wheel data</value>
+  </data>
+  <data name="Wheel_DressHeader" xml:space="preserve">
+    <value>Dressing</value>
+  </data>
+  <data name="Wheel_HistoryHeader" xml:space="preserve">
+    <value>Dressing and wheel changes</value>
+  </data>
+  <data name="Wheel_HistoryEmpty" xml:space="preserve">
+    <value>No dressing or wheel change recorded yet</value>
+  </data>
+  <data name="Wheel_MaxSurfaceSpeed" xml:space="preserve">
+    <value>Max surface speed (machine)</value>
+  </data>
+  <data name="Wheel_MaxSurfaceSpeedFormat" xml:space="preserve">
+    <value>{0:0.#} m/s</value>
+  </data>
+  <data name="Wheel_DressDefaultsNote" xml:space="preserve">
+    <value>A wheel-dressing step inserted into a program takes these values; press Save after changing them.</value>
+  </data>
+  <data name="WheelEvent_Change" xml:space="preserve">
+    <value>Wheel changed</value>
+  </data>
+  <data name="WheelEvent_Dress" xml:space="preserve">
+    <value>Dressed</value>
+  </data>
+  <data name="WheelSource_Wizard" xml:space="preserve">
+    <value>Wheel change wizard</value>
+  </data>
+  <data name="WheelSource_Program" xml:space="preserve">
+    <value>Program</value>
+  </data>
+  <data name="WheelSource_Manual" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="ParamHelp_wheelDiameterMm" xml:space="preserve">
+    <value>Current wheel diameter D: corrected by the wheel change wizard from the trial cut, then shrinks with dressing.</value>
+  </data>
+  <data name="ParamHelp_newWheelDiameterMm" xml:space="preserve">
+    <value>New wheel diameter D0 when this wheel was fitted; used to work out wear.</value>
+  </data>
+  <data name="ParamHelp_wheelWidthMm" xml:space="preserve">
+    <value>Wheel width B.</value>
+  </data>
 </root>

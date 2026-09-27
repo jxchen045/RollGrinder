@@ -11,6 +11,7 @@ using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core;
+using RollGrinder.Core.Calibration;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Units;
 using RollGrinder.Core.Parameters;
@@ -493,6 +494,32 @@ public sealed partial class StepsViewModel : PageViewModelBase
         return key;
     }
 
+    /// <summary>
+    /// 新插一道工序的默认参数。砂轮修整照砂轮页设的修整参数填（修改稿 5.7）——
+    /// 这台机床修砂轮的常用切深、道次、走刀速度在那里定一次，编程时不用每次重填。
+    /// </summary>
+    private ParameterSet DefaultsFor(IGrindingStepType stepType)
+    {
+        ParameterSet defaults = stepType.Schema.CreateDefaults();
+        if (!string.Equals(stepType.Key, StepTypeKeys.WheelDress, StringComparison.Ordinal))
+        {
+            return defaults;
+        }
+
+        foreach (string key in new[]
+        {
+            CalibrationKeys.DressInfeedRadiusMicrometer, CalibrationKeys.DressPassCount, CalibrationKeys.DressFeedMmPerMin,
+        })
+        {
+            if (this.calibration.Current.Values.TryGet(key, out ParameterValue? value) && value is not null)
+            {
+                defaults = defaults.With(key, value);
+            }
+        }
+
+        return defaults;
+    }
+
     /// <summary>复制选中的工序（连参数），接在它后面。开始 / 结束不复制。</summary>
     private void CopyStep(StepRowViewModel? step)
     {
@@ -559,7 +586,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         int endPosition = Steps.Count > 0 && Steps[^1].StepTypeKey == StepTypeKeys.End ? Steps.Count - 1 : Steps.Count;
         int selectedIndex = SelectedStep is null ? -1 : Steps.IndexOf(SelectedStep);
         int position = selectedIndex >= 0 && selectedIndex < endPosition ? selectedIndex + 1 : endPosition;
-        var added = new StepRowViewModel(position + 1, stepType, stepType.Schema.CreateDefaults(), Localizer);
+        var added = new StepRowViewModel(position + 1, stepType, DefaultsFor(stepType), Localizer);
         Steps.Insert(position, Track(added));
         Renumber();
         RefreshDurations();

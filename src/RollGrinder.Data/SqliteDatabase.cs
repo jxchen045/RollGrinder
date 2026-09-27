@@ -302,6 +302,21 @@ public sealed class SqliteDatabase
         ALTER TABLE roll ADD COLUMN roll_kind           INTEGER NOT NULL DEFAULT 0;
         ALTER TABLE roll ADD COLUMN current_diameter_mm REAL NULL;
         """,
+
+        // 11：砂轮的修整与更换记录（阶段 2，修改稿 5.7）。标定值的改动记录只记"哪一项、谁、何时"，
+        // 看不出砂轮是哪天换的、换成多大、修整过几次——另开一张表，一行一件事。
+        """
+        CREATE TABLE wheel_event (
+            event_id           TEXT    NOT NULL PRIMARY KEY,
+            occurred_at_utc    TEXT    NOT NULL,
+            kind               INTEGER NOT NULL,
+            source             INTEGER NOT NULL,
+            wheel_diameter_mm  REAL    NULL,
+            changed_by         TEXT    NOT NULL,
+            detail             TEXT    NOT NULL
+        );
+        CREATE INDEX ix_wheel_event_time ON wheel_event (occurred_at_utc);
+        """,
     };
 
     private readonly string connectionString;

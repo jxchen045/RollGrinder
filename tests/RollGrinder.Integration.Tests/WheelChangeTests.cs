@@ -156,6 +156,32 @@ public sealed class WheelChangeTests : IDisposable
     }
 
     [Fact]
+    public async Task A_finished_change_shows_up_in_the_wheel_history_with_the_new_diameter()
+    {
+        // 砂轮页的"修整与更换记录"：哪天换的、换成多大、谁换的。取消的那一次不记。
+        await using ServiceProvider services = await BuildAsync();
+        IWheelChangeService wheelChange = services.GetRequiredService<IWheelChangeService>();
+        IWheelHistory history = services.GetRequiredService<IWheelHistory>();
+
+        wheelChange.Begin();
+        await wheelChange.CancelAsync("li", CancellationToken.None);
+        (await history.ListAsync(10, CancellationToken.None)).Should().BeEmpty();
+
+        wheelChange.Begin();
+        wheelChange.SetNewWheelDiameter(1010.0);
+        await wheelChange.SwitchToManualTouchAsync("wang", CancellationToken.None);
+        wheelChange.RecordTrial(650.0, 650.0);
+        wheelChange.AcceptCorrection();
+        await wheelChange.FinishAsync("wang", CancellationToken.None);
+
+        RollGrinder.Data.Model.WheelEvent entry = (await history.ListAsync(10, CancellationToken.None)).Should().ContainSingle().Subject;
+        entry.Kind.Should().Be(RollGrinder.Data.Model.WheelEventKind.Change);
+        entry.Source.Should().Be(RollGrinder.Data.Model.WheelEventSource.Wizard);
+        entry.WheelDiameterMm.Should().Be(1010.0);
+        entry.ChangedBy.Should().Be("wang");
+    }
+
+    [Fact]
     public async Task Nothing_works_before_the_wizard_is_started()
     {
         await using ServiceProvider services = await BuildAsync();

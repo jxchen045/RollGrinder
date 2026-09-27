@@ -7,6 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Controls;
+using RollGrinder.Core.Steps;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Contracts.Dtos;
@@ -34,6 +36,8 @@ public sealed partial class SettingsViewModel : PageViewModelBase
     private readonly ICalibrationService calibration;
     private readonly IWheelChangeService wheelChange;
     private readonly IUserSession userSession;
+    private readonly IWheelHistory wheelHistory;
+    private readonly MachineCapability capability;
 
     /// <summary>进入本页时的取值，"放弃修改"回到这里。</summary>
     private IReadOnlyList<string> committed = Array.Empty<string>();
@@ -42,11 +46,15 @@ public sealed partial class SettingsViewModel : PageViewModelBase
         ICalibrationService calibration,
         IWheelChangeService wheelChange,
         IUserSession userSession,
+        IWheelHistory wheelHistory,
+        MachineCapability capability,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
         : base(alarms, localizer, navigator)
     {
+        this.wheelHistory = wheelHistory ?? throw new ArgumentNullException(nameof(wheelHistory));
+        this.capability = capability ?? throw new ArgumentNullException(nameof(capability));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.wheelChange = wheelChange ?? throw new ArgumentNullException(nameof(wheelChange));
         this.userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
@@ -57,11 +65,119 @@ public sealed partial class SettingsViewModel : PageViewModelBase
                 () => SaveAsync(CancellationToken.None)), localizer, FunctionKeyKind.Primary, requiresEditable: true),
             new FunctionKeyViewModel("Fn_ReloadSettings", ReloadCommand, localizer),
             new FunctionKeyViewModel("Fn_NewWheel", StartWheelChangeCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Fn_Wheel", OpenWheelCommand, localizer),
         });
+
+        MaxSurfaceSpeedText = capability.MaxWheelSurfaceSpeedMPerSec is double maxSpeed
+            ? localizer.Format("Wheel_MaxSurfaceSpeedFormat", maxSpeed)
+            : "--";
 
         Rebuild();
         this.calibration.Changed += (_, _) => Rebuild();
         this.wheelChange.Changed += (_, _) => RefreshWheelChange();
+        this.wheelHistory.Changed += (_, _) => _ = RunGuardedAsync(RefreshWheelHistoryAsync, CancellationToken.None);
+    }
+
+    // ── 砂轮页（修改稿 5.7）：砂轮数据、修整参数、修整与更换记录 ──────────────────
+
+    /// <summary>砂轮子视图的资源键，同时用作面包屑文案。</summary>
+    public const string WheelSubView = "SubView_Wheel";
+
+    private static readonly string[] WheelKeys =
+    {
+        CalibrationKeys.WheelDiameterMm, CalibrationKeys.NewWheelDiameterMm, CalibrationKeys.WheelWidthMm,
+    };
+
+    private static readonly string[] DressKeys =
+    {
+        CalibrationKeys.DressInfeedRadiusMicrometer, CalibrationKeys.DressPassCount,
+        CalibrationKeys.DressFeedMmPerMin, CalibrationKeys.DressIntervalRolls,
+    };
+
+    /// <summary>砂轮数据的参数格（和标定值同一批格子：在这里改、按"保存"一起存）。</summary>
+    public ObservableCollection<ParameterRowViewModel> WheelRows { get; } = new();
+
+    /// <summary>修整参数的参数格。程序里插"砂轮修整"时照这里的值填。</summary>
+    public ObservableCollection<ParameterRowViewModel> DressRows { get; } = new();
+
+    /// <summary>修整与更换记录，新的在前。</summary>
+    public ObservableCollection<WheelEventRowViewModel> WheelHistory { get; } = new();
+
+    /// <summary>机床允许的砂轮最高线速度（machine.json）；没配为"--"。</summary>
+    public string MaxSurfaceSpeedText { get; }
+
+    /// <summary>光标所在的砂轮 / 修整参数：简图上亮它，说明行写它。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WheelHelpText))]
+    private string focusedWheelKey = CalibrationKeys.WheelDiameterMm;
+
+    /// <summary>简图下面那一行：参数名 — 说明　单位　范围。</summary>
+    public string WheelHelpText
+    {
+        get
+        {
+            ParameterRowViewModel? row = Row(FocusedWheelKey);
+            if (row is null)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string> { Localizer.Format("Steps_HelpHeadFormat", row.Label, Localizer["ParamHelp_" + row.Key]) };
+            if (row.UnitText.Length > 0)
+            {
+                parts.Add(Localizer.Format("Steps_HelpUnitFormat", row.UnitText));
+            }
+
+            if (row.RangeText.Length > 0)
+            {
+                parts.Add(Localizer.Format("Steps_HelpRangeFormat", row.RangeText));
+            }
+
+            return string.Join(Localizer["Steps_HelpSeparator"], parts);
+        }
+    }
+
+    [RelayCommand]
+    private void OpenWheel()
+    {
+        FocusedWheelKey = CalibrationKeys.WheelDiameterMm;
+        Navigator.OpenSubView(WheelSubView);
+        _ = RunGuardedAsync(RefreshWheelHistoryAsync, CancellationToken.None);
+    }
+
+    private async Task RefreshWheelHistoryAsync(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<Data.Model.WheelEvent> events =
+            await this.wheelHistory.ListAsync(WheelHistoryLimit, cancellationToken).ConfigureAwait(true);
+        WheelHistory.Clear();
+        foreach (Data.Model.WheelEvent entry in events)
+        {
+            WheelHistory.Add(new WheelEventRowViewModel(entry, Localizer));
+        }
+    }
+
+    /// <summary>砂轮记录列多少条。</summary>
+    private const int WheelHistoryLimit = 100;
+
+    /// <summary>换砂轮向导每一步配的图：画哪一幅、亮哪个量（修改稿 5②）。</summary>
+    public WheelDiagramMode WizardDiagramMode => WheelChangeStage is WheelChangeStage.EnterNewWheel or WheelChangeStage.Verify or WheelChangeStage.Done
+        ? WheelDiagramMode.Wheel
+        : WheelDiagramMode.Trial;
+
+    /// <summary>这一步要量、要填的是哪个尺寸。</summary>
+    public string WizardHighlightKey => WheelChangeStage switch
+    {
+        WheelChangeStage.EnterNewWheel => CalibrationKeys.NewWheelDiameterMm,
+        WheelChangeStage.SwitchToManualTouch or WheelChangeStage.RestoreTouchMode => WheelDiagram.TouchKey,
+        WheelChangeStage.TrialGrind => WheelDiagram.TrialRollKey,
+        WheelChangeStage.Verify => CalibrationKeys.WheelDiameterMm,
+        _ => string.Empty,
+    };
+
+    partial void OnWheelChangeStageChanged(WheelChangeStage value)
+    {
+        OnPropertyChanged(nameof(WizardDiagramMode));
+        OnPropertyChanged(nameof(WizardHighlightKey));
     }
 
     public override PageKey Key => PageKey.Settings;
@@ -346,6 +462,24 @@ public sealed partial class SettingsViewModel : PageViewModelBase
             Values.Add(row);
         }
 
+        WheelRows.Clear();
+        foreach (string key in WheelKeys)
+        {
+            if (Row(key) is { } row)
+            {
+                WheelRows.Add(row);
+            }
+        }
+
+        DressRows.Clear();
+        foreach (string key in DressKeys)
+        {
+            if (Row(key) is { } row)
+            {
+                DressRows.Add(row);
+            }
+        }
+
         Capture();
         IsDirty = false;
         RefreshWheelWear();
@@ -398,4 +532,31 @@ public sealed partial class SettingsViewModel : PageViewModelBase
             Alarms.RaiseException(ex);
         }
     }
+}
+
+/// <summary>砂轮修整与更换记录里的一行。</summary>
+public sealed class WheelEventRowViewModel
+{
+    public WheelEventRowViewModel(Data.Model.WheelEvent entry, IStringLocalizer localizer)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(localizer);
+        TimeText = entry.OccurredAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.CurrentCulture);
+        KindText = localizer["WheelEvent_" + entry.Kind];
+        SourceText = localizer["WheelSource_" + entry.Source];
+        DiameterText = entry.WheelDiameterMm is double diameter
+            ? diameter.ToString("F1", CultureInfo.CurrentCulture)
+            : "--";
+        DetailText = string.Join(" · ", new[] { entry.ChangedBy, entry.Detail }.Where(part => part.Length > 0));
+    }
+
+    public string TimeText { get; }
+
+    public string KindText { get; }
+
+    public string SourceText { get; }
+
+    public string DiameterText { get; }
+
+    public string DetailText { get; }
 }

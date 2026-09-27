@@ -135,7 +135,8 @@ public sealed class ManualCommandTests
         RecordingGateway gateway,
         MachineStateSnapshot snapshot,
         IEnumerable<string>? mappedKeys = null,
-        int pulseMs = 1) =>
+        int pulseMs = 1,
+        RecordingWheelHistory? history = null) =>
         new(
             gateway,
             new StaticMonitor(snapshot),
@@ -143,7 +144,50 @@ public sealed class ManualCommandTests
                 .Where(command => command.Kind != ManualCommandKind.Local)
                 .Select(command => MachineTagKeys.ManualCommand(command.Key))),
             Settings(pulseMs),
+            history ?? new RecordingWheelHistory(),
             TimeProvider.System);
+
+    /// <summary>记下砂轮记录，不落库。</summary>
+    private sealed class RecordingWheelHistory : RollGrinder.Services.Calibration.IWheelHistory
+    {
+        public List<(RollGrinder.Data.Model.WheelEventKind Kind, RollGrinder.Data.Model.WheelEventSource Source)> Recorded { get; } = new();
+
+        public event EventHandler? Changed;
+
+        public Task RecordAsync(
+            RollGrinder.Data.Model.WheelEventKind kind,
+            RollGrinder.Data.Model.WheelEventSource source,
+            double? wheelDiameterMm,
+            string changedBy,
+            string detail,
+            CancellationToken cancellationToken)
+        {
+            Recorded.Add((kind, source));
+            Changed?.Invoke(this, EventArgs.Empty);
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<RollGrinder.Data.Model.WheelEvent>> ListAsync(int limit, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<RollGrinder.Data.Model.WheelEvent>>(Array.Empty<RollGrinder.Data.Model.WheelEvent>());
+    }
+
+    [Fact]
+    public async Task A_manual_dress_cycle_is_written_into_the_wheel_history()
+    {
+        // 砂轮页的"修整与更换记录"：手动按了修整循环也要留一笔；别的动作不记。
+        var history = new RecordingWheelHistory();
+        var gateway = new RecordingGateway();
+        ManualCommandService service = CreateService(gateway, SnapshotWith(NcChannelState.Reset), history: history);
+
+        (await service.ExecuteAsync(Find(ManualCommandService.WheelDressCommandKey), null, CancellationToken.None))
+            .Succeeded.Should().BeTrue();
+        history.Recorded.Should().Equal((RollGrinder.Data.Model.WheelEventKind.Dress, RollGrinder.Data.Model.WheelEventSource.Manual));
+
+        ManualCommandDescriptor other = ManualCommandCatalog.All.First(command =>
+            command.Kind == ManualCommandKind.Pulse && command.Key != ManualCommandService.WheelDressCommandKey);
+        await service.ExecuteAsync(other, null, CancellationToken.None);
+        history.Recorded.Should().HaveCount(1, "只有修整循环记进砂轮记录");
+    }
 
     private static ManualCommandDescriptor Find(string key) =>
         ManualCommandCatalog.All.Single(command => string.Equals(command.Key, key, StringComparison.Ordinal));
