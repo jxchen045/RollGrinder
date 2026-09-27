@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
@@ -415,6 +416,88 @@ public sealed class PauseStepType : IGrindingStepType
             PauseReasonChoices.Other),
     });
 
+    public GrindingStepPlan CreatePlan(RollGeometry geometry, ParameterSet parameters)
+    {
+        ArgumentNullException.ThrowIfNull(geometry);
+        ArgumentNullException.ThrowIfNull(parameters);
+
+        return new GrindingStepPlan(
+            Key,
+            PassCount: 0,
+            InfeedPerPassRadiusMm: 0.0,
+            FeedMmPerMin: 0.0,
+            WorkpieceSpeedRpm: 0.0,
+            WheelSpeedRpm: 0.0,
+            SparkOutPassCount: 0,
+            RequiresMeasurement: false);
+    }
+}
+
+/// <summary>辅助动作清单里的一项：动作键（界面文案按它取）与和 NC 约定的动作号。</summary>
+/// <param name="Key">动作键，例如 coolant。</param>
+/// <param name="NcCode">NC 程序认的动作号。</param>
+public sealed record AuxiliaryAction(string Key, int NcCode);
+
+/// <summary>
+/// 辅助动作（修改稿 2⑤）：在程序里开 / 关一个机构，例如精磨前关切削液、测量前放下测量臂。
+///
+/// **上位机不执行动作。** 动作清单与动作号在 machine.json 里登记；这里只把"动作号 + 开 / 关"
+/// 按工序专属参数下发，NC 程序照着执行——用 M 代码还是写 PLC 命令字，是 NC 与电气的事（问题 Q4）。
+/// 上位机被强制结束，这一道照样由 NC 做完。
+/// </summary>
+public sealed class AuxiliaryActionStepType : IGrindingStepType
+{
+    public AuxiliaryActionStepType(IEnumerable<AuxiliaryAction> actions)
+    {
+        ArgumentNullException.ThrowIfNull(actions);
+        Actions = actions.OrderBy(action => action.NcCode).ToArray();
+        if (Actions.Count < 2)
+        {
+            throw new DomainException("An auxiliary-action step needs at least two actions registered in machine.json.");
+        }
+
+        if (Actions.Select(action => action.Key).Distinct(StringComparer.Ordinal).Count() != Actions.Count
+            || Actions.Select(action => action.NcCode).Distinct().Count() != Actions.Count)
+        {
+            throw new DomainException("Auxiliary actions in machine.json must have distinct keys and distinct NC codes.");
+        }
+
+        Schema = new ParameterSchema(new[]
+        {
+            ParameterDescriptor.Choice(StepParameterKeys.AuxAction, Actions.Select(action => action.Key), Actions[0].Key),
+            ParameterDescriptor.Choice(
+                StepParameterKeys.AuxState, new[] { AuxStateChoices.On, AuxStateChoices.Off }, AuxStateChoices.On),
+        });
+    }
+
+    public string Key => StepTypeKeys.Auxiliary;
+
+    /// <summary>本台机床登记的动作，按动作号排。</summary>
+    public IReadOnlyList<AuxiliaryAction> Actions { get; }
+
+    public ParameterSchema Schema { get; }
+
+    /// <summary>下发两项：动作号、开关（1 开 / 0 关）。顺序就是和 NC 的约定。</summary>
+    public IReadOnlyList<string> NcExtraParameterKeys { get; } = new[]
+    {
+        StepParameterKeys.AuxAction,
+        StepParameterKeys.AuxState,
+    };
+
+    public double? NcValueOf(string parameterKey, ParameterSet values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        ParameterSet applied = Schema.ApplyDefaults(values);
+        return parameterKey switch
+        {
+            StepParameterKeys.AuxAction => Actions.First(action =>
+                string.Equals(action.Key, applied.GetChoice(StepParameterKeys.AuxAction), StringComparison.Ordinal)).NcCode,
+            StepParameterKeys.AuxState => applied.GetChoice(StepParameterKeys.AuxState) == AuxStateChoices.On ? 1.0 : 0.0,
+            _ => null,
+        };
+    }
+
+    /// <summary>不走拖板、不去除材料：原地做完动作就往下走。</summary>
     public GrindingStepPlan CreatePlan(RollGeometry geometry, ParameterSet parameters)
     {
         ArgumentNullException.ThrowIfNull(geometry);

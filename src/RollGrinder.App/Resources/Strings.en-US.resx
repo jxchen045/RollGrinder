@@ -2425,4 +2425,28 @@
   <data name="StepType_Auxiliary" xml:space="preserve">
     <value>Auxiliary action</value>
   </data>
+  <data name="Parameter_auxAction" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Parameter_auxState" xml:space="preserve">
+    <value>On / off</value>
+  </data>
+  <data name="Choice_auxAction_coolant" xml:space="preserve">
+    <value>Coolant</value>
+  </data>
+  <data name="Choice_auxAction_steadyRest" xml:space="preserve">
+    <value>Steady rest</value>
+  </data>
+  <data name="Choice_auxAction_tailstockLock" xml:space="preserve">
+    <value>Tailstock lock</value>
+  </data>
+  <data name="Choice_auxAction_measuringArm" xml:space="preserve">
+    <value>Measuring arm</value>
+  </data>
+  <data name="Choice_auxState_on" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Choice_auxState_off" xml:space="preserve">
+    <value>Off</value>
+  </data>
 </root>

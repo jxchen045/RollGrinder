@@ -40,8 +40,12 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             await h.GoToAsync(PageKey.Steps, ctx);
             await h.PressKeyAsync(ctx, "Fn_NewProgram");
 
-            // 磨前测量 → 粗磨 → 磨后测量 → 圆度：把测量分阶段落库、圆度存档都走一遍。
-            string[] sequence = { StepTypeKeys.Measure, StepTypeKeys.Rough, StepTypeKeys.Measure, StepTypeKeys.Roundness };
+            // 磨前测量 → 粗磨 → 辅助动作（样例机床登记了动作时）→ 磨后测量 → 圆度：
+            // 把测量分阶段落库、圆度存档、辅助动作的下发与原地停留都走一遍。
+            bool hasAuxiliary = steps.StepTypeOptions.Any(o => o.Key == StepTypeKeys.Auxiliary);
+            string[] sequence = hasAuxiliary
+                ? new[] { StepTypeKeys.Measure, StepTypeKeys.Rough, StepTypeKeys.Auxiliary, StepTypeKeys.Measure, StepTypeKeys.Roundness }
+                : new[] { StepTypeKeys.Measure, StepTypeKeys.Rough, StepTypeKeys.Measure, StepTypeKeys.Roundness };
             foreach (string key in sequence)
             {
                 StepTypeOptionViewModel? option = steps.StepTypeOptions.FirstOrDefault(o => o.Key == key);

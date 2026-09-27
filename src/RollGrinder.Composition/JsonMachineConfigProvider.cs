@@ -148,7 +148,8 @@ public sealed class JsonMachineConfigProvider : IMachineConfigProvider
                 workpiece.MinDiameterMm,
                 workpiece.MaxDiameterMm,
                 workpiece.MaxWeightKg),
-            json.StepTypeCodes ?? new Dictionary<string, int>());
+            json.StepTypeCodes ?? new Dictionary<string, int>(),
+            json.AuxiliaryActionCodes ?? new Dictionary<string, int>());
     }
 
     private static ITagMap MapTagMap(TagMapJson json, string path)

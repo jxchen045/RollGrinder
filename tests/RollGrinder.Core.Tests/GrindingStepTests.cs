@@ -243,7 +243,9 @@ public sealed class GrindingStepTests
         typeof(IGrindingStepType).Assembly.GetTypes()
             .Where(type => type is { IsAbstract: false, IsPublic: true }
                 && typeof(IGrindingStepType).IsAssignableFrom(type))
-            .Select(type => (IGrindingStepType)Activator.CreateInstance(type)!)
+            .Select(type => type == typeof(AuxiliaryActionStepType)
+                ? new AuxiliaryActionStepType(new[] { new AuxiliaryAction("coolant", 1), new AuxiliaryAction("steadyRest", 2) })
+                : (IGrindingStepType)Activator.CreateInstance(type)!)
             .OrderBy(stepType => stepType.Key, StringComparer.Ordinal)
             .ToArray();
 

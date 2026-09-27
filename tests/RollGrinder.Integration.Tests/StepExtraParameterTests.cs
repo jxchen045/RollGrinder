@@ -24,12 +24,7 @@ public sealed class StepExtraParameterTests
         JsonDocument.Parse(File.ReadAllText(
             Path.Combine(RepositoryLayout.Root, "config", "tagmap.sample.json")));
 
-    private static IGrindingStepType[] AllStepTypes() =>
-        typeof(IGrindingStepType).Assembly.GetTypes()
-            .Where(type => type is { IsAbstract: false, IsPublic: true }
-                && typeof(IGrindingStepType).IsAssignableFrom(type))
-            .Select(type => (IGrindingStepType)Activator.CreateInstance(type)!)
-            .ToArray();
+    private static IGrindingStepType[] AllStepTypes() => SampleMachine.AllStepTypes();
 
     [Fact]
     public void No_step_type_declares_more_extras_than_the_block_holds()

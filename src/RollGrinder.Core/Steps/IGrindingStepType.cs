@@ -43,6 +43,12 @@ public interface IGrindingStepType
     /// </summary>
     IReadOnlyList<string> NcExtraParameterKeys => Array.Empty<string>();
 
+    /// <summary>
+    /// 工序专属参数下发成什么数。null 表示按通用规则折（数值原样、开关 0/1、选项取位置）。
+    /// 辅助动作用它：动作号是和 NC 约定的代码，不是列表里的位置。
+    /// </summary>
+    double? NcValueOf(string parameterKey, ParameterSet values) => null;
+
     /// <summary>把参数展开成执行计划（半径量 mm）。</summary>
     GrindingStepPlan CreatePlan(RollGeometry geometry, ParameterSet parameters);
 }

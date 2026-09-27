@@ -97,6 +97,9 @@ public sealed record WorkpieceLimits(
 /// <param name="Thresholds">阈值，键由现场约定，单位写在键名里。</param>
 /// <param name="Workpiece">辊件界限。</param>
 /// <param name="StepTypeCodes">工序类型键到 NC 侧数字代码的映射；新增一类工序只加一条配置。</param>
+/// <param name="AuxiliaryActionCodes">
+/// 辅助动作工序能挑的机构动作：动作键 → NC 程序认的动作号（问题 Q4）。少于两项时不提供辅助动作工序。
+/// </param>
 public sealed record MachineDescription(
     int SchemaVersion,
     string MachineId,
@@ -107,4 +110,5 @@ public sealed record MachineDescription(
     IReadOnlyDictionary<string, bool> Options,
     IReadOnlyDictionary<string, double> Thresholds,
     WorkpieceLimits Workpiece,
-    IReadOnlyDictionary<string, int> StepTypeCodes);
+    IReadOnlyDictionary<string, int> StepTypeCodes,
+    IReadOnlyDictionary<string, int>? AuxiliaryActionCodes = null);

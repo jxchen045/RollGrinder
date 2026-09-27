@@ -155,6 +155,57 @@ public sealed class NcJobTranslatorTests
     }
 
     [Fact]
+    public void An_auxiliary_action_hands_its_nc_code_and_state_over_in_the_extras_block()
+    {
+        // 动作号是 machine.json 里和 NC 约定的代码，不是列表里的位置；开 1、关 0。
+        var auxiliary = new AuxiliaryActionStepType(new[]
+        {
+            new AuxiliaryAction("coolant", 11), new AuxiliaryAction("steadyRest", 27), new AuxiliaryAction("measuringArm", 42),
+        });
+        MachineDescription machine = CreateMachine(new Dictionary<string, int>
+        {
+            [StepTypeKeys.Rough] = 1,
+            [StepTypeKeys.Auxiliary] = 117,
+        });
+        var translator = new NcJobTranslator(
+            new RollProfileTypeRegistry(new IRollProfileType[] { new CylindricalProfileType() }),
+            new GrindingStepTypeRegistry(new IGrindingStepType[] { new RoughGrindingStepType(), auxiliary }),
+            FakeTagMap.Complete(),
+            machine);
+        GrindingJob job = GrindingJob.Create(
+            "J-aux",
+            "R-1",
+            Geometry,
+            ProfileTypeKeys.Cylindrical,
+            new CylindricalProfileType().Schema.CreateDefaults(),
+            new[]
+            {
+                new GrindingJobStep(1, StepTypeKeys.Auxiliary, auxiliary.Schema.CreateDefaults()
+                    .With(StepParameterKeys.AuxAction, ParameterValue.FromChoice("steadyRest"))
+                    .With(StepParameterKeys.AuxState, ParameterValue.FromChoice(AuxStateChoices.Off))),
+                new GrindingJobStep(2, StepTypeKeys.Rough, new RoughGrindingStepType().Schema.CreateDefaults()),
+            });
+
+        NcDownload download = translator.Translate(job, null, 21, Now);
+
+        NumberOf(download, MachineTagKeys.JobStepExtraAt(0, 0)).Should().Be(27.0);
+        NumberOf(download, MachineTagKeys.JobStepExtraAt(0, 1)).Should().Be(0.0);
+        auxiliary.CreatePlan(Geometry, job.Steps[0].Parameters).PassCount.Should().Be(0, "辅助动作不走拖板，原地做完就往下走");
+    }
+
+    [Fact]
+    public void Auxiliary_actions_need_at_least_two_distinct_entries()
+    {
+        FluentActions.Invoking(() => new AuxiliaryActionStepType(new[] { new AuxiliaryAction("coolant", 1) }))
+            .Should().Throw<RollGrinder.Core.DomainException>();
+        FluentActions.Invoking(() => new AuxiliaryActionStepType(new[]
+            {
+                new AuxiliaryAction("coolant", 1), new AuxiliaryAction("steadyRest", 1),
+            }))
+            .Should().Throw<RollGrinder.Core.DomainException>("两个动作共用一个动作号，NC 分不出来");
+    }
+
+    [Fact]
     public void A_step_type_without_extras_writes_none()
     {
         // 没声明专属参数的工序整块留空，不写 8 条没人看的 0。

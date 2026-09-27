@@ -73,13 +73,7 @@ public sealed class LocalizationTests
     /// 用反射从 Core 里捞，而不是手写一份名单：手写的名单会忘记更新，
     /// 新加一种工序时文案守卫就悄悄漏掉它——这正是架构约束 ④ 要挡的事。
     /// </summary>
-    private static IGrindingStepType[] AllStepTypes() =>
-        typeof(IGrindingStepType).Assembly.GetTypes()
-            .Where(type => type is { IsAbstract: false, IsPublic: true }
-                && typeof(IGrindingStepType).IsAssignableFrom(type))
-            .Select(type => (IGrindingStepType)Activator.CreateInstance(type)!)
-            .OrderBy(stepType => stepType.Key, StringComparer.Ordinal)
-            .ToArray();
+    private static IGrindingStepType[] AllStepTypes() => SampleMachine.AllStepTypes();
 
     [Fact]
     public void Every_registered_profile_and_step_type_has_a_label()

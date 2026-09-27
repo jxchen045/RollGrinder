@@ -26,6 +26,8 @@ internal sealed class MachineJson
     public WorkpieceJson? Workpiece { get; set; }
 
     public Dictionary<string, int>? StepTypeCodes { get; set; }
+
+    public Dictionary<string, int>? AuxiliaryActionCodes { get; set; }
 }
 
 internal sealed class ControllerJson

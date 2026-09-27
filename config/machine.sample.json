@@ -125,6 +125,13 @@
     "Chamfer": 100,
     "EddyCurrent": 110,
     "Pause": 115,
+    "Auxiliary": 117,
     "End": 120
+  },
+  "auxiliaryActionCodes": {
+    "coolant": 1,
+    "steadyRest": 2,
+    "tailstockLock": 3,
+    "measuringArm": 4
   }
 }

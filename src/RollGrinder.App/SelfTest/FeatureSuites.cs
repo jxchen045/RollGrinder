@@ -568,6 +568,21 @@ internal sealed class StepsSuite : ISelfTestSuite
             await h.PressVerticalKeyAsync(ctx, "Vk_DeleteStep");
             ctx.Check(page.Steps.Count == count, "delete should remove the selected step");
 
+            // 辅助动作：只有一种工序的类别直接插，不再开一层；动作与开关是分段键。
+            if (page.StepTypeOptions.Any(o => o.Key == StepTypeKeys.Auxiliary))
+            {
+                await h.PressVerticalKeyAsync(ctx, "Vk_InsertStep");
+                await h.PressVerticalKeyAsync(ctx, "Vk_CatAuxiliary");
+                ctx.Check(page.SelectedStep?.StepTypeKey == StepTypeKeys.Auxiliary, "the auxiliary action should be inserted and selected");
+                ctx.Check(page.SelectedStep!.Parameters.Any(p => p.Key == StepParameterKeys.AuxAction && p.Choices.Count >= 2),
+                    "the actions registered in machine.json should be offered");
+                await h.PressVerticalKeyAsync(ctx, "Vk_DeleteStep");
+            }
+            else
+            {
+                ctx.Note("machine.json registers no auxiliary actions: the auxiliary step is not offered");
+            }
+
             // 两层子菜单里按 Esc：一次只退一层，不离开本页。
             await h.PressVerticalKeyAsync(ctx, "Vk_InsertStep");
             await h.PressVerticalKeyAsync(ctx, "Vk_CatMeasuring");

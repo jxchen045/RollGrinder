@@ -67,6 +67,12 @@ public static class StepParameterKeys
     /// <summary>暂停工序的提示文案键，界面按它显示"为什么停在这里"。</summary>
     public const string PauseReason = "pauseReason";
 
+    /// <summary>辅助动作：做哪个机构动作（machine.json 里登记的动作键）。</summary>
+    public const string AuxAction = "auxAction";
+
+    /// <summary>辅助动作：开还是关。</summary>
+    public const string AuxState = "auxState";
+
     /// <summary>修整进给：每道修整的切深（半径量 µm，砂轮半径）。</summary>
     public const string DressInfeedRadiusMicrometer = "dressInfeedRadiusMicrometer";
 
@@ -115,6 +121,16 @@ public static class ChamferKindChoices
 }
 
 /// <summary>暂停原因参数的选项键。</summary>
+public static class AuxStateChoices
+{
+    /// <summary>开（切削液开、中心架顶升、尾架锁紧、测量臂放下……）。下发为 1。</summary>
+    public const string On = "on";
+
+    /// <summary>关。下发为 0。</summary>
+    public const string Off = "off";
+}
+
+/// <summary>暂停原因的选项键。</summary>
 public static class PauseReasonChoices
 {
     /// <summary>换砂轮。</summary>

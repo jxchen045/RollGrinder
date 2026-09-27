@@ -1,4 +1,6 @@
 using System;
+using RollGrinder.Core.Steps;
+using System.Linq;
 using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -36,6 +38,13 @@ public static class MachineAccessServiceCollectionExtensions
         services.AddSingleton(tagMap);
         services.AddSingleton<IMachineConfigProvider>(_ => new JsonMachineConfigProvider(options));
         services.AddSingleton(MachineCapabilityFactory.Create(machine));
+
+        // 辅助动作工序：machine.json 登记了至少两个机构动作才提供（动作清单与动作号是这台机床的事）。
+        if (machine.AuxiliaryActionCodes is { Count: >= 2 } auxiliaryActions)
+        {
+            services.AddSingleton<IGrindingStepType>(new AuxiliaryActionStepType(
+                auxiliaryActions.Select(pair => new AuxiliaryAction(pair.Key, pair.Value))));
+        }
 
         // 仿真加速时机床时间比墙上时间快：判"磨得快得不可能"时要按这个倍数换算。
         services.AddSingleton(options.Gateway == GatewayKind.Sim && options.SimulationSpeed > 1.0

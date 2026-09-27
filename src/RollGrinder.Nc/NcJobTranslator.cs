@@ -266,7 +266,11 @@ public sealed class NcJobTranslator
         ParameterSet values = stepType.Schema.ApplyDefaults(step.Parameters);
         for (int k = 0; k < keys.Count; k++)
         {
-            AddNumber(writes, MachineTagKeys.JobStepExtraAt(i, k), NumericValue(stepType, values, keys[k]), timestampUtc);
+            AddNumber(
+                writes,
+                MachineTagKeys.JobStepExtraAt(i, k),
+                stepType.NcValueOf(keys[k], values) ?? NumericValue(stepType, values, keys[k]),
+                timestampUtc);
         }
     }
 
