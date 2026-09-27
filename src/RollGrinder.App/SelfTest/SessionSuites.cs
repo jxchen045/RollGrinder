@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
+using RollGrinder.App.Navigation;
 using RollGrinder.App.ViewModels;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Services.Alarms;
@@ -173,5 +174,80 @@ internal sealed class SessionTailSuite : ISelfTestSuite
             ctx.Check(h.Shell.CurrentPage.Key.ToString() == before, "the navigation key must do nothing while signed out");
             ctx.Check(h.Shell.IsSignInOpen, "sign-in overlay should be open");
         }, StepOptions.Shot);
+    }
+}
+
+/// <summary>
+/// 权限细分（修改稿 Q9）：操作者能选作业、下发、运行，辊形、程序、标定、补偿、配置只能看；
+/// 管理员能改辊形、程序、标定；制造商全都能改。临时建一个操作者账号，查完删掉。
+/// </summary>
+internal sealed class PermissionSuite : ISelfTestSuite
+{
+    private const string OperatorName = "selftest-perm-op";
+    private const string OperatorPassword = "SelfTest-Perm-1";
+
+    public string Name => "Permissions";
+
+    public async Task RunAsync(SelfTestHarness h)
+    {
+        ShellViewModel shell = h.Shell;
+        await h.RecoverAsync();
+
+        await h.StepAsync("Operator", "CreateAndSignIn", async ctx =>
+        {
+            await h.RunAsync(shell.OpenUserAdminCommand);
+            shell.NewUserName = OperatorName;
+            shell.NewUserPassword = OperatorPassword;
+            shell.NewUserRole = UserRole.Operator;
+            await h.RunAsync(shell.CreateUserCommand);
+            await h.RunAsync(shell.CloseUserAdminCommand);
+
+            await h.RunAsync(shell.SignOutCommand);
+            shell.SignInUserName = OperatorName;
+            shell.SignInPassword = OperatorPassword;
+            await h.RunAsync(shell.SignInCommand);
+            ctx.Check(shell.IsSignedIn && !shell.IsSignInOpen, "the operator should be signed in");
+        });
+
+        await h.StepAsync("Operator", "LibrariesAreReadOnly", async ctx =>
+        {
+            ProfileViewModel profile = h.Page<ProfileViewModel>();
+            StepsViewModel steps = h.Page<StepsViewModel>();
+            ctx.Check(profile.IsRoleLocked && profile.IsReadOnly, "an operator must not edit profiles");
+            ctx.Check(steps.IsRoleLocked && !steps.CanSave, "an operator must not edit programs");
+            ctx.Check(!h.Page<SettingsViewModel>().CanEdit, "an operator must not edit calibration");
+            ctx.Check(!h.Page<AutoGrindingViewModel>().CanEditCompensation, "an operator must not edit the compensation tuning");
+            ctx.Check(!h.Page<DiagnosticsViewModel>().CanEditMachineConfig && !h.Page<DiagnosticsViewModel>().CanEditTagMap,
+                "an operator must not edit the machine config or tag map");
+            ctx.Check(!shell.CanManageUsers, "an operator must not manage accounts");
+            ctx.Check(!h.Page<JobViewModel>().IsRoleLocked, "an operator builds and downloads jobs");
+
+            await h.GoToAsync(PageKey.Steps, ctx);
+            ctx.Check(!h.IsKeyUsable(h.IndexOfKey("Fn_SaveProgram")), "the save key should be greyed out for an operator");
+            ctx.Check(h.IsShownOnScreen("RoleLockBadge"), "the top bar should say which role is needed");
+            ctx.Note(steps.RoleLockText);
+            h.TryScreenshot("permission-operator-steps");
+        });
+
+        await h.StepAsync("Manufacturer", "SignBackInAndClean", async ctx =>
+        {
+            await h.RunAsync(shell.SignOutCommand);
+            shell.SignInUserName = UserDirectory.SeedUserName;
+            shell.SignInPassword = SelfTestAccounts.AdminPassword;
+            await h.RunAsync(shell.SignInCommand);
+            ctx.Check(shell.IsSignedIn, "the manufacturer should sign in again");
+            ctx.Check(!h.Page<ProfileViewModel>().IsRoleLocked && h.Page<DiagnosticsViewModel>().CanEditMachineConfig,
+                "the manufacturer may edit everything");
+
+            await h.RunAsync(shell.OpenUserAdminCommand);
+            shell.SelectedUserAccount = shell.UserAccounts.FirstOrDefault(a => a.UserName == OperatorName);
+            if (shell.SelectedUserAccount is not null)
+            {
+                await h.RunAsync(shell.DeleteUserCommand);
+            }
+
+            await h.RunAsync(shell.CloseUserAdminCommand);
+            ctx.Check(shell.UserAccounts.All(a => a.UserName != OperatorName), "the temporary operator should be removed");
+        });
     }
 }

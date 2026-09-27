@@ -129,6 +129,7 @@ internal sealed class SelfTestRunner
             yield return new DiagnosticsSuite();
         }
 
+        yield return new PermissionSuite();
         yield return new SessionTailSuite();
     }
 

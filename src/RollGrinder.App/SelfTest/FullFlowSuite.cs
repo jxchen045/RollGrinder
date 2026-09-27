@@ -211,6 +211,23 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             ctx.Check(shown, "the RMS should appear by itself once the post-grind measurement is stored");
         });
 
+        // 阶段 3：顶上的状态带有数；补偿子视图里有 NC 的行程修正与这支辊的各次测量。
+        await h.StepAsync("After", "StatusBandAndCompensationView", async ctx =>
+        {
+            ctx.Check(auto.StatusBand.Fields.All(field => field.Label.Length > 0), "the status band fields should be labelled");
+            ctx.Note(string.Join(" · ", auto.StatusBand.Fields.Select(field => field.Label + " " + field.ValueText)));
+            ctx.Note(string.Join(" · ", auto.StatusBand.Lamps.Select(lamp => lamp.Label + " " + lamp.StateText)));
+            ctx.Check(auto.StatusBand.Lamps.Any(lamp => !lamp.IsUnknown), "the simulator should light at least one mechanism lamp");
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_Compensation");
+            ctx.Check(auto.ActiveSubViewKey == AutoGrindingViewModel.CompensationSubView, "the compensation view should open");
+            bool measured = await h.WaitUntilAsync(() => auto.MeasurementConvergence.Count > 0, TimeSpan.FromSeconds(5));
+            ctx.Check(measured, "the measurements of this roll should be listed with their distance to target");
+            ctx.Note(Invariant($"stroke corrections={auto.StrokeCorrections.Count}, measurements={auto.MeasurementConvergence.Count}"));
+            h.TryScreenshot("auto-compensation");
+            await h.RecoverAsync();
+        }, StepOptions.Shot);
+
         await h.StepAsync("After", "ProgramDressIsInTheWheelHistory", async ctx =>
         {
             if (!steps.Steps.Any(step => step.StepTypeKey == StepTypeKeys.WheelDress))
