@@ -51,6 +51,12 @@ public static class StepTypeKeys
     /// <summary>涡流探伤。</summary>
     public const string EddyCurrent = "EddyCurrent";
 
+    /// <summary>
+    /// 辅助动作：在程序里开 / 关一个机构（切削液、中心架、尾架……）。
+    /// 动作清单在 machine.json 里登记；上位机只下发动作号与开关，NC 程序照着执行（修改稿 2⑤、问题 Q4）。
+    /// </summary>
+    public const string Auxiliary = "Auxiliary";
+
     /// <summary>结束：程序终点标记，不产生运动。</summary>
     public const string End = "End";
 }

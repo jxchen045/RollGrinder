@@ -15,43 +15,14 @@
                     <TextBlock Text="{loc:Loc Steps_SequenceHeader}" Style="{StaticResource Text.CardTitle}" />
                 </Border>
 
-                <!-- 两行：下拉框占满一行，"添加工序""校验"平分第二行。新添的工序插在"结束"前面。 -->
-                <Grid DockPanel.Dock="Top" Margin="8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <!--
-                        按实机的 5 个工序槽分组呈现（外加不占槽的探伤/测量/标记/暂停）。
-                        内部仍然是任意排序的若干种工序类型，槽只是分组——
-                        操作工在实机上按这 5 个槽想事情，选工序时照这个分组看。
-                    -->
-                    <ComboBox x:Name="StepTypePicker" SelectedItem="{Binding SelectedStepType}"
-                              DisplayMemberPath="DisplayName" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                              Grid.Row="0" Grid.ColumnSpan="3" Height="46" FontSize="17" Margin="0,0,0,8">
-                        <ComboBox.GroupStyle>
-                            <GroupStyle>
-                                <GroupStyle.HeaderTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Name}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
-                                                   Padding="6,6,6,2"
-                                                   Foreground="{StaticResource Brush.TextSecondary}" />
-                                    </DataTemplate>
-                                </GroupStyle.HeaderTemplate>
-                            </GroupStyle>
-                        </ComboBox.GroupStyle>
-                    </ComboBox>
-                    <Button Content="{loc:Loc Steps_AddStep}" Command="{Binding AddStepCommand}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
-                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="0" Height="46" Margin="0,0,4,0" />
-                    <!-- 校验：和存程序、下发前同一套检查，结果列在右栏程序卡片下面（第一轮甲方测试 工序 2⑥）。只读也能按。 -->
+                <!-- 插入、删除、调序、复制都在右侧竖向软键上（修改稿原则 1），这里只留"校验"。
+                     和存程序、下发前同一套检查，结果列在右栏程序卡片下面。只读也能按。 -->
+                <StackPanel DockPanel.Dock="Top" Margin="8">
                     <Button Content="{loc:Loc Steps_Validate}" Command="{Binding ValidateCommand}"
-                            Style="{StaticResource SecondaryButton}" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Height="46" Margin="4,0,0,0" />
-                </Grid>
+                            Style="{StaticResource SecondaryButton}" Height="46" />
+                    <TextBlock Text="{loc:Loc Steps_EditOnVerticalKeys}" Style="{StaticResource Text.Label}"
+                               TextWrapping="Wrap" Margin="6,8,6,0" />
+                </StackPanel>
 
                 <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
                         BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14">
@@ -62,56 +33,24 @@
                     </DockPanel>
                 </Border>
 
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8,0,8,8">
-                    <ItemsControl ItemsSource="{Binding Steps}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Height="48" Padding="12,0" Margin="0,0,0,4" Background="{StaticResource Brush.StepIdle}">
-                                    <DockPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Order}" Width="24" FontFamily="{StaticResource Font.Mono}"
-                                                   FontSize="15" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
-                                        <Button Content="{loc:Loc Steps_RemoveStep}" DockPanel.Dock="Right"
-                                                Visibility="{Binding CanBeMoved, Converter={StaticResource BoolToVisibility}}"
-                                                Command="{Binding DataContext.RemoveStepCommand,
-                                                    RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                CommandParameter="{Binding}"
-                                                IsEnabled="{Binding DataContext.IsReadOnly,
-                                                    RelativeSource={RelativeSource AncestorType=UserControl},
-                                                    Converter={StaticResource InverseBool}}"
-                                                Style="{StaticResource SecondaryButton}" FontSize="15" Padding="10,2" Height="32" />
-                                        <!-- 调顺序：往后、往前各一格（第一轮甲方测试：只能删，不能挪）。 -->
-                                        <Button Content="{loc:Loc Steps_MoveStepDown}" DockPanel.Dock="Right"
-                                                Visibility="{Binding CanBeMoved, Converter={StaticResource BoolToVisibility}}"
-                                                ToolTip="{loc:Loc Steps_MoveStepDownTip}"
-                                                Command="{Binding DataContext.MoveStepDownCommand,
-                                                    RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                CommandParameter="{Binding}"
-                                                IsEnabled="{Binding DataContext.IsReadOnly,
-                                                    RelativeSource={RelativeSource AncestorType=UserControl},
-                                                    Converter={StaticResource InverseBool}}"
-                                                Style="{StaticResource SecondaryButton}" FontSize="15" Width="38" Height="32"
-                                                Padding="0" Margin="0,0,6,0" />
-                                        <Button Content="{loc:Loc Steps_MoveStepUp}" DockPanel.Dock="Right"
-                                                Visibility="{Binding CanBeMoved, Converter={StaticResource BoolToVisibility}}"
-                                                ToolTip="{loc:Loc Steps_MoveStepUpTip}"
-                                                Command="{Binding DataContext.MoveStepUpCommand,
-                                                    RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                CommandParameter="{Binding}"
-                                                IsEnabled="{Binding DataContext.IsReadOnly,
-                                                    RelativeSource={RelativeSource AncestorType=UserControl},
-                                                    Converter={StaticResource InverseBool}}"
-                                                Style="{StaticResource SecondaryButton}" FontSize="15" Width="38" Height="32"
-                                                Padding="0" Margin="0,0,6,0" />
-                                        <TextBlock Text="{Binding DurationText}" DockPanel.Dock="Right" FontSize="{StaticResource Size.Caption}"
-                                                   Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center"
-                                                   Margin="0,0,12,0" />
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="18" VerticalAlignment="Center" Margin="10,0,0,0" />
-                                    </DockPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                <!-- 工序序列：上下键移动选中，选中的那道在右栏显示简图与参数。 -->
+                <ListBox ItemsSource="{Binding Steps}" SelectedItem="{Binding SelectedStep}"
+                         Margin="8,0,8,8" BorderThickness="0" Background="Transparent"
+                         HorizontalContentAlignment="Stretch">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Height="46" Padding="10,0">
+                                <DockPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Order}" Width="26" FontFamily="{StaticResource Font.Mono}"
+                                               FontSize="15" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding DurationText}" DockPanel.Dock="Right" FontSize="{StaticResource Size.Caption}"
+                                               Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="18" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </DockPanel>
         </Border>
 
@@ -174,33 +113,32 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <ItemsControl ItemsSource="{Binding Steps}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
-                                <DockPanel>
-                                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Order}" FontFamily="{StaticResource Font.Mono}"
-                                                       Style="{StaticResource Text.CardTitle}" />
-                                            <TextBlock Text="{Binding DisplayName}" Style="{StaticResource Text.CardTitle}"
-                                                       Margin="12,0,0,0" Foreground="{StaticResource Brush.TextPrimary}" />
-                                        </StackPanel>
-                                    </Border>
-                                    <ItemsControl ItemsSource="{Binding Parameters}"
-                                                  Background="{StaticResource Brush.GridLine}"
-                                                  ItemTemplate="{StaticResource ParameterCellTemplate}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Columns="5" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                    </ItemsControl>
-                                </DockPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <!-- 选中的那道工序：简图（当前参数在图上高亮）+ 参数格 + 一行说明。 -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12" DataContext="{Binding SelectedStep}"
+                        Visibility="{Binding Converter={StaticResource NullToVisibility}}">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Order}" FontFamily="{StaticResource Font.Mono}"
+                                           Style="{StaticResource Text.CardTitle}" />
+                                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource Text.CardTitle}"
+                                           Margin="12,0,0,0" Foreground="{StaticResource Brush.TextPrimary}" />
+                            </StackPanel>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding Parameters}"
+                                      Background="{StaticResource Brush.GridLine}"
+                                      ItemTemplate="{StaticResource ParameterCellTemplate}"
+                                      IsEnabled="{Binding DataContext.IsReadOnly,
+                                          RelativeSource={RelativeSource AncestorType=UserControl},
+                                          Converter={StaticResource InverseBool}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
 
                 <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                     <DockPanel>

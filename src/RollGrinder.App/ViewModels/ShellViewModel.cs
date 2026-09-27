@@ -69,6 +69,16 @@ public sealed partial class ShellViewModel : ViewModelBase
         this.userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
         this.userDirectory = userDirectory ?? throw new ArgumentNullException(nameof(userDirectory));
         this.newUserRole = settings.DefaultRole;
+        foreach (UserRole role in AssignableRoles)
+        {
+            UserRole chosen = role;
+            RoleChoices.Add(new ParameterChoiceViewModel(
+                role.ToString(), localizer["Role_" + role], new RelayCommand(() => NewUserRole = chosen))
+            {
+                IsSelected = role == this.newUserRole,
+            });
+        }
+
         this.localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
         ArgumentNullException.ThrowIfNull(settings);
 
@@ -287,9 +297,34 @@ public sealed partial class ShellViewModel : ViewModelBase
     /// <summary>管理员以上才看得到"用户管理"。</summary>
     public bool CanManageUsers => this.userSession.HasAtLeast(UserRole.Administrator);
 
-    /// <summary>权限下拉的取值。</summary>
+    /// <summary>新用户可选的权限。</summary>
     public IReadOnlyList<UserRole> AssignableRoles { get; } =
         new[] { UserRole.Operator, UserRole.Administrator, UserRole.Manufacturer };
+
+    /// <summary>
+    /// 新用户的权限：三个分段键，一眼看全，按键和触摸都好按（修改稿原则 1：去掉下拉）。
+    /// 以前是下拉，还直接显示英文枚举名。
+    /// </summary>
+    public ObservableCollection<ParameterChoiceViewModel> RoleChoices { get; } = new();
+
+    /// <summary>登录框里已有的用户名：一人一个键，按一下填进用户名框；新名字照样手输。</summary>
+    public ObservableCollection<ParameterChoiceViewModel> KnownUserChoices { get; } = new();
+
+    partial void OnNewUserRoleChanged(UserRole value)
+    {
+        foreach (ParameterChoiceViewModel choice in RoleChoices)
+        {
+            choice.IsSelected = choice.Key == value.ToString();
+        }
+    }
+
+    partial void OnSignInUserNameChanged(string value)
+    {
+        foreach (ParameterChoiceViewModel choice in KnownUserChoices)
+        {
+            choice.IsSelected = string.Equals(choice.Key, value, StringComparison.Ordinal);
+        }
+    }
 
     /// <summary>启动后把用户名列表拉进来，登录框的下拉才有东西可选。</summary>
     public async Task InitializeAsync(CancellationToken cancellationToken)
@@ -408,10 +443,17 @@ public sealed partial class ShellViewModel : ViewModelBase
                 await this.userDirectory.ListAsync(cancellationToken).ConfigureAwait(true);
 
             KnownUserNames.Clear();
+            KnownUserChoices.Clear();
             UserAccounts.Clear();
             foreach (UserAccount account in accounts)
             {
                 KnownUserNames.Add(account.UserName);
+                string userName = account.UserName;
+                KnownUserChoices.Add(new ParameterChoiceViewModel(
+                    userName, userName, new RelayCommand(() => SignInUserName = userName))
+                {
+                    IsSelected = string.Equals(userName, SignInUserName, StringComparison.Ordinal),
+                });
                 UserAccounts.Add(account);
             }
 
@@ -553,6 +595,22 @@ public sealed partial class ShellViewModel : ViewModelBase
         }
     }
 
+    /// <summary>右侧第 n 个竖向软键（n 从 0 起；键盘 Shift+F(n+1)）。浮层挡着时不透传。</summary>
+    public void PressVerticalKey(int index)
+    {
+        if (IsOverlayOpen || IsAreaMenuOpen || CurrentPage.HasModalPrompt
+            || index < 0 || index >= CurrentPage.VerticalKeys.Count)
+        {
+            return;
+        }
+
+        FunctionKeyViewModel key = CurrentPage.VerticalKeys[index];
+        if (key.IsEnabled && key.Command.CanExecute(null))
+        {
+            key.Command.Execute(null);
+        }
+    }
+
     /// <summary>Esc：有浮层先收浮层（等同于"取消"），没有才退一级。</summary>
     public void PressEscape()
     {
@@ -581,6 +639,12 @@ public sealed partial class ShellViewModel : ViewModelBase
         }
 
         if (CurrentPage.TryDismissPrompt())
+        {
+            return;
+        }
+
+        // 竖键停在子菜单里：Esc 先退子菜单，和按"返回"一样。
+        if (CurrentPage.CloseVerticalMenu())
         {
             return;
         }
@@ -824,6 +888,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     {
         PageViewModelBase previous = CurrentPage;
         previous.ActiveSubViewKey = null;
+        previous.ResetVerticalMenu();
 
         if (isTaskReturn)
         {

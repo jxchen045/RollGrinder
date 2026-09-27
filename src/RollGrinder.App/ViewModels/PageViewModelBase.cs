@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Services.Alarms;
@@ -25,11 +26,17 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// <summary>页面自己能占的功能键数量；第 8 个恒为导航槽。</summary>
     public const int PageFunctionKeyCount = 7;
 
+    /// <summary>右侧竖向软键的格数。</summary>
+    public const int VerticalKeyCount = SoftKeyMenu<FunctionKeyViewModel>.SlotCount;
+
+    private readonly SoftKeyMenu<FunctionKeyViewModel> verticalMenu = new();
+
     protected PageViewModelBase(IAlarmSink alarms, IStringLocalizer localizer, INavigator navigator)
         : base(alarms)
     {
         Localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
         Navigator = navigator ?? throw new ArgumentNullException(nameof(navigator));
+        RefreshVerticalKeys();
     }
 
     /// <summary>
@@ -57,6 +64,16 @@ public abstract partial class PageViewModelBase : ViewModelBase
 
     /// <summary>本页的功能键，最多 7 个。</summary>
     public ObservableCollection<FunctionKeyViewModel> FunctionKeys { get; } = new();
+
+    /// <summary>
+    /// 右侧 8 个竖向软键（修改稿原则 1）：本页的编辑动作，带"▸"的打开一层子菜单，子菜单第 8 格是"返回"。
+    /// 恒为 8 格，外壳照着画，空位是灰的。键盘上是 Shift+F1…F8。
+    /// </summary>
+    public ObservableCollection<FunctionKeyViewModel> VerticalKeys { get; } = new();
+
+    /// <summary>当前子菜单的标题（例如"插入段"）；在根层为空。</summary>
+    [ObservableProperty]
+    private string verticalMenuTitle = string.Empty;
 
     /// <summary>本页是不是编辑页：自动循环运行期间要落只读锁。</summary>
     public virtual bool LocksDuringRun => false;
@@ -139,6 +156,93 @@ public abstract partial class PageViewModelBase : ViewModelBase
         ApplyKeyEnablement();
     }
 
+    /// <summary>登记竖向软键的根层（最多 8 个）。子菜单一并收掉。</summary>
+    protected void SetVerticalKeys(IEnumerable<FunctionKeyViewModel> keys)
+    {
+        this.verticalMenu.SetRoot(keys);
+        RefreshVerticalKeys();
+    }
+
+    /// <summary>打开一层竖键子菜单（最多 7 项，第 8 格外壳自动放"返回"）。</summary>
+    protected void OpenVerticalMenu(string titleResourceKey, IEnumerable<FunctionKeyViewModel> items)
+    {
+        this.verticalMenu.Open(titleResourceKey, items);
+        RefreshVerticalKeys();
+    }
+
+    /// <summary>
+    /// 子菜单里的一项：按下去做事，然后收回根层（选好了就不必再按"返回"）。
+    /// <paramref name="canChoose"/> 为假时这一项是灰的（例如对称编辑时的 CVC）。
+    /// </summary>
+    protected FunctionKeyViewModel MenuChoice(
+        string labelResourceKey,
+        Action onChosen,
+        bool requiresEditable = true,
+        string? labelArgument = null,
+        Func<bool>? canChoose = null)
+    {
+        ArgumentNullException.ThrowIfNull(onChosen);
+        return new FunctionKeyViewModel(
+            labelResourceKey,
+            new RelayCommand(
+                () =>
+                {
+                    onChosen();
+                    ResetVerticalMenu();
+                },
+                canChoose ?? (() => true)),
+            Localizer,
+            requiresEditable: requiresEditable)
+        {
+            LabelArgument = labelArgument,
+        };
+    }
+
+    /// <summary>竖键退一层。在根层返回 false（Esc 就交给外壳去退页面）。</summary>
+    public bool CloseVerticalMenu()
+    {
+        if (!this.verticalMenu.Back())
+        {
+            return false;
+        }
+
+        RefreshVerticalKeys();
+        return true;
+    }
+
+    /// <summary>竖键收回根层。切走本页时外壳会调，免得回来时还停在一个过期的子菜单里。</summary>
+    public void ResetVerticalMenu()
+    {
+        if (this.verticalMenu.Depth == 0)
+        {
+            return;
+        }
+
+        this.verticalMenu.CloseAll();
+        RefreshVerticalKeys();
+    }
+
+    private void RefreshVerticalKeys()
+    {
+        VerticalKeys.Clear();
+        int index = 0;
+        foreach (SoftKeySlot<FunctionKeyViewModel> slot in this.verticalMenu.Slots)
+        {
+            index++;
+            FunctionKeyViewModel key = slot.IsBack
+                ? new FunctionKeyViewModel("Vk_Back", new RelayCommand(() => CloseVerticalMenu()), Localizer, FunctionKeyKind.Navigation)
+                : slot.Key ?? new FunctionKeyViewModel("Fn_Empty", new RelayCommand(() => { }, () => false), Localizer)
+                {
+                    IsEnabled = false,
+                };
+            key.ShortcutText = Localizer.Format("Vk_ShortcutFormat", index);
+            VerticalKeys.Add(key);
+        }
+
+        VerticalMenuTitle = this.verticalMenu.TitleKey is { } titleKey ? Localizer[titleKey] : string.Empty;
+        ApplyKeyEnablement();
+    }
+
     /// <summary>标记本页有未保存的修改。</summary>
     protected void MarkDirty() => IsDirty = true;
 
@@ -152,6 +256,14 @@ public abstract partial class PageViewModelBase : ViewModelBase
         foreach (FunctionKeyViewModel key in FunctionKeys)
         {
             key.IsEnabled = !(key.RequiresEditable && IsReadOnly);
+        }
+
+        foreach (FunctionKeyViewModel key in VerticalKeys)
+        {
+            if (key.LabelResourceKey != "Fn_Empty")
+            {
+                key.IsEnabled = !(key.RequiresEditable && IsReadOnly);
+            }
         }
     }
 }

@@ -104,6 +104,10 @@ public sealed partial class StepRowViewModel : ObservableObject
     /// <summary>预计时长，例如"约 211 min"。参数改了要重算。</summary>
     [ObservableProperty]
     private string durationText = string.Empty;
+
+    /// <summary>当前选中的工序：右栏显示它的简图与参数，竖向软键对它操作。</summary>
+    [ObservableProperty]
+    private bool isSelected;
 }
 
 /// <summary>
@@ -324,6 +328,24 @@ public sealed partial class StepsViewModel : PageViewModelBase
         // 公差是现场标定值，设置页上随时能改——改完这张卡片要跟着变。
         calibration.Changed += (_, _) => BuildCompensationSettings(settings, machine);
 
+        // 竖向软键：对选中的工序操作。插入工序 ▸ 先选类别、再选工序，插在选中工序之后（修改稿 5.3）。
+        SetVerticalKeys(new[]
+        {
+            new FunctionKeyViewModel("Vk_InsertStep", new RelayCommand(OpenInsertStepMenu), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_DeleteStep", new RelayCommand(() => RemoveStep(SelectedStep)), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_MoveUp", new RelayCommand(() => MoveStepUp(SelectedStep)), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_MoveDown", new RelayCommand(() => MoveStepDown(SelectedStep)), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_CopyStep", new RelayCommand(() => CopyStep(SelectedStep)), localizer, requiresEditable: true),
+        });
+
+        Steps.CollectionChanged += (_, _) =>
+        {
+            if (SelectedStep is not null && !Steps.Contains(SelectedStep))
+            {
+                SelectedStep = null;
+            }
+        };
+
         SetFunctionKeys(new[]
         {
             new FunctionKeyViewModel("Fn_SaveProgram", new AsyncRelayCommand(
@@ -379,6 +401,85 @@ public sealed partial class StepsViewModel : PageViewModelBase
     [ObservableProperty]
     private StepTypeOptionViewModel? selectedStepType;
 
+    /// <summary>选中的工序：右栏只显示它（简图 + 参数），竖向软键删除 / 上移 / 下移 / 复制都对它。</summary>
+    [ObservableProperty]
+    private StepRowViewModel? selectedStep;
+
+    partial void OnSelectedStepChanged(StepRowViewModel? value)
+    {
+        foreach (StepRowViewModel row in Steps)
+        {
+            row.IsSelected = ReferenceEquals(row, value);
+        }
+    }
+
+    /// <summary>默认选中第一道真正的工序（没有就选"开始"）。换了一整支程序后调。</summary>
+    private void SelectDefaultStep() =>
+        SelectedStep = Steps.FirstOrDefault(step => !ProgramFrame.IsFixed(step.StepTypeKey)) ?? Steps.FirstOrDefault();
+
+    /// <summary>"插入工序 ▸"：先选类别（磨削 ▸、测量 ▸），只有一种工序的类别直接插。</summary>
+    private void OpenInsertStepMenu()
+    {
+        var byKey = StepTypeOptions.ToDictionary(option => option.Key, StringComparer.Ordinal);
+        var items = new List<FunctionKeyViewModel>();
+        foreach (StepCategory category in StepCategories.For(StepTypeOptions.Select(option => option.Key)))
+        {
+            StepTypeOptionViewModel[] options = category.StepTypeKeys.Select(key => byKey[key]).ToArray();
+            if (options.Length == 1)
+            {
+                items.Add(InsertChoice(options[0]));
+                continue;
+            }
+
+            items.Add(new FunctionKeyViewModel(
+                category.LabelResourceKey,
+                new RelayCommand(() => OpenVerticalMenu(category.LabelResourceKey, options.Select(InsertChoice))),
+                Localizer,
+                requiresEditable: true));
+        }
+
+        OpenVerticalMenu("Vk_InsertStepTitle", items);
+    }
+
+    /// <summary>子菜单里的一种工序。本机装不了的照样列出、置灰，悬停说明原因。</summary>
+    private FunctionKeyViewModel InsertChoice(StepTypeOptionViewModel option)
+    {
+        FunctionKeyViewModel key = MenuChoice(
+            "StepType_" + option.Key,
+            () =>
+            {
+                SelectedStepType = option;
+                AddStep();
+            },
+            canChoose: () => option.IsAvailable);
+        key.HintText = option.IsAvailable ? null : option.DisplayName;
+        return key;
+    }
+
+    /// <summary>复制选中的工序（连参数），接在它后面。开始 / 结束不复制。</summary>
+    private void CopyStep(StepRowViewModel? step)
+    {
+        if (step is null)
+        {
+            return;
+        }
+
+        if (ProgramFrame.IsFixed(step.StepTypeKey))
+        {
+            StatusResourceKey = "Program_FrameFixed";
+            return;
+        }
+
+        int position = Steps.IndexOf(step) + 1;
+        var copy = new StepRowViewModel(position + 1, step.StepType, step.StepType.Schema.CreateDefaults(), Localizer);
+        ApplyTexts(copy.Parameters, step.Parameters.Select(row => row.Text).ToArray());
+        Steps.Insert(position, Track(copy));
+        Renumber();
+        RefreshDurations();
+        MarkEdited();
+        SelectedStep = copy;
+    }
+
     [ObservableProperty]
     private string statusResourceKey = string.Empty;
 
@@ -416,13 +517,17 @@ public sealed partial class StepsViewModel : PageViewModelBase
             return;
         }
 
-        // 插在"结束"前面：结束永远是最后一道。
+        // 插在选中工序之后；没选、或选的是"结束"，就插在"结束"前面——结束永远是最后一道。
         IGrindingStepType stepType = this.stepTypes.Get(SelectedStepType.Key);
-        int position = Steps.Count > 0 && Steps[^1].StepTypeKey == StepTypeKeys.End ? Steps.Count - 1 : Steps.Count;
-        Steps.Insert(position, Track(new StepRowViewModel(position + 1, stepType, stepType.Schema.CreateDefaults(), Localizer)));
+        int endPosition = Steps.Count > 0 && Steps[^1].StepTypeKey == StepTypeKeys.End ? Steps.Count - 1 : Steps.Count;
+        int selectedIndex = SelectedStep is null ? -1 : Steps.IndexOf(SelectedStep);
+        int position = selectedIndex >= 0 && selectedIndex < endPosition ? selectedIndex + 1 : endPosition;
+        var added = new StepRowViewModel(position + 1, stepType, stepType.Schema.CreateDefaults(), Localizer);
+        Steps.Insert(position, Track(added));
         Renumber();
         RefreshDurations();
         MarkEdited();
+        SelectedStep = added;
     }
 
     [RelayCommand]
@@ -439,9 +544,13 @@ public sealed partial class StepsViewModel : PageViewModelBase
             return;
         }
 
+        int index = Steps.IndexOf(step);
         Steps.Remove(step);
         Renumber();
         MarkEdited();
+
+        // 选中留在原位置，连着按"删除"能一道道删（首尾不会被选去删）。
+        SelectedStep = Steps.Count == 0 ? null : Steps[Math.Min(index, Steps.Count - 1)];
 
         RefreshDurations();
     }
@@ -519,6 +628,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
 
         RefreshDurations();
+        SelectDefaultStep();
     }
 
     /// <summary>校验这支程序：每道参数、机床能力、至少一道走拖板（与存程序、下发前同一套）。</summary>
@@ -870,6 +980,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         StatusResourceKey = framed ? string.Empty : "Program_FrameAdded";
         Violations.Clear();
         RefreshDurations();
+        SelectDefaultStep();
     }
 
     [RelayCommand]
@@ -959,6 +1070,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
         {
             this.suppressDirty = false;
         }
+
+        SelectDefaultStep();
     }
 
     private static void ApplyTexts(IList<ParameterRowViewModel> rows, IReadOnlyList<string> texts)

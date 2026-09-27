@@ -946,20 +946,11 @@
   <data name="Profile_CompensationAxis" xml:space="preserve">
     <value>补偿执行轴</value>
   </data>
-  <data name="Profile_Delete" xml:space="preserve">
-    <value>删除</value>
-  </data>
-  <data name="Profile_Insert" xml:space="preserve">
-    <value>插入</value>
-  </data>
   <data name="Profile_LegendComposed" xml:space="preserve">
     <value>合成辊形</value>
   </data>
   <data name="Profile_MaxChordError" xml:space="preserve">
     <value>最大弦高误差</value>
-  </data>
-  <data name="Profile_MoveUp" xml:space="preserve">
-    <value>上移</value>
   </data>
   <data name="Profile_ParametersHeader" xml:space="preserve">
     <value>参数 ·</value>
@@ -1123,14 +1114,8 @@
   <data name="StepType_SparkOut" xml:space="preserve">
     <value>光磨</value>
   </data>
-  <data name="Steps_AddStep" xml:space="preserve">
-    <value>添加工序</value>
-  </data>
   <data name="Steps_CompensationHeader" xml:space="preserve">
     <value>补偿设置 ·（制造商权限）</value>
-  </data>
-  <data name="Steps_RemoveStep" xml:space="preserve">
-    <value>删除</value>
   </data>
   <data name="Steps_SequenceHeader" xml:space="preserve">
     <value>工序序列（可任意组合与调序）</value>
@@ -1999,9 +1984,6 @@
   <data name="Library_SaveTitle" xml:space="preserve">
     <value>保存：名字已被占用</value>
   </data>
-  <data name="Profile_MoveDown" xml:space="preserve">
-    <value>下移</value>
-  </data>
   <data name="Profile_BodyLength" xml:space="preserve">
     <value>设计长度</value>
   </data>
@@ -2034,18 +2016,6 @@
   </data>
   <data name="Profile_HasErrors" xml:space="preserve">
     <value>辊形有错误，没有保存；错误逐条列在预览上方</value>
-  </data>
-  <data name="Steps_MoveStepUp" xml:space="preserve">
-    <value>▲</value>
-  </data>
-  <data name="Steps_MoveStepDown" xml:space="preserve">
-    <value>▼</value>
-  </data>
-  <data name="Steps_MoveStepUpTip" xml:space="preserve">
-    <value>上移这道工序</value>
-  </data>
-  <data name="Steps_MoveStepDownTip" xml:space="preserve">
-    <value>下移这道工序</value>
   </data>
   <data name="Program_HasErrors" xml:space="preserve">
     <value>程序有错误，没有保存；原因列在页面的校验结果里</value>
@@ -2106,12 +2076,6 @@
   </data>
   <data name="Profile_SymmetricHint" xml:space="preserve">
     <value>只编头架端的段，尾架端镜像生成；存进库的是展开后的整条辊形。含 CVC 的辊形不能对称。</value>
-  </data>
-  <data name="Profile_Copy" xml:space="preserve">
-    <value>复制</value>
-  </data>
-  <data name="Profile_ChangeType" xml:space="preserve">
-    <value>改成所选类型</value>
   </data>
   <data name="Profile_SegmentStart" xml:space="preserve">
     <value>起点 Z</value>
@@ -2379,5 +2343,86 @@
   </data>
   <data name="Profile_MirrorNotForRelief" xml:space="preserve">
     <value>点表、CVC 等可以镜像；锥度按所在半边自动朝向端面，不用镜像</value>
+  </data>
+  <data name="Vk_Back" xml:space="preserve">
+    <value>« 返回</value>
+  </data>
+  <data name="Vk_ShortcutFormat" xml:space="preserve">
+    <value>⇧F{0}</value>
+  </data>
+  <data name="Profile_EditOnVerticalKeys" xml:space="preserve">
+    <value>段的插入、删除、调序、改类型在右侧竖向软键（Shift+F1…F8）</value>
+  </data>
+  <data name="Vk_InsertSegment" xml:space="preserve">
+    <value>插入段 ▸</value>
+  </data>
+  <data name="Vk_InsertSegmentTitle" xml:space="preserve">
+    <value>插入段：选类型</value>
+  </data>
+  <data name="Vk_DeleteSegment" xml:space="preserve">
+    <value>删除段</value>
+  </data>
+  <data name="Vk_MoveUp" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="Vk_MoveDown" xml:space="preserve">
+    <value>下移</value>
+  </data>
+  <data name="Vk_CopySegment" xml:space="preserve">
+    <value>复制段</value>
+  </data>
+  <data name="Vk_ChangeType" xml:space="preserve">
+    <value>改类型 ▸</value>
+  </data>
+  <data name="Vk_ChangeTypeTitle" xml:space="preserve">
+    <value>改类型：选类型</value>
+  </data>
+  <data name="Vk_Interpolation" xml:space="preserve">
+    <value>插值方式 ▸</value>
+  </data>
+  <data name="Vk_InterpolationTitle" xml:space="preserve">
+    <value>插值方式</value>
+  </data>
+  <data name="Vk_ClearSegments" xml:space="preserve">
+    <value>清空</value>
+  </data>
+  <data name="Steps_EditOnVerticalKeys" xml:space="preserve">
+    <value>插入、删除、调序、复制在右侧竖向软键（Shift+F1…F8）；上下键选工序</value>
+  </data>
+  <data name="Vk_InsertStep" xml:space="preserve">
+    <value>插入工序 ▸</value>
+  </data>
+  <data name="Vk_InsertStepTitle" xml:space="preserve">
+    <value>插入工序：选类别</value>
+  </data>
+  <data name="Vk_DeleteStep" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="Vk_CopyStep" xml:space="preserve">
+    <value>复制</value>
+  </data>
+  <data name="Vk_CatGrinding" xml:space="preserve">
+    <value>磨削 ▸</value>
+  </data>
+  <data name="Vk_CatMeasuring" xml:space="preserve">
+    <value>测量 ▸</value>
+  </data>
+  <data name="Vk_CatDress" xml:space="preserve">
+    <value>砂轮修整</value>
+  </data>
+  <data name="Vk_CatChamfer" xml:space="preserve">
+    <value>倒角</value>
+  </data>
+  <data name="Vk_CatAuxiliary" xml:space="preserve">
+    <value>辅助动作</value>
+  </data>
+  <data name="Vk_CatPause" xml:space="preserve">
+    <value>暂停</value>
+  </data>
+  <data name="Vk_CatOther" xml:space="preserve">
+    <value>其他 ▸</value>
+  </data>
+  <data name="StepType_Auxiliary" xml:space="preserve">
+    <value>辅助动作</value>
   </data>
 </root>

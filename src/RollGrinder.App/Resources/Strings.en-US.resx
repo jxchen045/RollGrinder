@@ -946,20 +946,11 @@
   <data name="Profile_CompensationAxis" xml:space="preserve">
     <value>Compensation axis</value>
   </data>
-  <data name="Profile_Delete" xml:space="preserve">
-    <value>Delete</value>
-  </data>
-  <data name="Profile_Insert" xml:space="preserve">
-    <value>Insert</value>
-  </data>
   <data name="Profile_LegendComposed" xml:space="preserve">
     <value>Composed</value>
   </data>
   <data name="Profile_MaxChordError" xml:space="preserve">
     <value>Max chord error</value>
-  </data>
-  <data name="Profile_MoveUp" xml:space="preserve">
-    <value>Move up</value>
   </data>
   <data name="Profile_ParametersHeader" xml:space="preserve">
     <value>Parameters ·</value>
@@ -1123,14 +1114,8 @@
   <data name="StepType_SparkOut" xml:space="preserve">
     <value>Spark out</value>
   </data>
-  <data name="Steps_AddStep" xml:space="preserve">
-    <value>Add step</value>
-  </data>
   <data name="Steps_CompensationHeader" xml:space="preserve">
     <value>Compensation settings (manufacturer)</value>
-  </data>
-  <data name="Steps_RemoveStep" xml:space="preserve">
-    <value>Remove</value>
   </data>
   <data name="Steps_SequenceHeader" xml:space="preserve">
     <value>Step sequence (freely ordered)</value>
@@ -1999,9 +1984,6 @@
   <data name="Library_SaveTitle" xml:space="preserve">
     <value>Save: name already in use</value>
   </data>
-  <data name="Profile_MoveDown" xml:space="preserve">
-    <value>Move down</value>
-  </data>
   <data name="Profile_BodyLength" xml:space="preserve">
     <value>Design length</value>
   </data>
@@ -2034,18 +2016,6 @@
   </data>
   <data name="Profile_HasErrors" xml:space="preserve">
     <value>The profile has errors and was not saved; they are listed above the preview</value>
-  </data>
-  <data name="Steps_MoveStepUp" xml:space="preserve">
-    <value>▲</value>
-  </data>
-  <data name="Steps_MoveStepDown" xml:space="preserve">
-    <value>▼</value>
-  </data>
-  <data name="Steps_MoveStepUpTip" xml:space="preserve">
-    <value>Move this step up</value>
-  </data>
-  <data name="Steps_MoveStepDownTip" xml:space="preserve">
-    <value>Move this step down</value>
   </data>
   <data name="Program_HasErrors" xml:space="preserve">
     <value>The program has errors and was not saved; see the validation results on the page</value>
@@ -2106,12 +2076,6 @@
   </data>
   <data name="Profile_SymmetricHint" xml:space="preserve">
     <value>Edit the headstock-side segments only; the tailstock side is mirrored. The library stores the expanded profile. Profiles with CVC segments cannot be symmetric.</value>
-  </data>
-  <data name="Profile_Copy" xml:space="preserve">
-    <value>Copy</value>
-  </data>
-  <data name="Profile_ChangeType" xml:space="preserve">
-    <value>Change to selected type</value>
   </data>
   <data name="Profile_SegmentStart" xml:space="preserve">
     <value>Start Z</value>
@@ -2379,5 +2343,86 @@
   </data>
   <data name="Profile_MirrorNotForRelief" xml:space="preserve">
     <value>Point tables, CVC etc. can be mirrored; a taper always faces the end of the half it sits in</value>
+  </data>
+  <data name="Vk_Back" xml:space="preserve">
+    <value>« Back</value>
+  </data>
+  <data name="Vk_ShortcutFormat" xml:space="preserve">
+    <value>⇧F{0}</value>
+  </data>
+  <data name="Profile_EditOnVerticalKeys" xml:space="preserve">
+    <value>Insert, delete, reorder and retype segments with the vertical soft keys on the right (Shift+F1…F8)</value>
+  </data>
+  <data name="Vk_InsertSegment" xml:space="preserve">
+    <value>Insert ▸</value>
+  </data>
+  <data name="Vk_InsertSegmentTitle" xml:space="preserve">
+    <value>Insert segment: type</value>
+  </data>
+  <data name="Vk_DeleteSegment" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Vk_MoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="Vk_MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="Vk_CopySegment" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Vk_ChangeType" xml:space="preserve">
+    <value>Change type ▸</value>
+  </data>
+  <data name="Vk_ChangeTypeTitle" xml:space="preserve">
+    <value>Change type to</value>
+  </data>
+  <data name="Vk_Interpolation" xml:space="preserve">
+    <value>Interpolation ▸</value>
+  </data>
+  <data name="Vk_InterpolationTitle" xml:space="preserve">
+    <value>Interpolation</value>
+  </data>
+  <data name="Vk_ClearSegments" xml:space="preserve">
+    <value>Clear all</value>
+  </data>
+  <data name="Steps_EditOnVerticalKeys" xml:space="preserve">
+    <value>Insert, delete, reorder and copy with the vertical soft keys (Shift+F1…F8); arrow keys select a step</value>
+  </data>
+  <data name="Vk_InsertStep" xml:space="preserve">
+    <value>Insert step ▸</value>
+  </data>
+  <data name="Vk_InsertStepTitle" xml:space="preserve">
+    <value>Insert step: category</value>
+  </data>
+  <data name="Vk_DeleteStep" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Vk_CopyStep" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Vk_CatGrinding" xml:space="preserve">
+    <value>Grinding ▸</value>
+  </data>
+  <data name="Vk_CatMeasuring" xml:space="preserve">
+    <value>Measuring ▸</value>
+  </data>
+  <data name="Vk_CatDress" xml:space="preserve">
+    <value>Wheel dressing</value>
+  </data>
+  <data name="Vk_CatChamfer" xml:space="preserve">
+    <value>Chamfer</value>
+  </data>
+  <data name="Vk_CatAuxiliary" xml:space="preserve">
+    <value>Auxiliary action</value>
+  </data>
+  <data name="Vk_CatPause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Vk_CatOther" xml:space="preserve">
+    <value>Other ▸</value>
+  </data>
+  <data name="StepType_Auxiliary" xml:space="preserve">
+    <value>Auxiliary action</value>
   </data>
 </root>

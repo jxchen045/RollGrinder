@@ -75,18 +75,24 @@ internal sealed class ProfileSuite : ISelfTestSuite
             await RemoveAllAsync(h, page);
             ctx.Check(page.Segments.Count == 0 && page.HasErrors, "an empty profile should be reported");
 
+            // 全靠竖向软键：插入段 ▸ → 类型键；选完子菜单自己收回根层。
             List<string> types = page.AvailableTypes.ToList();
             foreach (string type in types)
             {
-                page.SelectedTypeForInsert = type;
                 page.SelectedSegment = page.Segments.LastOrDefault();
-                await h.RunAsync(page.InsertSegmentCommand);
+                await h.PressVerticalKeyAsync(ctx, "Vk_InsertSegment");
+                ctx.Check(h.IndexOfVerticalKey("Vk_Back") == PageViewModelBase.VerticalKeyCount - 1,
+                    "a sub menu keeps 'back' in the eighth slot");
+                await h.PressVerticalKeyAsync(ctx, "ProfileType_" + type);
+                ctx.Check(h.IndexOfVerticalKey("Vk_InsertSegment") == 0, "choosing a type should return to the root keys");
                 ctx.Check(page.SelectedSegment?.Order == page.Segments.Count, "the new segment should be selected, at the end");
 
                 // 参数格数等于这种辊形的参数定义（点表那一列单独用表格编辑，不算在格子里）。
                 int declared = registry.Get(type).Schema.Descriptors.Count(d => d.Kind != ParameterValueKind.Points);
                 ctx.Check(page.SegmentParameters.Count == declared,
                     Invariant($"segment of type {type} shows {page.SegmentParameters.Count} parameters, schema declares {declared}"));
+                ctx.Check(h.IsVerticalKeyUsable(h.IndexOfVerticalKey("Vk_Interpolation")) == (type == ProfileTypeKeys.PointTable),
+                    "'interpolation ▸' is only for point-table segments");
                 if (type == ProfileTypeKeys.PointTable)
                 {
                     ctx.Check(page.IsPointTableSelected && page.PointRows.Count == 2, "a new point table starts with two points");
@@ -186,6 +192,12 @@ internal sealed class ProfileSuite : ISelfTestSuite
             ctx.Check(stored.Count == 3 && Math.Abs(stored[1].Y - 20.0) < 1e-9, "the edited point should be written back");
             h.TryScreenshot("profile-point-table");
 
+            // 插值方式 ▸：四种一键一个，选中就写回这一段。
+            await h.PressVerticalKeyAsync(ctx, "Vk_Interpolation");
+            await h.PressVerticalKeyAsync(ctx, "Choice_interpolation_SmoothingSpline");
+            string method = page.Composite.Segments[order - 1].Parameters.GetChoice(PointTableProfileType.InterpolationKey);
+            ctx.Check(method == "SmoothingSpline", "the interpolation chosen on the vertical keys should be written back, is " + method);
+
             string z = page.PointRows[1].ZText;
             page.PointRows[1].ZText = "abc";
             await h.SettleAsync(50);
@@ -221,6 +233,14 @@ internal sealed class ProfileSuite : ISelfTestSuite
                 "the tailstock taper should be generated as an independent segment (tapers carry no mirror flag)");
             h.TryScreenshot("profile-symmetric");
 
+            // 对称编辑时 CVC 键是灰的；Esc 退出子菜单。
+            await h.PressVerticalKeyAsync(ctx, "Vk_InsertSegment");
+            ctx.Check(!h.IsVerticalKeyUsable(h.IndexOfVerticalKey("ProfileType_" + ProfileTypeKeys.Cvc)),
+                "CVC must be greyed out while editing symmetrically");
+            h.Shell.PressEscape();
+            await h.SettleAsync();
+            ctx.Check(h.IndexOfVerticalKey("Vk_InsertSegment") == 0, "Esc should close the sub menu first");
+            ctx.Check(h.Shell.CurrentPage.Key == PageKey.Profile, "Esc on a sub menu must not leave the page");
             page.SelectedTypeForInsert = ProfileTypeKeys.Cvc;
             await h.RunAsync(page.InsertSegmentCommand);
             ctx.Check(page.Segments.Count == 2 && page.StatusResourceKey == "Profile_SymmetryUnsupportedType",
@@ -526,6 +546,39 @@ internal sealed class StepsSuite : ISelfTestSuite
             await h.SettleAsync();
             ctx.Check(page.Steps[1] == first && page.Steps[0].StepTypeKey == StepTypeKeys.Start, "nothing moves in front of the start");
             ctx.Check(page.StatusResourceKey == "Program_FrameFixed", "status should say start/end are fixed, is " + page.StatusResourceKey);
+        });
+
+        await h.StepAsync("VerticalKeys", "InsertByCategoryCopyDelete", async ctx =>
+        {
+            // 竖向软键：插入工序 ▸ → 磨削 ▸ → 精磨，插在选中那道之后并选中它；复制一份；再删掉复制的那份。
+            page.SelectedStep = page.Steps[1];
+            int count = page.Steps.Count;
+            await h.PressVerticalKeyAsync(ctx, "Vk_InsertStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_CatGrinding");
+            ctx.Check(h.IndexOfVerticalKey("Vk_Back") == PageViewModelBase.VerticalKeyCount - 1, "the nested menu keeps 'back' in slot 8");
+            await h.PressVerticalKeyAsync(ctx, "StepType_" + StepTypeKeys.Finish);
+            ctx.Check(page.Steps.Count == count + 1 && page.Steps[2].StepTypeKey == StepTypeKeys.Finish,
+                "the chosen step should be inserted right after the selected one");
+            ctx.Check(page.SelectedStep == page.Steps[2], "the new step should be selected");
+            ctx.Check(h.IndexOfVerticalKey("Vk_InsertStep") == 0, "choosing a step should return to the root keys");
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_CopyStep");
+            ctx.Check(page.Steps.Count == count + 2 && page.Steps[3].StepTypeKey == StepTypeKeys.Finish, "copy should add the same step after it");
+            await h.PressVerticalKeyAsync(ctx, "Vk_DeleteStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_DeleteStep");
+            ctx.Check(page.Steps.Count == count, "delete should remove the selected step");
+
+            // 两层子菜单里按 Esc：一次只退一层，不离开本页。
+            await h.PressVerticalKeyAsync(ctx, "Vk_InsertStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_CatMeasuring");
+            h.Shell.PressEscape();
+            await h.SettleAsync();
+            ctx.Check(page.VerticalMenuTitle == page.Localizer["Vk_InsertStepTitle"], "Esc should climb one level");
+            h.Shell.PressEscape();
+            await h.SettleAsync();
+            ctx.Check(h.IndexOfVerticalKey("Vk_InsertStep") == 0 && h.Shell.CurrentPage.Key == PageKey.Steps,
+                "a second Esc returns to the root keys and stays on the page");
+            h.TryScreenshot("steps-vertical-keys");
         });
 
         await h.StepAsync("Validation", "ProgramValidates", async ctx =>

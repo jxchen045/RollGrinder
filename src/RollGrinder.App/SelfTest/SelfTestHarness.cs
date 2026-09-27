@@ -291,6 +291,38 @@ internal sealed partial class SelfTestHarness
         await SettleAsync().ConfigureAwait(true);
     }
 
+    /// <summary>右侧竖向软键里某个键的位置；没有返回 -1。</summary>
+    public int IndexOfVerticalKey(string labelResourceKey)
+    {
+        var keys = Shell.CurrentPage.VerticalKeys;
+        for (int i = 0; i < keys.Count; i++)
+        {
+            if (keys[i].LabelResourceKey == labelResourceKey)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    /// <summary>这个竖向软键现在按得下去吗（与外壳的判断一致）。</summary>
+    public bool IsVerticalKeyUsable(int index)
+    {
+        var keys = Shell.CurrentPage.VerticalKeys;
+        return index >= 0 && index < keys.Count && keys[index].IsEnabled && keys[index].Command.CanExecute(null);
+    }
+
+    /// <summary>按标签资源键找到竖向软键并按下（等同 Shift+F(n+1)）；找不到或是灰的就断言失败。</summary>
+    public async Task PressVerticalKeyAsync(StepContext context, string labelResourceKey)
+    {
+        int index = IndexOfVerticalKey(labelResourceKey);
+        context.Check(index >= 0, "vertical key " + labelResourceKey + " is not on the bar");
+        context.Check(IsVerticalKeyUsable(index), "vertical key " + labelResourceKey + " is disabled");
+        Shell.PressVerticalKey(index);
+        await SettleAsync().ConfigureAwait(true);
+    }
+
     /// <summary>按标签资源键找到功能键并按下；找不到或是灰的就断言失败。</summary>
     public async Task PressKeyAsync(StepContext context, string labelResourceKey, TimeSpan? timeout = null)
     {
@@ -394,6 +426,9 @@ internal sealed partial class SelfTestHarness
         // 起名字的框（另存为、保存撞名）：按"取消"收掉，不存。
         steps.TryDismissPrompt();
         profile.TryDismissPrompt();
+
+        // 竖键停在子菜单里：收回根层，下一个用例从页面的编辑动作开始。
+        Shell.CurrentPage.ResetVerticalMenu();
 
         for (int i = 0; i < 3 && Shell.CurrentPage.ActiveSubViewKey is not null; i++)
         {

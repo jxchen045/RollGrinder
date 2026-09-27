@@ -178,3 +178,13 @@ public sealed class TextToVisibilityConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }
+
+/// <summary>有值显示、null 收起。用于"选中了才显示"的卡片（例如工艺程序页的选中工序）。</summary>
+public sealed class NullToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is null ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

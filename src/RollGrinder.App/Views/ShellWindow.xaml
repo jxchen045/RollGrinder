@@ -4,6 +4,7 @@
         xmlns:loc="clr-namespace:RollGrinder.App.Localization"
         xmlns:vm="clr-namespace:RollGrinder.App.ViewModels"
         xmlns:views="clr-namespace:RollGrinder.App.Views"
+        xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
         Title="{loc:Loc App_Title}"
         Width="1920"
         Height="1080"
@@ -279,6 +280,47 @@
             </ItemsControl>
         </Border>
 
+        <!-- 右侧竖向软键 8 格（修改稿原则 1）：本页的编辑动作；带 ▸ 的开一层子菜单，子菜单第 8 格是"返回"。
+             键盘 Shift+F1…F8。子菜单打开时顶上写着它是什么菜单。 -->
+        <Border DockPanel.Dock="Right" Width="178" Padding="8,10"
+                Background="{StaticResource Brush.FunctionBar}"
+                BorderBrush="{StaticResource Brush.Divider}" BorderThickness="2,0,0,0"
+                IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="{Binding CurrentPage.VerticalMenuTitle}"
+                           Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="4,0,4,6"
+                           Visibility="{Binding CurrentPage.VerticalMenuTitle, Converter={StaticResource TextToVisibility}}" />
+                <ItemsControl ItemsSource="{Binding CurrentPage.VerticalKeys}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="1" Rows="8" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding Command}"
+                                    IsEnabled="{Binding IsEnabled}"
+                                    ToolTip="{Binding HintText}"
+                                    ToolTipService.ShowOnDisabled="True"
+                                    ToolTipService.Placement="Left"
+                                    Style="{Binding Kind, Converter={StaticResource FunctionKeyStyle}}"
+                                    Margin="0,4">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="{Binding Label}" HorizontalAlignment="Center"
+                                               TextWrapping="Wrap" TextAlignment="Center" />
+                                    <TextBlock Text="{Binding ShortcutText}"
+                                               FontFamily="{StaticResource Font.Mono}"
+                                               FontSize="{StaticResource Size.Caption}"
+                                               Opacity="0.8" HorizontalAlignment="Center"
+                                               Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibility}}" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
         <Grid>
             <ContentControl Content="{Binding CurrentPage}"
                             Margin="12"
@@ -330,8 +372,23 @@
                                    FontSize="24" Margin="0,0,0,20" />
 
                         <TextBlock Text="{loc:Loc SignIn_UserName}" Style="{StaticResource Text.Label}" />
-                        <ComboBox ItemsSource="{Binding KnownUserNames}" Text="{Binding SignInUserName}"
-                                  IsEditable="True" Height="50" FontSize="18" Margin="0,8,0,16" />
+                        <TextBox Text="{Binding SignInUserName, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="50" FontSize="18" Margin="0,8,0,8" VerticalContentAlignment="Center" />
+                        <!-- 已有的用户：一人一个键，按一下填进上面的框（不用下拉）。 -->
+                        <ItemsControl ItemsSource="{Binding KnownUserChoices}" Margin="0,0,0,16">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,6,6"
+                                            Style="{StaticResource SegmentButton}" Height="40"
+                                            ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <!-- 常规登录 -->
                         <StackPanel Visibility="{Binding IsNormalSignIn, Converter={StaticResource BoolToVisibility}}">
@@ -383,7 +440,7 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="170" />
+                                        <ColumnDefinition Width="330" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0" Text="{Binding NewUserName, UpdateSourceTrigger=PropertyChanged}"
@@ -392,9 +449,20 @@
                                     <PasswordBox Grid.Column="1" PasswordChanged="OnNewUserPasswordChanged"
                                                  Height="48" FontSize="17" Margin="0,0,8,0"
                                                  VerticalContentAlignment="Center" />
-                                    <ComboBox Grid.Column="2" ItemsSource="{Binding AssignableRoles}"
-                                              SelectedItem="{Binding NewUserRole}"
-                                              Height="48" FontSize="17" Margin="0,0,8,0" />
+                                    <ItemsControl Grid.Column="2" ItemsSource="{Binding RoleChoices}" Margin="0,0,8,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
+                                                        Style="{StaticResource SegmentButton}" Height="48" Padding="4,0"
+                                                        ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                     <Button Grid.Column="3" Content="{loc:Loc Users_Create}"
                                             Command="{Binding CreateUserCommand}"
                                             Style="{StaticResource PrimaryButton}" Height="48" Width="100" />

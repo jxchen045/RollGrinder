@@ -102,6 +102,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     private readonly IRollProfileRepository library;
     private readonly AsyncRelayCommand saveKeyCommand;
 
+    /// <summary>"插值方式 ▸"：只有选中的是点表段才按得下去。</summary>
+    private readonly RelayCommand interpolationMenuCommand;
+
     /// <summary>编辑用的参考几何：辊身长度就是辊形的设计长度，直径只用来算曲线，取机床最小直径。</summary>
     private RollGeometry geometry;
 
@@ -157,7 +160,21 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         AvailableTypes = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
         this.selectedTypeForInsert = AvailableTypes.FirstOrDefault() ?? ProfileTypeKeys.Cylindrical;
 
-        // 有错误时"保存""另存为"变灰。插段在左栏"插入"按钮上，功能条上不重复。
+        // 竖向软键：段的编辑动作。插入 / 改类型 / 插值方式 带 ▸，开一层子菜单选；全程不用下拉。
+        this.interpolationMenuCommand = new RelayCommand(OpenInterpolationMenu, () => IsPointTableSelected);
+        SetVerticalKeys(new[]
+        {
+            new FunctionKeyViewModel("Vk_InsertSegment", new RelayCommand(OpenInsertMenu), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_DeleteSegment", RemoveSegmentCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_MoveUp", MoveSegmentUpCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_MoveDown", MoveSegmentDownCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_CopySegment", CopySegmentCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_ChangeType", new RelayCommand(OpenChangeTypeMenu), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_Interpolation", this.interpolationMenuCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_ClearSegments", ClearSegmentsCommand, localizer, FunctionKeyKind.Danger, requiresEditable: true),
+        });
+
+        // 有错误时"保存""另存为"变灰。
         this.saveKeyCommand = new AsyncRelayCommand(() => SaveAsync(CancellationToken.None), () => !HasErrors);
         SetFunctionKeys(new[]
         {
@@ -604,6 +621,67 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         MarkDirty();
         RecomputeComposite();
         Rebuild(index + 1);
+    }
+
+    /// <summary>"插入段 ▸"：每种曲线类型一个键，选一个就插在当前段之后。</summary>
+    private void OpenInsertMenu() => OpenVerticalMenu("Vk_InsertSegmentTitle", TypeChoices(key =>
+    {
+        SelectedTypeForInsert = key;
+        InsertSegment();
+    }));
+
+    /// <summary>"改类型 ▸"：把选中段换成另一种类型，长度不变、参数回到默认。</summary>
+    private void OpenChangeTypeMenu()
+    {
+        if (SelectedSegment is null)
+        {
+            return;
+        }
+
+        OpenVerticalMenu("Vk_ChangeTypeTitle", TypeChoices(key =>
+        {
+            SelectedTypeForInsert = key;
+            ChangeSegmentType();
+        }));
+    }
+
+    private IEnumerable<FunctionKeyViewModel> TypeChoices(Action<string> onChosen) =>
+        AvailableTypes.Select(key => MenuChoice(
+            "ProfileType_" + key,
+            () => onChosen(key),
+            canChoose: () => !IsSymmetric || this.profileTypes.Get(key).SupportsSymmetricEditing));
+
+    /// <summary>"插值方式 ▸"：点表段的四种插值，一个键一种。</summary>
+    private void OpenInterpolationMenu()
+    {
+        ParameterDescriptor descriptor = new PointTableProfileType().Schema.Get(PointTableProfileType.InterpolationKey);
+        OpenVerticalMenu("Vk_InterpolationTitle", descriptor.AllowedValues!.Select(option => MenuChoice(
+            descriptor.ChoiceResourceKey(option),
+            () =>
+            {
+                ParameterRowViewModel? row = SegmentParameters.FirstOrDefault(r => r.Key == PointTableProfileType.InterpolationKey);
+                if (row is not null)
+                {
+                    row.Text = option;
+                }
+            })));
+    }
+
+    partial void OnIsPointTableSelectedChanged(bool value) => this.interpolationMenuCommand.NotifyCanExecuteChanged();
+
+    /// <summary>清空：删掉全部段，从头编。空辊形不能保存；不想要了按"放弃修改"或重新打开库里那一条。</summary>
+    [RelayCommand]
+    private void ClearSegments()
+    {
+        if (this.segments.Count == 0)
+        {
+            return;
+        }
+
+        this.segments.Clear();
+        MarkDirty();
+        RecomputeComposite();
+        Rebuild();
     }
 
     /// <summary>删掉选中的段，后面的段往前接上。可以删到一段不剩——空辊形不能保存。</summary>

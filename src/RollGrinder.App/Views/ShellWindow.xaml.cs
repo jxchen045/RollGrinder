@@ -67,6 +67,14 @@ public partial class ShellWindow : Window
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         // 软键优先于输入框：操作面板上按 F 键就该走功能条，哪怕焦点在某个数值框里。
+        // Shift+F1…F8 = 右侧竖向软键（和 Operate 在 PC 键盘上的约定一致）。
+        if (e.Key is >= Key.F1 and <= Key.F8 && (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+        {
+            this.viewModel.PressVerticalKey(e.Key - Key.F1);
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key is >= Key.F1 and <= Key.F8)
         {
             this.viewModel.PressFunctionKey(e.Key - Key.F1);

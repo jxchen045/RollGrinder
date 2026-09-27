@@ -18,6 +18,7 @@
   <conv:InverseBooleanToVisibilityConverter x:Key="InverseBoolVisibility" />
   <conv:InverseBooleanConverter x:Key="InverseBool" />
   <conv:TextToVisibilityConverter x:Key="TextToVisibility" />
+  <conv:NullToVisibilityConverter x:Key="NullToVisibility" />
   <conv:LeaveTitleConverter x:Key="LeaveTitle" />
 
   <!-- 卡片：白底 + 1px 描边 -->
