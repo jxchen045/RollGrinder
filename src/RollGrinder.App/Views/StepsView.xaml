@@ -71,7 +71,7 @@
                         <ItemsControl Background="{StaticResource Brush.GridLine}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <UniformGrid Columns="3" />
+                                    <UniformGrid Columns="4" />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <Border Style="{StaticResource ParameterCell}">
@@ -96,9 +96,26 @@
                                              Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
                                 </StackPanel>
                             </Border>
+                            <Border Style="{StaticResource ParameterCell}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Program_TotalStock}" Style="{StaticResource Text.Label}" />
+                                    <TextBox x:Name="TotalStockBox" Text="{Binding TotalStockText, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
                         </ItemsControl>
                     </DockPanel>
                 </Border>
+
+                <!-- 跨工序提示（修改稿 5.3）：余量对账、磨完有没有测量、余量是否倒过来。只提示，不挡保存。 -->
+                <ItemsControl x:Name="ProgramHintList" ItemsSource="{Binding ProgramHints}" Margin="0,0,0,8">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontSize="17" Margin="4,0,0,6" TextWrapping="Wrap"
+                                       Foreground="{StaticResource Brush.WarningFill}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
                 <!-- 校验结果：紧跟在程序卡片（标题右侧是状态）下面，按"校验""保存"之后不用往下翻就看得到。 -->
                 <ItemsControl ItemsSource="{Binding Violations}" Margin="0,0,0,12">
@@ -164,7 +181,7 @@
                         <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                             <TextBlock Text="{loc:Loc Steps_ProgramOptionsHeader}" Style="{StaticResource Text.CardTitle}" />
                         </Border>
-                        <ItemsControl ItemsSource="{Binding ProgramOptions}"
+                        <ItemsControl x:Name="ProgramOptionsList" ItemsSource="{Binding ProgramOptions}"
                                       Margin="12"
                                       IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
                             <ItemsControl.ItemsPanel>

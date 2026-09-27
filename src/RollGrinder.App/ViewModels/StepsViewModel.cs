@@ -333,6 +333,11 @@ public sealed partial class StepsViewModel : PageViewModelBase
             new FunctionKeyViewModel("Vk_MoveUp", new RelayCommand(() => MoveStepUp(SelectedStep)), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_MoveDown", new RelayCommand(() => MoveStepDown(SelectedStep)), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_CopyStep", new RelayCommand(() => CopyStep(SelectedStep)), localizer, requiresEditable: true),
+
+            // 阶段 2 线框上的另外三个键（修改稿 5.3）：余量分配、默认值、程序步骤。
+            new FunctionKeyViewModel("Vk_AllocateStock", new RelayCommand(AllocateStock), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_StepDefaults", new RelayCommand(() => ResetStepToDefaults(SelectedStep)), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_ProgramOptions", new RelayCommand(() => ProgramOptionsFocusRequested?.Invoke(this, EventArgs.Empty)), localizer),
         });
 
         Steps.CollectionChanged += (_, _) =>
@@ -547,6 +552,109 @@ public sealed partial class StepsViewModel : PageViewModelBase
     public string StatusText => string.IsNullOrEmpty(StatusResourceKey) ? string.Empty : Localizer[StatusResourceKey];
 
     partial void OnStatusResourceKeyChanged(string value) => OnPropertyChanged(nameof(StatusText));
+
+    /// <summary>
+    /// 总余量（直径量 µm，估算用，和辊身、直径两格一样不存进程序）：填了就对账——
+    /// 各道磨削量合计对不上时提示，"余量分配"按比例分到各道。
+    /// </summary>
+    [ObservableProperty]
+    private string totalStockText = string.Empty;
+
+    partial void OnTotalStockTextChanged(string value) => RefreshHints();
+
+    /// <summary>跨工序检查的提示（修改稿 5.3）：不挡保存，工艺是人定的。</summary>
+    public ObservableCollection<string> ProgramHints { get; } = new();
+
+    /// <summary>"程序步骤"键：视图把键盘焦点移到程序步骤开关上（按键优先：Tab、回车就能切）。</summary>
+    public event EventHandler? ProgramOptionsFocusRequested;
+
+    /// <summary>重算跨工序提示。参数没填成立的那一道先跳过（它自己会报错）。</summary>
+    private void RefreshHints()
+    {
+        ProgramHints.Clear();
+        var steps = new List<GrindingJobStep>(Steps.Count);
+        foreach (StepRowViewModel step in Steps)
+        {
+            if (Collect(step.Parameters) is ParameterSet parameters)
+            {
+                steps.Add(new GrindingJobStep(step.Order, step.StepTypeKey, parameters));
+            }
+        }
+
+        double? total = TryParseDouble(TotalStockText, out double parsed) && parsed > 0.0 ? parsed : null;
+        foreach (ProgramFinding finding in ProgramChecks.Find(steps, this.stepTypes, total))
+        {
+            ProgramHints.Add(finding.Kind switch
+            {
+                ProgramFindingKind.StockDoesNotAddUp => Localizer.Format("Program_HintStockFormat", finding.Value, finding.Reference),
+                ProgramFindingKind.NoMeasurementAfterGrinding => Localizer.Format("Program_HintNoMeasurementFormat", finding.StepOrder ?? 0),
+                _ => Localizer.Format("Program_HintStockReversedFormat", finding.StepOrder ?? 0, finding.Value, finding.Reference),
+            });
+        }
+    }
+
+    /// <summary>
+    /// 余量分配：把"总余量"按各道现在的比例分到去量的工序上（全是 0 就按粗多精少的常用比例），合计正好等于总余量。
+    /// </summary>
+    private void AllocateStock()
+    {
+        if (!TryParseDouble(TotalStockText, out double total) || total <= 0.0)
+        {
+            StatusResourceKey = "Program_AllocateNeedsTotal";
+            return;
+        }
+
+        var targets = new List<(StepRowViewModel Row, ParameterRowViewModel Stock)>();
+        foreach (StepRowViewModel step in Steps)
+        {
+            ParameterRowViewModel? stock = step.Parameters.FirstOrDefault(row => row.Key == StepParameterKeys.StockDiameterMicrometer);
+            if (stock is not null
+                && Collect(step.Parameters) is ParameterSet parameters
+                && ProgramChecks.RemovesStock(new GrindingJobStep(step.Order, step.StepTypeKey, parameters), this.stepTypes))
+            {
+                targets.Add((step, stock));
+            }
+        }
+
+        if (targets.Count == 0)
+        {
+            StatusResourceKey = "Program_AllocateNoGrinding";
+            return;
+        }
+
+        IReadOnlyList<double> shares = ProgramChecks.Distribute(
+            targets.Select(target => TryParseDouble(target.Stock.Text, out double value) ? value : 0.0).ToArray(),
+            targets.Select(target => target.Row.StepTypeKey).ToArray(),
+            total);
+        for (int i = 0; i < targets.Count; i++)
+        {
+            targets[i].Stock.Text = shares[i].ToString("0.#", CultureInfo.InvariantCulture);
+        }
+
+        StatusResourceKey = "Program_StockAllocated";
+        RefreshDurations();
+    }
+
+    /// <summary>默认值：选中这一道的参数全部回到默认（砂轮修整回到砂轮页的修整参数）。</summary>
+    private void ResetStepToDefaults(StepRowViewModel? step)
+    {
+        if (step is null)
+        {
+            return;
+        }
+
+        ParameterSet defaults = DefaultsFor(step.StepType);
+        foreach (ParameterRowViewModel row in step.Parameters)
+        {
+            if (defaults.TryGet(row.Key, out ParameterValue? value) && value is not null)
+            {
+                row.Text = value.ToInvariantString();
+            }
+        }
+
+        StatusResourceKey = "Program_StepDefaultsRestored";
+        RefreshDurations();
+    }
 
     partial void OnBodyLengthMmTextChanged(string value) => RefreshDurations();
 
@@ -1170,6 +1278,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// <summary>程序被改动：打脏标记，并把"已下发"状态清掉——界面与机床已经不一致了。</summary>
     private void MarkEdited()
     {
+        RefreshHints();
         if (this.suppressDirty)
         {
             return;
@@ -1198,6 +1307,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// <summary>按当前参数重算每道工序与总的预计时长。</summary>
     private void RefreshDurations()
     {
+        RefreshHints();
         if (!TryParseDouble(BodyLengthMmText, out double bodyLengthMm)
             || !TryParseDouble(NominalDiameterMmText, out double nominalDiameterMm))
         {

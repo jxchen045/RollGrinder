@@ -3094,4 +3094,58 @@
   <data name="Diag_ChangeNew" xml:space="preserve">
     <value>新值</value>
   </data>
+  <data name="Vk_AllocateStock" xml:space="preserve">
+    <value>余量分配</value>
+  </data>
+  <data name="Vk_StepDefaults" xml:space="preserve">
+    <value>默认值</value>
+  </data>
+  <data name="Vk_ProgramOptions" xml:space="preserve">
+    <value>程序步骤</value>
+  </data>
+  <data name="Program_TotalStock" xml:space="preserve">
+    <value>总余量 µm（直径，估算用）</value>
+  </data>
+  <data name="Program_HintStockFormat" xml:space="preserve">
+    <value>各道磨削量合计 {0:0.#} µm，与总余量 {1:0.#} µm 对不上；按“余量分配”可按比例分好</value>
+  </data>
+  <data name="Program_HintNoMeasurementFormat" xml:space="preserve">
+    <value>第 {0} 道磨完之后没有测量：量不到成品辊形</value>
+  </data>
+  <data name="Program_HintStockReversedFormat" xml:space="preserve">
+    <value>第 {0} 道磨削量 {1:0.#} µm，比前面更粗的一道（{2:0.#} µm）还大</value>
+  </data>
+  <data name="Program_AllocateNeedsTotal" xml:space="preserve">
+    <value>先在“总余量”里填一个大于 0 的数</value>
+  </data>
+  <data name="Program_AllocateNoGrinding" xml:space="preserve">
+    <value>程序里没有去量的磨削工序</value>
+  </data>
+  <data name="Program_StockAllocated" xml:space="preserve">
+    <value>已按比例分好各道磨削量</value>
+  </data>
+  <data name="Program_StepDefaultsRestored" xml:space="preserve">
+    <value>这一道的参数已回到默认值</value>
+  </data>
+  <data name="CalGroup_Wheel" xml:space="preserve">
+    <value>砂轮</value>
+  </data>
+  <data name="CalGroup_Dresser" xml:space="preserve">
+    <value>金刚笔与修整</value>
+  </data>
+  <data name="CalGroup_Probe" xml:space="preserve">
+    <value>测头</value>
+  </data>
+  <data name="CalGroup_ReferenceDisc" xml:space="preserve">
+    <value>基准盘</value>
+  </data>
+  <data name="CalGroup_Touch" xml:space="preserve">
+    <value>对刀</value>
+  </data>
+  <data name="CalGroup_Tolerance" xml:space="preserve">
+    <value>验收公差</value>
+  </data>
+  <data name="CalGroup_Other" xml:space="preserve">
+    <value>其他</value>
+  </data>
 </root>

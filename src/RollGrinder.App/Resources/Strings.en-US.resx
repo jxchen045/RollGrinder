@@ -3094,4 +3094,58 @@
   <data name="Diag_ChangeNew" xml:space="preserve">
     <value>New</value>
   </data>
+  <data name="Vk_AllocateStock" xml:space="preserve">
+    <value>Allocate stock</value>
+  </data>
+  <data name="Vk_StepDefaults" xml:space="preserve">
+    <value>Defaults</value>
+  </data>
+  <data name="Vk_ProgramOptions" xml:space="preserve">
+    <value>Program steps</value>
+  </data>
+  <data name="Program_TotalStock" xml:space="preserve">
+    <value>Total stock µm (dia., estimate)</value>
+  </data>
+  <data name="Program_HintStockFormat" xml:space="preserve">
+    <value>Step stock adds up to {0:0.#} µm, not the total {1:0.#} µm; “Allocate stock” spreads it</value>
+  </data>
+  <data name="Program_HintNoMeasurementFormat" xml:space="preserve">
+    <value>No measurement after step {0}: the finished profile will not be measured</value>
+  </data>
+  <data name="Program_HintStockReversedFormat" xml:space="preserve">
+    <value>Step {0} removes {1:0.#} µm, more than the rougher step before it ({2:0.#} µm)</value>
+  </data>
+  <data name="Program_AllocateNeedsTotal" xml:space="preserve">
+    <value>Enter a total stock above 0 first</value>
+  </data>
+  <data name="Program_AllocateNoGrinding" xml:space="preserve">
+    <value>The program has no stock-removing grinding step</value>
+  </data>
+  <data name="Program_StockAllocated" xml:space="preserve">
+    <value>Stock allocated to the grinding steps</value>
+  </data>
+  <data name="Program_StepDefaultsRestored" xml:space="preserve">
+    <value>This step's parameters are back to their defaults</value>
+  </data>
+  <data name="CalGroup_Wheel" xml:space="preserve">
+    <value>Wheel</value>
+  </data>
+  <data name="CalGroup_Dresser" xml:space="preserve">
+    <value>Dresser and dressing</value>
+  </data>
+  <data name="CalGroup_Probe" xml:space="preserve">
+    <value>Probes</value>
+  </data>
+  <data name="CalGroup_ReferenceDisc" xml:space="preserve">
+    <value>Reference disc</value>
+  </data>
+  <data name="CalGroup_Touch" xml:space="preserve">
+    <value>Touch-off</value>
+  </data>
+  <data name="CalGroup_Tolerance" xml:space="preserve">
+    <value>Acceptance tolerances</value>
+  </data>
+  <data name="CalGroup_Other" xml:space="preserve">
+    <value>Other</value>
+  </data>
 </root>

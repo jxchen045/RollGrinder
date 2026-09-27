@@ -16,6 +16,47 @@ public partial class StepsView : UserControl
     {
         InitializeComponent();
         GotKeyboardFocus += OnGotKeyboardFocus;
+        DataContextChanged += (_, e) =>
+        {
+            if (e.OldValue is StepsViewModel old)
+            {
+                old.ProgramOptionsFocusRequested -= OnProgramOptionsFocusRequested;
+            }
+
+            if (e.NewValue is StepsViewModel current)
+            {
+                current.ProgramOptionsFocusRequested += OnProgramOptionsFocusRequested;
+            }
+        };
+    }
+
+    /// <summary>"程序步骤"竖键：把键盘焦点移到第一个程序步骤开关上，之后 Tab、回车就能逐个切。</summary>
+    private void OnProgramOptionsFocusRequested(object? sender, System.EventArgs e)
+    {
+        ProgramOptionsList.BringIntoView();
+        if (FirstFocusable(ProgramOptionsList) is { } target)
+        {
+            target.Focus();
+        }
+    }
+
+    private static UIElement? FirstFocusable(DependencyObject root)
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, i);
+            if (child is UIElement { Focusable: true, IsEnabled: true, IsVisible: true } element and not ItemsControl)
+            {
+                return element;
+            }
+
+            if (FirstFocusable(child) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     private void OnGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)

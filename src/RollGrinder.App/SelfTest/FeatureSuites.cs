@@ -598,6 +598,45 @@ internal sealed class StepsSuite : ISelfTestSuite
             h.TryScreenshot("steps-vertical-keys");
         });
 
+        // 跨工序检查与余量分配（修改稿 5.3）：总余量对不上时提示；"余量分配"按比例分好，提示消失；"默认值"把一道参数放回默认。
+        await h.StepAsync("CrossStep", "AllocateStockAndDefaults", async ctx =>
+        {
+            StepRowViewModel? grinding = page.Steps.FirstOrDefault(step =>
+                step.Parameters.Any(row => row.Key == StepParameterKeys.StockDiameterMicrometer)
+                && step.StepTypeKey is StepTypeKeys.Rough or StepTypeKeys.SemiFinish or StepTypeKeys.Finish);
+            if (grinding is null)
+            {
+                ctx.Skip("the program has no grinding step");
+            }
+
+            page.TotalStockText = "987";
+            await h.SettleAsync(50);
+            ctx.Check(page.ProgramHints.Count > 0, "a total that does not match the steps should give a hint");
+            ctx.Note(string.Join(" | ", page.ProgramHints));
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_AllocateStock");
+            double sum = page.Steps
+                .SelectMany(step => step.Parameters.Where(row => row.Key == StepParameterKeys.StockDiameterMicrometer).Select(row => (step, row)))
+                .Where(pair => pair.step.Parameters.Any(r => r.Key == StepParameterKeys.InfeedPerPassDiameterMicrometer
+                    && double.TryParse(r.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double infeed) && infeed > 0)
+                    || pair.step.Parameters.Any(r => r.Key == StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin
+                    && double.TryParse(r.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double continuous) && continuous > 0))
+                .Sum(pair => double.Parse(pair.row.Text, CultureInfo.InvariantCulture));
+            ctx.Check(Math.Abs(sum - 987) < 0.2, Invariant($"allocated stock should add up to 987 µm, is {sum}"));
+            ctx.Check(!page.ProgramHints.Any(hint => hint.Contains("987", StringComparison.Ordinal)), "the stock hint should be gone");
+            h.TryScreenshot("steps-allocate-stock");
+
+            page.SelectedStep = grinding;
+            ParameterRowViewModel stock = grinding!.Parameters.First(row => row.Key == StepParameterKeys.StockDiameterMicrometer);
+            string defaultStock = grinding.StepType.Schema.Get(StepParameterKeys.StockDiameterMicrometer).DefaultValue.ToInvariantString();
+            await h.PressVerticalKeyAsync(ctx, "Vk_StepDefaults");
+            ctx.Check(stock.Text == defaultStock, "defaults should put the stock back to " + defaultStock + ", is " + stock.Text);
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_ProgramOptions");
+            page.TotalStockText = string.Empty;
+            await h.SettleAsync(50);
+        });
+
         await h.StepAsync("Diagram", "EveryParameterLightsUpWithAHelpLine", async ctx =>
         {
             // 每道工序、每个参数：简图亮对应的量，说明行写全（没有 "!键!"）。每种简图截一张。

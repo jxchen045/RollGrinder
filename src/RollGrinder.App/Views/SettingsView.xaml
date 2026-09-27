@@ -85,16 +85,24 @@
                     </DockPanel>
                 </Border>
 
+                <!-- 按部件分组（修改稿 5③）：砂轮、金刚笔与修整、测头、基准盘、对刀、验收公差。 -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Values}"
-                                  Background="{StaticResource Brush.GridLine}"
-                                  IsEnabled="{Binding CanEdit}"
-                                  ItemTemplate="{StaticResource ParameterCellTemplate}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="3" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
+                    <ItemsControl ItemsSource="{Binding CalibrationGroups}" IsEnabled="{Binding CanEdit}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Label}" Margin="14,8,0,4" />
+                                    <ItemsControl ItemsSource="{Binding Rows}" Background="{StaticResource Brush.GridLine}"
+                                                  ItemTemplate="{StaticResource ParameterCellTemplate}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="3" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
             </DockPanel>

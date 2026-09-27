@@ -214,6 +214,50 @@ public sealed partial class SettingsViewModel : PageViewModelBase
     /// <summary>标定值的参数格。</summary>
     public ObservableCollection<ParameterRowViewModel> Values { get; } = new();
 
+    /// <summary>
+    /// 标定值按部件分组（修改稿 5③）：砂轮、金刚笔与修整、测头、基准盘、对刀、验收公差。
+    /// 和 <see cref="Values"/> 是同一批格子，只是分组摆；新加的标定项没归组时落在"其他"。
+    /// </summary>
+    public ObservableCollection<CalibrationGroupViewModel> CalibrationGroups { get; } = new();
+
+    private static readonly (string TitleKey, string[] Keys)[] CalibrationLayout =
+    {
+        ("CalGroup_Wheel", new[] { CalibrationKeys.WheelDiameterMm, CalibrationKeys.NewWheelDiameterMm, CalibrationKeys.WheelWidthMm }),
+        ("CalGroup_Dresser", new[]
+        {
+            CalibrationKeys.DresserOffsetMm, CalibrationKeys.DresserReferenceOffsetMm, CalibrationKeys.DressInfeedRadiusMicrometer,
+            CalibrationKeys.DressPassCount, CalibrationKeys.DressFeedMmPerMin, CalibrationKeys.DressIntervalRolls,
+        }),
+        ("CalGroup_Probe", new[] { CalibrationKeys.ProbeBToWheelCentreMm, CalibrationKeys.ProbeBToWheelSurfaceMm }),
+        ("CalGroup_ReferenceDisc", new[] { CalibrationKeys.ReferenceDiscDiameterMm, CalibrationKeys.ReferenceDiscOffsetMm }),
+        ("CalGroup_Touch", new[] { CalibrationKeys.TouchOffsetMm, CalibrationKeys.TouchMode, CalibrationKeys.ShortStrokeCurrentA }),
+        ("CalGroup_Tolerance", new[]
+        {
+            CalibrationKeys.ProfileToleranceMicrometer, CalibrationKeys.RoundnessToleranceMicrometer, CalibrationKeys.CentringToleranceMicrometer,
+        }),
+    };
+
+    private void BuildCalibrationGroups()
+    {
+        CalibrationGroups.Clear();
+        var placed = new HashSet<string>(StringComparer.Ordinal);
+        foreach ((string titleKey, string[] keys) in CalibrationLayout)
+        {
+            ParameterRowViewModel[] rows = keys.Select(Row).OfType<ParameterRowViewModel>().ToArray();
+            placed.UnionWith(rows.Select(row => row.Key));
+            if (rows.Length > 0)
+            {
+                CalibrationGroups.Add(new CalibrationGroupViewModel(Localizer[titleKey], rows));
+            }
+        }
+
+        ParameterRowViewModel[] others = Values.Where(row => !placed.Contains(row.Key)).ToArray();
+        if (others.Length > 0)
+        {
+            CalibrationGroups.Add(new CalibrationGroupViewModel(Localizer["CalGroup_Other"], others));
+        }
+    }
+
     /// <summary>每一项最后是谁在什么时候改的。</summary>
     public ObservableCollection<LabelValueViewModel> Audit { get; } = new();
 
@@ -481,6 +525,8 @@ public sealed partial class SettingsViewModel : PageViewModelBase
             Values.Add(row);
         }
 
+        BuildCalibrationGroups();
+
         WheelRows.Clear();
         foreach (string key in WheelKeys)
         {
@@ -578,4 +624,18 @@ public sealed class WheelEventRowViewModel
     public string DiameterText { get; }
 
     public string DetailText { get; }
+}
+
+/// <summary>设置页里一组标定值（一个部件）。</summary>
+public sealed class CalibrationGroupViewModel
+{
+    public CalibrationGroupViewModel(string title, IReadOnlyList<ParameterRowViewModel> rows)
+    {
+        Title = title;
+        Rows = rows;
+    }
+
+    public string Title { get; }
+
+    public IReadOnlyList<ParameterRowViewModel> Rows { get; }
 }
