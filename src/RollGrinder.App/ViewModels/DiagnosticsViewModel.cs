@@ -11,6 +11,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
+using RollGrinder.Composition;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Data;
@@ -102,6 +103,10 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         IStringLocalizer localizer,
         ICalibrationService calibration,
         IDiagnosticsExportService exports,
+        ConfigDocumentStore configStore,
+        RollGrinder.Services.Audit.IChangeLog changeLog,
+        IMachineGateway gateway,
+        RollGrinder.Services.Session.IUserSession userSession,
         IAlarmSink alarms,
         INavigator navigator)
         : base(alarms, localizer, navigator)
@@ -114,6 +119,7 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         this.options = options ?? throw new ArgumentNullException(nameof(options));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.exports = exports ?? throw new ArgumentNullException(nameof(exports));
+        InitializeConfigEditor(configStore, changeLog, gateway, userSession);
 
         this.connection = new DiagnosticRowViewModel("Diag_Connection", localizer);
         this.snapshotAge = new DiagnosticRowViewModel("Diag_SnapshotAge", localizer);
@@ -219,16 +225,6 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
     [RelayCommand]
     private void RequestBackup() => BackupRequested?.Invoke(this, EventArgs.Empty);
 
-    /// <summary>机床配置：把 machine.json 原样摆出来。</summary>
-    [RelayCommand]
-    private Task OpenMachineConfigAsync(CancellationToken cancellationToken) =>
-        ShowFileAsync(this.options.MachineConfigFilePath, MachineConfigSubView, cancellationToken);
-
-    /// <summary>变量映射：把 tagmap.json 原样摆出来。</summary>
-    [RelayCommand]
-    private Task OpenTagMappingAsync(CancellationToken cancellationToken) =>
-        ShowFileAsync(this.options.TagMapFilePath, TagMappingSubView, cancellationToken);
-
     /// <summary>运行日志：日志目录里最新的那一个文件。</summary>
     [RelayCommand]
     private Task OpenRunLogAsync(CancellationToken cancellationToken) =>
@@ -266,21 +262,12 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
                     Localizer));
             }
 
+            await LoadChangeLogAsync(token).ConfigureAwait(true);
             Navigator.OpenSubView(AuditLogSubView);
         }, cancellationToken);
 
     /// <summary>运行日志一次看多少行。</summary>
     private const int RunLogTailLines = 400;
-
-    private Task ShowFileAsync(string path, string subViewKey, CancellationToken cancellationToken) =>
-        RunGuardedAsync(async token =>
-        {
-            InspectorText = File.Exists(path)
-                ? await File.ReadAllTextAsync(path, token).ConfigureAwait(true)
-                : Localizer.Format("Diag_FileMissingFormat", path);
-
-            Navigator.OpenSubView(subViewKey);
-        }, cancellationToken);
 
     private static string? NewestLogFile(string directory)
     {
@@ -416,6 +403,10 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         if (ActiveSubViewKey == TagMonitorSubView)
         {
             RefreshTagMonitor(snapshot);
+        }
+        else if (ActiveSubViewKey == TagMappingSubView)
+        {
+            RefreshTagValues(snapshot);
         }
     }
 

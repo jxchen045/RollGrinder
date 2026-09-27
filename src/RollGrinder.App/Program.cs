@@ -190,6 +190,7 @@ public static class Program
         builder.Services.AddDataStore(options);
         builder.Services.AddApplicationServices(hmiSettings);
         builder.Services.AddSingleton(localizer);
+        builder.Services.AddSingleton<RollGrinder.Composition.ConfigDocumentStore>();
         builder.Services.AddSingleton<Navigator>();
         builder.Services.AddSingleton<INavigator>(provider => provider.GetRequiredService<Navigator>());
 

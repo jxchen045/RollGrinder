@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.App.ViewModels;
+using RollGrinder.Composition;
+using RollGrinder.Contracts;
 using RollGrinder.Core.Calibration;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
@@ -1149,6 +1151,79 @@ internal sealed class DiagnosticsSuite : ISelfTestSuite
                 await h.RecoverAsync();
             });
         }
+
+        // 机床配置编辑（修改稿 5.8）：改错了就地标红、存不进去；改对了保存，原文件先备份、写改动记录；再恢复上一版存回去。
+        await h.StepAsync("ConfigEditor", "MachineConfigEditSaveRestore", async ctx =>
+        {
+            await h.PressKeyAsync(ctx, "Fn_MachineConfig");
+            ctx.Check(page.ActiveSubViewKey == DiagnosticsViewModel.MachineConfigSubView, "the machine config editor should open");
+            ctx.Check(page.MachineGroups.Count >= 5, Invariant($"the form should be grouped, has {page.MachineGroups.Count} groups"));
+            ctx.Check(page.ConfigIssueCount == 0, "the sample machine.json should be clean: " + string.Join(" | ", page.ConfigIssues));
+
+            ConfigFieldViewModel weight = page.MachineGroups.SelectMany(g => g.Fields).First(f => f.Path == "workpiece.maxWeightKg");
+            string original = weight.Text;
+            weight.Text = "-1";
+            await h.SettleAsync(50);
+            ctx.Check(weight.HasIssue && page.ConfigIssueCount > 0, "a negative weight must be marked at once");
+            weight.Text = "abc";
+            await h.SettleAsync(50);
+            ctx.Check(weight.HasIssue, "text in a number field must be marked");
+            h.TryScreenshot("config-machine-errors");
+
+            weight.Text = (double.Parse(original, CultureInfo.CurrentCulture) - 1000).ToString(CultureInfo.CurrentCulture);
+            await h.SettleAsync(50);
+            ctx.Check(!weight.HasIssue && page.ConfigIssueCount == 0, "a valid weight should clear the error");
+            ctx.Check(page.IsDirty, "an edited config should count as unsaved");
+            int backupsBefore = h.Services.GetRequiredService<ConfigDocumentStore>().ListBackups(ConfigFileKind.Machine).Count;
+            await h.PressVerticalKeyAsync(ctx, "Vk_SaveConfig");
+            await h.SettleAsync(300);
+            ctx.Check(!page.IsDirty, "saving should clear the unsaved mark: " + page.ConfigStatusText);
+            ctx.Check(h.Services.GetRequiredService<ConfigDocumentStore>().ListBackups(ConfigFileKind.Machine).Count == backupsBefore + 1,
+                "the old file should have been backed up");
+            ctx.Note(page.ConfigStatusText);
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_RestorePrevious");
+            await h.SettleAsync(300);
+            ConfigFieldViewModel restored = page.MachineGroups.SelectMany(g => g.Fields).First(f => f.Path == "workpiece.maxWeightKg");
+            ctx.Check(restored.Text == original, "the previous version should be loaded into the editor, weight is " + restored.Text);
+            await h.PressVerticalKeyAsync(ctx, "Vk_SaveConfig");
+            await h.SettleAsync(300);
+            ctx.Check(!page.IsDirty, "the restored version should be saved back");
+            h.TryScreenshot("config-machine");
+            await h.RecoverAsync();
+        }, StepOptions.Expect("*"));
+
+        await h.StepAsync("ConfigEditor", "TagMapSearchMissingTestRead", async ctx =>
+        {
+            await h.PressKeyAsync(ctx, "Fn_TagMapping");
+            ctx.Check(page.ActiveSubViewKey == DiagnosticsViewModel.TagMappingSubView, "the tag map editor should open");
+            ctx.Check(page.VisibleTags.Count > 50, Invariant($"the sample map should be listed, has {page.VisibleTags.Count} rows"));
+            ctx.Check(page.ConfigIssueCount == 0, "the sample tagmap.json should be clean: " + page.ConfigStatusText);
+
+            page.TagSearchText = "status.";
+            await h.SettleAsync(50);
+            ctx.Check(page.VisibleTags.Count > 0 && page.VisibleTags.All(row => row.Key.Contains("status.", StringComparison.OrdinalIgnoreCase)
+                    || row.Address.Contains("status.", StringComparison.OrdinalIgnoreCase)
+                    || row.Description.Contains("status.", StringComparison.OrdinalIgnoreCase)),
+                "search should filter the rows");
+            page.TagSearchText = string.Empty;
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_OnlyMissing");
+            await h.SettleAsync(50);
+            ctx.Check(page.VisibleTags.All(row => row.IsMissing || row.IssueText.Length > 0), "only missing or faulty rows should remain");
+            ctx.Note(Invariant($"missing rows={page.VisibleTags.Count}"));
+            await h.PressVerticalKeyAsync(ctx, "Vk_OnlyMissing");
+            await h.SettleAsync(50);
+
+            page.SelectedTag = page.VisibleTags.FirstOrDefault(row => row.Key == MachineTagKeys.ChannelState);
+            ctx.Check(page.SelectedTag is not null, "the channel state should be in the map");
+            await h.PressVerticalKeyAsync(ctx, "Vk_TestRead");
+            await h.SettleAsync(200);
+            ctx.Note("test read: " + page.ConfigStatusText);
+            ctx.Check(page.ConfigStatusText.Length > 0, "the test read should say what came back");
+            h.TryScreenshot("config-tagmap");
+            await h.RecoverAsync();
+        }, StepOptions.Expect("*"));
 
         await h.StepAsync("Export", "Snapshot", async ctx =>
         {

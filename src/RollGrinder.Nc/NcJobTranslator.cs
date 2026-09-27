@@ -307,31 +307,30 @@ public sealed class NcJobTranslator
         throw new GatewayException($"Choice parameter '{descriptor.Key}' has no option '{choice}'.");
     }
 
-    /// <summary>下发前检查必需的逻辑名是否都在 tagmap 里，返回缺失的键。</summary>
-    public IReadOnlyList<string> FindMissingRequiredTags()
+    /// <summary>下发离不了的变量（数组变量写基名）。标签映射编辑器按它标“必需”。</summary>
+    public static IReadOnlyList<string> RequiredTagKeys { get; } = new[]
     {
-        string[] required =
-        {
-            MachineTagKeys.JobRollRadiusMm,
-            MachineTagKeys.JobBodyLengthMm,
-            MachineTagKeys.JobStepCount,
-            MachineTagKeys.JobProfilePointCount,
-            MachineTagKeys.JobStepTypeCode,
-            MachineTagKeys.JobStepPassCount,
-            MachineTagKeys.JobStepInfeedPerPassRadiusMm,
-            MachineTagKeys.JobStepFeedMmPerMin,
+        MachineTagKeys.JobRollRadiusMm,
+        MachineTagKeys.JobBodyLengthMm,
+        MachineTagKeys.JobStepCount,
+        MachineTagKeys.JobProfilePointCount,
+        MachineTagKeys.JobStepTypeCode,
+        MachineTagKeys.JobStepPassCount,
+        MachineTagKeys.JobStepInfeedPerPassRadiusMm,
+        MachineTagKeys.JobStepFeedMmPerMin,
 
-            // 进给方式与两个进给量一起决定这道工序切多少，缺一个就下发不了。
-            MachineTagKeys.JobStepFeedMode,
-            MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin,
-            MachineTagKeys.JobStepTargetStockRadiusMm,
-            MachineTagKeys.JobProfileBodyPositionMm,
-            MachineTagKeys.JobProfileRadiusOffsetMm,
-            MachineTagKeys.JobParametersValid,
-        };
+        // 进给方式与两个进给量一起决定这道工序切多少，缺一个就下发不了。
+        MachineTagKeys.JobStepFeedMode,
+        MachineTagKeys.JobStepContinuousInfeedRadiusMmPerMin,
+        MachineTagKeys.JobStepTargetStockRadiusMm,
+        MachineTagKeys.JobProfileBodyPositionMm,
+        MachineTagKeys.JobProfileRadiusOffsetMm,
+        MachineTagKeys.JobParametersValid,
+    };
 
-        return required.Where(key => !this.tagMap.TryResolve(FirstSlot(key), out _)).ToArray();
-    }
+    /// <summary>下发前检查必需的逻辑名是否都在 tagmap 里，返回缺失的键。</summary>
+    public IReadOnlyList<string> FindMissingRequiredTags() =>
+        RequiredTagKeys.Where(key => !this.tagMap.TryResolve(FirstSlot(key), out _)).ToArray();
 
     private static string FirstSlot(string key) => key switch
     {

@@ -1792,9 +1792,6 @@
   <data name="Diag_NoRunLog" xml:space="preserve">
     <value>There are no log files in the log directory yet</value>
   </data>
-  <data name="Diag_FileMissingFormat" xml:space="preserve">
-    <value>File not found: {0}</value>
-  </data>
   <data name="Diag_AuditEntryFormat" xml:space="preserve">
     <value>{0} · {1}</value>
   </data>
@@ -2847,5 +2844,254 @@
   </data>
   <data name="Manual_MeasureCentringHint" xml:space="preserve">
     <value>Points and the centring table are on the left; capture, save and record ends are on the right-hand keys.</value>
+  </data>
+  <data name="Vk_SaveConfig" xml:space="preserve">
+    <value>Save (backs up)</value>
+  </data>
+  <data name="Vk_RestorePrevious" xml:space="preserve">
+    <value>Load previous</value>
+  </data>
+  <data name="Vk_DiscardConfig" xml:space="preserve">
+    <value>Discard edits</value>
+  </data>
+  <data name="Vk_OnlyMissing" xml:space="preserve">
+    <value>Missing only</value>
+  </data>
+  <data name="Vk_RegisterTag" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="Vk_DeleteTag" xml:space="preserve">
+    <value>Delete row</value>
+  </data>
+  <data name="Vk_TestRead" xml:space="preserve">
+    <value>Test read</value>
+  </data>
+  <data name="Cfg_MachineHeader" xml:space="preserve">
+    <value>Machine config (machine.json)</value>
+  </data>
+  <data name="Cfg_TagMapHeader" xml:space="preserve">
+    <value>Tag map (tagmap.json)</value>
+  </data>
+  <data name="Cfg_RestartNote" xml:space="preserve">
+    <value>The file is backed up before saving and every change is logged. Restart the HMI for the change to take effect; the running connection is not touched.</value>
+  </data>
+  <data name="Cfg_ManufacturerOnly" xml:space="preserve">
+    <value>Only the manufacturer can edit; other roles can view.</value>
+  </data>
+  <data name="Cfg_NeedsManufacturer" xml:space="preserve">
+    <value>Editing the configuration needs the manufacturer role</value>
+  </data>
+  <data name="Cfg_Valid" xml:space="preserve">
+    <value>Check: passed</value>
+  </data>
+  <data name="Cfg_IssueCountFormat" xml:space="preserve">
+    <value>{0} issue(s) to fix before saving</value>
+  </data>
+  <data name="Cfg_NoChanges" xml:space="preserve">
+    <value>No changes</value>
+  </data>
+  <data name="Cfg_SavedFormat" xml:space="preserve">
+    <value>Saved {0} change(s) (backup {1}). Restart the HMI for it to take effect.</value>
+  </data>
+  <data name="Cfg_NoBackup" xml:space="preserve">
+    <value>No backup to restore yet</value>
+  </data>
+  <data name="Cfg_PreviousLoaded" xml:space="preserve">
+    <value>Previous version loaded; press “Save” to keep it</value>
+  </data>
+  <data name="Cfg_TagSummaryFormat" xml:space="preserve">
+    <value>{0} mapped; {1} not mapped, {2} of them required for download</value>
+  </data>
+  <data name="Cfg_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Cfg_OnlyMissing" xml:space="preserve">
+    <value>Only missing or faulty</value>
+  </data>
+  <data name="Cfg_TagKey" xml:space="preserve">
+    <value>Logical name</value>
+  </data>
+  <data name="Cfg_TagAddress" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="Cfg_TagDataType" xml:space="preserve">
+    <value>Data type</value>
+  </data>
+  <data name="Cfg_TagAccess" xml:space="preserve">
+    <value>Access</value>
+  </data>
+  <data name="Cfg_TagUnit" xml:space="preserve">
+    <value>Unit</value>
+  </data>
+  <data name="Cfg_TagDescription" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Cfg_TagValue" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Cfg_TagQuality" xml:space="preserve">
+    <value>Quality</value>
+  </data>
+  <data name="Cfg_TagIssue" xml:space="preserve">
+    <value>Issue</value>
+  </data>
+  <data name="Cfg_QualityGood" xml:space="preserve">
+    <value>Good</value>
+  </data>
+  <data name="Cfg_QualityBad" xml:space="preserve">
+    <value>Bad</value>
+  </data>
+  <data name="Cfg_TestReadFormat" xml:space="preserve">
+    <value>Test read {0}: {1} ({2})</value>
+  </data>
+  <data name="Cfg_TestReadFailedFormat" xml:space="preserve">
+    <value>Test read {0} failed: {1}</value>
+  </data>
+  <data name="Cfg_TestReadNotActiveFormat" xml:space="preserve">
+    <value>{0} is not in the active map; save and restart to test it</value>
+  </data>
+  <data name="Cfg_Issue_Structure" xml:space="preserve">
+    <value>The file structure is invalid</value>
+  </data>
+  <data name="Cfg_Issue_MaxNotAboveMin" xml:space="preserve">
+    <value>The maximum must be above the minimum</value>
+  </data>
+  <data name="Cfg_Issue_MustBePositive" xml:space="preserve">
+    <value>Must be above 0</value>
+  </data>
+  <data name="Cfg_Issue_MustBeInteger" xml:space="preserve">
+    <value>Must be an integer</value>
+  </data>
+  <data name="Cfg_Issue_Duplicate" xml:space="preserve">
+    <value>Duplicate</value>
+  </data>
+  <data name="Cfg_Issue_Required" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="Cfg_Issue_NotANumber" xml:space="preserve">
+    <value>Not a number</value>
+  </data>
+  <data name="CfgGroup_identity" xml:space="preserve">
+    <value>Identity</value>
+  </data>
+  <data name="CfgGroup_controller" xml:space="preserve">
+    <value>Controller</value>
+  </data>
+  <data name="CfgGroup_AxisFormat" xml:space="preserve">
+    <value>Axis {0} ({1})</value>
+  </data>
+  <data name="CfgGroup_ChannelFormat" xml:space="preserve">
+    <value>Measuring channel {0}</value>
+  </data>
+  <data name="CfgGroup_options" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="CfgGroup_workpiece" xml:space="preserve">
+    <value>Workpiece range</value>
+  </data>
+  <data name="CfgGroup_thresholds" xml:space="preserve">
+    <value>Thresholds</value>
+  </data>
+  <data name="CfgGroup_stepTypeCodes" xml:space="preserve">
+    <value>Step type codes (NC)</value>
+  </data>
+  <data name="CfgGroup_auxiliaryActionCodes" xml:space="preserve">
+    <value>Auxiliary action codes (NC)</value>
+  </data>
+  <data name="CfgField_machineId" xml:space="preserve">
+    <value>Machine ID</value>
+  </data>
+  <data name="CfgField_displayName" xml:space="preserve">
+    <value>Display name</value>
+  </data>
+  <data name="CfgField_schemaVersion" xml:space="preserve">
+    <value>Schema version</value>
+  </data>
+  <data name="CfgField_kind" xml:space="preserve">
+    <value>Controller kind</value>
+  </data>
+  <data name="CfgField_channelNumber" xml:space="preserve">
+    <value>Channel</value>
+  </data>
+  <data name="CfgField_endpointUrl" xml:space="preserve">
+    <value>OPC UA endpoint</value>
+  </data>
+  <data name="CfgField_useSecurity" xml:space="preserve">
+    <value>Secure connection</value>
+  </data>
+  <data name="CfgField_autoAcceptUntrustedCertificates" xml:space="preserve">
+    <value>Auto-trust certificates</value>
+  </data>
+  <data name="CfgField_sessionTimeoutMs" xml:space="preserve">
+    <value>Session timeout</value>
+  </data>
+  <data name="CfgField_operationTimeoutMs" xml:space="preserve">
+    <value>Operation timeout</value>
+  </data>
+  <data name="CfgField_name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="CfgField_role" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="CfgField_isPresent" xml:space="preserve">
+    <value>Present</value>
+  </data>
+  <data name="CfgField_closedLoop" xml:space="preserve">
+    <value>Loop</value>
+  </data>
+  <data name="CfgField_minPositionMm" xml:space="preserve">
+    <value>Min position</value>
+  </data>
+  <data name="CfgField_maxPositionMm" xml:space="preserve">
+    <value>Max position</value>
+  </data>
+  <data name="CfgField_maxFeedMmPerMin" xml:space="preserve">
+    <value>Max feed</value>
+  </data>
+  <data name="CfgField_maxSpeedRpm" xml:space="preserve">
+    <value>Max speed</value>
+  </data>
+  <data name="CfgField_quantity" xml:space="preserve">
+    <value>Quantity</value>
+  </data>
+  <data name="CfgField_resolutionMicrometer" xml:space="preserve">
+    <value>Resolution</value>
+  </data>
+  <data name="CfgField_minBodyLengthMm" xml:space="preserve">
+    <value>Min body length</value>
+  </data>
+  <data name="CfgField_maxBodyLengthMm" xml:space="preserve">
+    <value>Max body length</value>
+  </data>
+  <data name="CfgField_minDiameterMm" xml:space="preserve">
+    <value>Min diameter</value>
+  </data>
+  <data name="CfgField_maxDiameterMm" xml:space="preserve">
+    <value>Max diameter</value>
+  </data>
+  <data name="CfgField_maxWeightKg" xml:space="preserve">
+    <value>Max weight</value>
+  </data>
+  <data name="Diag_AuditCalibrationHeader" xml:space="preserve">
+    <value>Calibration: who changed each value last</value>
+  </data>
+  <data name="Diag_ChangeLogHeader" xml:space="preserve">
+    <value>Change log (compensation, machine config, tag map)</value>
+  </data>
+  <data name="Diag_ChangeBy" xml:space="preserve">
+    <value>By</value>
+  </data>
+  <data name="Diag_ChangeArea" xml:space="preserve">
+    <value>Area</value>
+  </data>
+  <data name="Diag_ChangeItem" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Diag_ChangeOld" xml:space="preserve">
+    <value>Old</value>
+  </data>
+  <data name="Diag_ChangeNew" xml:space="preserve">
+    <value>New</value>
   </data>
 </root>

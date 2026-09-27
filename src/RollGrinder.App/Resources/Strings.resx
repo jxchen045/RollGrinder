@@ -1792,9 +1792,6 @@
   <data name="Diag_NoRunLog" xml:space="preserve">
     <value>日志目录里还没有日志文件</value>
   </data>
-  <data name="Diag_FileMissingFormat" xml:space="preserve">
-    <value>找不到文件：{0}</value>
-  </data>
   <data name="Diag_AuditEntryFormat" xml:space="preserve">
     <value>{0} · {1}</value>
   </data>
@@ -2847,5 +2844,254 @@
   </data>
   <data name="Manual_MeasureCentringHint" xml:space="preserve">
     <value>测点与对中表在左边；采点、归档、记两端都在右侧竖键上。</value>
+  </data>
+  <data name="Vk_SaveConfig" xml:space="preserve">
+    <value>保存（备份原文件）</value>
+  </data>
+  <data name="Vk_RestorePrevious" xml:space="preserve">
+    <value>恢复上一版</value>
+  </data>
+  <data name="Vk_DiscardConfig" xml:space="preserve">
+    <value>放弃改动</value>
+  </data>
+  <data name="Vk_OnlyMissing" xml:space="preserve">
+    <value>只看缺失</value>
+  </data>
+  <data name="Vk_RegisterTag" xml:space="preserve">
+    <value>登记</value>
+  </data>
+  <data name="Vk_DeleteTag" xml:space="preserve">
+    <value>删除这一行</value>
+  </data>
+  <data name="Vk_TestRead" xml:space="preserve">
+    <value>试读</value>
+  </data>
+  <data name="Cfg_MachineHeader" xml:space="preserve">
+    <value>机床配置（machine.json）</value>
+  </data>
+  <data name="Cfg_TagMapHeader" xml:space="preserve">
+    <value>标签映射（tagmap.json）</value>
+  </data>
+  <data name="Cfg_RestartNote" xml:space="preserve">
+    <value>保存前自动备份原文件，每次改动写改动记录；保存后要重启上位机才生效，正在运行的连接不受影响。</value>
+  </data>
+  <data name="Cfg_ManufacturerOnly" xml:space="preserve">
+    <value>只有制造商能改；其他权限只能看。</value>
+  </data>
+  <data name="Cfg_NeedsManufacturer" xml:space="preserve">
+    <value>要制造商权限才能改配置</value>
+  </data>
+  <data name="Cfg_Valid" xml:space="preserve">
+    <value>校验：通过</value>
+  </data>
+  <data name="Cfg_IssueCountFormat" xml:space="preserve">
+    <value>有 {0} 处问题，改好才能保存</value>
+  </data>
+  <data name="Cfg_NoChanges" xml:space="preserve">
+    <value>没有改动</value>
+  </data>
+  <data name="Cfg_SavedFormat" xml:space="preserve">
+    <value>已保存 {0} 处改动（原文件备份为 {1}）。重启上位机后生效。</value>
+  </data>
+  <data name="Cfg_NoBackup" xml:space="preserve">
+    <value>还没有备份可恢复</value>
+  </data>
+  <data name="Cfg_PreviousLoaded" xml:space="preserve">
+    <value>已载入上一版；看过没问题再按“保存”</value>
+  </data>
+  <data name="Cfg_TagSummaryFormat" xml:space="preserve">
+    <value>已登记 {0} 个；未登记 {1} 个，其中下发必需 {2} 个</value>
+  </data>
+  <data name="Cfg_Search" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="Cfg_OnlyMissing" xml:space="preserve">
+    <value>只看缺失与有问题的</value>
+  </data>
+  <data name="Cfg_TagKey" xml:space="preserve">
+    <value>逻辑名</value>
+  </data>
+  <data name="Cfg_TagAddress" xml:space="preserve">
+    <value>地址</value>
+  </data>
+  <data name="Cfg_TagDataType" xml:space="preserve">
+    <value>数据类型</value>
+  </data>
+  <data name="Cfg_TagAccess" xml:space="preserve">
+    <value>读写</value>
+  </data>
+  <data name="Cfg_TagUnit" xml:space="preserve">
+    <value>单位</value>
+  </data>
+  <data name="Cfg_TagDescription" xml:space="preserve">
+    <value>说明</value>
+  </data>
+  <data name="Cfg_TagValue" xml:space="preserve">
+    <value>当前值</value>
+  </data>
+  <data name="Cfg_TagQuality" xml:space="preserve">
+    <value>质量</value>
+  </data>
+  <data name="Cfg_TagIssue" xml:space="preserve">
+    <value>问题</value>
+  </data>
+  <data name="Cfg_QualityGood" xml:space="preserve">
+    <value>好</value>
+  </data>
+  <data name="Cfg_QualityBad" xml:space="preserve">
+    <value>坏</value>
+  </data>
+  <data name="Cfg_TestReadFormat" xml:space="preserve">
+    <value>试读 {0}：{1}（{2}）</value>
+  </data>
+  <data name="Cfg_TestReadFailedFormat" xml:space="preserve">
+    <value>试读 {0} 失败：{1}</value>
+  </data>
+  <data name="Cfg_TestReadNotActiveFormat" xml:space="preserve">
+    <value>{0} 不在正在生效的映射里；保存并重启后才能试读</value>
+  </data>
+  <data name="Cfg_Issue_Structure" xml:space="preserve">
+    <value>文件结构不成立</value>
+  </data>
+  <data name="Cfg_Issue_MaxNotAboveMin" xml:space="preserve">
+    <value>上限要大于下限</value>
+  </data>
+  <data name="Cfg_Issue_MustBePositive" xml:space="preserve">
+    <value>要大于 0</value>
+  </data>
+  <data name="Cfg_Issue_MustBeInteger" xml:space="preserve">
+    <value>要是整数</value>
+  </data>
+  <data name="Cfg_Issue_Duplicate" xml:space="preserve">
+    <value>重复了</value>
+  </data>
+  <data name="Cfg_Issue_Required" xml:space="preserve">
+    <value>不能空</value>
+  </data>
+  <data name="Cfg_Issue_NotANumber" xml:space="preserve">
+    <value>不是数字</value>
+  </data>
+  <data name="CfgGroup_identity" xml:space="preserve">
+    <value>机床标识</value>
+  </data>
+  <data name="CfgGroup_controller" xml:space="preserve">
+    <value>控制器</value>
+  </data>
+  <data name="CfgGroup_AxisFormat" xml:space="preserve">
+    <value>轴 {0}（{1}）</value>
+  </data>
+  <data name="CfgGroup_ChannelFormat" xml:space="preserve">
+    <value>测量通道 {0}</value>
+  </data>
+  <data name="CfgGroup_options" xml:space="preserve">
+    <value>选装装置</value>
+  </data>
+  <data name="CfgGroup_workpiece" xml:space="preserve">
+    <value>工件范围</value>
+  </data>
+  <data name="CfgGroup_thresholds" xml:space="preserve">
+    <value>阈值</value>
+  </data>
+  <data name="CfgGroup_stepTypeCodes" xml:space="preserve">
+    <value>工序类型代码（NC）</value>
+  </data>
+  <data name="CfgGroup_auxiliaryActionCodes" xml:space="preserve">
+    <value>辅助动作号（NC）</value>
+  </data>
+  <data name="CfgField_machineId" xml:space="preserve">
+    <value>机床编号</value>
+  </data>
+  <data name="CfgField_displayName" xml:space="preserve">
+    <value>显示名</value>
+  </data>
+  <data name="CfgField_schemaVersion" xml:space="preserve">
+    <value>文件版本</value>
+  </data>
+  <data name="CfgField_kind" xml:space="preserve">
+    <value>系统型号</value>
+  </data>
+  <data name="CfgField_channelNumber" xml:space="preserve">
+    <value>通道号</value>
+  </data>
+  <data name="CfgField_endpointUrl" xml:space="preserve">
+    <value>OPC UA 地址</value>
+  </data>
+  <data name="CfgField_useSecurity" xml:space="preserve">
+    <value>加密连接</value>
+  </data>
+  <data name="CfgField_autoAcceptUntrustedCertificates" xml:space="preserve">
+    <value>自动信任证书</value>
+  </data>
+  <data name="CfgField_sessionTimeoutMs" xml:space="preserve">
+    <value>会话超时</value>
+  </data>
+  <data name="CfgField_operationTimeoutMs" xml:space="preserve">
+    <value>操作超时</value>
+  </data>
+  <data name="CfgField_name" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="CfgField_role" xml:space="preserve">
+    <value>作用</value>
+  </data>
+  <data name="CfgField_isPresent" xml:space="preserve">
+    <value>存在</value>
+  </data>
+  <data name="CfgField_closedLoop" xml:space="preserve">
+    <value>闭环方式</value>
+  </data>
+  <data name="CfgField_minPositionMm" xml:space="preserve">
+    <value>行程下限</value>
+  </data>
+  <data name="CfgField_maxPositionMm" xml:space="preserve">
+    <value>行程上限</value>
+  </data>
+  <data name="CfgField_maxFeedMmPerMin" xml:space="preserve">
+    <value>最大进给</value>
+  </data>
+  <data name="CfgField_maxSpeedRpm" xml:space="preserve">
+    <value>最高转速</value>
+  </data>
+  <data name="CfgField_quantity" xml:space="preserve">
+    <value>测量量</value>
+  </data>
+  <data name="CfgField_resolutionMicrometer" xml:space="preserve">
+    <value>分辨率</value>
+  </data>
+  <data name="CfgField_minBodyLengthMm" xml:space="preserve">
+    <value>辊身长度下限</value>
+  </data>
+  <data name="CfgField_maxBodyLengthMm" xml:space="preserve">
+    <value>辊身长度上限</value>
+  </data>
+  <data name="CfgField_minDiameterMm" xml:space="preserve">
+    <value>直径下限</value>
+  </data>
+  <data name="CfgField_maxDiameterMm" xml:space="preserve">
+    <value>直径上限</value>
+  </data>
+  <data name="CfgField_maxWeightKg" xml:space="preserve">
+    <value>最大重量</value>
+  </data>
+  <data name="Diag_AuditCalibrationHeader" xml:space="preserve">
+    <value>标定值：每一项最后一次是谁改的</value>
+  </data>
+  <data name="Diag_ChangeLogHeader" xml:space="preserve">
+    <value>改动记录（补偿设定、机床配置、标签映射）</value>
+  </data>
+  <data name="Diag_ChangeBy" xml:space="preserve">
+    <value>谁</value>
+  </data>
+  <data name="Diag_ChangeArea" xml:space="preserve">
+    <value>哪一块</value>
+  </data>
+  <data name="Diag_ChangeItem" xml:space="preserve">
+    <value>哪一项</value>
+  </data>
+  <data name="Diag_ChangeOld" xml:space="preserve">
+    <value>原值</value>
+  </data>
+  <data name="Diag_ChangeNew" xml:space="preserve">
+    <value>新值</value>
   </data>
 </root>

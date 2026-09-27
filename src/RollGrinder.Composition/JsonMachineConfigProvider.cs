@@ -15,7 +15,7 @@ namespace RollGrinder.Composition;
 /// </summary>
 public sealed class JsonMachineConfigProvider : IMachineConfigProvider
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
+    internal static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
     {
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
@@ -97,7 +97,7 @@ public sealed class JsonMachineConfigProvider : IMachineConfigProvider
         }
     }
 
-    private static MachineDescription MapMachine(MachineJson json, string path)
+    internal static MachineDescription MapMachine(MachineJson json, string path)
     {
         ControllerJson controller = json.Controller ?? throw Missing(path, "controller");
         WorkpieceJson workpiece = json.Workpiece ?? throw Missing(path, "workpiece");
@@ -152,7 +152,7 @@ public sealed class JsonMachineConfigProvider : IMachineConfigProvider
             json.AuxiliaryActionCodes ?? new Dictionary<string, int>());
     }
 
-    private static ITagMap MapTagMap(TagMapJson json, string path)
+    internal static ITagMap MapTagMap(TagMapJson json, string path)
     {
         var tags = new List<TagDescriptor>();
         foreach (TagJson tag in json.Tags ?? throw Missing(path, "tags"))
