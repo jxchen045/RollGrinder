@@ -596,6 +596,34 @@ internal sealed class StepsSuite : ISelfTestSuite
             h.TryScreenshot("steps-vertical-keys");
         });
 
+        await h.StepAsync("Diagram", "EveryParameterLightsUpWithAHelpLine", async ctx =>
+        {
+            // 每道工序、每个参数：简图亮对应的量，说明行写全（没有 "!键!"）。每种简图截一张。
+            var shot = new HashSet<RollGrinder.App.Controls.StepDiagramKind>();
+            foreach (StepRowViewModel step in page.Steps.ToList())
+            {
+                page.SelectedStep = step;
+                await h.SettleAsync(20);
+                foreach (ParameterRowViewModel row in step.Parameters)
+                {
+                    page.FocusedParameter = row;
+                    ctx.Check(page.FocusedParameterKey == row.Key, "the diagram should follow the focused parameter");
+                    ctx.Check(page.ParameterHelpText.Length > 0 && !page.ParameterHelpText.Contains('!'),
+                        step.StepTypeKey + "." + row.Key + " has an incomplete help line: " + page.ParameterHelpText);
+                }
+
+                RollGrinder.App.Controls.StepDiagramKind kind = RollGrinder.App.Controls.StepDiagramMap.KindOf(step.StepTypeKey);
+                if (shot.Add(kind) && step.Parameters.Count > 1)
+                {
+                    page.FocusedParameter = step.Parameters[1];
+                    await h.SettleAsync(50);
+                    h.TryScreenshot("steps-diagram-" + kind);
+                }
+            }
+
+            ctx.Note(shot.Count + " diagram kinds shown");
+        });
+
         await h.StepAsync("Validation", "ProgramValidates", async ctx =>
         {
             await h.PressKeyAsync(ctx, "Fn_Validate");

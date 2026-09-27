@@ -2449,4 +2449,100 @@
   <data name="Choice_auxState_off" xml:space="preserve">
     <value>关</value>
   </data>
+  <data name="Steps_HelpHeadFormat" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
+  <data name="Steps_HelpUnitFormat" xml:space="preserve">
+    <value>单位 {0}</value>
+  </data>
+  <data name="Steps_HelpRangeFormat" xml:space="preserve">
+    <value>范围 {0}</value>
+  </data>
+  <data name="Steps_HelpSeparator" xml:space="preserve">
+    <value>　　</value>
+  </data>
+  <data name="ParamHelp_stockDiameterMicrometer" xml:space="preserve">
+    <value>这道工序要磨掉的量（直径量）。</value>
+  </data>
+  <data name="ParamHelp_infeedPerPassDiameterMicrometer" xml:space="preserve">
+    <value>周期进给：拖板每次换向时砂轮进给多少（直径量）；不用就填 0。</value>
+  </data>
+  <data name="ParamHelp_continuousInfeedDiameterMicrometerPerMin" xml:space="preserve">
+    <value>连续进给：砂轮往复途中持续进给的速度（直径量每分钟）；不用就填 0。</value>
+  </data>
+  <data name="ParamHelp_feedMmPerMin" xml:space="preserve">
+    <value>拖板速度：砂轮沿辊身往复的速度。</value>
+  </data>
+  <data name="ParamHelp_workpieceSpeedRpm" xml:space="preserve">
+    <value>头架转速：轧辊每分钟转几圈。</value>
+  </data>
+  <data name="ParamHelp_wheelSurfaceSpeedMPerSec" xml:space="preserve">
+    <value>砂轮线速度：砂轮外圆的线速度，由砂轮转速与直径决定。</value>
+  </data>
+  <data name="ParamHelp_reversalDwellSeconds" xml:space="preserve">
+    <value>换向停留：拖板到端部换向时停多久，端部多磨一点。</value>
+  </data>
+  <data name="ParamHelp_passCount" xml:space="preserve">
+    <value>磨削道次：一共往复几道（含进给的道次）。</value>
+  </data>
+  <data name="ParamHelp_sparkOutPassCount" xml:space="preserve">
+    <value>光磨道次：不进给、只往复的道次，磨掉弹性让刀。</value>
+  </data>
+  <data name="ParamHelp_inProcessMeasurement" xml:space="preserve">
+    <value>在线测量：磨削过程中测径仪跟着量，量到的直径用于补偿。</value>
+  </data>
+  <data name="ParamHelp_speedVariationTarget" xml:space="preserve">
+    <value>变速对象：让转速周期性变化以抑制振纹；关掉则不变速。</value>
+  </data>
+  <data name="ParamHelp_speedVariationPercent" xml:space="preserve">
+    <value>变速幅度：转速上下变化的百分比。</value>
+  </data>
+  <data name="ParamHelp_speedVariationPeriodRevolutions" xml:space="preserve">
+    <value>变速周期：转多少圈变化一个来回。</value>
+  </data>
+  <data name="ParamHelp_measurePointCount" xml:space="preserve">
+    <value>测点数：沿辊身取多少个直径测点。</value>
+  </data>
+  <data name="ParamHelp_roundnessSectionCount" xml:space="preserve">
+    <value>截面数：沿辊身取几个截面测圆度。</value>
+  </data>
+  <data name="ParamHelp_roundnessPointsPerRevolution" xml:space="preserve">
+    <value>每转点数：每个截面转一圈取多少个点。</value>
+  </data>
+  <data name="ParamHelp_pauseReason" xml:space="preserve">
+    <value>暂停原因：到这一步停下来等人，按继续往下走。</value>
+  </data>
+  <data name="ParamHelp_auxAction" xml:space="preserve">
+    <value>动作：machine.json 里登记的机构动作，由 NC 程序执行。</value>
+  </data>
+  <data name="ParamHelp_auxState" xml:space="preserve">
+    <value>开 / 关：打开还是关闭这个机构。</value>
+  </data>
+  <data name="ParamHelp_dressInfeedRadiusMicrometer" xml:space="preserve">
+    <value>修整切深：每道修整金刚笔切入砂轮多少（砂轮半径量）。</value>
+  </data>
+  <data name="ParamHelp_dressPassCount" xml:space="preserve">
+    <value>修整道次：金刚笔来回修几道。</value>
+  </data>
+  <data name="ParamHelp_dressFeedMmPerMin" xml:space="preserve">
+    <value>修整走刀速度：金刚笔横走砂轮宽度的速度。</value>
+  </data>
+  <data name="ParamHelp_chamferLength1Mm" xml:space="preserve">
+    <value>倒角第一段长度：从辊身端面往里量。</value>
+  </data>
+  <data name="ParamHelp_chamferHeight1Mm" xml:space="preserve">
+    <value>倒角第一段高度：这一段端部降低多少。</value>
+  </data>
+  <data name="ParamHelp_chamferLength2Mm" xml:space="preserve">
+    <value>倒角第二段长度：接在第一段后面，一直到端面。</value>
+  </data>
+  <data name="ParamHelp_chamferHeight2Mm" xml:space="preserve">
+    <value>倒角第二段高度：这一段再降低多少。</value>
+  </data>
+  <data name="ParamHelp_chamferKind" xml:space="preserve">
+    <value>倒角形状：斜坡（直线）或圆弧。</value>
+  </data>
+  <data name="ParamHelp_scanPitchMm" xml:space="preserve">
+    <value>扫查螺距：探头每转沿辊身前进的距离。</value>
+  </data>
 </root>

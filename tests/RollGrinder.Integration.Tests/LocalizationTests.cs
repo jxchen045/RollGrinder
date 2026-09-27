@@ -119,8 +119,24 @@ public sealed class LocalizationTests
     {
         "StepType_", "ProfileType_", "Parameter_", "Choice_", "Unit_", "AxisRole_",
         "JobState_", "StepSlot_", "Option_", "Role_", "Severity_", "Violation_",
-        "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_",
+        "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_",
     };
+
+    [Fact]
+    public void Every_step_parameter_has_a_help_line_in_both_languages()
+    {
+        // 工艺程序页的说明行（修改稿原则 2）：光标落到哪个参数，下面就写它是什么。缺一条就是一行 "!ParamHelp_xxx!"。
+        IReadOnlySet<string> english = LoadKeys("Strings.en-US.resx");
+        foreach (IGrindingStepType stepType in AllStepTypes())
+        {
+            foreach (ParameterDescriptor descriptor in stepType.Schema.Descriptors)
+            {
+                string key = "ParamHelp_" + descriptor.Key;
+                NeutralKeys.Should().Contain(key, $"{stepType.Key}.{descriptor.Key} 需要中文说明");
+                english.Should().Contain(key, $"{stepType.Key}.{descriptor.Key} 需要英文说明");
+            }
+        }
+    }
 
     [Fact]
     public void No_resource_key_is_left_behind_by_code_that_no_longer_exists()

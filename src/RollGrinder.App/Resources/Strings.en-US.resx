@@ -2449,4 +2449,100 @@
   <data name="Choice_auxState_off" xml:space="preserve">
     <value>Off</value>
   </data>
+  <data name="Steps_HelpHeadFormat" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
+  <data name="Steps_HelpUnitFormat" xml:space="preserve">
+    <value>Unit {0}</value>
+  </data>
+  <data name="Steps_HelpRangeFormat" xml:space="preserve">
+    <value>Range {0}</value>
+  </data>
+  <data name="Steps_HelpSeparator" xml:space="preserve">
+    <value>   </value>
+  </data>
+  <data name="ParamHelp_stockDiameterMicrometer" xml:space="preserve">
+    <value>How much this step removes (on diameter).</value>
+  </data>
+  <data name="ParamHelp_infeedPerPassDiameterMicrometer" xml:space="preserve">
+    <value>Infeed per reversal: how far the wheel feeds in each time the carriage turns round (on diameter); 0 if not used.</value>
+  </data>
+  <data name="ParamHelp_continuousInfeedDiameterMicrometerPerMin" xml:space="preserve">
+    <value>Continuous infeed while traversing (on diameter, per minute); 0 if not used.</value>
+  </data>
+  <data name="ParamHelp_feedMmPerMin" xml:space="preserve">
+    <value>Carriage speed: how fast the wheel traverses along the barrel.</value>
+  </data>
+  <data name="ParamHelp_workpieceSpeedRpm" xml:space="preserve">
+    <value>Headstock speed: roll revolutions per minute.</value>
+  </data>
+  <data name="ParamHelp_wheelSurfaceSpeedMPerSec" xml:space="preserve">
+    <value>Wheel surface speed at the wheel rim, set by wheel speed and diameter.</value>
+  </data>
+  <data name="ParamHelp_reversalDwellSeconds" xml:space="preserve">
+    <value>Dwell at reversal: how long the carriage waits at each end before turning round.</value>
+  </data>
+  <data name="ParamHelp_passCount" xml:space="preserve">
+    <value>Passes: number of traverses, including those with infeed.</value>
+  </data>
+  <data name="ParamHelp_sparkOutPassCount" xml:space="preserve">
+    <value>Spark-out passes: traverses without infeed to remove deflection.</value>
+  </data>
+  <data name="ParamHelp_inProcessMeasurement" xml:space="preserve">
+    <value>In-process gauging: the diameter gauge measures while grinding; readings feed the compensation.</value>
+  </data>
+  <data name="ParamHelp_speedVariationTarget" xml:space="preserve">
+    <value>What to vary cyclically to suppress chatter marks; off keeps speeds constant.</value>
+  </data>
+  <data name="ParamHelp_speedVariationPercent" xml:space="preserve">
+    <value>Variation amplitude: percentage the speed swings up and down.</value>
+  </data>
+  <data name="ParamHelp_speedVariationPeriodRevolutions" xml:space="preserve">
+    <value>Variation period in revolutions for one full cycle.</value>
+  </data>
+  <data name="ParamHelp_measurePointCount" xml:space="preserve">
+    <value>Number of diameter points taken along the barrel.</value>
+  </data>
+  <data name="ParamHelp_roundnessSectionCount" xml:space="preserve">
+    <value>Number of cross-sections measured for roundness.</value>
+  </data>
+  <data name="ParamHelp_roundnessPointsPerRevolution" xml:space="preserve">
+    <value>Points taken per revolution in each cross-section.</value>
+  </data>
+  <data name="ParamHelp_pauseReason" xml:space="preserve">
+    <value>Why the program stops here; press continue to go on.</value>
+  </data>
+  <data name="ParamHelp_auxAction" xml:space="preserve">
+    <value>Mechanism action registered in machine.json; the NC program performs it.</value>
+  </data>
+  <data name="ParamHelp_auxState" xml:space="preserve">
+    <value>Whether to switch the mechanism on or off.</value>
+  </data>
+  <data name="ParamHelp_dressInfeedRadiusMicrometer" xml:space="preserve">
+    <value>Dressing depth per pass into the wheel (wheel radius).</value>
+  </data>
+  <data name="ParamHelp_dressPassCount" xml:space="preserve">
+    <value>Number of dressing passes.</value>
+  </data>
+  <data name="ParamHelp_dressFeedMmPerMin" xml:space="preserve">
+    <value>Traverse speed of the diamond across the wheel width.</value>
+  </data>
+  <data name="ParamHelp_chamferLength1Mm" xml:space="preserve">
+    <value>Length of the first chamfer section, measured in from the barrel end.</value>
+  </data>
+  <data name="ParamHelp_chamferHeight1Mm" xml:space="preserve">
+    <value>Height the first chamfer section drops.</value>
+  </data>
+  <data name="ParamHelp_chamferLength2Mm" xml:space="preserve">
+    <value>Length of the second chamfer section, out to the end face.</value>
+  </data>
+  <data name="ParamHelp_chamferHeight2Mm" xml:space="preserve">
+    <value>Height the second chamfer section drops further.</value>
+  </data>
+  <data name="ParamHelp_chamferKind" xml:space="preserve">
+    <value>Chamfer shape: ramp (straight) or arc.</value>
+  </data>
+  <data name="ParamHelp_scanPitchMm" xml:space="preserve">
+    <value>Scan pitch: probe advance along the barrel per revolution.</value>
+  </data>
 </root>

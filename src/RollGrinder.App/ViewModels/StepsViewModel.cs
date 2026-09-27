@@ -411,6 +411,43 @@ public sealed partial class StepsViewModel : PageViewModelBase
         {
             row.IsSelected = ReferenceEquals(row, value);
         }
+
+        // 换了一道工序：先亮它的第一个参数，简图与说明行不会空着。
+        FocusedParameter = value?.Parameters.FirstOrDefault();
+    }
+
+    /// <summary>光标所在的参数：简图上亮它对应的量，说明行写它的含义、单位、范围（修改稿原则 2）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FocusedParameterKey))]
+    [NotifyPropertyChangedFor(nameof(ParameterHelpText))]
+    private ParameterRowViewModel? focusedParameter;
+
+    /// <summary>简图要亮的参数键。</summary>
+    public string FocusedParameterKey => FocusedParameter?.Key ?? string.Empty;
+
+    /// <summary>简图下面那一行：参数名 — 说明　单位　范围。</summary>
+    public string ParameterHelpText
+    {
+        get
+        {
+            if (FocusedParameter is not { } row)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string> { Localizer.Format("Steps_HelpHeadFormat", row.Label, Localizer["ParamHelp_" + row.Key]) };
+            if (row.UnitText.Length > 0)
+            {
+                parts.Add(Localizer.Format("Steps_HelpUnitFormat", row.UnitText));
+            }
+
+            if (row.RangeText.Length > 0)
+            {
+                parts.Add(Localizer.Format("Steps_HelpRangeFormat", row.RangeText));
+            }
+
+            return string.Join(Localizer["Steps_HelpSeparator"], parts);
+        }
     }
 
     /// <summary>默认选中第一道真正的工序（没有就选"开始"）。换了一整支程序后调。</summary>
