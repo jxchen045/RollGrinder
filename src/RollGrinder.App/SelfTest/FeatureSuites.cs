@@ -851,36 +851,68 @@ internal sealed class ManualSuite : ISelfTestSuite
             return Task.CompletedTask;
         }, StepOptions.Shot);
 
-        var groups = new (string Name, System.Collections.ObjectModel.ObservableCollection<MachineActionViewModel> Actions)[]
+        // 手动页分 6 页（修改稿 5.6）：每页一个功能键，页里的动作一个一个在竖键上按。
+        foreach (ManualGroupViewModel group in page.Groups.ToList())
         {
-            ("MeasuringArm", page.MeasuringArmActions),
-            ("Tailstock", page.TailstockActions),
-            ("Other", page.OtherActions),
-            ("Cycles", page.CycleActions),
-        };
-
-        foreach ((string groupName, var actions) in groups)
-        {
-            foreach (MachineActionViewModel action in actions.ToList())
+            await h.StepAsync("Groups", group.Key, async ctx =>
             {
-                await h.StepAsync("Actions_" + groupName, action.Descriptor.Key, async ctx =>
+                await h.PressKeyAsync(ctx, "ManualGroup_" + group.Key);
+                ctx.Check(page.SelectedGroup == group, "the page key should switch to " + group.Key);
+                ctx.Check(group.VerticalKeys.Count is > 0 and <= 8, Invariant($"a page holds 1–8 vertical keys, has {group.VerticalKeys.Count}"));
+                ctx.Check(h.Shell.CurrentPage.VerticalKeys.Take(group.VerticalKeys.Count)
+                        .Select(k => k.LabelResourceKey).SequenceEqual(group.VerticalKeys.Select(k => k.LabelResourceKey)),
+                    "the vertical bar should show this page's actions");
+                ctx.Note(string.Join(", ", group.Lamps.Select(l => l.Label + "=" + l.StateText)));
+            }, StepOptions.Shot);
+
+            foreach (MachineActionViewModel action in group.Actions)
+            {
+                await h.StepAsync("Actions_" + group.Key, action.Descriptor.Key, async ctx =>
                 {
-                    if (!action.IsEnabled)
-                    {
-                        ctx.Skip(action.IsMapped ? "not allowed in the current machine state" : "not mapped in tagmap");
-                    }
-
-                    await h.RunAsync(action.Command);
-                    if (action.IsAwaitingConfirmation)
-                    {
-                        ctx.Note("asked for confirmation, pressed again");
-                        await h.RunAsync(action.Command);
-                    }
-
-                    ctx.Check(!action.IsAwaitingConfirmation, "action should not stay armed after the second press");
-                    ctx.Note("feedback: " + page.LastActionText);
+                    await PressActionOnVerticalKeyAsync(h, ctx, page, action);
                 });
             }
+        }
+
+        await h.StepAsync("Status", "QuillLampFollowsTheCommand", async ctx =>
+        {
+            ManualGroupViewModel tailstock = page.Groups.First(g => g.Key == "tailstock");
+            await h.PressKeyAsync(ctx, "ManualGroup_tailstock");
+            StatusLampViewModel quill = tailstock.Lamps.First(l => l.LabelResourceKey == "Status_quill");
+            MachineActionViewModel extend = tailstock.Actions.First(a => a.Descriptor.Key == "quill.extend");
+            if (!extend.IsEnabled)
+            {
+                ctx.Skip("quill.extend cannot be pressed in the current machine state");
+            }
+
+            await PressActionOnVerticalKeyAsync(h, ctx, page, extend);
+            await h.SettleAsync(600);
+            if (quill.IsUnknown)
+            {
+                ctx.Skip("the quill status bit is not mapped (Q7 address not given yet)");
+            }
+
+            ctx.Check(quill.IsOn, "after 'quill extend' the quill lamp should be on, is " + quill.StateText);
+        }, StepOptions.Shot);
+
+        await h.StepAsync("Keys", "AuxiliaryCyclesMenu", async ctx =>
+        {
+            await h.PressKeyAsync(ctx, "Fn_AuxCycles");
+            foreach (MachineActionViewModel cycle in page.CycleActions)
+            {
+                ctx.Check(h.IndexOfVerticalKey(cycle.Descriptor.ResourceKey) >= 0, cycle.Descriptor.Key + " should be in the cycles menu");
+            }
+
+            ctx.Check(h.IndexOfVerticalKey("Fn_HmiReset") >= 0, "HMI reset should be in the cycles menu");
+            h.TryScreenshot("manual-aux-cycles");
+        });
+
+        foreach (MachineActionViewModel action in page.CycleActions.ToList())
+        {
+            await h.StepAsync("Actions_Cycles", action.Descriptor.Key, async ctx =>
+            {
+                await PressActionOnVerticalKeyAsync(h, ctx, page, action);
+            });
         }
 
         await h.StepAsync("Measurement", "CaptureSaveClear", async ctx =>
@@ -912,23 +944,49 @@ internal sealed class ManualSuite : ISelfTestSuite
         await h.StepAsync("Keys", "HmiResetClearsAlarms", async ctx =>
         {
             h.Services.GetRequiredService<IAlarmSink>().Raise(AlarmSeverity.Information, "Banner_NoAlarm", "self-test marker");
-            await h.PressKeyAsync(ctx, "Fn_HmiReset");
-            if (h.Shell.FunctionKeys.Any(k => k.LabelResourceKey == "Fn_ConfirmAgain"))
+            if (h.IndexOfVerticalKey("Fn_HmiReset") < 0)
             {
-                await h.PressKeyAsync(ctx, "Fn_ConfirmAgain");
+                await h.PressKeyAsync(ctx, "Fn_AuxCycles");
             }
 
+            await h.PressVerticalKeyAsync(ctx, "Fn_HmiReset");
             ctx.Check(h.Services.GetRequiredService<IAlarmLog>().Snapshot().Count == 0, "HMI reset should clear the alarm list");
+            h.Shell.PressEscape();
+            await h.SettleAsync();
         });
+    }
 
-        await h.StepAsync("Keys", "JumpToDiagnosticsAndBack", async ctx =>
+    /// <summary>
+    /// 在竖键上按一个动作：按不了就跳过（缺映射、机床在忙）；要按两下的，第一下之后键上换成"再按一次"，在同一格再按。
+    /// </summary>
+    private static async Task PressActionOnVerticalKeyAsync(
+        SelfTestHarness h, StepContext ctx, ManualViewModel page, MachineActionViewModel action)
+    {
+        int index = h.IndexOfVerticalKey(action.Descriptor.ResourceKey);
+        ctx.Check(index >= 0, "vertical key for " + action.Descriptor.Key + " should be on the bar");
+        if (index < 0)
         {
-            await h.PressKeyAsync(ctx, "Fn_Diagnostics");
-            ctx.Check(h.Shell.CurrentPage.Key == PageKey.Diagnostics, "should land on diagnostics");
-            ctx.Check(h.NavigationKeyLabel == "Nav_BackToPageFormat", "F8 should offer the way back to manual");
-            await h.PressNavigationKeyAsync();
-            ctx.Check(h.Shell.CurrentPage.Key == PageKey.Manual, "F8 should return to manual");
-        });
+            return;
+        }
+
+        if (!action.IsEnabled || !h.IsVerticalKeyUsable(index))
+        {
+            ctx.Skip(action.IsMapped ? "not allowed in the current machine state" : "not mapped in tagmap");
+        }
+
+        h.Shell.PressVerticalKey(index);
+        await h.SettleAsync();
+        if (action.IsAwaitingConfirmation)
+        {
+            ctx.Check(h.Shell.CurrentPage.VerticalKeys[index].LabelResourceKey == "Manual_ConfirmAgain",
+                "the armed key should say 'press again'");
+            ctx.Note("asked for confirmation, pressed again");
+            h.Shell.PressVerticalKey(index);
+            await h.SettleAsync();
+        }
+
+        ctx.Check(!action.IsAwaitingConfirmation, "action should not stay armed after the second press");
+        ctx.Note("feedback: " + page.LastActionText);
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);

@@ -186,54 +186,38 @@
                            VerticalAlignment="Center" />
             </Border>
 
-            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+            <!-- 当前这一页的机构（修改稿 5.6）：到位状态灯 + 动作。动作在右侧竖键上，一个动作一个键（Shift+F1…）；
+                 这里的按钮是同一批动作，给触摸屏用。 -->
+            <Border x:Name="ManualGroupCard" Style="{StaticResource Card}">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Manual_MeasuringArmHeader}" Style="{StaticResource Text.CardTitle}" />
+                        <TextBlock Text="{Binding SelectedGroup.Title}" Style="{StaticResource Text.CardTitle}" />
                     </Border>
-                    <ItemsControl ItemsSource="{Binding MeasuringArmActions}" Margin="12"
-                                  ItemTemplate="{StaticResource MachineActionTemplate}"
-                                  IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="4" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
-                </DockPanel>
-            </Border>
-
-            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Manual_TailstockHeader}" Style="{StaticResource Text.CardTitle}" />
-                    </Border>
-                    <ItemsControl ItemsSource="{Binding TailstockActions}" Margin="12"
-                                  ItemTemplate="{StaticResource MachineActionTemplate}"
-                                  IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="4" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
-                </DockPanel>
-            </Border>
-
-            <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Manual_OtherHeader}" Style="{StaticResource Text.CardTitle}" />
-                    </Border>
-                    <ItemsControl ItemsSource="{Binding OtherActions}" Margin="12"
-                                  ItemTemplate="{StaticResource MachineActionTemplate}"
-                                  IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="4" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
+                    <StackPanel Margin="14,12">
+                        <TextBlock Text="{loc:Loc Manual_StatusHeader}" Style="{StaticResource Text.Label}" Margin="0,0,0,6"
+                                   Visibility="{Binding SelectedGroup.HasMachineActions, Converter={StaticResource BoolToVisibility}}" />
+                        <ItemsControl ItemsSource="{Binding SelectedGroup.Lamps}" ItemTemplate="{StaticResource StatusLampTemplate}"
+                                      Margin="0,0,0,14">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <ItemsControl ItemsSource="{Binding SelectedGroup.Actions}"
+                                      ItemTemplate="{StaticResource MachineActionTemplate}"
+                                      IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <TextBlock Text="{loc:Loc Manual_KeysHint}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,12,0,0"
+                                   Visibility="{Binding SelectedGroup.HasMachineActions, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Text="{loc:Loc Manual_MeasureCentringHint}" Style="{StaticResource Text.Body}" TextWrapping="Wrap"
+                                   Visibility="{Binding SelectedGroup.HasMachineActions, Converter={StaticResource InverseBoolVisibility}}" />
+                    </StackPanel>
                 </DockPanel>
             </Border>
         </StackPanel>

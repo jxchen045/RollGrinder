@@ -385,17 +385,11 @@
   <data name="Fn_BackupRestore" xml:space="preserve">
     <value>备份与恢复</value>
   </data>
-  <data name="Fn_CalibrateDatum" xml:space="preserve">
-    <value>校验基准</value>
-  </data>
   <data name="Fn_Coolant" xml:space="preserve">
     <value>冷却水</value>
   </data>
   <data name="Fn_DailyReport" xml:space="preserve">
     <value>磨削日报</value>
-  </data>
-  <data name="Fn_Diagnostics" xml:space="preserve">
-    <value>诊断</value>
   </data>
   <data name="Fn_DownloadNc" xml:space="preserve">
     <value>下发 NC</value>
@@ -424,9 +418,6 @@
   <data name="Fn_MachineConfig" xml:space="preserve">
     <value>机床配置</value>
   </data>
-  <data name="Fn_ManualGrinding" xml:space="preserve">
-    <value>手动磨削</value>
-  </data>
   <data name="Fn_MonthlyReport" xml:space="preserve">
     <value>磨削月报</value>
   </data>
@@ -447,12 +438,6 @@
   </data>
   <data name="Fn_Records" xml:space="preserve">
     <value>磨削记录</value>
-  </data>
-  <data name="Fn_ReferencePoint" xml:space="preserve">
-    <value>回参考点</value>
-  </data>
-  <data name="Fn_RollAlign" xml:space="preserve">
-    <value>轧辊找正</value>
   </data>
   <data name="Fn_RollLedger" xml:space="preserve">
     <value>轧辊台账</value>
@@ -483,9 +468,6 @@
   </data>
   <data name="Fn_Validate" xml:space="preserve">
     <value>校验</value>
-  </data>
-  <data name="Fn_WheelDress" xml:space="preserve">
-    <value>砂轮修整</value>
   </data>
   <data name="JobState_Abandoned" xml:space="preserve">
     <value>已放弃</value>
@@ -562,14 +544,8 @@
   <data name="Manual_MeasureHeader" xml:space="preserve">
     <value>测量与对中</value>
   </data>
-  <data name="Manual_MeasuringArmHeader" xml:space="preserve">
-    <value>测量臂</value>
-  </data>
   <data name="Manual_MountingDeviation" xml:space="preserve">
     <value>(A−B)/2 安装误差</value>
-  </data>
-  <data name="Manual_OtherHeader" xml:space="preserve">
-    <value>头架、软着陆与其他（按机床配置显示）</value>
   </data>
   <data name="Manual_RollDiameter" xml:space="preserve">
     <value>轧辊直径 mm</value>
@@ -579,9 +555,6 @@
   </data>
   <data name="Manual_TailSide" xml:space="preserve">
     <value>尾座侧</value>
-  </data>
-  <data name="Manual_TailstockHeader" xml:space="preserve">
-    <value>尾架与套筒</value>
   </data>
   <data name="Measurement_CaptureButton" xml:space="preserve">
     <value>采集测点</value>
@@ -2841,5 +2814,38 @@
   </data>
   <data name="ChangeArea_tagMap" xml:space="preserve">
     <value>标签映射</value>
+  </data>
+  <data name="ManualGroup_measuringArm" xml:space="preserve">
+    <value>测量臂</value>
+  </data>
+  <data name="ManualGroup_tailstock" xml:space="preserve">
+    <value>尾架套筒</value>
+  </data>
+  <data name="ManualGroup_headstock" xml:space="preserve">
+    <value>头架</value>
+  </data>
+  <data name="ManualGroup_softLanding" xml:space="preserve">
+    <value>软着陆</value>
+  </data>
+  <data name="ManualGroup_wheelCoolant" xml:space="preserve">
+    <value>砂轮冷却</value>
+  </data>
+  <data name="ManualGroup_measureCentring" xml:space="preserve">
+    <value>测量对中</value>
+  </data>
+  <data name="Fn_AuxCycles" xml:space="preserve">
+    <value>辅助循环 ▸</value>
+  </data>
+  <data name="Vk_AuxCyclesTitle" xml:space="preserve">
+    <value>辅助循环</value>
+  </data>
+  <data name="Manual_StatusHeader" xml:space="preserve">
+    <value>状态（动作发出后在这里看结果）</value>
+  </data>
+  <data name="Manual_KeysHint" xml:space="preserve">
+    <value>动作在右侧竖键上（Shift+F1…F8）；红键要按两下。上位机只发请求，能不能动由 PLC 互锁决定。</value>
+  </data>
+  <data name="Manual_MeasureCentringHint" xml:space="preserve">
+    <value>测点与对中表在左边；采点、归档、记两端都在右侧竖键上。</value>
   </data>
 </root>

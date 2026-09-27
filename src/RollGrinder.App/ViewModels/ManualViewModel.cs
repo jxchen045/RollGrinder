@@ -84,6 +84,41 @@ public sealed partial class MachineActionViewModel : ObservableObject
     internal DateTimeOffset ConfirmDeadlineUtc { get; set; }
 }
 
+/// <summary>手动页的一页：一组机构动作（竖键与触摸按钮）和这组机构的到位状态灯。</summary>
+public sealed partial class ManualGroupViewModel : ObservableObject
+{
+    public ManualGroupViewModel(
+        string key,
+        string title,
+        IReadOnlyList<MachineActionViewModel> actions,
+        IReadOnlyList<StatusLampViewModel> lamps,
+        IReadOnlyList<FunctionKeyViewModel> verticalKeys)
+    {
+        Key = key;
+        Title = title;
+        Actions = actions;
+        Lamps = lamps;
+        VerticalKeys = verticalKeys;
+    }
+
+    public string Key { get; }
+
+    public string Title { get; }
+
+    public IReadOnlyList<MachineActionViewModel> Actions { get; }
+
+    public IReadOnlyList<StatusLampViewModel> Lamps { get; }
+
+    /// <summary>这一页在右侧竖键上的键。</summary>
+    public IReadOnlyList<FunctionKeyViewModel> VerticalKeys { get; }
+
+    /// <summary>这一页有没有机构动作（测量与对中那一页没有：它的动作在左边的测点与对中表上）。</summary>
+    public bool HasMachineActions => Actions.Count > 0;
+
+    [ObservableProperty]
+    private bool isSelected;
+}
+
 /// <summary>
 /// 对中比对表里的一行：一个量，两端各一个读数，外加两端之差。
 /// </summary>
@@ -167,22 +202,109 @@ public sealed partial class ManualViewModel : PageViewModelBase
         CycleActions = BuildActions(ManualCommandCatalog.Cycles);
         RefreshActionAvailability();
 
-        SetFunctionKeys(new[]
-        {
-            // 五个辅助循环。按下去是**请求**：上位机不在使能链里，
-            // 真正让不让动由 PLC 的互锁说了算。会切削的那几个要按两下。
-            CycleKey("Fn_ManualGrinding", "cycle.manualGrinding", FunctionKeyKind.Primary),
-            CycleKey("Fn_CalibrateDatum", "cycle.calibrateDatum"),
-            CycleKey("Fn_WheelDress", "cycle.wheelDress"),
-            CycleKey("Fn_RollAlign", "cycle.rollAlign"),
-            CycleKey("Fn_ReferencePoint", "cycle.referencePoint"),
-            FunctionKeyViewModel.ForAction(
-                "Fn_Diagnostics", localizer, () => Navigator.StartTask(PageKey.Diagnostics, PageKey.Manual)),
-            // HMI 复位只动上位机自己：清报警表。机床那边一个字都不写——
-            // 机床的复位在操作面板上，不该被一个界面按钮代劳。
-            new FunctionKeyViewModel("Fn_HmiReset", ResetHmiCommand, localizer, FunctionKeyKind.Danger),
-        });
+        BuildGroups();
+
+        // 底部功能键（修改稿 5.6）：六页机构动作一页一个键，第 7 个是"辅助循环 ▸"。
+        // 页里的动作在右侧竖键上，一个动作一个键；卡片里也有同样的按钮给触摸屏用。
+        var keys = Groups
+            .Select(group => new FunctionKeyViewModel(
+                "ManualGroup_" + group.Key, new RelayCommand(() => SelectGroup(group)), localizer))
+            .ToList();
+        keys.Add(new FunctionKeyViewModel("Fn_AuxCycles", new RelayCommand(OpenAuxiliaryMenu), localizer));
+        SetFunctionKeys(keys);
+        SelectGroup(Groups[0]);
     }
+
+    /// <summary>手动页的六页（测量臂、尾架套筒、头架、软着陆与中心架、砂轮冷却、测量对中）。</summary>
+    public ObservableCollection<ManualGroupViewModel> Groups { get; } = new();
+
+    /// <summary>当前那一页。</summary>
+    [ObservableProperty]
+    private ManualGroupViewModel? selectedGroup;
+
+    /// <summary>"辅助循环 ▸"里的竖键：几个 NC 循环、各轴归位与 HMI 复位。</summary>
+    private IReadOnlyList<FunctionKeyViewModel> auxiliaryKeys = Array.Empty<FunctionKeyViewModel>();
+
+    private void BuildGroups()
+    {
+        Dictionary<string, MachineActionViewModel> byKey = AllActions
+            .GroupBy(action => action.Descriptor.Key, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+
+        foreach (ManualPage page in ManualPageLayout.Pages)
+        {
+            MachineActionViewModel[] actions = page.ActionKeys.Select(key => byKey[key]).ToArray();
+            IReadOnlyList<FunctionKeyViewModel> verticalKeys = page.Key == ManualPageLayout.MeasureAndCentringKey
+                ? MeasureAndCentringKeys()
+                : actions.Select(ActionKey).ToArray();
+            Groups.Add(new ManualGroupViewModel(
+                page.Key,
+                Localizer["ManualGroup_" + page.Key],
+                actions,
+                page.Indicators.Select(indicator => new StatusLampViewModel(indicator, Localizer)).ToArray(),
+                verticalKeys));
+        }
+
+        this.auxiliaryKeys = ManualPageLayout.AuxiliaryKeys
+            .Select(key => ActionKey(byKey[key]))
+            .Append(new FunctionKeyViewModel("Fn_HmiReset", ResetHmiCommand, Localizer, FunctionKeyKind.Danger))
+            .ToArray();
+    }
+
+    /// <summary>测量与对中这一页的竖键：动作是上位机自己的，不写机床。</summary>
+    private IReadOnlyList<FunctionKeyViewModel> MeasureAndCentringKeys() => new[]
+    {
+        new FunctionKeyViewModel("Measurement_CaptureButton", CapturePointCommand, Localizer, FunctionKeyKind.Primary),
+        new FunctionKeyViewModel("Measurement_ClearButton", ClearPointsCommand, Localizer),
+        new FunctionKeyViewModel("Measurement_SaveButton", SaveMeasurementCommand, Localizer),
+        new FunctionKeyViewModel("Centring_CaptureHead", CaptureHeadCommand, Localizer),
+        new FunctionKeyViewModel("Centring_CaptureTail", CaptureTailCommand, Localizer),
+        new FunctionKeyViewModel("Centring_ClearButton", ClearCentringCommand, Localizer),
+    };
+
+    /// <summary>
+    /// 把一个动作做成竖键：按下去就是按那个动作（同一个命令、同一套门禁）。
+    /// 要按两下的动作是红键，按了第一下键上换成"再按一次"；按不了时键是灰的，悬停说原因。
+    /// </summary>
+    private FunctionKeyViewModel ActionKey(MachineActionViewModel action)
+    {
+        var command = new RelayCommand(() => action.Command.Execute(null), () => action.IsEnabled);
+        var key = new FunctionKeyViewModel(
+            action.Descriptor.ResourceKey,
+            command,
+            Localizer,
+            action.Descriptor.RequiresConfirmation ? FunctionKeyKind.Danger : FunctionKeyKind.Normal);
+        action.PropertyChanged += (_, e) =>
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(MachineActionViewModel.IsEnabled):
+                    command.NotifyCanExecuteChanged();
+                    break;
+                case nameof(MachineActionViewModel.IsAwaitingConfirmation):
+                    key.LabelResourceKey = action.IsAwaitingConfirmation ? "Manual_ConfirmAgain" : action.Descriptor.ResourceKey;
+                    break;
+                case nameof(MachineActionViewModel.DisabledHint):
+                    key.HintText = action.DisabledHint;
+                    break;
+            }
+        };
+        return key;
+    }
+
+    private void SelectGroup(ManualGroupViewModel group)
+    {
+        foreach (ManualGroupViewModel other in Groups)
+        {
+            other.IsSelected = ReferenceEquals(other, group);
+        }
+
+        SelectedGroup = group;
+        SetVerticalKeys(group.VerticalKeys);
+    }
+
+    /// <summary>辅助循环 ▸：跑一段 NC 循环的请求、各轴归位、HMI 复位。子菜单不自己收起——要按两下的键得按在同一个位置上。</summary>
+    private void OpenAuxiliaryMenu() => OpenVerticalMenu("Vk_AuxCyclesTitle", this.auxiliaryKeys);
 
     private readonly IReadOnlyList<string> axisNames;
 
@@ -276,6 +398,14 @@ public sealed partial class ManualViewModel : PageViewModelBase
             : Format((probeA.Value - probeB.Value) / 2.0, "F4", showSign: true);
 
         RefreshActionAvailability();
+
+        foreach (ManualGroupViewModel group in Groups)
+        {
+            foreach (StatusLampViewModel lamp in group.Lamps)
+            {
+                lamp.Update(snapshot);
+            }
+        }
     }
 
     [RelayCommand]
@@ -412,16 +542,6 @@ public sealed partial class ManualViewModel : PageViewModelBase
             axis.IsPresent && string.Equals(axis.Role, MachineAxisRoles.WorkpieceSpindle, StringComparison.Ordinal));
 
         return spindle is null ? null : snapshot.GetNumberOrNull(MachineTagKeys.AxisActualSpeedRpm(spindle.Name));
-    }
-
-    /// <summary>把一个辅助循环包成功能键：按键与动作对象是同一个，门禁也就一套。</summary>
-    private FunctionKeyViewModel CycleKey(
-        string labelResourceKey, string commandKey, FunctionKeyKind kind = FunctionKeyKind.Normal)
-    {
-        MachineActionViewModel action = CycleActions
-            .First(candidate => string.Equals(candidate.Descriptor.Key, commandKey, StringComparison.Ordinal));
-
-        return new FunctionKeyViewModel(labelResourceKey, action.Command, Localizer, kind);
     }
 
     /// <summary>

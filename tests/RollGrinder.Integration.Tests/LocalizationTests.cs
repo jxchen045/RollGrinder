@@ -119,7 +119,7 @@ public sealed class LocalizationTests
     {
         "StepType_", "ProfileType_", "Parameter_", "Choice_", "Unit_", "AxisRole_",
         "JobState_", "StepSlot_", "Option_", "Role_", "Severity_", "Violation_",
-        "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_", "WheelEvent_", "WheelSource_", "Status_", "MeasurementStage_", "ChangeArea_",
+        "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_", "WheelEvent_", "WheelSource_", "Status_", "MeasurementStage_", "ChangeArea_", "ManualGroup_",
     };
 
     [Fact]

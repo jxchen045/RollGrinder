@@ -385,17 +385,11 @@
   <data name="Fn_BackupRestore" xml:space="preserve">
     <value>Backup / restore</value>
   </data>
-  <data name="Fn_CalibrateDatum" xml:space="preserve">
-    <value>Calibrate datum</value>
-  </data>
   <data name="Fn_Coolant" xml:space="preserve">
     <value>Coolant</value>
   </data>
   <data name="Fn_DailyReport" xml:space="preserve">
     <value>Daily report</value>
-  </data>
-  <data name="Fn_Diagnostics" xml:space="preserve">
-    <value>Diagnostics</value>
   </data>
   <data name="Fn_DownloadNc" xml:space="preserve">
     <value>Hand over</value>
@@ -424,9 +418,6 @@
   <data name="Fn_MachineConfig" xml:space="preserve">
     <value>Machine config</value>
   </data>
-  <data name="Fn_ManualGrinding" xml:space="preserve">
-    <value>Manual grinding</value>
-  </data>
   <data name="Fn_MonthlyReport" xml:space="preserve">
     <value>Monthly report</value>
   </data>
@@ -447,12 +438,6 @@
   </data>
   <data name="Fn_Records" xml:space="preserve">
     <value>Records</value>
-  </data>
-  <data name="Fn_ReferencePoint" xml:space="preserve">
-    <value>Home axes</value>
-  </data>
-  <data name="Fn_RollAlign" xml:space="preserve">
-    <value>Align roll</value>
   </data>
   <data name="Fn_RollLedger" xml:space="preserve">
     <value>Roll ledger</value>
@@ -483,9 +468,6 @@
   </data>
   <data name="Fn_Validate" xml:space="preserve">
     <value>Validate</value>
-  </data>
-  <data name="Fn_WheelDress" xml:space="preserve">
-    <value>Dress wheel</value>
   </data>
   <data name="JobState_Abandoned" xml:space="preserve">
     <value>Abandoned</value>
@@ -562,14 +544,8 @@
   <data name="Manual_MeasureHeader" xml:space="preserve">
     <value>Measurement and centring</value>
   </data>
-  <data name="Manual_MeasuringArmHeader" xml:space="preserve">
-    <value>Measuring arms</value>
-  </data>
   <data name="Manual_MountingDeviation" xml:space="preserve">
     <value>(A−B)/2 mounting error</value>
-  </data>
-  <data name="Manual_OtherHeader" xml:space="preserve">
-    <value>Headstock, soft landing and others</value>
   </data>
   <data name="Manual_RollDiameter" xml:space="preserve">
     <value>Roll diameter mm</value>
@@ -579,9 +555,6 @@
   </data>
   <data name="Manual_TailSide" xml:space="preserve">
     <value>Tailstock side</value>
-  </data>
-  <data name="Manual_TailstockHeader" xml:space="preserve">
-    <value>Tailstock and quill</value>
   </data>
   <data name="Measurement_CaptureButton" xml:space="preserve">
     <value>Capture point</value>
@@ -2841,5 +2814,38 @@
   </data>
   <data name="ChangeArea_tagMap" xml:space="preserve">
     <value>Tag map</value>
+  </data>
+  <data name="ManualGroup_measuringArm" xml:space="preserve">
+    <value>Gauge arms</value>
+  </data>
+  <data name="ManualGroup_tailstock" xml:space="preserve">
+    <value>Tailstock</value>
+  </data>
+  <data name="ManualGroup_headstock" xml:space="preserve">
+    <value>Headstock</value>
+  </data>
+  <data name="ManualGroup_softLanding" xml:space="preserve">
+    <value>Soft landing</value>
+  </data>
+  <data name="ManualGroup_wheelCoolant" xml:space="preserve">
+    <value>Wheel/coolant</value>
+  </data>
+  <data name="ManualGroup_measureCentring" xml:space="preserve">
+    <value>Measure/centre</value>
+  </data>
+  <data name="Fn_AuxCycles" xml:space="preserve">
+    <value>Cycles ▸</value>
+  </data>
+  <data name="Vk_AuxCyclesTitle" xml:space="preserve">
+    <value>Auxiliary cycles</value>
+  </data>
+  <data name="Manual_StatusHeader" xml:space="preserve">
+    <value>Status (check the result here after a command)</value>
+  </data>
+  <data name="Manual_KeysHint" xml:space="preserve">
+    <value>Actions are on the right-hand keys (Shift+F1…F8); red keys need two presses. The HMI only requests; the PLC interlocks decide.</value>
+  </data>
+  <data name="Manual_MeasureCentringHint" xml:space="preserve">
+    <value>Points and the centring table are on the left; capture, save and record ends are on the right-hand keys.</value>
   </data>
 </root>
