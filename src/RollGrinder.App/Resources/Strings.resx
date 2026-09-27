@@ -271,14 +271,8 @@
   <data name="Comp_MaxCorrection" xml:space="preserve">
     <value>单次修正限幅 µm</value>
   </data>
-  <data name="Comp_MaxInfeed" xml:space="preserve">
-    <value>单刀切深上限 µm</value>
-  </data>
   <data name="Comp_SmoothingPoints" xml:space="preserve">
     <value>空间滤波窗口 点</value>
-  </data>
-  <data name="Comp_Tolerance" xml:space="preserve">
-    <value>辊形公差 µm</value>
   </data>
   <data name="ConnectionState_Connected" xml:space="preserve">
     <value>已连接</value>
@@ -1107,9 +1101,6 @@
   </data>
   <data name="StepType_SparkOut" xml:space="preserve">
     <value>光磨</value>
-  </data>
-  <data name="Steps_CompensationHeader" xml:space="preserve">
-    <value>补偿设置 ·（制造商权限）</value>
   </data>
   <data name="Steps_SequenceHeader" xml:space="preserve">
     <value>工序序列（可任意组合与调序）</value>
@@ -2745,5 +2736,110 @@
   </data>
   <data name="Status_steadyRest_Off" xml:space="preserve">
     <value>落下</value>
+  </data>
+  <data name="SubView_Compensation" xml:space="preserve">
+    <value>补偿</value>
+  </data>
+  <data name="Vk_Curves" xml:space="preserve">
+    <value>曲线 ▸</value>
+  </data>
+  <data name="Vk_CurvesTitle" xml:space="preserve">
+    <value>选曲线</value>
+  </data>
+  <data name="Vk_Compensation" xml:space="preserve">
+    <value>补偿</value>
+  </data>
+  <data name="Vk_SaveTuning" xml:space="preserve">
+    <value>保存补偿设定</value>
+  </data>
+  <data name="Vk_ResetTuning" xml:space="preserve">
+    <value>恢复配置值</value>
+  </data>
+  <data name="Vk_MeasurementRecords" xml:space="preserve">
+    <value>测量记录</value>
+  </data>
+  <data name="Comp_TuningHeader" xml:space="preserve">
+    <value>上位机补偿设定</value>
+  </data>
+  <data name="Comp_SourceConfigured" xml:space="preserve">
+    <value>现在用的是配置文件的值（hmi.json、machine.json）</value>
+  </data>
+  <data name="Comp_SourceOverridden" xml:space="preserve">
+    <value>现在用的是在这里改过的值；按“恢复配置值”回到配置文件</value>
+  </data>
+  <data name="Comp_LimitFormat" xml:space="preserve">
+    <value>限幅不能超过 machine.json 的 {0:0.#} µm</value>
+  </data>
+  <data name="Comp_ManufacturerOnly" xml:space="preserve">
+    <value>只有制造商能改补偿设定；其他权限只能看</value>
+  </data>
+  <data name="Comp_NeedsManufacturer" xml:space="preserve">
+    <value>要制造商权限才能改补偿设定</value>
+  </data>
+  <data name="Comp_NotANumber" xml:space="preserve">
+    <value>有一项不是数字</value>
+  </data>
+  <data name="Comp_InvalidGain" xml:space="preserve">
+    <value>增益要在 0 到 1 之间（不含 0）</value>
+  </data>
+  <data name="Comp_InvalidSmoothing" xml:space="preserve">
+    <value>滤波窗口要是 1 到 51 之间的奇数</value>
+  </data>
+  <data name="Comp_InvalidMaxCorrection" xml:space="preserve">
+    <value>限幅要大于 0，且不能超过 machine.json 的上限</value>
+  </data>
+  <data name="Comp_Saved" xml:space="preserve">
+    <value>已保存；之后算出的补偿按新设定，正在执行的程序不受影响</value>
+  </data>
+  <data name="Comp_Reset" xml:space="preserve">
+    <value>已恢复配置文件的值</value>
+  </data>
+  <data name="Comp_StrokeHeader" xml:space="preserve">
+    <value>行程间补偿的收敛（NC 每修正一次记一行）</value>
+  </data>
+  <data name="Comp_NoStrokesYet" xml:space="preserve">
+    <value>这支辊还没有行程间修正</value>
+  </data>
+  <data name="Comp_StrokeAxis" xml:space="preserve">
+    <value>修正量 µm（直径）</value>
+  </data>
+  <data name="Comp_ColumnVersion" xml:space="preserve">
+    <value>行程版本</value>
+  </data>
+  <data name="Comp_ColumnTime" xml:space="preserve">
+    <value>时刻</value>
+  </data>
+  <data name="Comp_ColumnOffset" xml:space="preserve">
+    <value>修正量 µm</value>
+  </data>
+  <data name="Comp_MeasurementHeader" xml:space="preserve">
+    <value>这支辊各次测量离目标多远</value>
+  </data>
+  <data name="Comp_ColumnStage" xml:space="preserve">
+    <value>阶段</value>
+  </data>
+  <data name="Comp_ColumnRms" xml:space="preserve">
+    <value>均方根 µm</value>
+  </data>
+  <data name="Comp_ColumnPv" xml:space="preserve">
+    <value>峰谷 µm</value>
+  </data>
+  <data name="MeasurementStage_PreGrind" xml:space="preserve">
+    <value>磨前</value>
+  </data>
+  <data name="MeasurementStage_InProcess" xml:space="preserve">
+    <value>磨中</value>
+  </data>
+  <data name="MeasurementStage_PostGrind" xml:space="preserve">
+    <value>磨后</value>
+  </data>
+  <data name="ChangeArea_compensation" xml:space="preserve">
+    <value>补偿设定</value>
+  </data>
+  <data name="ChangeArea_machineConfig" xml:space="preserve">
+    <value>机床配置</value>
+  </data>
+  <data name="ChangeArea_tagMap" xml:space="preserve">
+    <value>标签映射</value>
   </data>
 </root>

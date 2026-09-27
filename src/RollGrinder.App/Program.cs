@@ -106,6 +106,10 @@ public static class Program
             host.Services.GetRequiredService<ICalibrationService>()
                 .LoadAsync(CancellationToken.None).GetAwaiter().GetResult();
 
+            // 补偿设定：制造商在补偿子视图里改过的值（没改过就是配置文件的值）。
+            host.Services.GetRequiredService<RollGrinder.Services.Measurement.ICompensationTuningService>()
+                .LoadAsync(CancellationToken.None).GetAwaiter().GetResult();
+
             var application = new App(host, selfTestRunner is null ? null : selfTestRunner.RunAsync);
             application.InitializeComponent();
             int exitCode = application.Run();

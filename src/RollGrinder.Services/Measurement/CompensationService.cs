@@ -8,6 +8,7 @@ using RollGrinder.Core.Compensation;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
+using RollGrinder.Core.Units;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
 
@@ -46,8 +47,8 @@ public sealed class CompensationService : ICompensationService
     private readonly IMeasurementRepository measurements;
     private readonly ICompensationRepository compensations;
     private readonly RollProfileTypeRegistry profileTypes;
-    private readonly MachineDescription machine;
     private readonly HmiSettings settings;
+    private readonly ICompensationTuningService tuning;
     private readonly TimeProvider timeProvider;
 
     public CompensationService(
@@ -55,16 +56,16 @@ public sealed class CompensationService : ICompensationService
         IMeasurementRepository measurements,
         ICompensationRepository compensations,
         RollProfileTypeRegistry profileTypes,
-        MachineDescription machine,
         HmiSettings settings,
+        ICompensationTuningService tuning,
         TimeProvider timeProvider)
     {
         this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         this.measurements = measurements ?? throw new ArgumentNullException(nameof(measurements));
         this.compensations = compensations ?? throw new ArgumentNullException(nameof(compensations));
         this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
-        this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        this.tuning = tuning ?? throw new ArgumentNullException(nameof(tuning));
         this.timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
     }
 
@@ -119,17 +120,19 @@ public sealed class CompensationService : ICompensationService
             ProfileQuality.FromDeviation(deviation));
     }
 
+    /// <summary>用补偿子视图里生效的那一组设定（没改过就是配置文件的值）。</summary>
     private CompensationSettings CreateSettings()
     {
-        if (!this.machine.Thresholds.TryGetValue(MaxCompensationRadiusMmKey, out double maxCorrectionRadiusMm))
+        CompensationTuning current = this.tuning.Current;
+        if (current.MaxCorrectionMicrometer is not double maxCorrectionMicrometer)
         {
             throw new GatewayException(
                 $"machine.json is missing threshold '{MaxCompensationRadiusMmKey}'; the HMI will not guess a correction limit.");
         }
 
         return CompensationSettings.Create(
-            this.settings.CompensationGain,
-            this.settings.CompensationSmoothingPoints,
-            maxCorrectionRadiusMm);
+            current.Gain,
+            current.SmoothingPoints,
+            UnitConversion.DiameterMicrometerToRadiusMm(maxCorrectionMicrometer));
     }
 }

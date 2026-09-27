@@ -271,14 +271,8 @@
   <data name="Comp_MaxCorrection" xml:space="preserve">
     <value>Max correction µm</value>
   </data>
-  <data name="Comp_MaxInfeed" xml:space="preserve">
-    <value>Max infeed per pass µm</value>
-  </data>
   <data name="Comp_SmoothingPoints" xml:space="preserve">
     <value>Spatial filter points</value>
-  </data>
-  <data name="Comp_Tolerance" xml:space="preserve">
-    <value>Profile tolerance µm</value>
   </data>
   <data name="ConnectionState_Connected" xml:space="preserve">
     <value>Connected</value>
@@ -1107,9 +1101,6 @@
   </data>
   <data name="StepType_SparkOut" xml:space="preserve">
     <value>Spark out</value>
-  </data>
-  <data name="Steps_CompensationHeader" xml:space="preserve">
-    <value>Compensation settings (manufacturer)</value>
   </data>
   <data name="Steps_SequenceHeader" xml:space="preserve">
     <value>Step sequence (freely ordered)</value>
@@ -2745,5 +2736,110 @@
   </data>
   <data name="Status_steadyRest_Off" xml:space="preserve">
     <value>Released</value>
+  </data>
+  <data name="SubView_Compensation" xml:space="preserve">
+    <value>Compensation</value>
+  </data>
+  <data name="Vk_Curves" xml:space="preserve">
+    <value>Curves ▸</value>
+  </data>
+  <data name="Vk_CurvesTitle" xml:space="preserve">
+    <value>Choose curve</value>
+  </data>
+  <data name="Vk_Compensation" xml:space="preserve">
+    <value>Compensation</value>
+  </data>
+  <data name="Vk_SaveTuning" xml:space="preserve">
+    <value>Save tuning</value>
+  </data>
+  <data name="Vk_ResetTuning" xml:space="preserve">
+    <value>Reset to config</value>
+  </data>
+  <data name="Vk_MeasurementRecords" xml:space="preserve">
+    <value>Measurements</value>
+  </data>
+  <data name="Comp_TuningHeader" xml:space="preserve">
+    <value>HMI compensation tuning</value>
+  </data>
+  <data name="Comp_SourceConfigured" xml:space="preserve">
+    <value>Using the values from hmi.json and machine.json</value>
+  </data>
+  <data name="Comp_SourceOverridden" xml:space="preserve">
+    <value>Using values changed here; “Reset to config” goes back to the files</value>
+  </data>
+  <data name="Comp_LimitFormat" xml:space="preserve">
+    <value>The limit cannot exceed {0:0.#} µm from machine.json</value>
+  </data>
+  <data name="Comp_ManufacturerOnly" xml:space="preserve">
+    <value>Only the manufacturer can change the tuning; other roles can view it</value>
+  </data>
+  <data name="Comp_NeedsManufacturer" xml:space="preserve">
+    <value>Changing the tuning needs the manufacturer role</value>
+  </data>
+  <data name="Comp_NotANumber" xml:space="preserve">
+    <value>One of the values is not a number</value>
+  </data>
+  <data name="Comp_InvalidGain" xml:space="preserve">
+    <value>The gain must be above 0 and at most 1</value>
+  </data>
+  <data name="Comp_InvalidSmoothing" xml:space="preserve">
+    <value>The filter window must be an odd number from 1 to 51</value>
+  </data>
+  <data name="Comp_InvalidMaxCorrection" xml:space="preserve">
+    <value>The limit must be above 0 and not exceed the machine.json limit</value>
+  </data>
+  <data name="Comp_Saved" xml:space="preserve">
+    <value>Saved. New compensation uses it; the running program is not touched</value>
+  </data>
+  <data name="Comp_Reset" xml:space="preserve">
+    <value>Back to the configured values</value>
+  </data>
+  <data name="Comp_StrokeHeader" xml:space="preserve">
+    <value>Stroke compensation convergence (one row per NC correction)</value>
+  </data>
+  <data name="Comp_NoStrokesYet" xml:space="preserve">
+    <value>No stroke corrections for this roll yet</value>
+  </data>
+  <data name="Comp_StrokeAxis" xml:space="preserve">
+    <value>Correction µm (diameter)</value>
+  </data>
+  <data name="Comp_ColumnVersion" xml:space="preserve">
+    <value>Stroke version</value>
+  </data>
+  <data name="Comp_ColumnTime" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="Comp_ColumnOffset" xml:space="preserve">
+    <value>Correction µm</value>
+  </data>
+  <data name="Comp_MeasurementHeader" xml:space="preserve">
+    <value>How far each measurement is from target</value>
+  </data>
+  <data name="Comp_ColumnStage" xml:space="preserve">
+    <value>Stage</value>
+  </data>
+  <data name="Comp_ColumnRms" xml:space="preserve">
+    <value>RMS µm</value>
+  </data>
+  <data name="Comp_ColumnPv" xml:space="preserve">
+    <value>P-V µm</value>
+  </data>
+  <data name="MeasurementStage_PreGrind" xml:space="preserve">
+    <value>Pre-grind</value>
+  </data>
+  <data name="MeasurementStage_InProcess" xml:space="preserve">
+    <value>In-process</value>
+  </data>
+  <data name="MeasurementStage_PostGrind" xml:space="preserve">
+    <value>Post-grind</value>
+  </data>
+  <data name="ChangeArea_compensation" xml:space="preserve">
+    <value>Compensation tuning</value>
+  </data>
+  <data name="ChangeArea_machineConfig" xml:space="preserve">
+    <value>Machine config</value>
+  </data>
+  <data name="ChangeArea_tagMap" xml:space="preserve">
+    <value>Tag map</value>
   </data>
 </root>

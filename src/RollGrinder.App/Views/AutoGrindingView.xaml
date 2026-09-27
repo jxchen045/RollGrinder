@@ -382,6 +382,110 @@
                     </DockPanel>
                 </Border>
             </Grid>
+            <!-- 补偿子视图（修改稿 3②、5.5）：盖住本页根部内容，导航槽显示"返回 自动磨削"。 -->
+            <Border x:Name="CompensationPanel" Grid.ColumnSpan="3" Background="{StaticResource Brush.Background}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_Compensation">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="400" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="420" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左：NC 补偿状态 + 上位机补偿设定（制造商可改） -->
+                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                                <TextBlock Text="{loc:Loc Auto_CompensationHeader}" Style="{StaticResource Text.CardTitle}" />
+                            </Border>
+                            <StackPanel Margin="16,12">
+                                <DockPanel Margin="0,0,0,7">
+                                    <TextBlock Text="{loc:Loc Auto_FeedForward}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
+                                    <TextBlock Text="{Binding FeedForwardText}" FontFamily="{StaticResource Font.Mono}" FontSize="16" HorizontalAlignment="Right" />
+                                </DockPanel>
+                                <DockPanel Margin="0,0,0,7">
+                                    <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
+                                    <TextBlock Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}" FontSize="16" HorizontalAlignment="Right" />
+                                </DockPanel>
+                                <DockPanel Margin="0,0,0,18">
+                                    <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
+                                    <TextBlock Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                               HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
+                                </DockPanel>
+
+                                <TextBlock Text="{loc:Loc Comp_TuningHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,4" />
+                                <TextBlock Text="{Binding TuningSourceText}" Style="{StaticResource Text.Label}" Margin="0,0,0,10" TextWrapping="Wrap" />
+                                <StackPanel IsEnabled="{Binding CanEditCompensation}">
+                                    <TextBlock Text="{loc:Loc Comp_Gain}" Style="{StaticResource Text.Label}" />
+                                    <TextBox x:Name="TuningGainBox" Text="{Binding TuningGainText, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,4,0,10" />
+                                    <TextBlock Text="{loc:Loc Comp_SmoothingPoints}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding TuningSmoothingText, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,4,0,10" />
+                                    <TextBlock Text="{loc:Loc Comp_MaxCorrection}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding TuningMaxCorrectionText, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,4,0,4" />
+                                    <TextBlock Text="{Binding TuningLimitText}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <TextBlock Text="{loc:Loc Comp_ManufacturerOnly}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,10,0,0"
+                                           Visibility="{Binding CanEditCompensation, Converter={StaticResource InverseBoolVisibility}}" />
+                                <TextBlock Text="{Binding TuningStatusText}" FontSize="16" TextWrapping="Wrap" Margin="0,10,0,0"
+                                           Foreground="{StaticResource Brush.CurrentStep}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- 中：行程间补偿的收敛（NC 每修正一次记一行） -->
+                    <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,12,0">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                                <TextBlock Text="{loc:Loc Comp_StrokeHeader}" Style="{StaticResource Text.CardTitle}" />
+                            </Border>
+                            <DataGrid DockPanel.Dock="Bottom" Height="260" ItemsSource="{Binding StrokeCorrections}" Style="{StaticResource DataTable}"
+                                      AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" FontSize="16">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{loc:Loc Comp_ColumnVersion}" Binding="{Binding VersionText}" Width="*" />
+                                    <DataGridTextColumn Header="{loc:Loc Comp_ColumnTime}" Binding="{Binding TimeText}" Width="*" />
+                                    <DataGridTextColumn Header="{loc:Loc Comp_ColumnOffset}" Binding="{Binding OffsetText}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <Grid>
+                                <plot:WpfPlot x:Name="StrokePlot" />
+                                <TextBlock Text="{loc:Loc Comp_NoStrokesYet}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Brush.TextMuted}" FontSize="17"
+                                           Visibility="{Binding HasStrokeCorrections, Converter={StaticResource InverseBoolVisibility}}" />
+                            </Grid>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- 右：这支辊的各次测量离目标多远 -->
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                                <TextBlock Text="{loc:Loc Comp_MeasurementHeader}" Style="{StaticResource Text.CardTitle}" />
+                            </Border>
+                            <DataGrid ItemsSource="{Binding MeasurementConvergence}" Style="{StaticResource DataTable}"
+                                      AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" FontSize="16">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="{loc:Loc Comp_ColumnTime}" Binding="{Binding TimeText}" Width="*" />
+                                    <DataGridTextColumn Header="{loc:Loc Comp_ColumnStage}" Binding="{Binding StageText}" Width="*" />
+                                    <DataGridTextColumn Header="{loc:Loc Comp_ColumnRms}" Binding="{Binding RmsText}" Width="*" />
+                                    <DataGridTextColumn Header="{loc:Loc Comp_ColumnPv}" Binding="{Binding PeakToValleyText}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </Border>
         </Grid>
     </DockPanel>
 </UserControl>

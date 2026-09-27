@@ -158,31 +158,6 @@
                     </DockPanel>
                 </Border>
 
-                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
-                    <DockPanel>
-                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                            <TextBlock Text="{loc:Loc Steps_CompensationHeader}" Style="{StaticResource Text.CardTitle}" />
-                        </Border>
-                        <ItemsControl ItemsSource="{Binding CompensationSettings}" Background="{StaticResource Brush.GridLine}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Columns="5" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Style="{StaticResource ParameterCell}">
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" />
-                                            <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Parameter}" FontSize="26" Margin="0,6,0,0" />
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </DockPanel>
-                </Border>
-
                 <!-- 程序步骤（自动磨削前取舍）：八个开关，本台机床做不了的压暗禁掉 -->
                 <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                     <DockPanel>

@@ -325,11 +325,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
             };
         }
 
-        BuildCompensationSettings(settings, machine);
-
-        // 公差是现场标定值，设置页上随时能改——改完这张卡片要跟着变。
-        calibration.Changed += (_, _) => OnUiThread(() => BuildCompensationSettings(settings, machine));
-
         // 竖向软键：对选中的工序操作。插入工序 ▸ 先选类别、再选工序，插在选中工序之后（修改稿 5.3）。
         SetVerticalKeys(new[]
         {
@@ -388,9 +383,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     /// <summary>程序步骤（自动磨削前取舍）的八个开关。</summary>
     public ObservableCollection<ProgramOptionRowViewModel> ProgramOptions { get; }
-
-    /// <summary>补偿设置（制造商权限）。取值来自 hmi.json 与 machine.json 的阈值。</summary>
-    public ObservableCollection<LabelValueViewModel> CompensationSettings { get; } = new();
 
     [ObservableProperty]
     private string totalDurationText = "--";
@@ -1249,33 +1241,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
 
         TotalDurationText = Localizer.Format("Steps_TotalTimeFormat", (int)total.TotalMinutes);
-    }
-
-    private void BuildCompensationSettings(HmiSettings settings, MachineDescription machine)
-    {
-        CompensationSettings.Clear();
-        CompensationSettings.Add(new LabelValueViewModel(
-            "Comp_Gain", settings.CompensationGain.ToString("F2", CultureInfo.CurrentCulture), Localizer));
-        CompensationSettings.Add(new LabelValueViewModel(
-            "Comp_SmoothingPoints",
-            settings.CompensationSmoothingPoints.ToString(CultureInfo.CurrentCulture),
-            Localizer));
-        CompensationSettings.Add(new LabelValueViewModel(
-            "Comp_MaxCorrection",
-            machine.Thresholds.TryGetValue("maxCompensationRadiusMm", out double maxCorrectionMm)
-                ? UnitConversion.RadiusMmToDiameterMicrometer(maxCorrectionMm).ToString("F1", CultureInfo.CurrentCulture)
-                : Localizer["Common_NotConfigured"],
-            Localizer));
-        CompensationSettings.Add(new LabelValueViewModel(
-            "Comp_Tolerance",
-            this.calibration.Current.ProfileToleranceMicrometer.ToString("F1", CultureInfo.CurrentCulture),
-            Localizer));
-        CompensationSettings.Add(new LabelValueViewModel(
-            "Comp_MaxInfeed",
-            machine.Thresholds.TryGetValue("maxInfeedPerPassRadiusMm", out double maxInfeedMm)
-                ? UnitConversion.RadiusMmToDiameterMicrometer(maxInfeedMm).ToString("F1", CultureInfo.CurrentCulture)
-                : Localizer["Common_NotConfigured"],
-            Localizer));
     }
 
     private static bool TryParseDouble(string text, out double value) =>

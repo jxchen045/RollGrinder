@@ -286,6 +286,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         IManualCommandService manualCommands,
         IUserSession userSession,
         IMeasurementNotifications measurementNotifications,
+        ICompensationTuningService compensationTuning,
+        IStrokeCompensationLog strokeCompensationLog,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator)
@@ -326,6 +328,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         RefreshTolerance();
         calibration.Changed += (_, _) => OnUiThread(RefreshTolerance);
+        InitializeCompensation(compensationTuning, strokeCompensationLog);
 
         SetFunctionKeys(new[]
         {
@@ -635,6 +638,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         UpdateDiameters(snapshot);
         UpdateSequence(snapshot);
         UpdateCompensation(snapshot);
+        TickCompensation();
         UpdateStepFlow(nowUtc);
         RefreshAfterNewMeasurement();
     }

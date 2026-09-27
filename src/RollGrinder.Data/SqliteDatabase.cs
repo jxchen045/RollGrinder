@@ -317,6 +317,29 @@ public sealed class SqliteDatabase
         );
         CREATE INDEX ix_wheel_event_time ON wheel_event (occurred_at_utc);
         """,
+
+        // 12：阶段 3。改动记录（谁、何时、改了什么、从多少改成多少）——补偿设置、机床配置、标签映射都记在这里，
+        // 一件事一行，留全部历史（标定值那张表只记"最后一次"）。另有上位机设定的覆盖值（补偿增益、限幅……），
+        // 没有覆盖时用配置文件里的值。
+        """
+        CREATE TABLE change_log (
+            entry_id           TEXT    NOT NULL PRIMARY KEY,
+            changed_at_utc     TEXT    NOT NULL,
+            changed_by         TEXT    NOT NULL,
+            area               TEXT    NOT NULL,
+            item               TEXT    NOT NULL,
+            old_value          TEXT    NULL,
+            new_value          TEXT    NULL
+        );
+        CREATE INDEX ix_change_log_time ON change_log (changed_at_utc);
+
+        CREATE TABLE hmi_setting (
+            setting_key        TEXT    NOT NULL PRIMARY KEY,
+            value              TEXT    NOT NULL,
+            changed_at_utc     TEXT    NOT NULL,
+            changed_by         TEXT    NOT NULL
+        );
+        """,
     };
 
     private readonly string connectionString;

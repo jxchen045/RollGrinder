@@ -18,6 +18,7 @@ public partial class AutoGrindingView : UserControl
     {
         InitializeComponent();
         PlotTheme.Apply(CurvePlot);
+        PlotTheme.Apply(StrokePlot);
         DataContextChanged += OnDataContextChanged;
         Unloaded += OnUnloaded;
     }
@@ -29,7 +30,9 @@ public partial class AutoGrindingView : UserControl
         if (this.viewModel is not null)
         {
             this.viewModel.CurveChanged += OnCurveChanged;
+            this.viewModel.StrokeCurveChanged += OnStrokeCurveChanged;
             Redraw();
+            RedrawStrokes();
         }
     }
 
@@ -40,10 +43,36 @@ public partial class AutoGrindingView : UserControl
         if (this.viewModel is not null)
         {
             this.viewModel.CurveChanged -= OnCurveChanged;
+            this.viewModel.StrokeCurveChanged -= OnStrokeCurveChanged;
         }
     }
 
     private void OnCurveChanged(object? sender, EventArgs e) => Redraw();
+
+    private void OnStrokeCurveChanged(object? sender, EventArgs e) => RedrawStrokes();
+
+    /// <summary>补偿子视图的收敛曲线：横轴行程版本，纵轴 NC 报的修正量（直径量 µm）。</summary>
+    private void RedrawStrokes()
+    {
+        StrokePlot.Plot.Clear();
+        if (this.viewModel is null || this.viewModel.StrokeCurve.Count == 0)
+        {
+            StrokePlot.Refresh();
+            return;
+        }
+
+        double[] versions = this.viewModel.StrokeCurve.Select(point => point.Version).ToArray();
+        double[] offsets = this.viewModel.StrokeCurve.Select(point => point.OffsetMicrometer).ToArray();
+        StrokePlot.Plot.Add.HorizontalLine(0.0, 1f, Colors.Gray, LinePattern.Dotted);
+        var line = StrokePlot.Plot.Add.Scatter(versions, offsets);
+        line.LineWidth = 2.5f;
+        line.MarkerSize = 6;
+        line.Color = Color.FromHex("#1F5FA8");
+        StrokePlot.Plot.Axes.Left.Label.Text = this.viewModel.Localizer["Comp_StrokeAxis"];
+        StrokePlot.Plot.Axes.Bottom.Label.Text = this.viewModel.Localizer["Comp_ColumnVersion"];
+        StrokePlot.Plot.Axes.AutoScale();
+        StrokePlot.Refresh();
+    }
 
     private void Redraw()
     {
