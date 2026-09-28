@@ -1,0 +1,432 @@
+<title>RGX 触摸屏与按钮板界面方案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #F2F4F7; --surface: #FFFFFF; --ink: #16191E; --ink-2: #4A5461; --ink-3: #5A6470;
+    --line: #D3D9E1; --line-soft: #E6EAF0; --fill: #F6F8FA;
+    --accent: #15507F; --accent-ink: #FFFFFF; --accent-soft: #E3EDF6;
+    --danger: #B3241C; --danger-soft: #FBEBE9;
+    --ok: #1F7A4D; --ok-soft: #E2F2E9;
+    --warn: #8A5A00; --warn-soft: #FBF1D9;
+    --next: #F6D24A;
+    --key-bg: #FFFFFF; --key-line: #8C95A1; --nav: #0F4370;
+    --sans: "Noto Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    --mono: "IBM Plex Mono", Consolas, "Cascadia Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+      --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+      --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+      --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+      --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+      --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+    --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+    --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+    --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+    --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+    --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.7; padding-inline: 16px; padding-block: 24px 64px; margin: 0; }
+  .page { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 32px; }
+  @media (min-width: 1120px) {
+    .page { grid-template-columns: 220px minmax(0, 1fr); }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto; }
+  }
+  main { min-width: 0; max-width: 920px; }
+  .toc { font-size: 14px; }
+  .toc h2 { font-size: 13px; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 8px; font-weight: 500; display: block; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { color: var(--ink-2); text-decoration: none; display: block; padding: 3px 8px; border-radius: 4px; }
+  .toc a:hover, .toc a:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+  .toc .sub { padding-left: 14px; font-size: 13px; }
+  .cover { border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+  .eyebrow { font-family: var(--mono); font-size: 13px; color: var(--ink-3); }
+  h1 { font-size: 32px; line-height: 1.3; margin: 6px 0 10px; text-wrap: balance; }
+  .lede { font-size: 17px; color: var(--ink-2); max-width: 64ch; margin: 0; }
+  section { margin-top: 44px; }
+  h2 { font-size: 24px; line-height: 1.35; margin: 0 0 14px; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+  h2 .no { font-family: var(--mono); font-size: 16px; color: var(--accent); font-weight: 600; min-width: 1.6em; }
+  h3 { font-size: 19px; margin: 28px 0 10px; text-wrap: balance; }
+  h4 { font-size: 16px; margin: 18px 0 6px; color: var(--ink-2); }
+  p { margin: 0 0 12px; max-width: 70ch; }
+  ul, ol { margin: 0 0 12px; padding-left: 1.4em; }
+  li { margin: 3px 0; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tw { overflow-x: auto; margin: 0 0 16px; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--fill); font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+  td.num, th.num { font-family: var(--mono); text-align: center; white-space: nowrap; }
+  .nowrap { white-space: nowrap; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 7px; line-height: 1.7; white-space: nowrap; }
+  .pill.bug { background: var(--danger-soft); color: var(--danger); }
+  .pill.design { background: var(--accent-soft); color: var(--accent); }
+  .pill.ask { background: var(--warn-soft); color: var(--warn); }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .pri { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
+  .pri.p0 { color: var(--danger); }
+  .pri.p1 { color: var(--warn); }
+  .pri.p2 { color: var(--ink-3); }
+  .box { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; margin: 0 0 16px; }
+  .box > :last-child { margin-bottom: 0; }
+  .box .tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; padding: 0 8px; margin-bottom: 6px; background: var(--accent-soft); color: var(--accent); }
+  .box.bug .tag { background: var(--danger-soft); color: var(--danger); }
+  .box.ask .tag { background: var(--warn-soft); color: var(--warn); }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 18px 0 0; }
+  .summary div { background: var(--surface); border: 1px solid var(--line); padding: 12px 14px; }
+  .summary b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .summary span { font-size: 14px; color: var(--ink-2); }
+  .key { display: inline-block; font-size: 13px; font-weight: 500; padding: 0 8px; border: 1px solid var(--key-line); background: var(--key-bg); border-radius: 3px; white-space: nowrap; line-height: 1.8; }
+  .wf { border: 2px solid var(--ink); background: var(--surface); font-size: 12.5px; line-height: 1.45; min-width: 760px; margin: 0 0 8px; }
+  .wf .bar { background: var(--nav); color: #FFFFFF; padding: 5px 8px; display: flex; gap: 10px; flex-wrap: nowrap; white-space: nowrap; }
+  .wf .bar.estop { background: var(--danger); font-weight: 700; justify-content: center; }
+  .wf .main { display: grid; gap: 6px; padding: 6px; }
+  .wf .pane { border: 1px solid var(--line); padding: 6px 8px; background: var(--surface); min-width: 0; }
+  .wf .pane h5 { margin: 0 0 4px; font-size: 12px; color: var(--ink-2); font-weight: 700; }
+  .wf .vsk { display: grid; grid-template-rows: repeat(8, 1fr); gap: 4px; }
+  .wf .vsk span, .wf .hsk span { border: 1px solid var(--key-line); background: var(--key-bg); padding: 6px 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wf .hsk { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 6px; background: var(--fill); border-top: 1px solid var(--line); }
+  .wf .hsk span.nav, .wf .vsk span.nav { background: var(--nav); color: #FFFFFF; border-color: var(--nav); }
+  .wf .vsk span.hot, .wf .hsk span.hot { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .wf .vsk span.red { border-color: var(--danger); color: var(--danger); font-weight: 700; }
+  .wf .status { display: flex; gap: 6px; flex-wrap: wrap; }
+  .wf .status span { border: 1px solid var(--line); padding: 1px 6px; white-space: nowrap; }
+  .wf .status span.on { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); }
+  .wf .status span.off { color: var(--ink-3); }
+  .wf .status span.dash { border-style: dashed; color: var(--ink-3); }
+  .wf .status span.panel { background: var(--fill); }
+  .wf .why { background: var(--warn-soft); color: var(--warn); padding: 3px 8px; border-top: 1px solid var(--line); }
+  .wf .pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .wf .pad span { border: 1px solid var(--key-line); background: var(--key-bg); padding: 8px 0; text-align: center; font-family: var(--mono); font-size: 14px; }
+  .wf .pad span.hot { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-family: var(--sans); }
+  .wf .readout { font-family: var(--mono); font-size: 18px; border: 2px solid var(--accent); padding: 4px 8px; text-align: right; }
+  .wf .err { color: var(--danger); }
+  .cap { font-size: 13px; color: var(--ink-3); margin: 0 0 18px; }
+  footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+  @media (max-width: 560px) { h1 { font-size: 26px; } h2 { font-size: 21px; } }
+  @media print {
+    body { background: #FFFFFF; color: #000000; padding: 0; font-size: 10.5pt; }
+    .toc { display: none; }
+    .page { display: block; max-width: none; }
+    main { max-width: none; }
+    section.major { break-before: page; }
+    table, .box, .wf { break-inside: avoid; }
+    .tw { overflow: visible; }
+    .wf { min-width: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @page { size: A4; margin: 14mm 12mm; }
+</style>
+
+<div class="page">
+  <nav class="toc" aria-label="目录">
+    <h2>目录</h2>
+    <ol>
+      <li><a href="#s0">0 结论</a></li>
+      <li><a href="#s1">1 新条件带来的变化</a></li>
+      <li><a href="#s2">2 现有界面对不上的地方</a></li>
+      <li><a href="#s3">3 设计原则（修订）</a></li>
+      <li><a href="#s4">4 方案</a></li>
+      <li class="sub"><a href="#a">A 屏幕与按钮板分工</a></li>
+      <li class="sub"><a href="#b">B 数值与文字输入</a></li>
+      <li class="sub"><a href="#c">C 触摸尺寸与手感</a></li>
+      <li class="sub"><a href="#d">D 危险动作的确认</a></li>
+      <li class="sub"><a href="#e">E 看不见的提示改成看得见</a></li>
+      <li class="sub"><a href="#f">F 直接点选</a></li>
+      <li class="sub"><a href="#g">G 两种硬件与屏幕尺寸</a></li>
+      <li class="sub"><a href="#h">H 装机与 Windows 设置</a></li>
+      <li><a href="#s5">5 保持不变的</a></li>
+      <li><a href="#s6">6 分期与工作量</a></li>
+      <li><a href="#s7">7 需要甲方确认</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="cover">
+      <div class="eyebrow">MK84160 · RGX 上位机 · 依据 2026-09-28 与甲方的沟通（Q1 操作方式）</div>
+      <h1>触摸屏与按钮板：界面修改方案</h1>
+      <p class="lede">甲方答复 Q1：以前的项目有配触摸屏一体机的，也有独立工控机加触摸显示器的；日常操作与编程都在触摸屏上，头架与砂轮旋转、复位、急停这类按钮单独做一块按钮板。本方案据此重新划分"屏幕管什么、按钮板管什么"，把界面从"按键优先"改成"触摸优先"，并列出分期与要甲方确认的问题。本稿只提方案，源代码暂不改动。</p>
+    </header>
+
+    <!-- 0 -->
+    <section id="s0">
+      <h2><span class="no">0</span>结论</h2>
+      <div class="summary">
+        <div><b>分工：屏幕管"设定与查看"，按钮板管"动与停"</b><span>头架、砂轮旋转，复位，急停只在按钮板上。屏幕上这几项只显示状态、不再给按键；哪些动作归按钮板由 machine.json 登记，各项目按实际按钮板配。</span></div>
+        <div><b>输入：自带数字键盘</b><span>点任何数值格，弹出带名称、单位、范围的大键盘，"下一项"连续输入。名称尽量自动生成，要打中文时才调 Windows 触摸键盘。</span></div>
+        <div><b>看不见的都要改成看得见</b><span>现在"为什么按不了"只在鼠标悬停时出现，触摸屏上永远看不到；改成点一下灰键就在屏幕上写出原因。悬停效果、手指拖不动的列表也一并改。</span></div>
+        <div><b>软键结构保留</b><span>底部 8 横、右侧 8 竖的软键条保留：位置固定、面积大，本来就适合触摸，也和西门子 Operate 在触摸面板上的用法一致。键盘快捷键继续有效，办公室电脑编程照样用。</span></div>
+      </div>
+      <p style="margin-top:14px">第一期（必须在现场试运行前完成）约 2 周。另有一项取决于甲方用的屏幕：如果有 15″/17″ 的 4:3、5:4 小屏，还要加一套紧凑版面，约再 1.5 周。</p>
+    </section>
+
+    <!-- 1 -->
+    <section id="s1">
+      <h2><span class="no">1</span>新条件带来的变化</h2>
+      <div class="tw"><table>
+        <thead><tr><th>甲方说明</th><th>对界面意味着什么</th></tr></thead>
+        <tbody>
+          <tr><td>日常操作、编程都在触摸屏上</td><td>手指是主要输入：没有悬停、没有右键、没有滚轮，点的位置有几毫米误差；可能戴手套。机床旁未必有键盘——所有数值、名称都要能在屏幕上输入。</td></tr>
+          <tr><td>头架、砂轮旋转、复位、急停单独做按钮板</td><td>会让机床"动起来""停下来"的操作归按钮板（硬线、有 PLC 互锁）。屏幕上再放一套同样的按钮是重复，还可能让人以为屏幕能停机。屏幕要做的是把这些操作的<strong>结果</strong>显示清楚：转没转、多少转、急停了没有。</td></tr>
+          <tr><td>有一体机，也有独立工控机 + 触摸显示器</td><td>屏幕尺寸、分辨率、长宽比、触摸类型（电容 / 电阻）因项目而异；分体机还有"触摸对不准屏幕""程序跑到另一块屏上"的问题。界面要能按屏幕配置，装机要有检查清单。</td></tr>
+        </tbody>
+      </table></div>
+      <p>这也回答了修改稿里的 Q1。当时的建议是"底部 8 横 + 右侧 8 竖软键、触摸兼容"，软键结构这次保留；要改的是优先级：<strong>触摸优先、键盘兼容，运动与安全交给实体按钮</strong>。</p>
+    </section>
+
+    <!-- 2 -->
+    <section id="s2">
+      <h2><span class="no">2</span>现有界面对不上的地方</h2>
+      <p>对照阶段 3 的实际代码逐项查过，下面这些在触摸屏上会出问题：</p>
+      <div class="tw"><table>
+        <thead><tr><th class="num">#</th><th>现状</th><th>触摸屏上会怎样</th><th>级</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>"这个键为什么是灰的"写在鼠标悬停提示里：功能键、竖键、手动动作、程序步骤开关、辊形镜像框都是</td><td>手指没有悬停，<strong>原因永远看不到</strong>。操作手册里好几处"鼠标停留说明原因"在现场都不成立</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">2</td><td>数值、名称都在文本框里直接打字（各页共有几十个输入框：参数格、点表、台账、配置、补偿设定、登录口令……）</td><td>没有键盘时，要么弹出 Windows 触摸键盘（遮住半屏、全屏程序下时灵时不灵），要么根本输不进去</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">3</td><td>手动页屏幕上有"头架正转 / 反转""砂轮启动"，自动页 F1"启动"、F5"冷却水"</td><td>和按钮板重复；屏幕按键在 PLC 那头要单独做一套互锁，出问题时两处都可能是原因</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">4</td><td>危险动作"4 秒内按两下"</td><td>手指快速误点两下（或手掌碰两下）就等于确认</td><td><span class="pri p0">P0</span></td></tr>
+          <tr><td class="num">5</td><td>按钮有悬停变色</td><td>WPF 把触摸当鼠标：点过的按钮一直停在"悬停"颜色，直到点别处，看起来像被选中</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">6</td><td>列表、表格、长表单只能拖滚动条（没开触摸平移）</td><td>手指在列表上拖不动，只能去点窄窄的滚动条</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">7</td><td>分段键高 36 px、表格行高 40 px、输入框高 46 px</td><td>21.5″ 屏上约 9–11 mm，手指勉强，戴手套容易点错行（触摸常用下限约 15 mm）</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">8</td><td>曲线图可以拖动、滚轮缩放</td><td>手指一碰图就被拖走或放大，磨削中找不回原来的视图</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">9</td><td>软键上印着 F1、Shift+F1、Ctrl+3</td><td>没有键盘的机床上这些字是噪声，还挤占键上的文字</td><td><span class="pri p2">P2</span></td></tr>
+          <tr><td class="num">10</td><td>手动页的"HMI 复位"</td><td>按钮板上也有"复位"，两个"复位"意思不同（一个复位 NC，一个只清上位机报警），容易混</td><td><span class="pri p1">P1</span></td></tr>
+          <tr><td class="num">11</td><td>版面按 1920×1080 排，没有别的尺寸</td><td>一体机常见 15″、17″、19″ 的 1024×768 / 1280×1024（4:3、5:4），放不下；缩小后字和按键都不到下限</td><td><span class="pri p1">P1</span>（看硬件）</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 3 -->
+    <section id="s3">
+      <h2><span class="no">3</span>设计原则（修订）</h2>
+      <p>修改稿第 4 节的五条原则中，第 1 条改为下面这条，其余四条不变（图形辅助输入、数据分层、边编边校验、名称唯一）：</p>
+      <div class="box">
+        <span class="tag">原则 1（修订）</span>
+        <p><strong>触摸优先、键盘兼容；动与停归按钮板。</strong></p>
+        <ul>
+          <li>每个操作都能只用手指完成，每个可点的东西不小于 15 mm；不依赖悬停、右键、滚轮、双击。</li>
+          <li>接了键盘照样能用：F1–F8、Shift+F1–F8、Tab、回车都保留，办公室电脑编程不受影响。</li>
+          <li>让机床动起来、停下来、复位、急停的操作在按钮板上；屏幕只发"设定"与机构动作的<strong>请求</strong>，并把按钮板操作的结果显示出来。</li>
+          <li>凡是"为什么"——为什么灰、为什么没发出去、为什么存不进——都直接写在屏幕上，不藏在提示框里。</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="s4" class="major">
+      <h2><span class="no">4</span>方案</h2>
+
+      <h3 id="a">A 屏幕与按钮板分工</h3>
+      <p><strong>A1 哪些动作归按钮板，由 machine.json 登记，不写死。</strong>新增一项 <code>panelActions</code>，列出这台机床按钮板上有的动作（例如 <code>headstock.forward</code>、<code>headstock.reverse</code>、<code>wheel.run</code>、<code>cycle.start</code>、<code>coolant</code>）。登记了的动作：屏幕上<strong>不给按键</strong>，只保留状态灯；没登记的照旧在屏幕上。不同项目的按钮板不一样，改配置就行，代码里没有"if 按钮板"。</p>
+      <div class="tw"><table>
+        <thead><tr><th>操作</th><th>建议归属</th><th>屏幕上保留</th></tr></thead>
+        <tbody>
+          <tr><td>急停</td><td>按钮板（硬线，本来就不经过上位机）</td><td>急停中：整屏顶部红条"急停中——解除后在按钮板上按复位"，所有命令键灰掉并写明原因</td></tr>
+          <tr><td>复位（NC）</td><td>按钮板</td><td>通道状态（状态带已有）；屏幕上不做 NC 复位（与 Q5 的建议一致）</td></tr>
+          <tr><td>头架正转 / 反转 / 停</td><td>按钮板</td><td>状态灯 + 头架转速（状态带、手动页）</td></tr>
+          <tr><td>砂轮启动 / 停</td><td>按钮板</td><td>状态灯 + 砂轮转速</td></tr>
+          <tr><td>循环启动 / 进给保持</td><td>按钮板（西门子常规：循环启动只在机床面板上）</td><td>自动页 F1、F2 视配置：登记在按钮板上就不给屏幕键；"进给保持"是往安全方向，<strong>建议屏幕上保留</strong>作为第二处</td></tr>
+          <tr><td>头架转速 + / −、倍率</td><td>待确认（通常是倍率旋钮）</td><td>转速显示</td></tr>
+          <tr><td>冷却液</td><td>待确认</td><td>若在按钮板上：自动页 F5 与手动页的冷却键去掉，只留状态灯</td></tr>
+          <tr><td>测量臂、尾架套筒、拨盘、托瓦、U1 归零</td><td>屏幕（除非按钮板上也有）</td><td>竖键 + 状态灯（阶段 3 的做法）</td></tr>
+          <tr><td>辅助循环（手动磨削、校验基准、修整、找正、回参考点、各轴归位）</td><td>屏幕（请求，PLC 互锁）</td><td>"辅助循环 ▸"，按住确认（见 D）</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>A2 手动页随之收拢。</strong>头架、砂轮旋转挪到按钮板后，"头架"页只剩转速 ±、拨盘伸收，"砂轮冷却"页只剩测砂轮直径与修整。建议合并成五页，底部键重新排；具体按 A1 的配置自动生成（某页没有动作了就不出这个键）：</p>
+      <div class="tw"><table>
+        <thead><tr><th>底部键</th><th>竖键上的动作（默认配置，头架与砂轮旋转在按钮板）</th><th>状态灯</th></tr></thead>
+        <tbody>
+          <tr><td>F1 测量臂</td><td>外 / 内臂放下、收起，双臂到轧辊、归位，校测量臂，测量采样</td><td>外臂、内臂</td></tr>
+          <tr><td>F2 尾架套筒</td><td>套筒伸出、<b>套筒缩回</b>、尾架前进、<b>尾架后退</b></td><td>套筒、尾架</td></tr>
+          <tr><td>F3 头架与托瓦</td><td>拨盘伸出、<b>拨盘收回</b>、头架侧升、<b>头架侧降</b>、尾架侧升、<b>尾架侧降</b>、U1 归零</td><td>头架旋转（按钮板）、拨盘、两侧托瓦、中心架</td></tr>
+          <tr><td>F4 砂轮与冷却</td><td>测砂轮直径、砂轮修整循环（冷却液若不在按钮板上也在这里）</td><td>砂轮旋转（按钮板）、切削液</td></tr>
+          <tr><td>F5 测量对中</td><td>采集测点、清空、归档、记录头架侧、记录尾架侧、清除对中</td><td>—</td></tr>
+          <tr><td>F6 状态总览</td><td>（无动作）</td><td><strong>全部</strong>机构灯、急停、方式、通道、各轴位置与转速一屏看完——按钮板上按了什么，在这里看结果</td></tr>
+          <tr><td>F7 辅助循环 ▸</td><td>手动磨削、校验基准、砂轮修整、轧辊找正、回参考点、各轴归位</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <p>加粗的是会松开辊子或让大件动的动作，按住确认（D）。按钮板上的动作在状态灯旁标一个小的"按钮板"字样，告诉人"这个在按钮板上操作"，而不是让人在屏幕上找键。</p>
+      <p><strong>A3 急停与复位的显示。</strong>tagmap 再加两个状态位：<code>status.emergencyStop</code>（急停链断开）、<code>status.panelReset</code>（可选）。急停时：</p>
+      <div class="wf" role="img" aria-label="急停时的屏幕线框">
+        <div class="bar estop">急停中 · 机床已停止　解除急停后，在按钮板上按"复位"</div>
+        <div class="bar"><span>☰ RGX</span><span>自动磨削</span><span style="margin-left:auto">方式 AUTO · 通道 复位</span></div>
+        <div class="main" style="grid-template-columns: 1fr 150px">
+          <div class="pane"><h5>页面照常显示（只读看数据）</h5><div class="status"><span class="dash">切削液 --</span><span class="off">中心架 落下</span><span class="on">尾架 前进到位</span><span class="off">测量臂 收起</span><span class="panel off">头架 停（按钮板）</span><span class="panel off">砂轮 停（按钮板）</span></div></div>
+          <div class="vsk"><span>曲线 ▸</span><span>补偿</span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="why">启动：急停中，按钮板上解除急停并复位后才能启动</div>
+        <div class="hsk"><span>启动</span><span>暂停</span><span>工序跳转</span><span>提前结束</span><span>冷却水</span><span>作业</span><span>磨削记录</span><span class="nav">页面菜单</span></div>
+      </div>
+      <p class="cap">急停红条盖在最顶上，不能关。命令键全灰；点灰键，底部说明行写出原因（见 E）。</p>
+      <p><strong>A4 "HMI 复位"改名、挪位。</strong>改叫"清除上位机报警"，从手动页挪到报警列表里（点报警条展开列表，列表底部一个键）。只有一个"复位"，就在按钮板上。</p>
+
+      <h3 id="b">B 数值与文字输入</h3>
+      <p><strong>B1 自带数字键盘。</strong>点任何数值格（参数格、点表、台账、标定值、补偿设定、配置、运行中的参数矩阵），从下方弹出一块数字键盘，停靠在不遮住当前格的一侧：</p>
+      <div class="wf" role="img" aria-label="数字键盘线框" style="min-width:0;max-width:520px">
+        <div class="bar"><span>第 3 道 · 精磨 · 拖板速度</span><span style="margin-left:auto">mm/min</span></div>
+        <div class="main">
+          <div class="pane"><div style="display:flex;justify-content:space-between"><span>原值 800</span><span>允许 1 – 3000</span></div><div class="readout">1200</div></div>
+          <div class="pad">
+            <span>7</span><span>8</span><span>9</span><span>⌫</span>
+            <span>4</span><span>5</span><span>6</span><span>清空</span>
+            <span>1</span><span>2</span><span>3</span><span>±</span>
+            <span>0</span><span>.</span><span>取消</span><span class="hot">确认</span>
+          </div>
+          <div class="pad" style="grid-template-columns: 1fr 1fr"><span>◀ 上一项</span><span class="hot">下一项 ▶</span></div>
+        </div>
+      </div>
+      <ul>
+        <li>显示名称、单位、原值、允许范围；超出范围时读数变红、"确认"变灰，并写出原因（和现在的边编边校验一致）。</li>
+        <li>"下一项 / 上一项"直接跳到下一个参数格，编一道工序不用反复点格子；点表里"下一项"按行、列顺序走。</li>
+        <li>工序简图照旧跟着亮：键盘开着时，图上亮的就是正在输入的那一项。</li>
+        <li>只在<strong>触摸</strong>时弹出；接了键盘、用鼠标点，照旧直接打字。<code>hmi.json</code> 加一项 <code>onScreenKeypad</code>：自动 / 总是 / 从不。</li>
+        <li>选项型参数（进给方式、插值方式、开关）本来就是分段键，不需要键盘。</li>
+      </ul>
+      <p><strong>B2 文字输入：先少打字，再给键盘。</strong></p>
+      <ul>
+        <li><strong>自动起名：</strong>辊形按"类型 + 主参数 + 日期"（如"凸度300-0928"），程序按"工序数 + 日期"，另存为默认"原名-副本"（已有）。大多数时候直接按"确认"。</li>
+        <li><strong>辊号、作业号、搜索、口令</strong>这类字母数字：用自带的全键盘（字母、数字、- _ .），和数字键盘同一种样式。</li>
+        <li><strong>中文名称</strong>：输入框旁边一个"中文"键，调出 Windows 触摸键盘（带拼音输入法）；只在要打中文时出现。Windows 触摸键盘在全屏程序里的表现要在目标机器上实测（见 H）。</li>
+        <li><strong>登录：</strong>用户名已经是一人一键；操作者可以用 4–6 位数字 PIN（数字键盘），管理员、制造商仍用口令。</li>
+      </ul>
+
+      <h3 id="c">C 触摸尺寸与手感</h3>
+      <div class="tw"><table>
+        <thead><tr><th>元素</th><th class="num">现在</th><th class="num">改为（1920×1080）</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>底部 / 右侧软键</td><td class="num">约 220×62 / 184×100</td><td class="num">不变</td><td>已经够大</td></tr>
+          <tr><td>分段键（曲线切换、选项）</td><td class="num">高 36</td><td class="num">高 56</td><td>一排放不下时换两排，不缩小</td></tr>
+          <tr><td>表格行（台账、记录、程序库、标签映射）</td><td class="num">40</td><td class="num">56</td><td>整行都能点选</td></tr>
+          <tr><td>输入格</td><td class="num">46</td><td class="num">60</td><td>点格子弹键盘，格子本身不需要光标定位</td></tr>
+          <tr><td>勾选框（对称编辑、只看缺失、镜像）</td><td class="num">系统默认</td><td class="num">开关样式，高 48</td><td>系统勾选框只有十几像素</td></tr>
+          <tr><td>相邻两个危险键之间</td><td class="num">4</td><td class="num">≥ 12</td><td>红键与普通键之间留缝</td></tr>
+        </tbody>
+      </table></div>
+      <p class="cap">15 mm 在 21.5″ 1920×1080 上约 60 px，在 15.6″ 1920×1080 上约 84 px；具体取值等屏幕型号定下来再按实际像素间距换算（G）。</p>
+      <ul>
+        <li><strong>手指拖动列表：</strong>所有列表、表格、长表单打开触摸平移；长列表另加"上一页 / 下一页"两个大键，戴手套时拖不动也能翻。</li>
+        <li><strong>去掉悬停效果：</strong>最后一次输入来自触摸时，不显示悬停颜色（解决"点过的键一直亮着"）；按下的反馈加深，手指按住就能看见。</li>
+        <li><strong>关掉"长按 = 右键"：</strong>Windows 默认长按会出一个方框并当成右键，按住确认（D）时会冲突。</li>
+        <li><strong>曲线图默认锁定：</strong>手指碰图不拖不缩；图角上"放大 / 复位"两个键；磨削中不会被误碰改掉视图。</li>
+        <li><strong>快捷键标注按需显示：</strong><code>hmi.json</code> 的 <code>showKeyboardHints</code>：自动（检测到键盘才显示）/ 显示 / 不显示。没键盘的机床上，软键只写字，字更大。</li>
+        <li><strong>擦屏模式：</strong>页面菜单里一个"擦屏幕"键：触摸停用 20 秒，屏幕上倒计时。触摸屏油污多，擦屏时不会误按。</li>
+      </ul>
+
+      <h3 id="d">D 危险动作的确认：按住，不是按两下</h3>
+      <p>现在的"4 秒内按两下"在触摸屏上容易被一个快速误点两下触发。改为<strong>按住约 0.8 秒</strong>：按下后键上出现一圈进度，满了才发出；中途松手就取消。</p>
+      <ul>
+        <li><strong>按住不等于点动。</strong>命令在进度满的那一刻发一次（仍是脉冲，PLC 上升沿触发），之后按着、松开都不再有作用；键上写"按住确认"，免得被理解成"按着才动"。</li>
+        <li>用在：套筒缩回、尾架后退、拨盘收回、两侧托瓦降、辅助循环、各轴归位、下发 NC、工序跳转、提前结束、屏幕上的启动（如保留）、删除这一行、清空辊形。</li>
+        <li>接键盘时仍可"按两下"（两次之间至少隔 0.3 秒，防止键盘连击）。</li>
+        <li>这些动作里会切削、会让大件动的，大多已归按钮板（A1）；屏幕上剩下的危险键本来就少。</li>
+      </ul>
+
+      <h3 id="e">E 看不见的提示改成看得见</h3>
+      <p>底部软键条上方加一行<strong>说明行</strong>（高 40 px，平时空着）。点一个灰键，说明行写出为什么（例如"下发 NC：作业还有 2 处问题，见核对页"），4 秒后消失；手动动作、程序步骤开关、辊形镜像框同样处理。鼠标悬停提示保留给办公室电脑。</p>
+      <div class="wf" role="img" aria-label="说明行线框">
+        <div class="main" style="grid-template-columns: 1fr 150px">
+          <div class="pane"><h5>手动 · 尾架套筒</h5><div class="status"><span class="on">套筒 伸出到位</span><span class="on">尾架 前进到位</span></div></div>
+          <div class="vsk"><span>套筒伸出</span><span class="red">套筒缩回（按住）</span><span>尾架前进</span><span class="red">尾架后退（按住）</span><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="why">套筒缩回：自动循环还挂着程序，这时不能松开辊子</div>
+        <div class="hsk"><span>测量臂</span><span class="hot">尾架套筒</span><span>头架与托瓦</span><span>砂轮与冷却</span><span>测量对中</span><span>状态总览</span><span>辅助循环 ▸</span><span class="nav">返回主页</span></div>
+      </div>
+      <p class="cap">点灰掉的"套筒缩回"，说明行写原因。按住确认的键上直接写"按住"。</p>
+
+      <h3 id="f">F 直接点选（触摸的长处）</h3>
+      <ul>
+        <li><strong>辊形预览：</strong>点曲线上的某一段就选中那一段（现在要去左边列表里点）。</li>
+        <li><strong>工序简图：</strong>点图上的某个量（f、ae、n……）就跳到那个参数并弹出键盘。</li>
+        <li><strong>状态灯：</strong>点状态带上的"尾架"灯，跳到手动页"尾架套筒"；点"急停"红条，跳到报警列表。</li>
+        <li><strong>自动页工序序列：</strong>点一行看这道工序的参数（跳到此工序仍是按住确认）。</li>
+        <li><strong>报警条：</strong>点一下展开报警列表（已有），列表里点一条看说明。</li>
+      </ul>
+
+      <h3 id="g">G 两种硬件与屏幕尺寸</h3>
+      <div class="tw"><table>
+        <thead><tr><th>屏幕</th><th>像素间距</th><th class="num">15 mm ≈</th><th>现在的版面</th><th>处理</th></tr></thead>
+        <tbody>
+          <tr><td>21.5″ 1920×1080（推荐）</td><td class="mono">0.248 mm</td><td class="num">60 px</td><td>刚好</td><td>按 C 的尺寸即可</td></tr>
+          <tr><td>24″ 1920×1080</td><td class="mono">0.277 mm</td><td class="num">54 px</td><td>刚好</td><td>同上</td></tr>
+          <tr><td>15.6″ 1920×1080</td><td class="mono">0.179 mm</td><td class="num">84 px</td><td>字太小</td><td>Windows 缩放设 125%，版面按 1536×864 排（要验证）</td></tr>
+          <tr><td>19″ 1280×1024 / 17″ 1280×1024</td><td class="mono">0.294 / 0.264 mm</td><td class="num">51 / 57 px</td><td>放不下（5:4）</td><td>需要紧凑版面</td></tr>
+          <tr><td>15″ 1024×768</td><td class="mono">0.297 mm</td><td class="num">50 px</td><td>放不下（4:3）</td><td>需要紧凑版面</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>建议：</strong>新项目统一选 21.5″ 或 24″、1920×1080、投射电容（支持手套模式）、前面板 IP65 的触摸屏，一体机与分体机都按这个规格，界面只维护一套版面。已交付项目若是 4:3 / 5:4 的小屏，再做一套<strong>紧凑版面</strong>：三栏页改为两栏加标签切换，状态带收成一行图标，软键条宽度不变。是否要做看 Q13 的答复。</p>
+      <p><strong>分体机要多管两件事：</strong></p>
+      <ul>
+        <li><code>hmi.json</code> 加 <code>display</code>：程序全屏放在哪块屏上（按序号或"触摸屏"），开机就在那块屏上，不会跑到维护用的第二块屏上。</li>
+        <li>触摸映射与校准：显示器换了接口或多接一块屏后，触摸会落到别的屏上。装机清单里写明校准步骤（H）。</li>
+      </ul>
+
+      <h3 id="h">H 装机与 Windows 设置（不在代码里，写进装机清单）</h3>
+      <ul>
+        <li>开机自动登录 Windows 专用账号，自动启动上位机全屏；关掉睡眠、屏保、自动更新重启。</li>
+        <li>关掉屏幕边缘滑动（从边上一划会拉出系统菜单），关掉"长按 = 右键"、触摸视觉反馈。</li>
+        <li>用自带键盘时关掉 Windows 触摸键盘的自动弹出；中文输入时由"中文"键显式调出。在目标机器上实测一次。</li>
+        <li>分体机：Windows"平板电脑设置"里把触摸映射到那块显示器，并做一次校准；电阻屏每年校准一次。</li>
+        <li>触摸屏的手套模式按现场要求打开（投射电容屏在显示器设置里）。</li>
+        <li>装机后跑一遍自检（加一组"触摸"用例：键盘弹出、说明行、按住确认、列表拖动），结果随交付资料留档。</li>
+      </ul>
+    </section>
+
+    <!-- 5 -->
+    <section id="s5">
+      <h2><span class="no">5</span>保持不变的</h2>
+      <ul>
+        <li><strong>底部 8 横 + 右侧 8 竖软键的结构、每页的软键安排、▸ 子菜单与"« 返回"。</strong>固定位置的大键本来就适合触摸；西门子 Operate 在触摸面板上也是这套。</li>
+        <li>数据分层、工序简图与说明行、边编边校验、名称唯一、权限表、状态带、补偿子视图、配置编辑器。</li>
+        <li>最高原则不变：上位机只做设定、显示、记录，不在实时控制回路里；屏幕上的机构动作仍是"请求"，由 PLC 互锁决定能不能动。</li>
+        <li>键盘操作全部保留（办公室电脑离线编程、维护人员带键盘时）。</li>
+      </ul>
+    </section>
+
+    <!-- 6 -->
+    <section id="s6">
+      <h2><span class="no">6</span>分期与工作量</h2>
+      <div class="tw"><table>
+        <thead><tr><th>期</th><th>内容</th><th class="nowrap">工作量</th><th>前提</th></tr></thead>
+        <tbody>
+          <tr><td class="nowrap">T1<br>现场试运行前必须</td><td>A1–A4 按钮板分工（machine.json 登记、手动页收拢、急停显示、改名）；B1 数字键盘、B2 自带全键盘与"中文"键、PIN；C 尺寸、平移、去悬停、关长按、图表锁定；D 按住确认；E 说明行；H 装机清单；自检加触摸用例；手册改写</td><td class="nowrap">约 2 周</td><td>Q14 按钮板清单、Q15 急停状态位</td></tr>
+          <tr><td class="nowrap">T2</td><td>F 直接点选；自动起名；快捷键标注按需显示；擦屏模式；状态总览页</td><td class="nowrap">约 1 周</td><td>无</td></tr>
+          <tr><td class="nowrap">T3<br>视硬件</td><td>紧凑版面（4:3 / 5:4 小屏）；15.6″ 缩放验证；多屏选择</td><td class="nowrap">约 1.5 周</td><td>Q13 屏幕型号</td></tr>
+        </tbody>
+      </table></div>
+      <p>T1 做完后，操作测试手册按"只用手指"重写一遍，请甲方在<strong>真实的触摸屏</strong>上做第二轮测试（最好是准备用的那种屏，戴平时的手套）。</p>
+    </section>
+
+    <!-- 7 -->
+    <section id="s7">
+      <h2><span class="no">7</span>需要甲方确认</h2>
+      <div class="tw"><table>
+        <thead><tr><th class="num">#</th><th>问题</th><th>影响</th><th>建议</th></tr></thead>
+        <tbody>
+          <tr><td class="num">Q13</td><td>这台机床用一体机还是分体机？屏幕尺寸、分辨率、触摸类型（电容 / 电阻）？以前项目里有没有 15″/17″ 的 4:3、5:4 屏还要兼容？</td><td>G、T3 要不要做</td><td>统一 21.5″ 或 24″ 1920×1080 投射电容</td></tr>
+          <tr><td class="num">Q14</td><td><strong>按钮板上具体有哪些按钮？</strong>急停、复位、头架正转 / 反转 / 停、砂轮启停之外，有没有循环启动、进给保持、冷却液、头架调速或倍率旋钮、尾架、测量臂？</td><td>A1 的配置、手动页怎么收拢、自动页 F1 / F5 留不留</td><td>请电气给出按钮板图</td></tr>
+          <tr><td class="num">Q15</td><td>急停、按钮板上各动作的状态，PLC 里有没有可读的位？地址？</td><td>A3 急停红条、各状态灯</td><td>与 Q7 的状态位一起给</td></tr>
+          <tr><td class="num">Q16</td><td>操作工平时戴手套吗？什么手套？</td><td>C 的尺寸、屏的手套模式</td><td>按戴手套设计</td></tr>
+          <tr><td class="num">Q17</td><td>辊形、程序名称一定要用中文吗？能否接受自动起名、需要时再改？</td><td>B2 中文输入的重要性</td><td>自动起名 + 按需中文</td></tr>
+          <tr><td class="num">Q18</td><td>屏幕上还要不要"循环启动"？"进给保持"呢？</td><td>自动页 F1、F2</td><td>启动只在按钮板；进给保持屏幕上也留一个</td></tr>
+          <tr><td class="num">Q19</td><td>操作者登录能否用数字 PIN？</td><td>B2</td><td>操作者 PIN，管理员以上用口令</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <footer>
+      本稿依据 2026-09-28 与甲方的沟通（Q1 答复）与阶段 3 完成时的界面代码核对得出，只提方案，源代码未改。像素间距按屏幕对角线与分辨率计算；工作量为粗估，Q13–Q15 答复后细化。
+    </footer>
+  </main>
+</div>
