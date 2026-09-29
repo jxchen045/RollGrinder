@@ -78,6 +78,24 @@ public sealed class SimulatedMachine
     private int strokeVersion;
     private readonly double wheelDiameterMm = 890.24;
 
+    // ── 手动磨削（界面最终稿 5.1）：拖板往复、定位、方式请求。只在通道空闲时动，和真 PLC 的联锁一致。──
+
+    /// <summary>拖板在手动往复。</summary>
+    private bool manualCarriageRunning;
+
+    /// <summary>定位循环状态：0 空闲 / 1 运行 / 2 完成 / 3 出错（与 manual.position.state 同义）。</summary>
+    private int positionState;
+
+    private int positionAxis;
+    private double positionTargetMm;
+    private double positionSpeedMmPerMin;
+
+    /// <summary>测量架 X1 的位置（仿真里只有定位会动它）。</summary>
+    private double measuringCarriageMm;
+
+    /// <summary>方式选择：没有程序挂着时报这个（0 JOG / 2 AUTO）；上位机的方式请求改它。</summary>
+    private int requestedMode;
+
     /// <summary>
     /// 辊面模型：测径仪读到什么、电流多大，都从它来。
     /// 这是让"无机床也能验收"说得过去的关键——辊面真的带着误差，磨削真的把它磨掉，
@@ -144,9 +162,15 @@ public sealed class SimulatedMachine
             ["softLanding.tailstock.down"] = new[] { ("softLanding.tailstock.raised", false) },
         };
 
-    /// <summary>机构到位状态。开机时辊子已装好：套筒伸出、尾架前进、拨盘伸出，测量臂收起、托瓦落下。</summary>
+    /// <summary>
+    /// 机构到位状态。开机时辊子已装好：套筒伸出、尾架前进、拨盘伸出，测量臂收起、托瓦落下；
+    /// 机床已上电、已回参考点、没有急停（界面最终稿标题行 / 通道行读这几位）。
+    /// </summary>
     private readonly Dictionary<string, bool> statuses = new(StringComparer.Ordinal)
     {
+        ["emergencyStop"] = false,
+        ["machineOn"] = true,
+        ["referenced"] = true,
         ["outerArm.lowered"] = false,
         ["innerArm.lowered"] = false,
         ["quill.extended"] = true,
@@ -163,6 +187,11 @@ public sealed class SimulatedMachine
         ArgumentNullException.ThrowIfNull(value);
 
         this.writtenValues[logicalName] = value;
+
+        if (HandleManualGrindingWrite(logicalName, value))
+        {
+            return;
+        }
 
         // 手动动作：把命令位原样回显到状态位，界面上的"冷却水开着"这类指示才有东西可读。
         // 仿真机床就是这台"机床"，所以这是真回读，不是假数据。
@@ -284,6 +313,7 @@ public sealed class SimulatedMachine
         this.elapsedSeconds += delta.TotalSeconds;
         if (ChannelState != NcChannelState.Running)
         {
+            AdvanceManual(delta);
             return;
         }
 
@@ -361,10 +391,15 @@ public sealed class SimulatedMachine
             return ProgramName;
         }
 
-        // 挂着程序就是 AUTO，空闲时按 JOG 报（真机上由操作面板的方式选择决定）。
+        // 挂着程序就是 AUTO；空闲时报方式选择（上位机的方式请求改它，真机上由 PLC 决定切不切）。
         if (logicalName == MachineTagKeys.OperatingMode)
         {
-            return ChannelState == NcChannelState.Reset ? 0 : 2;
+            return ChannelState == NcChannelState.Reset ? this.requestedMode : 2;
+        }
+
+        if (ReadManualGrinding(logicalName) is { } manual)
+        {
+            return manual;
         }
 
         if (logicalName.StartsWith(MachineTagKeys.StatusPrefix, StringComparison.Ordinal))
@@ -418,7 +453,7 @@ public sealed class SimulatedMachine
 
         if (logicalName == MachineTagKeys.WheelSpeedRpm)
         {
-            return ChannelState == NcChannelState.Running ? 590.0 : 0.0;
+            return WheelRpm();
         }
 
         if (logicalName == MachineTagKeys.GrindingCurrentA)
@@ -481,7 +516,13 @@ public sealed class SimulatedMachine
 
         if (this.wheelSpindleName is not null && logicalName == MachineTagKeys.AxisActualSpeedRpm(this.wheelSpindleName))
         {
-            return ChannelState == NcChannelState.Running ? 900.0 : 0.0;
+            return WheelRpm();
+        }
+
+        string? measuringCarriage = AxisName(MachineAxisRoles.MeasuringCarriage);
+        if (measuringCarriage is not null && logicalName == MachineTagKeys.AxisActualPositionMm(measuringCarriage))
+        {
+            return this.measuringCarriageMm;
         }
 
         return this.writtenValues.TryGetValue(logicalName, out TagValue? written) ? written.Raw : null;
@@ -496,6 +537,157 @@ public sealed class SimulatedMachine
             ? passCount
             : FallbackPassCount)
         + (this.stepSparkOutCounts.TryGetValue(this.currentStepOrder - 1, out int sparkOut) ? sparkOut : 0);
+
+    /// <summary>
+    /// 手动磨削的写入：往复的速度 / 行程 / 启停、定位的轴 / 目标 / 速度 / 启动、方式请求。
+    /// 启停是脉冲，按上升沿动作（真 PLC 也是这样，命令位随后自复位）。处理了返回 true。
+    /// </summary>
+    private bool HandleManualGrindingWrite(string logicalName, TagValue value)
+    {
+        bool rising = value.Raw is true;
+        switch (logicalName)
+        {
+            case MachineTagKeys.ManualCarriageStart:
+                if (rising && ChannelState == NcChannelState.Reset
+                    && Written(MachineTagKeys.ManualCarriageStrokeEnd) > Written(MachineTagKeys.ManualCarriageStrokeStart))
+                {
+                    this.manualCarriageRunning = true;
+                    this.positionState = 0;
+                    this.carriageDirection = 1;
+                }
+
+                return true;
+
+            case MachineTagKeys.ManualCarriageStop:
+                if (rising)
+                {
+                    this.manualCarriageRunning = false;
+                }
+
+                return true;
+
+            case MachineTagKeys.ManualPositionStart:
+                if (rising && ChannelState == NcChannelState.Reset)
+                {
+                    this.positionAxis = (int)Written(MachineTagKeys.ManualPositionAxis);
+                    this.positionTargetMm = Written(MachineTagKeys.ManualPositionTarget);
+                    this.positionSpeedMmPerMin = Written(MachineTagKeys.ManualPositionSpeed);
+                    this.manualCarriageRunning = false;
+                    this.positionState = this.positionAxis is >= 1 and <= 3 && this.positionSpeedMmPerMin > 0 ? 1 : 3;
+                }
+
+                return true;
+
+            case MachineTagKeys.ModeRequest:
+                // 上位机的请求值：1 JOG / 2 AUTO；方式码：0 JOG / 2 AUTO。
+                this.requestedMode = (int)(ToDouble(value.Raw) ?? 1.0) == 2 ? 2 : 0;
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>通道空闲时推进手动动作：往复在两个行程端点之间来回，定位走到目标就停。</summary>
+    private void AdvanceManual(TimeSpan delta)
+    {
+        double minutes = delta.TotalMinutes;
+        if (this.manualCarriageRunning)
+        {
+            double from = Written(MachineTagKeys.ManualCarriageStrokeStart);
+            double to = Written(MachineTagKeys.ManualCarriageStrokeEnd);
+            double speed = Written(MachineTagKeys.ManualCarriageSpeed) * Override(MachineTagKeys.OverrideFeedPercent);
+            this.carriagePositionMm += speed * minutes * this.carriageDirection;
+            if (this.carriagePositionMm >= to)
+            {
+                this.carriagePositionMm = to;
+                this.carriageDirection = -1;
+            }
+            else if (this.carriagePositionMm <= from)
+            {
+                this.carriagePositionMm = from;
+                this.carriageDirection = 1;
+            }
+        }
+
+        if (this.positionState != 1)
+        {
+            return;
+        }
+
+        double step = this.positionSpeedMmPerMin * Override(MachineTagKeys.OverrideFeedPercent) * minutes;
+        double MoveTowards(double current)
+        {
+            double remaining = this.positionTargetMm - current;
+            if (Math.Abs(remaining) <= step)
+            {
+                this.positionState = 2;
+                return this.positionTargetMm;
+            }
+
+            return current + (Math.Sign(remaining) * step);
+        }
+
+        switch (this.positionAxis)
+        {
+            case 1:
+                this.carriagePositionMm = MoveTowards(this.carriagePositionMm);
+                break;
+            case 2:
+                this.measuringCarriageMm = MoveTowards(this.measuringCarriageMm);
+                break;
+            case 3:
+                // 磨架（X）退到安全位：仿真不改辊子半径，只报"到了"。
+                this.positionState = 2;
+                break;
+        }
+    }
+
+    /// <summary>手动磨削相关的读：安全链、手持盒、倍率、往复与定位状态、Z1/Z2 同步差。不归这里管的返回 null。</summary>
+    private object? ReadManualGrinding(string logicalName) => logicalName switch
+    {
+        MachineTagKeys.FaultLevel => 0,
+        MachineTagKeys.PendantAxisSelect => 3,
+        MachineTagKeys.PendantHandwheelFactor => 10,
+        MachineTagKeys.PendantEnable => false,
+        MachineTagKeys.CarriageSyncDiffMm => Noise() * 2.0,
+        MachineTagKeys.OverrideFeedPercent or MachineTagKeys.OverrideWheelPercent or MachineTagKeys.OverrideHeadstockPercent
+            => this.writtenValues.TryGetValue(logicalName, out TagValue? written) ? written.Raw : 100,
+        MachineTagKeys.ManualCarriageRunning => this.manualCarriageRunning,
+        MachineTagKeys.ManualPositionState => this.positionState,
+        MachineTagKeys.PanelCycleStart => false,
+        _ => null,
+    };
+
+    /// <summary>
+    /// 砂轮转速：自动循环里按固定值；空闲时砂轮开着（手动"砂轮启动"）就按给定线速度 × 倍率反算转速。
+    /// </summary>
+    private double WheelRpm()
+    {
+        if (ChannelState == NcChannelState.Running)
+        {
+            return 590.0;
+        }
+
+        bool on = this.writtenValues.TryGetValue(MachineTagKeys.ManualCommandState("wheel.run"), out TagValue? state) && state.Raw is true;
+        if (!on)
+        {
+            return 0.0;
+        }
+
+        double surfaceMPerSec = this.writtenValues.ContainsKey(MachineTagKeys.ManualWheelSurfaceSpeedSetpoint)
+            ? Written(MachineTagKeys.ManualWheelSurfaceSpeedSetpoint)
+            : 35.0;
+        return surfaceMPerSec * Override(MachineTagKeys.OverrideWheelPercent) * 60000.0 / (Math.PI * this.wheelDiameterMm);
+    }
+
+    /// <summary>写进来的数值（没写过为 0）。</summary>
+    private double Written(string logicalName) =>
+        this.writtenValues.TryGetValue(logicalName, out TagValue? value) ? ToDouble(value.Raw) ?? 0.0 : 0.0;
+
+    /// <summary>倍率（0–1）；没写过按 100 %。</summary>
+    private double Override(string logicalName) =>
+        this.writtenValues.ContainsKey(logicalName) ? Math.Clamp(Written(logicalName) / 100.0, 0.0, 1.5) : 1.0;
 
     private void CompleteStroke()
     {

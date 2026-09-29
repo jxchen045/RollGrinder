@@ -137,6 +137,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         };
 
         ShowGroup(ProfilesGroup);
+        this.loadOnShow = true;
     }
 
     public override PageKey Key => PageKey.Library;
@@ -232,6 +233,9 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         _ = RunGuardedAsync(ReloadAsync, CancellationToken.None);
     }
 
+    /// <summary>构造时只摆好键、不读库 / 文件（那时数据库和配置可能还没就绪）；读在切到本页时做。</summary>
+    private readonly bool loadOnShow;
+
     public override bool ShowGroup(string groupKey)
     {
         if (!this.groupKeys.ContainsKey(groupKey))
@@ -248,7 +252,11 @@ public sealed partial class LibraryViewModel : PageViewModelBase
             UsbGroup => this.usbKeys,
             _ => this.entryKeys,
         });
-        _ = RunGuardedAsync(ReloadAsync, CancellationToken.None);
+        if (this.loadOnShow)
+        {
+            _ = RunGuardedAsync(ReloadAsync, CancellationToken.None);
+        }
+
         return true;
     }
 

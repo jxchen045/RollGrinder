@@ -116,6 +116,7 @@ public sealed partial class CommissioningViewModel : PageViewModelBase
         BuildSystemRows();
         PropertyChanged += OnConfigEditorPropertyChanged;
         ShowGroup(MachineConfigGroup);
+        this.loadOnShow = true;
     }
 
     public override PageKey Key => PageKey.Commissioning;
@@ -146,6 +147,9 @@ public sealed partial class CommissioningViewModel : PageViewModelBase
     [ObservableProperty]
     private string inspectorText = string.Empty;
 
+    /// <summary>构造时只摆好键、不读库 / 文件（那时数据库和配置可能还没就绪）；读在切到本页时做。</summary>
+    private readonly bool loadOnShow;
+
     public override bool ShowGroup(string groupKey)
     {
         if (!this.groupKeys.TryGetValue(groupKey, out FunctionKeyViewModel? key))
@@ -169,7 +173,7 @@ public sealed partial class CommissioningViewModel : PageViewModelBase
             _ => this.systemKeys,
         });
         ConfigStatusText = string.Empty;
-        _ = groupKey switch
+        _ = !this.loadOnShow ? Task.CompletedTask : groupKey switch
         {
             MachineConfigGroup => LoadMachineConfigAsync(CancellationToken.None),
             TagMappingGroup => LoadTagMappingAsync(CancellationToken.None),
@@ -183,6 +187,12 @@ public sealed partial class CommissioningViewModel : PageViewModelBase
     {
         OnPropertyChanged(nameof(CanEditMachineConfig));
         OnPropertyChanged(nameof(CanEditTagMap));
+        _ = Group switch
+        {
+            MachineConfigGroup => LoadMachineConfigAsync(CancellationToken.None),
+            TagMappingGroup => LoadTagMappingAsync(CancellationToken.None),
+            _ => Task.CompletedTask,
+        };
     }
 
     public override void OnTick(DateTimeOffset nowUtc)

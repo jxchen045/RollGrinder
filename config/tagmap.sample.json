@@ -45,6 +45,14 @@
       "unit": "rpm"
     },
     {
+      "key": "axis.X1.actualPositionMm",
+      "address": "ns=2;s=/Channel/MachineAxis/actToolBasePos[u1,2]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "mm",
+      "description": "测量架 X1 实际位置"
+    },
+    {
       "key": "axis.Z.actualPositionMm",
       "address": "ns=2;s=/Channel/MachineAxis/actToolBasePos[u1,2]",
       "dataType": "Double",
@@ -58,6 +66,14 @@
       "dataType": "Double",
       "access": "Read",
       "unit": "rpm"
+    },
+    {
+      "key": "axis.Z.syncDiffMm",
+      "address": "ns=3;s=\"HMI_State\".\"zSyncDiff\"",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "mm",
+      "description": "拖板双驱 Z1 − Z2 同步差（新增，地址待 PLC 编程确认）"
     },
     {
       "key": "compensation.degradationLevel",
@@ -477,6 +493,13 @@
       "description": "NC channel status"
     },
     {
+      "key": "machine.modeRequest",
+      "address": "ns=3;s=\"HMI_Manual\".\"modeRequest\"",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "方式请求：1 JOG / 2 AUTO（PLC 决定切不切）（新增，地址待 PLC 编程确认）"
+    },
+    {
       "key": "machine.operatingMode",
       "address": "ns=2;s=/Bag/State/opMode[u1]",
       "dataType": "Int32",
@@ -516,6 +539,51 @@
       "dataType": "Boolean",
       "access": "ReadWrite",
       "description": "各轴归位（脉冲：PLC 按上升沿触发并自行复位）"
+    },
+    {
+      "key": "manual.carriage.running.state",
+      "address": "ns=3;s=\"HMI_State\".\"traverseRunning\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "拖板在往复（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "manual.carriage.speedMmPerMin",
+      "address": "ns=3;s=\"HMI_Manual\".\"traverseSpeed\"",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm/min",
+      "description": "拖板往复速度（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "manual.carriage.start",
+      "address": "ns=3;s=\"HMI_Manual\".\"traverseStart\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "拖板往复启动（脉冲，PLC 按上升沿、自复位）（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "manual.carriage.stop",
+      "address": "ns=3;s=\"HMI_Manual\".\"traverseStop\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "拖板往复停止（脉冲）（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "manual.carriage.strokeEndMm",
+      "address": "ns=3;s=\"HMI_Manual\".\"strokeEnd\"",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "description": "拖板往复行程终点（机床 Z）（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "manual.carriage.strokeStartMm",
+      "address": "ns=3;s=\"HMI_Manual\".\"strokeStart\"",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "description": "拖板往复行程起点（机床 Z）（新增，地址待 PLC 编程确认）"
     },
     {
       "key": "manual.coolant",
@@ -581,6 +649,20 @@
       "description": "拨盘收回（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
+      "key": "manual.headstock.assistStart",
+      "address": "ns=3;s=\"HMI_Manual\".\"assistStart\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "带启动装置（保持）（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "manual.headstock.assistStart.state",
+      "address": "ns=3;s=\"HMI_State\".\"assistStart\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "状态回读"
+    },
+    {
       "key": "manual.headstock.forward",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit11\"",
       "dataType": "Boolean",
@@ -616,6 +698,14 @@
       "description": "头架降速（脉冲：PLC 按上升沿触发并自行复位）"
     },
     {
+      "key": "manual.headstock.speedSetpointRpm",
+      "address": "ns=3;s=\"HMI_Manual\".\"headstockSpeed\"",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "rpm",
+      "description": "手动磨削：头架转速给定（启停在按钮板）（新增，地址待 PLC 编程确认）"
+    },
+    {
       "key": "manual.headstock.speedUp",
       "address": "ns=3;s=\"HMI_Cmd\".\"bit13\"",
       "dataType": "Boolean",
@@ -649,6 +739,43 @@
       "dataType": "Boolean",
       "access": "ReadWrite",
       "description": "外测量臂（测头 A）收起。到位反馈 I113.0（脉冲：PLC 按上升沿触发并自行复位）"
+    },
+    {
+      "key": "manual.position.axis",
+      "address": "ns=3;s=\"HMI_Manual\".\"positionAxis\"",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "定位轴：1 拖板 Z / 2 测量架 X1 / 3 磨架 X（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "manual.position.speedMmPerMin",
+      "address": "ns=3;s=\"HMI_Manual\".\"positionSpeed\"",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm/min",
+      "description": "定位速度（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "manual.position.start",
+      "address": "ns=3;s=\"HMI_Manual\".\"positionStart\"",
+      "dataType": "Boolean",
+      "access": "ReadWrite",
+      "description": "定位启动（脉冲）（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "manual.position.state",
+      "address": "ns=3;s=\"HMI_State\".\"positionState\"",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "定位循环：0 空闲 / 1 运行 / 2 完成 / 3 出错（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "manual.position.targetMm",
+      "address": "ns=3;s=\"HMI_Manual\".\"positionTarget\"",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "description": "定位目标（新增，地址待 PLC 编程确认）"
     },
     {
       "key": "manual.quill.extend",
@@ -735,6 +862,14 @@
       "description": "状态回读"
     },
     {
+      "key": "manual.wheel.surfaceSpeedSetpointMPerSec",
+      "address": "ns=3;s=\"HMI_Manual\".\"wheelSurfaceSpeed\"",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "m/s",
+      "description": "手动磨削：砂轮线速度给定（新增，地址待 PLC 编程确认）"
+    },
+    {
       "key": "measure.diameterMm",
       "address": "ns=2;s=/Plc/DB100.DBD0",
       "dataType": "Double",
@@ -774,6 +909,58 @@
       "description": "当前截面的圆度（峰谷值），由测量系统算出"
     },
     {
+      "key": "override.feedPercent",
+      "address": "ns=3;s=\"HMI_Manual\".\"feedOverride\"",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "unit": "%",
+      "description": "进给倍率 %（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "override.headstockPercent",
+      "address": "ns=3;s=\"HMI_Manual\".\"headstockOverride\"",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "unit": "%",
+      "description": "头架倍率 %（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "override.wheelPercent",
+      "address": "ns=3;s=\"HMI_Manual\".\"wheelOverride\"",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "unit": "%",
+      "description": "砂轮倍率 %（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "panel.cycleStart",
+      "address": "ns=3;s=\"HMI_State\".\"panelCycleStart\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "按钮板循环启动（只用于显示和日志）（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "pendant.axisSelect",
+      "address": "ns=3;s=\"HMI_Pendant\".\"axisSelect\"",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "手持盒选轴：1 X / 2 X1 / 3 Z / 4 U / 5 B（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "pendant.enable",
+      "address": "ns=3;s=\"HMI_Pendant\".\"enable\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "手持盒使能键按着（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "pendant.handwheelFactor",
+      "address": "ns=3;s=\"HMI_Pendant\".\"factor\"",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "手轮倍率 ×1 / ×10 / ×100（新增，地址待 PLC 编程确认）"
+    },
+    {
       "key": "status.driver.extended",
       "address": "ns=3;s=\"HMI_State\".\"driver_extended\"",
       "dataType": "Boolean",
@@ -781,11 +968,32 @@
       "description": "头架拨盘伸出到位（地址待电气确认，Q7）"
     },
     {
+      "key": "status.emergencyStop",
+      "address": "ns=3;s=\"HMI_State\".\"emergencyStop\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "急停回路断开（标题行变红）（新增，地址待 PLC 编程确认）"
+    },
+    {
+      "key": "status.faultLevel",
+      "address": "ns=3;s=\"HMI_State\".\"faultLevel\"",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "故障级别：0 无 / 1 一般 / 2 严重（新增，地址待 PLC 编程确认）"
+    },
+    {
       "key": "status.innerArm.lowered",
       "address": "ns=3;s=\"HMI_State\".\"inner_arm_lowered\"",
       "dataType": "Boolean",
       "access": "Read",
       "description": "内测量臂放下到位（I113 一组，地址待电气确认，Q7）"
+    },
+    {
+      "key": "status.machineOn",
+      "address": "ns=3;s=\"HMI_State\".\"machineOn\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "机床已上电（通道行）（新增，地址待 PLC 编程确认）"
     },
     {
       "key": "status.outerArm.lowered",
@@ -800,6 +1008,13 @@
       "dataType": "Boolean",
       "access": "Read",
       "description": "套筒伸出到位（地址待电气确认，Q7）"
+    },
+    {
+      "key": "status.referenced",
+      "address": "ns=3;s=\"HMI_State\".\"referenced\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "各轴已回参考点（通道行）（新增，地址待 PLC 编程确认）"
     },
     {
       "key": "status.softLanding.headstock.raised",

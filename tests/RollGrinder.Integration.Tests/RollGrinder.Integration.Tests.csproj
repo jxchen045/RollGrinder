@@ -33,6 +33,7 @@
     <Compile Include="..\..\src\RollGrinder.App\SelfTest\SelfTestOptions.cs" Link="SelfTest\SelfTestOptions.cs" />
     <Compile Include="..\..\src\RollGrinder.App\SelfTest\SelfTestRecorder.cs" Link="SelfTest\SelfTestRecorder.cs" />
     <Compile Include="..\..\src\RollGrinder.App\Controls\ContrastMath.cs" Link="Controls\ContrastMath.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\Controls\CurveMath.cs" Link="Controls\CurveMath.cs" />
     <Compile Include="..\..\src\RollGrinder.App\Controls\StepDiagramMap.cs" Link="Controls\StepDiagramMap.cs" />
   </ItemGroup>
 

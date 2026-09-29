@@ -133,6 +133,7 @@ public sealed partial class ParametersViewModel : PageViewModelBase
 
         Rebuild();
         ShowGroup(WheelGroup);
+        this.loadOnShow = true;
         this.calibration.Changed += (_, _) => OnUiThread(Rebuild);
         this.wheelChange.Changed += (_, _) => OnUiThread(RefreshWheelChange);
 
@@ -151,6 +152,9 @@ public sealed partial class ParametersViewModel : PageViewModelBase
 
     public bool IsAuditGroup => Group == AuditGroup;
 
+    /// <summary>构造时只摆好键、不读库 / 文件（那时数据库和配置可能还没就绪）；读在切到本页时做。</summary>
+    private readonly bool loadOnShow;
+
     public override bool ShowGroup(string groupKey)
     {
         if (!this.groupKeys.TryGetValue(groupKey, out FunctionKeyViewModel? key))
@@ -166,6 +170,11 @@ public sealed partial class ParametersViewModel : PageViewModelBase
         Group = groupKey;
         MarkActiveFunctionKey(key);
         SetVerticalKeys(GroupKeys());
+        if (!this.loadOnShow)
+        {
+            return true;
+        }
+
         if (groupKey == WheelGroup)
         {
             FocusedWheelKey = CalibrationKeys.WheelDiameterMm;

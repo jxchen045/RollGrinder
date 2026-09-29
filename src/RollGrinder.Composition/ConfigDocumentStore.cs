@@ -293,7 +293,10 @@ public sealed class ConfigDocumentStore
         {
             foreach ((string name, JsonNode? value) in thresholds)
             {
-                if (Number(value) is double number && !(number > 0.0))
+                // 固定位置（position…Mm：测量架归位、磨架安全位……）是坐标，可以是 0 或负数；其余都是上限 / 速度，要为正。
+                bool isPosition = name.StartsWith("position", StringComparison.Ordinal)
+                    && !name.StartsWith("positioning", StringComparison.Ordinal);
+                if (!isPosition && Number(value) is double number && !(number > 0.0))
                 {
                     yield return new ConfigIssue("thresholds." + name, "Cfg_Issue_MustBePositive");
                 }

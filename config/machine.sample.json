@@ -102,7 +102,12 @@
     "wheelWearWarningRadiusMm": 15.0,
     "maxCompensationRadiusMm": 0.02,
     "minWheelSurfaceSpeedMPerSec": 18.0,
-    "maxWheelSurfaceSpeedMPerSec": 45.0
+    "maxWheelSurfaceSpeedMPerSec": 45.0,
+    "grindingCurrentLimitA": 60.0,
+    "positioningFeedMmPerMin": 2000.0,
+    "positionX1AtRollMm": 180.0,
+    "positionX1HomeMm": 0.0,
+    "positionXSafeMm": 300.0
   },
   "workpiece": {
     "minBodyLengthMm": 300.0,
