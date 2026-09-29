@@ -1,0 +1,677 @@
+<title>手动磨削页设计稿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #F2F4F7; --surface: #FFFFFF; --ink: #16191E; --ink-2: #4A5461; --ink-3: #5A6470;
+    --line: #D3D9E1; --line-soft: #E6EAF0; --fill: #F6F8FA;
+    --accent: #15507F; --accent-ink: #FFFFFF; --accent-soft: #E3EDF6;
+    --danger: #B3241C; --danger-soft: #FBEBE9;
+    --ok: #1F7A4D; --ok-soft: #E2F2E9;
+    --warn: #8A5A00; --warn-soft: #FBF1D9;
+    --next: #F6D24A;
+    --key-bg: #FFFFFF; --key-line: #8C95A1; --nav: #0F4370; --sts: #DDE3EA;
+    --sans: "Noto Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    --mono: "IBM Plex Mono", Consolas, "Cascadia Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+      --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+      --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+      --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+      --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+      --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70; --sts: #232C37;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+    --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+    --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+    --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+    --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+    --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70; --sts: #232C37;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.7; padding-inline: 16px; padding-block: 24px 64px; margin: 0; }
+  .page { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 32px; }
+  @media (min-width: 1120px) {
+    .page { grid-template-columns: 220px minmax(0, 1fr); }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto; }
+  }
+  main { min-width: 0; max-width: 980px; }
+  .toc { font-size: 14px; }
+  .toc h2 { font-size: 13px; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 8px; font-weight: 500; display: block; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { color: var(--ink-2); text-decoration: none; display: block; padding: 3px 8px; border-radius: 4px; }
+  .toc a:hover, .toc a:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+  .toc .sub { padding-left: 14px; font-size: 13px; }
+  .cover { border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+  .eyebrow { font-family: var(--mono); font-size: 13px; color: var(--ink-3); }
+  h1 { font-size: 32px; line-height: 1.3; margin: 6px 0 10px; text-wrap: balance; }
+  .lede { font-size: 17px; color: var(--ink-2); max-width: 66ch; margin: 0; }
+  section { margin-top: 44px; }
+  h2 { font-size: 24px; line-height: 1.35; margin: 0 0 14px; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+  h2 .no { font-family: var(--mono); font-size: 16px; color: var(--accent); font-weight: 600; min-width: 1.6em; }
+  h3 { font-size: 19px; margin: 28px 0 10px; text-wrap: balance; }
+  h4 { font-size: 16px; margin: 18px 0 6px; color: var(--ink-2); }
+  p { margin: 0 0 12px; max-width: 72ch; }
+  ul, ol { margin: 0 0 12px; padding-left: 1.4em; }
+  li { margin: 3px 0; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tw { overflow-x: auto; margin: 0 0 16px; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--fill); font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+  td.num, th.num { font-family: var(--mono); text-align: center; white-space: nowrap; }
+  .nowrap { white-space: nowrap; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 7px; line-height: 1.7; white-space: nowrap; }
+  .pill.src { background: var(--ok-soft); color: var(--ok); }
+  .pill.inf { background: var(--warn-soft); color: var(--warn); }
+  .pill.new { background: var(--accent-soft); color: var(--accent); }
+  .box { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; margin: 0 0 16px; }
+  .box > :last-child { margin-bottom: 0; }
+  .box .tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; padding: 0 8px; margin-bottom: 6px; background: var(--accent-soft); color: var(--accent); }
+  .box.ask .tag { background: var(--warn-soft); color: var(--warn); }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 18px 0 0; }
+  .summary div { background: var(--surface); border: 1px solid var(--line); padding: 12px 14px; }
+  .summary b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .summary span { font-size: 14px; color: var(--ink-2); }
+  .key { display: inline-block; font-size: 13px; font-weight: 500; padding: 0 8px; border: 1px solid var(--key-line); background: var(--key-bg); border-radius: 3px; white-space: nowrap; line-height: 1.8; }
+
+  .co { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #10151A; color: #FFFFFF; font-size: 11px; font-weight: 700; font-style: normal; line-height: 1; flex: none; }
+  .flow { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin: 0 0 6px; }
+  .flow .st { border: 1px solid var(--line); background: var(--surface); padding: 1px 8px; font-size: 14px; white-space: nowrap; }
+  .flow .ar { color: var(--ink-3); }
+  .flow .pb { border-color: var(--danger); color: var(--danger); }
+
+  /* 画面样机：代表机床上的真实屏幕，固定浅色，不随本文深浅色切换；取色见第 8 节 */
+  .scr {
+    --s-bg: #EBF0F6; --s-win: #EBF0F6; --s-winhd: #C6CBD1; --s-act: #0199C8; --s-field: #FFFFFF; --s-ro: #DDE2E7;
+    --s-focus: #67C2DF; --s-sel: #A9DCEC; --s-cur: #B5BEC3; --s-lb: #1B2228; --s-lb-key: #404C58; --s-tile: #3D5466;
+    --s-key: #DDE1EA; --s-gap: #A7B1BA; --s-dim: #8A96A1; --s-ok: #37703D; --s-no: #8E1B1B;
+    --s-ink: #141A1F; --s-ink2: #4A5864; --s-alarm: #C4161C; --s-hd: #E6EBF1; --s-path: #A7B1BA; --s-chan: #6D7F8D;
+    --s-orange: #E8891A; --s-run: #3FAE49; --s-q: #F4E3A1; --s-help: #F9EEAE; --s-helpkey: #F5CF2E; --s-side: #6D7F8D;
+    display: grid; grid-template-columns: 58px minmax(0, 1fr) 150px; grid-template-rows: 44px minmax(0, 1fr) 24px 54px;
+    border: 2px solid #10151A; background: var(--s-bg); color: var(--s-ink); font-size: 12px; line-height: 1.4;
+    min-width: 900px; margin: 0 0 8px; color-scheme: light;
+  }
+  .scr.side { grid-template-columns: 190px 58px minmax(0, 1fr) 150px; }
+  .scr .sd { grid-row: 1 / -1; background: #F3F6F9; border-right: 1px solid var(--s-gap); display: flex; flex-direction: column; font-size: 11px; }
+  .scr .sd b { display: block; background: var(--s-side); color: #FFFFFF; padding: 3px 6px; font-weight: 500; letter-spacing: 0.04em; }
+  .scr .sd div { padding: 2px 6px 4px; }
+  .scr .lb { grid-row: 1 / -1; background: var(--s-lb); display: flex; flex-direction: column; gap: 3px; padding: 4px 3px; }
+  .scr .lb span { color: #FFFFFF; text-align: center; font-size: 10px; padding: 4px 0 3px; line-height: 1.2; border-radius: 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; border-bottom: 1px solid #2E3A44; }
+  .scr .lb span i { font-style: normal; font-size: 16px; line-height: 1.1; }
+  .scr .lb span.on { background: var(--s-act); }
+  .scr .lb .end { margin-top: auto; border-bottom: 0; }
+  .scr .hd { grid-row: 1; display: flex; align-items: center; gap: 14px; padding: 0 10px; background: var(--s-hd); white-space: nowrap; overflow: hidden; }
+  .scr .hd .app { font-weight: 700; font-size: 13px; }
+  .scr .hd .al { color: var(--s-alarm); font-weight: 700; }
+  .scr .hd .ttl { color: var(--s-ink2); }
+  .scr .hd .r { margin-left: auto; color: var(--s-ink2); text-align: right; font-size: 11px; line-height: 1.25; }
+  .scr .tl { grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; }
+  .scr .tl span { background: var(--s-tile); color: #FFFFFF; display: grid; place-items: center; font-weight: 700; font-size: 11px; line-height: 1.15; text-align: center; }
+  .scr .cen { grid-row: 2; display: flex; flex-direction: column; min-width: 0; }
+  .scr .path { background: var(--s-path); color: var(--s-ink); display: flex; justify-content: space-between; gap: 12px; padding: 2px 10px; white-space: nowrap; overflow: hidden; min-height: 20px; }
+  .scr .path.act { background: var(--s-act); color: #FFFFFF; }
+  .scr .path .x { font-weight: 700; }
+  .scr .chan { background: var(--s-chan); color: #FFFFFF; display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; padding: 2px 10px; white-space: nowrap; overflow: hidden; }
+  .scr .chan > :last-child { text-align: right; }
+  .scr .chan .run { color: #9BE3A2; font-weight: 700; }
+  .scr .wa { flex: 1; display: grid; gap: 3px; padding: 3px; min-height: 250px; }
+  .scr .win { background: var(--s-win); border: 1px solid var(--s-gap); min-width: 0; display: flex; flex-direction: column; }
+  .scr .win > h6 { margin: 0; background: var(--s-winhd); padding: 2px 8px; font-size: 12px; font-weight: 500; display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
+  .scr .win.act > h6 { background: var(--s-act); color: #FFFFFF; }
+  .scr .win > div { padding: 3px 8px; flex: 1; min-width: 0; }
+  .scr .win .ft { flex: none; background: var(--s-cur); padding: 1px 8px; font-size: 11px; }
+  .scr .rgt { grid-row: 2; display: flex; flex-direction: column; gap: 3px; background: var(--s-gap); padding: 0 3px 3px; }
+  .scr .fb { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; margin: 0 -3px; }
+  .scr .fb span { background: var(--s-lb-key); color: #FFFFFF; text-align: center; padding: 3px 0; font-size: 11px; }
+  .scr .fb span.on { background: #8BABB8; color: var(--s-ink); }
+  .scr .fb span.dim { color: #7D8A95; }
+  .scr .vk { flex: 1; display: grid; grid-template-rows: repeat(8, minmax(30px, 1fr)); gap: 3px; padding-top: 3px; }
+  .scr .vk span, .scr .hk span { background: var(--s-key); display: grid; place-items: center; text-align: center; padding: 2px 3px; line-height: 1.2; }
+  .scr .vk span.on, .scr .hk span.on { background: var(--s-act); color: #FFFFFF; }
+  .scr .vk span.no { background: var(--s-no); color: #FFFFFF; font-weight: 700; }
+  .scr .vk span.ok { background: var(--s-ok); color: #FFFFFF; font-weight: 700; }
+  .scr .vk span.dim, .scr .hk span.dim { color: var(--s-dim); }
+  .scr .vk.help span { background: var(--s-helpkey); }
+  .scr .dlg { grid-row: 3; background: var(--s-gap); padding: 3px 10px; white-space: nowrap; overflow: hidden; }
+  .scr .dlg.q { background: var(--s-q); font-weight: 700; }
+  .scr .hk { grid-row: 4; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)) 150px; gap: 3px; background: var(--s-gap); padding: 3px; }
+  .scr .hk .ext { display: grid; grid-template-columns: 1fr auto auto; gap: 2px; background: transparent; padding: 0; place-items: stretch; }
+  .scr .hk .ext span { font-size: 16px; font-weight: 700; }
+  .scr .hk .ext span.pg { font-size: 11px; width: 24px; background: var(--s-key); font-weight: 400; }
+  .scr .hk .ext span.pg.on { background: var(--s-tile); color: #FFFFFF; }
+  /* 列位置：普通样机 2 / 3 列，带侧屏的样机整体右移一列 */
+  .scr .hd, .scr .cen { grid-column: 2; }
+  .scr .tl, .scr .rgt { grid-column: 3; }
+  .scr .dlg, .scr .hk { grid-column: 2 / 4; }
+  .scr.side .lb { grid-column: 2; }
+  .scr.side .hd, .scr.side .cen { grid-column: 3; }
+  .scr.side .tl, .scr.side .rgt { grid-column: 4; }
+  .scr.side .dlg, .scr.side .hk { grid-column: 3 / 5; }
+  .scr .fm { display: grid; grid-template-columns: auto minmax(80px, 1fr) auto; gap: 3px 6px; align-items: center; }
+  .scr .fm label { white-space: nowrap; }
+  .scr .fm .v { background: var(--s-field); text-align: right; padding: 0 6px; font-family: var(--mono); white-space: nowrap; }
+  .scr .fm .v.fo { background: var(--s-focus); }
+  .scr .fm .v.tg { text-align: center; font-family: var(--sans); }
+  .scr .fm .v.dd { text-align: center; font-family: var(--sans); }
+  .scr .fm .v.dd::after { content: " ▾"; color: var(--s-ink2); }
+  .scr .fm .ro { color: var(--s-ink2); text-align: right; font-family: var(--mono); }
+  .scr .fm .u { color: var(--s-ink2); font-size: 11px; white-space: nowrap; }
+  .scr .fm .u.tg { background: var(--s-field); color: var(--s-ink); padding: 0 5px; }
+  .scr .fm .sp { grid-column: 1 / -1; height: 4px; }
+  .scr .fm .gh { grid-column: 1 / -1; color: var(--s-ink2); }
+  .scr .pl { background: #FDFEFF; border: 1px solid var(--s-gap); display: flex; flex-direction: column; font-size: 11.5px; min-width: 0; }
+  .scr .pl span { padding: 3px 6px; border-bottom: 1px solid #E1E7EC; white-space: nowrap; overflow: hidden; }
+  .scr .pl span.on { background: var(--s-focus); }
+  .scr .gfx { border: 1px dashed var(--s-gap); background: #F6F8FB; display: grid; place-items: center; text-align: center; color: var(--s-ink2); min-height: 110px; padding: 6px; }
+  .scr .or { color: var(--s-orange); font-weight: 700; }
+  .scr .av { display: grid; grid-template-columns: auto 1fr 1fr; gap: 0 12px; align-items: baseline; }
+  .scr .av b { font-size: 22px; font-weight: 500; }
+  .scr .av .n { font-family: var(--mono); font-size: 22px; font-weight: 500; text-align: right; }
+  .scr .av .n.s { font-size: 13px; }
+  .scr .av .h { font-size: 11px; color: var(--s-ink2); text-align: right; }
+  .scr .tfs { display: grid; grid-template-columns: 30px 1fr auto auto; gap: 0 8px; align-items: baseline; }
+  .scr .tfs b { font-size: 20px; font-weight: 500; }
+  .scr .tfs .n { font-family: var(--mono); }
+  .scr .tfs .n.big { font-size: 18px; }
+  .scr .tfs .sub { grid-column: 2 / -1; font-size: 11px; color: var(--s-ink2); display: flex; justify-content: space-between; gap: 8px; }
+  .scr .bar { grid-column: 2 / -1; height: 5px; background: #FFFFFF; border: 1px solid var(--s-gap); position: relative; margin: 1px 0 3px; }
+  .scr .bar i { position: absolute; inset: 0 auto 0 0; background: var(--s-run); }
+  .scr table { font-size: 11.5px; background: transparent; }
+  .scr th, .scr td { padding: 2px 6px; border: 0; border-bottom: 1px solid #D5DCE3; white-space: nowrap; }
+  .scr th { background: var(--s-winhd); color: var(--s-ink); font-weight: 500; }
+  .scr tr.on td { background: var(--s-sel); }
+  .scr tr.cur td { background: var(--s-cur); }
+  .scr tr.grp td { background: #DCE1E6; color: var(--s-ink2); }
+  .scr tr.dk td { background: #5A6570; color: #FFFFFF; }
+  .scr td.go { text-align: right; }
+  .scr td.go::after { content: "→"; display: inline-block; border: 1px solid #FFFFFF; padding: 0 4px; margin-left: 6px; }
+  .scr .lamp { display: inline-flex; align-items: center; gap: 4px; margin: 0 10px 3px 0; white-space: nowrap; }
+  .scr .lamp::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #B7C0C8; border: 1px solid #7D8994; }
+  .scr .lamp.on::before { background: var(--s-run); border-color: #2E7D32; }
+  .scr .help { background: var(--s-help); border: 2px solid #EED32E; padding: 6px 10px; }
+  .scr .help h6 { margin: 0 0 4px; font-size: 12.5px; text-decoration: underline; }
+  .scr .dd-list { background: #FFFFFF; border: 1px solid var(--s-gap); box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+  .scr .dd-list span { display: block; padding: 3px 8px; text-align: center; }
+  .scr .dd-list span.on { background: var(--s-focus); }
+  /* 曲线：画在样机里，用固定的屏幕颜色 */
+  .scr svg.pt { width: 100%; height: auto; display: block; background: #FFFFFF; border: 1px solid #D5DCE3; }
+  .scr svg.pt text { font-family: var(--sans); font-size: 11px; fill: #4A5864; }
+  .scr .kv { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; font-size: 12px; }
+  .scr .kv span:nth-child(even) { font-family: var(--mono); text-align: right; }
+  .scr .big { font-family: var(--mono); font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .scr .band { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; padding: 3px 8px; background: #F6F8FB; border: 1px solid var(--s-gap); white-space: nowrap; }
+  .scr .band .m { font-family: var(--mono); }
+  .scr .mx td { text-align: right; font-family: var(--mono); }
+  .scr .mx td:first-child { text-align: left; font-family: var(--sans); }
+  .scr .mx th.run, .scr .mx td.run { background: #F4C7C3; }
+  .scr .mx th.nx, .scr .mx td.nx { background: #FBEBB5; }
+  .scr .mx td.ed { color: #B3241C; font-weight: 700; }
+  .scr .err { color: #B3241C; font-weight: 700; }
+  .scr .okc { color: #2E7D32; font-weight: 700; }
+  .lg { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; white-space: nowrap; font-size: 14px; }
+  .lg i { display: inline-block; width: 24px; height: 0; border-top: 3px solid; }
+  .lg i.d { border-top-style: dashed; }
+  .lg i.dot { width: 8px; height: 8px; border: 0; border-radius: 50%; }
+  .cap { font-size: 13px; color: var(--ink-3); margin: 0 0 20px; }
+  footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+  @media (max-width: 560px) { h1 { font-size: 26px; } h2 { font-size: 21px; } }
+  @media print {
+    body { background: #FFFFFF; color: #000000; padding: 0; font-size: 10.5pt; }
+    .toc { display: none; }
+    .page { display: block; max-width: none; }
+    main { max-width: none; }
+    section.major { break-before: page; }
+    table, .box, .scr { break-inside: avoid; }
+    .tw { overflow: visible; }
+    .scr { min-width: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @page { size: A4 landscape; margin: 12mm; }
+</style>
+<style>
+  .pnl { display: grid; grid-template-columns: repeat(7, minmax(86px, 1fr)); gap: 10px 8px; background: #E4E6E3; border: 1px solid #B9BDB8; padding: 14px; min-width: 700px; color-scheme: light; }
+  .pnl .b { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: #1B1F23; text-align: center; }
+  .pnl .b .lb2 { background: #F2B632; color: #1B1F23; padding: 1px 6px; font-weight: 700; white-space: nowrap; border: 2px solid #1B1F23; }
+  .pnl .b .k { width: 46px; height: 46px; border-radius: 50%; border: 5px solid #1B1F23; }
+  .pnl .b .io { font-family: var(--mono); font-size: 11px; color: #4A5864; }
+  .pnl .b.es .k { width: 64px; height: 64px; background: #C8102E; border-color: #F2C200; border-width: 10px; }
+  .pnl .b.sp { opacity: .55; }
+</style>
+<div class="page">
+  <nav class="toc" aria-label="目录">
+    <h2>目录</h2>
+    <ol>
+      <li><a href="#s0">0 结论</a></li>
+      <li><a href="#s1">1 现场条件</a></li>
+      <li class="sub"><a href="#s1a">按钮板</a></li>
+      <li class="sub"><a href="#s1b">手持操作盒</a></li>
+      <li class="sub"><a href="#s1c">原系统与 RGI 怎么做</a></li>
+      <li><a href="#s2">2 MDI 页有没有必要</a></li>
+      <li><a href="#s3">3 手动磨削页设计</a></li>
+      <li class="sub"><a href="#s3a">样机</a></li>
+      <li class="sub"><a href="#s3b">各部分说明</a></li>
+      <li class="sub"><a href="#s3c">软键</a></li>
+      <li><a href="#s4">4 定位（代替 MDA 的常见用途）</a></li>
+      <li><a href="#s5">5 循环启动放哪</a></li>
+      <li><a href="#s6">6 安全与最高原则</a></li>
+      <li><a href="#s7">7 需要电气 / NC 配合的接口</a></li>
+      <li><a href="#s8">8 对第 4 版设计稿的改动</a></li>
+      <li><a href="#s9">9 工作量</a></li>
+      <li><a href="#s10">10 需要定下的</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="cover">
+      <div class="eyebrow">MK84160 轧辊磨床 · SINUMERIK ONE（配鼠标键盘，无 MDI / 机床控制面板）· 2026-09-29 · 评估与设计稿，源代码未改</div>
+      <h1>手动磨削页：MDI 页要不要做、怎么做</h1>
+      <p class="lede">本机的 ONE 没有配西门子的 MDI 键盘和机床控制面板，只有一块按钮板和一个手持操作盒。这份稿子先把"硬件上已经有什么、缺什么"逐项对清，再判断上位机要不要补一个页面、补什么。依据是：按钮板实拍、MK84160 电气图（=D1 操作面板、手持操作盒）、MK84160 使用说明书第三部分（手动操作）、RGI 控制系统使用说明书（手动、辅助操作），以及第 4 版设计稿的外壳和规则。</p>
+    </header>
+
+    <!-- 0 -->
+    <section id="s0">
+      <h2><span class="no">0</span>结论</h2>
+      <div class="summary">
+        <div><b>要做，但不是 G 代码 MDI</b><span>缺的是机床控制面板上那一半功能：砂轮启停与转速、头架转速给定、拖板往复、倍率，以及当前轴和手轮倍率的显示。原系统的"磨床加工屏幕 1（手动磨削屏幕）"和 RGI 的"手动"页做的正是这些。上位机补一个"手动磨削"页。</span></div>
+        <div><b>G 代码 MDA 不做</b><span>ONE 的 Operate 自带 MDA，鼠标键盘就能用，留给制造商调试。上位机只下发参数，不写、不跑 NC 程序段，这条不破。</span></div>
+        <div><b>MDA 最常见的用途做成"定位"</b><span>比如"拖板到 Z 900""测量架到轧辊"。做成带简图的定位表单，按确认后由 NC 的定位循环执行，不用手敲 G 代码。</span></div>
+        <div><b>建议按钮板空位装"循环启动"</b><span>按钮板第二排第 5 个位置是空的。循环启动放在硬件上，停（暂停、复位、急停）和启就在同一块板上。不装的话，屏幕上照原系统给"循环启动…"键，带确认。</span></div>
+      </div>
+      <p style="margin-top:14px">手动磨削页做成机床区 JOG 方式的<strong>基本画面</strong>，相当于原系统的屏幕 1。第 4 版里手动的 6 页（测量臂、尾架……）保留，排在它后面。</p>
+      <p>工作量约 2 周，其中定位功能约 0.5 周，要 NC 侧提供定位循环。</p>
+    </section>
+
+    <!-- 1 -->
+    <section id="s1" class="major">
+      <h2><span class="no">1</span>现场条件</h2>
+
+      <h3 id="s1a">1.1 按钮板（实拍 + 电气图 =D1 第 7–8 页）</h3>
+      <div class="tw">
+        <div class="pnl" role="img" aria-label="按钮板示意">
+          <div class="b es"><span class="lb2">急停</span><span class="k"></span><span class="io">I32.0</span></div>
+          <div class="b"><span class="lb2">机　床</span><span class="k" style="background:#2E9E44;border-color:#2E9E44"></span><span class="io">灯 · 机床启动</span></div>
+          <div class="b"><span class="lb2">故　障</span><span class="k" style="background:#E3E36A;border-color:#E3E36A"></span><span class="io">灯 · 轻闪重亮</span></div>
+          <div class="b"><span class="lb2">自　动</span><span class="k" style="background:#2E9E44;border-color:#2E9E44"></span><span class="io">灯 · 自动运行</span></div>
+          <div class="b"><span class="lb2">回参考点</span><span class="k" style="background:#2FC456"></span><span class="io">I98.3</span></div>
+          <div class="b"><span class="lb2">头架正转</span><span class="k" style="background:#FFFFFF"></span><span class="io">=H2</span></div>
+          <div class="b"><span class="lb2">头架反转</span><span class="k" style="background:#1B1F23"></span><span class="io">=H2</span></div>
+          <div class="b"></div>
+          <div class="b"><span class="lb2">停止/运行</span><span class="k" style="background:#1B1F23;border-radius:6px"></span><span class="io">钥匙 · I98.0</span></div>
+          <div class="b"><span class="lb2">故障复位</span><span class="k" style="background:#F2D21B"></span><span class="io">I98.2 · PLC 报警</span></div>
+          <div class="b"><span class="lb2">暂　停</span><span class="k" style="background:#E0262E"></span><span class="io">I98.4 · 停拖板</span></div>
+          <div class="b"><span class="lb2">复　位</span><span class="k" style="background:#E0262E"></span><span class="io">I98.1 · NC 复位</span></div>
+          <div class="b sp"><span class="lb2" style="background:#FFFFFF">（空位）</span><span class="k" style="background:#D8DCD7;border-style:dashed"></span><span class="io">建议：循环启动</span></div>
+          <div class="b"><span class="lb2">功能跳过</span><span class="k" style="background:#1B1F23"></span><span class="io">I98.5</span></div>
+        </div>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>按钮 / 灯</th><th>作用（说明书 3.2.1）</th><th>对上位机的意义</th></tr></thead>
+        <tbody>
+          <tr><td>急停</td><td>紧急停止，旋转复位；本机共三处（主操作板、头架、手持盒）</td><td>只显示状态：标题行变红，所有命令键变灰</td></tr>
+          <tr><td>停止 / 运行（钥匙）</td><td>机床起动 / 停止；"机床"灯亮表示已起动</td><td>机床没起动时，手动磨削页的命令键全部变灰，对话行写"先用钥匙起动机床"</td></tr>
+          <tr><td>故障复位</td><td>清除 PLC 报警（≥ 500000）</td><td>上位机不重复做；诊断页提示"PLC 报警按按钮板的故障复位"</td></tr>
+          <tr><td>暂停</td><td>手动方式下停止拖板运动</td><td>拖板往复的"停"在硬件上；屏幕上的"拖板停止"只是同样效果的第二个入口</td></tr>
+          <tr><td>复位</td><td>NC 复位：除润滑泵、风机外所有运动停止，自动程序终止，NC 报警清除</td><td>上位机退出后仍在转的砂轮，用它停（第 6 节）</td></tr>
+          <tr><td>回参考点</td><td>各轴返回参考点，每次上电后做一次</td><td>屏幕上<strong>不再放</strong>"回参考点"键，只显示"已回 / 未回参考点"</td></tr>
+          <tr><td>头架正转 / 反转</td><td>头架启停（电气图 =H2 头架控制）</td><td>屏幕上不放头架启停，只放<strong>转速给定</strong>，显示正转 / 反转 / 停</td></tr>
+          <tr><td>功能跳过（功能触发）</td><td>拖板换向；自动方式下提前结束砂轮趋近；自动循环结束前提前结束拖板向床尾的运动。与手持盒中间按钮相同</td><td>屏幕上不重复；对话行在拖板往复时提示"功能跳过 = 换向"</td></tr>
+          <tr><td>机床 / 故障 / 自动 灯</td><td>机床起动、故障（轻亮重闪）、自动运行</td><td>通道行和状态带显示同样的三个状态</td></tr>
+          <tr><td>（空位）</td><td>—</td><td>建议装"循环启动"（第 5 节）</td></tr>
+        </tbody>
+      </table></div>
+      <p class="cap">电气图 =D1 第 8 页上 I98.6 / I98.7 画的是"踏板向前 / 向后"，实拍板上这两个位置装的是头架正转 / 反转（头架按钮在 =H2 页）。请电气确认本机以实拍为准（D6）。</p>
+
+      <h3 id="s1b">1.2 手持操作盒（电气图 =D1 第 8 页、说明书 3.1）</h3>
+      <div class="tw"><table>
+        <thead><tr><th>件</th><th>作用</th><th>对上位机的意义</th></tr></thead>
+        <tbody>
+          <tr><td>轴选择 SA7</td><td>X（磨架）、Y（托瓦座或 U）、Z（拖板）、4（X1 测量架）、5（头架点动）</td><td>页面上高亮"当前轴"那一行（RGI 手动页有 &lt;当前轴&gt;）</td></tr>
+          <tr><td>倍率 SA8</td><td>×1 / ×10 / ×100，即 1 / 10 / 100 µm/格；0 档或 ×1000 档时是点动方式，手轮不生效</td><td>显示"手轮 ×10 = 10 µm/格"或"点动方式"（RGI 有 &lt;倍率&gt;）</td></tr>
+          <tr><td>JOG+ / JOG−</td><td>步进或点动</td><td>留在硬件上。点动要按住才动，上位机不做（手动动作规范 §1）</td></tr>
+          <tr><td>使能</td><td>X 轴点动向前时要同时按住</td><td>显示使能状态</td></tr>
+          <tr><td>功能跳过</td><td>同按钮板</td><td>—</td></tr>
+          <tr><td>手轮</td><td>手动磨削时 X 进给</td><td>X 进给就靠它；上位机只显示 X 实际值和变化量</td></tr>
+          <tr><td>急停</td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 id="s1c">1.3 原系统与 RGI 怎么做</h3>
+      <div class="tw"><table>
+        <thead><tr><th>来源</th><th>做法</th></tr></thead>
+        <tbody>
+          <tr><td>原系统"磨床加工屏幕 1 · 手动磨削屏幕"（MK84160 说明书 3.3.1）</td><td>
+            <ul>
+              <li>它是起始屏幕。</li>
+              <li>设定砂轮、工件、拖板（及磨架）的速度：部件启动后，对应的速度滑条才生效。</li>
+              <li>用软键控制砂轮、工件、拖板的启停，主要部件启动要经确认。</li>
+              <li>显示砂轮电机电流和各坐标位置。</li>
+              <li>"带启动装置"开关（头架辅助启动）。</li>
+              <li>靠按钮和电子手轮实现手动磨削。</li>
+            </ul>
+          </td></tr>
+          <tr><td>原系统"屏幕 2"</td><td>U1 轴归零、测量臂放下 / 收起、测量采样（直径、直径差、安装误差）</td></tr>
+          <tr><td>原系统自动屏幕</td><td>用 <b>[起动 START] 软键</b>启动校对基准、砂轮修整、自动磨削——循环启动本来就在屏幕上</td></tr>
+          <tr><td>RGI"手动"页</td><td>
+            <ul>
+              <li><b>上半部分是显示：</b>位置（各轴坐标）、测量（A、B 头读数和算出的直径）、砂轮（参数和"给定"转速）、轧辊（参数和"给定"转速）、&lt;当前轴&gt;、&lt;倍率&gt;。</li>
+              <li><b>下半部分是按钮：</b>AB 到轧辊、AB 归位、各轴归位、校测量臂、测砂轮直径、砂轮启动、A / B 放下收起、冷却水开、头架启动。</li>
+            </ul>
+          </td></tr>
+          <tr><td>SINUMERIK Operate</td><td>
+            <ul>
+              <li>MDA 方式：手敲程序段执行。</li>
+              <li>JOG 方式："T,S,M"表单设主轴转速和 M 功能，按循环启动执行。</li>
+              <li>ONE 侧屏有"虚拟机床控制面板"小部件（手册 p.24），专给没有实体面板的场合用。</li>
+            </ul>
+          </td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 2 -->
+    <section id="s2">
+      <h2><span class="no">2</span>MDI 页有没有必要：逐项对</h2>
+      <p>把"机床控制面板 + MDI"通常承担的功能逐项列出，看每一项放在哪里最合适。</p>
+      <div class="tw"><table>
+        <thead><tr><th>功能</th><th>按钮板</th><th>手持盒</th><th>放在哪</th><th>理由</th></tr></thead>
+        <tbody>
+          <tr><td>急停、NC 复位、故障复位、暂停、回参考点</td><td>✓</td><td>急停</td><td>硬件</td><td>已有</td></tr>
+          <tr><td>机床起动 / 停止</td><td>✓ 钥匙</td><td></td><td>硬件</td><td>已有</td></tr>
+          <tr><td>头架正转 / 反转（启停）</td><td>✓</td><td></td><td>硬件</td><td>已有</td></tr>
+          <tr><td>拖板换向、提前结束趋近</td><td>✓ 功能跳过</td><td>✓</td><td>硬件</td><td>已有</td></tr>
+          <tr><td>各轴点动、步进、手轮</td><td></td><td>✓</td><td>硬件</td><td>要按住才动，只能在硬件上</td></tr>
+          <tr><td><b>循环启动（NC Start）</b></td><td>✗（有空位）</td><td></td><td><b>建议加硬件</b>；否则屏幕带确认</td><td>第 5 节</td></tr>
+          <tr><td><b>砂轮启动 / 停止</b></td><td>✗</td><td></td><td><b>手动磨削页</b>（启动要确认）</td><td>原系统就在屏幕上；停也可以用复位</td></tr>
+          <tr><td><b>砂轮、头架转速给定</b></td><td>✗</td><td></td><td><b>手动磨削页</b></td><td>MDI 上本来是敲 S 值</td></tr>
+          <tr><td><b>拖板往复启停、拖板速度、往复行程</b></td><td>停 = 暂停</td><td></td><td><b>手动磨削页</b>（启动要确认）</td><td>原系统屏幕 1</td></tr>
+          <tr><td><b>进给倍率 20–100%、主轴倍率 50–100%</b></td><td>✗</td><td></td><td><b>手动磨削页</b>和自动页状态带</td><td>没有倍率旋钮</td></tr>
+          <tr><td>当前轴、手轮倍率、使能</td><td></td><td>✓（开关）</td><td>手动磨削页<b>显示</b></td><td>开关在手里，眼睛在屏幕上</td></tr>
+          <tr><td>冷却液开关</td><td>✗</td><td></td><td>手动磨削页（已有动作）</td><td>—</td></tr>
+          <tr><td>头架辅助启动装置</td><td>✗</td><td></td><td>手动磨削页开关</td><td>电气图有头架辅助启动电机和油缸（D5）</td></tr>
+          <tr><td><b>移到某个坐标</b>（MDA 最常见的用途）</td><td>✗</td><td>点动 / 手轮</td><td><b>手动磨削页 · 定位</b></td><td>第 4 节</td></tr>
+          <tr><td>任意 G 代码程序段（MDA）</td><td>✗</td><td></td><td><b>不做</b>；用 Operate 自带的 MDA（制造商）</td><td>上位机只下发参数；手敲程序段在磨辊现场是事故源</td></tr>
+          <tr><td>JOG / AUTO 方式切换</td><td>"自动"灯</td><td></td><td>跟着画面走：进作业向导下发 = AUTO，回手动磨削 = JOG（照原系统）</td><td>需要 PLC 接一个方式请求位（D7）</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>结论：</strong>要补的是"机床控制面板缺的那一半"，不是"MDI 键盘"。页面叫<strong>手动磨削</strong>，和原系统、RGI 叫法一致，操作工一看就知道是干什么的。</p>
+    </section>
+
+    <!-- 3 -->
+    <section id="s3" class="major">
+      <h2><span class="no">3</span>手动磨削页设计（机床区 · JOG 的基本画面）</h2>
+      <p>外壳、软键、确认方式、配色都照第 4 版设计稿，内容照原系统屏幕 1 和 RGI 手动页：</p>
+      <ul>
+        <li><strong>上半部分是"看"：</strong>位置、测量、状态带。</li>
+        <li><strong>中间是三个驱动单元：</strong>砂轮、头架、拖板，每个都是"实际值大字 + 给定 + 倍率 + 状态"，布局和 Operate 的 T,F,S 窗口一样。</li>
+        <li><strong>下面是一条沿辊身的位置图：</strong>拖板、测量架、中心架、尾架现在在哪，往复行程是多少。</li>
+      </ul>
+
+      <h3 id="s3a">3.1 样机</h3>
+      <div class="tw">
+      <div class="scr" role="img" aria-label="手动磨削页样机">
+        <div class="lb"><span class="on"><i>⚙</i>机床</span><span><i>⌒</i>辊形</span><span><i>≡</i>工艺</span><span><i>◎</i>砂轮</span><span><i>☰</i>库</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span class="end"><i>⇆</i>侧屏</span></div>
+        <div class="hd"><span class="app">RGX 轧辊磨床</span><span class="ttl">MK84160</span><span class="r">操作者 李工 · NC 已连接<br>2026-09-29 10:20</span></div>
+        <div class="tl"><span>⚙<br>机床</span><span>JOG</span></div>
+        <div class="cen">
+          <div class="path"><span>辊 R-2026-001 · 辊身 1800 · Ø600.35（台账）· 无作业</span><span></span></div>
+          <div class="chan"><span>// 复位 · 已回参考点</span><span>机床 ● 已起动</span><span>手持盒：Z 轴 · 手轮 ×10 = 10 µm/格 · 使能 ○</span></div>
+          <div class="wa" style="grid-template-columns: 1.05fr 1fr 1fr; grid-template-rows: auto auto auto">
+            <div class="win"><h6><span>位置</span><span>mm</span></h6><div>
+              <table style="width:100%"><tbody>
+                <tr><td><b>X</b> 磨架</td><td style="text-align:right;font-family:var(--mono);font-size:15px">412.050</td></tr>
+                <tr><td><b>X1</b> 测量架</td><td style="text-align:right;font-family:var(--mono);font-size:15px">180.000</td></tr>
+                <tr class="on"><td><b>Z</b> 拖板 ◀ 当前轴</td><td style="text-align:right;font-family:var(--mono);font-size:15px">905.20</td></tr>
+                <tr><td><b>U</b> 辊形轴</td><td style="text-align:right;font-family:var(--mono);font-size:15px">0.000</td></tr>
+                <tr><td>Z1 − Z2 同步差</td><td style="text-align:right;font-family:var(--mono)">0.002</td></tr></tbody></table>
+            </div></div>
+            <div class="win"><h6><span>测量</span><span>臂：外 A 放下 · 内 B 放下</span></h6><div>
+              <div class="kv"><span>A 头读数</span><span>+0.0124</span><span>B 头读数</span><span>−0.0087</span></div>
+              <div style="margin-top:4px">轧辊直径</div><div class="big">600.346</div>
+              <div class="kv"><span>与上一点直径差</span><span>+0.004</span><span>安装误差</span><span>+0.003</span></div>
+            </div></div>
+            <div class="win"><h6><span>机构</span><span></span></h6><div>
+              <span class="lamp on">冷却液</span><span class="lamp on">中心架 顶升</span><br><span class="lamp on">尾架 前进到位</span><span class="lamp on">套筒 伸出</span><br><span class="lamp">带启动装置</span><span class="lamp">软着陆 降</span>
+            </div></div>
+            <div class="win act"><h6><span>砂轮</span><span>● 运转</span></h6><div>
+              <div class="tfs"><b>S2</b><span class="n big">590</span><span>r/min</span><span></span><span class="sub"><span>线速度 35.0 m/s · Ø748.2</span></span></div>
+              <div class="fm" style="margin-top:4px"><label>给定</label><span class="v fo">35.0</span><span class="u">m/s</span><label>倍率</label><span class="v">100</span><span class="u">% (50–100)</span></div>
+              <div style="margin-top:4px">电流 38.2 A</div><div class="bar" style="margin:2px 0 0"><i style="width:48%"></i></div>
+            </div></div>
+            <div class="win"><h6><span>头架（启停在按钮板）</span><span>↻ 正转</span></h6><div>
+              <div class="tfs"><b>S1</b><span class="n big">40</span><span>r/min</span><span></span></div>
+              <div class="fm" style="margin-top:4px"><label>给定</label><span class="v">40</span><span class="u">r/min</span><label>倍率</label><span class="v">100</span><span class="u">% (50–100)</span></div>
+              <div style="margin-top:4px;color:#4A5864">头架正转 / 反转：按钮板</div>
+            </div></div>
+            <div class="win"><h6><span>拖板</span><span>⊠ 停</span></h6><div>
+              <div class="tfs"><b>F</b><span class="n big">0</span><span>mm/min</span><span></span></div>
+              <div class="fm" style="margin-top:4px"><label>往复速度</label><span class="v">1200</span><span class="u">mm/min</span><label>进给倍率</label><span class="v">100</span><span class="u">% (20–100)</span><label>行程</label><span class="v">60 – 1740</span><span class="u">Z mm</span></div>
+            </div></div>
+            <div class="win" style="grid-column: 1 / -1"><h6><span>沿辊身的位置（Z，头架 → 尾架）</span><span>往复行程 60 – 1740 = 取自辊身 1800，两端各留 60</span></h6><div style="padding:3px">
+              <svg class="pt" viewBox="0 0 900 110" aria-hidden="true">
+                <rect x="40" y="46" width="30" height="34" fill="#D5DCE3" stroke="#4A5864"/><text x="36" y="98">头架</text>
+                <rect x="830" y="46" width="30" height="34" fill="#D5DCE3" stroke="#4A5864"/><text x="826" y="98">尾架</text>
+                <rect x="70" y="52" width="760" height="22" fill="#EEF2F5" stroke="#4A5864"/>
+                <text x="400" y="67">轧辊 R-2026-001 辊身 1800</text>
+                <rect x="95" y="46" width="760" height="0" fill="none"/>
+                <line x1="95" y1="40" x2="805" y2="40" stroke="#E8891A" stroke-width="3"/>
+                <path d="M95 40 l8 -5 v10 z" fill="#E8891A"/><path d="M805 40 l-8 -5 v10 z" fill="#E8891A"/>
+                <text x="380" y="34" style="fill:#B8600A">往复行程 Z 60 – 1740</text>
+                <rect x="440" y="80" width="30" height="16" fill="#1F5FA8"/><text x="476" y="94">拖板 Z 905（砂轮 + 测量架）</text>
+                <polygon points="220,74 212,86 228,86" fill="#4A5864"/><text x="232" y="86">中心架</text>
+                <polygon points="690,74 682,86 698,86" fill="#4A5864"/><text x="702" y="86">中心架</text>
+              </svg>
+            </div></div>
+          </div>
+        </div>
+        <div class="rgt"><div class="fb"><span class="dim">↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span>i 帮助</span><span>◉ 截屏</span></div>
+          <div class="vk"><span>砂轮停止</span><span>拖板往复…</span><span>冷却液 关</span><span>带启动装置</span><span>定位 ▸</span><span>各轴归位…</span><span class="no">✕ 取消</span><span class="ok">✓ 确认</span></div></div>
+        <div class="dlg q">砂轮给定 35.0 → 38.0 m/s（590 → 640 r/min）。按"✓ 确认"写入；砂轮在转，转速会立即变</div>
+        <div class="hk"><span class="on">手动磨削</span><span>测量臂</span><span>尾架</span><span>头架托瓦</span><span></span><span>软着陆</span><span>砂轮冷却</span><span>测量对中</span><span class="ext"><span>&gt;</span><span class="pg on">1</span><span class="pg">2</span></span></div>
+      </div>
+      </div>
+      <p class="cap">这是屏幕样机，固定浅色。横键第二页：辅助循环（手动磨削循环、基准标定、砂轮修整、辊对中）、状态总览、作业、设置。竖键第 1 格随状态变："砂轮启动…"（停着时，要确认）⇄"砂轮停止"（转着时，不要确认）。</p>
+
+      <h3 id="s3b">3.2 各部分说明</h3>
+      <div class="tw"><table>
+        <thead><tr><th>部分</th><th>内容</th><th>来源</th></tr></thead>
+        <tbody>
+          <tr><td>程序路径条</td><td>当前轧辊、辊身长度、台账直径、有无作业</td><td>第 4 版外壳</td></tr>
+          <tr><td>通道行</td><td>左：通道状态、是否已回参考点。中：机床是否已起动（钥匙）。右：手持盒的当前轴、手轮倍率、使能</td><td>RGI 的 &lt;当前轴&gt; &lt;倍率&gt;；说明书 3.1</td></tr>
+          <tr><td>位置</td><td>X、X1、Z、U 实际值，Z1 − Z2 同步差；手持盒选中的那根轴整行青底，旁边写"◀ 当前轴"</td><td>RGI"位置"；原系统屏幕 1</td></tr>
+          <tr><td>测量</td><td>测量臂状态、A / B 头读数、轧辊直径（大字）、与上一点直径差、安装误差</td><td>RGI"测量"；原系统屏幕 2</td></tr>
+          <tr><td>机构</td><td>冷却液、中心架、尾架、套筒、带启动装置、软着陆的状态灯</td><td>现有状态带</td></tr>
+          <tr><td>砂轮</td><td>
+            <ul>
+              <li>实际转速（大字）、线速度、砂轮直径。</li>
+              <li>给定（m/s；按当前砂轮直径换算成 r/min 显示在对话行）、倍率 50–100%。</li>
+              <li>电流和电流条（取 PLC 已有的 AQCH0；超设定时变红，和机床"5 秒内不处理强制中断"的规则一致）。</li>
+            </ul>
+          </td><td>原系统屏幕 1；RGI"砂轮 · 给定"</td></tr>
+          <tr><td>头架</td><td>实际转速、给定 r/min、倍率 50–100%、正转 / 反转 / 停。启停在按钮板上，这里只给转速</td><td>RGI"轧辊 · 给定"；按钮板</td></tr>
+          <tr><td>拖板</td><td>
+            <ul>
+              <li>实际速度、往复速度给定、进给倍率 20–100%、往复行程（默认取辊身两端各留 60 mm，可改）。</li>
+              <li>往复中按"功能跳过"就换向，对话行会提示。</li>
+            </ul>
+          </td><td>原系统屏幕 1；说明书功能跳过</td></tr>
+          <tr><td>沿辊身的位置图</td><td>头架、尾架、辊身、中心架、拖板（砂轮 + 测量架）在 Z 上的位置，往复行程用橙色标出</td><td>轧辊磨床专用；橙色 = 当前量，和第 4 版曲线画法一致</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>给定怎么改：</strong>点给定格选中，再点出数字键盘，输入后格子标红（未生效）。对话行写出新旧值和换算后的转速，竖键第 7 / 8 格变成"✕ 取消 / ✓ 确认"。确认才写入。这和自动页参数矩阵"改了标红、确认才下发"是同一套做法。倍率格旁边给"−5 / +5"两个大键，触摸屏上不用敲数字。</p>
+
+      <h3 id="s3c">3.3 软键</h3>
+      <div class="tw"><table>
+        <thead><tr><th class="num">竖键</th><th>键</th><th>确认</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>砂轮启动… ⇄ 砂轮停止</td><td>启动要确认；停止不要</td><td>保持型命令位；启动前 PLC 检查冷却液、防护罩等互锁，上位机只是请求</td></tr>
+          <tr><td class="num">2</td><td>拖板往复… ⇄ 拖板停止</td><td>往复要确认；停止不要</td><td>往复启动时把速度和行程写进 R 参数，再发脉冲；按钮板"暂停"同样能停</td></tr>
+          <tr><td class="num">3</td><td>冷却液 开 / 关</td><td>不要</td><td>现有动作</td></tr>
+          <tr><td class="num">4</td><td>带启动装置</td><td>不要</td><td>头架辅助启动的开关，照原系统 3.3.1.4（D5）</td></tr>
+          <tr><td class="num">5</td><td>定位 ▸</td><td>—</td><td>第 4 节</td></tr>
+          <tr><td class="num">6</td><td>各轴归位…</td><td>要</td><td>现有动作</td></tr>
+          <tr><td class="num">7 / 8</td><td>✕ 取消 / ✓ 确认</td><td>—</td><td>有待确认的事时出现；否则第 7 格空、第 8 格"≡▸"（第二页：测砂轮直径…、U 轴归零…、校测量臂…）</td></tr>
+        </tbody>
+      </table></div>
+      <p>横键：手动磨削（基本画面）· 测量臂 · 尾架 · 头架托瓦 · 空 · 软着陆 · 砂轮冷却 · 测量对中；第二页：辅助循环、状态总览、作业、设置。原来手动 6 页里"头架"页的正转、反转、转速加减档，现在由按钮板和本页的给定代替，那一页改名"头架托瓦"，只留拨盘伸出 / 收回。</p>
+    </section>
+
+    <!-- 4 -->
+    <section id="s4">
+      <h2><span class="no">4</span>定位（代替 MDA 的常见用途）</h2>
+      <p>现场用 MDA 最多的，是把拖板或测量架移到某个位置——比如到辊身某处测量、到中心架旁边对中。手敲"G90 G01 Z900 F2000"既慢又容易敲错轴。改成表单：</p>
+      <div class="tw"><table>
+        <thead><tr><th>竖键（定位 ▸ 下一层）</th><th>表单</th><th>执行</th></tr></thead>
+        <tbody>
+          <tr><td>拖板到 Z</td><td>目标 Z（mm），也可以点位置图上的一点；速度（默认取安全速度）</td><td rowspan="4">
+            <ul>
+              <li>上位机把轴号、目标、速度写进 R 参数，发一个启动脉冲。</li>
+              <li>NC 的定位循环负责检查软限位、测量臂是否收起等互锁，然后执行。</li>
+              <li>停用"暂停 / 复位"。</li>
+              <li>确认前，位置图上用虚线画出目标位置。</li>
+            </ul>
+          </td></tr>
+          <tr><td>拖板到辊身 ¼ / ½ / ¾</td><td>一键：按台账辊身长度算出 Z</td></tr>
+          <tr><td>测量架 X1 到轧辊 / 归位</td><td>按台账直径算出目标 X1（对应 RGI 的"AB 到轧辊 / AB 归位"）</td></tr>
+          <tr><td>磨架 X 退到安全位</td><td>固定目标（machine.json 登记）</td></tr>
+        </tbody>
+      </table></div>
+      <p>定位的执行需要 NC 侧提供一个定位循环（D4）。它和现有的"辅助循环"是同一套机制：R 参数加脉冲命令位，PLC 按上升沿触发并自复位。在 NC 提供之前，"定位 ▸"下的键是灰的，点它时对话行说明原因。</p>
+    </section>
+
+    <!-- 5 -->
+    <section id="s5">
+      <h2><span class="no">5</span>循环启动放哪</h2>
+      <div class="tw"><table>
+        <thead><tr><th>方案</th><th>好处</th><th>问题</th></tr></thead>
+        <tbody>
+          <tr><td><b>A 按钮板空位装"循环启动"（推荐）</b></td><td>
+            <ul>
+              <li>启和停在同一块板上，手不离开按钮板。</li>
+              <li>和 Operate、机床控制面板的习惯一致。</li>
+              <li>上位机就算卡住，启动也不受影响。</li>
+            </ul>
+          </td><td>要加一个按钮和一路 PLC 输入（I98.6 或 I98.7，看 D6 的结论）</td></tr>
+          <tr><td>B 屏幕上"循环启动…"键</td><td>不动硬件；原系统就是 [起动 START] 软键</td><td>要确认一步；触摸屏误触的风险靠确认和 PLC 互锁兜住</td></tr>
+        </tbody>
+      </table></div>
+      <p>两个方案界面上都能做：按 machine.json 的 <code>panelActions</code> 登记——登记了"循环启动"在按钮板上，屏幕就不放这个键；没登记，自动页和辅助循环页的竖键上放"循环启动…"，按了要确认。</p>
+    </section>
+
+    <!-- 6 -->
+    <section id="s6">
+      <h2><span class="no">6</span>安全与最高原则</h2>
+      <ul>
+        <li><strong>停永远在硬件上。</strong>砂轮、头架、拖板都能用按钮板停：暂停停拖板，复位停除润滑和风机以外的所有运动，急停停一切。屏幕上的"停止"只是第二个入口。</li>
+        <li><strong>上位机被强制结束时：</strong>
+          <ul>
+            <li>已经在转的砂轮、在走的拖板保持原状态，这和手动操作盒一样，属于操作者在场的手动方式。</li>
+            <li>操作者用暂停 / 复位停下。</li>
+            <li>自动磨削中这支辊照样磨完，不受影响。</li>
+          </ul>
+        </li>
+        <li><strong>上位机只发请求：</strong>启动砂轮、拖板往复、定位都是命令位加 R 参数，互锁（冷却液、防护、测量臂收起、软限位）在 PLC / NC 里。上位机的检查是防呆，不是安全功能（手动动作规范 §1）。</li>
+        <li><strong>要按住才动的操作不做：</strong>点动、步进、手轮只在手持盒上。</li>
+        <li><strong>给定和倍率有上下限：</strong>砂轮线速度不超过砂轮标称值（取砂轮数据），倍率照机床说明书（进给 20–100%、主轴 50–100%），超出的不收，对话行说明原因。PLC 侧也要限幅，做双重一致性检查。</li>
+      </ul>
+    </section>
+
+    <!-- 7 -->
+    <section id="s7">
+      <h2><span class="no">7</span>需要电气 / NC 配合的接口（tagmap 要登记的）</h2>
+      <div class="tw"><table>
+        <thead><tr><th>接口</th><th>方向</th><th>用途</th><th>现状</th></tr></thead>
+        <tbody>
+          <tr><td>砂轮运转命令 / 运转状态</td><td>写 / 读</td><td>砂轮启停</td><td>已有 <code>wheel.run</code></td></tr>
+          <tr><td>砂轮线速度给定、头架转速给定</td><td>写</td><td>给定</td><td>新增，R 参数或 PLC DB</td></tr>
+          <tr><td>砂轮、头架、拖板实际速度</td><td>读</td><td>显示</td><td>部分已有</td></tr>
+          <tr><td>砂轮电流 AQCH0</td><td>读</td><td>电流条</td><td>已有</td></tr>
+          <tr><td>拖板往复速度、行程左 / 右、往复启动 / 停止脉冲、往复状态</td><td>写 / 读</td><td>拖板往复</td><td>新增，NC 侧手动往复循环</td></tr>
+          <tr><td>进给倍率、主轴倍率</td><td>写 / 读</td><td>倍率</td><td>新增，写进 PLC→NC 接口，PLC 限幅</td></tr>
+          <tr><td>手持盒轴选择 SA7、倍率 SA8、使能</td><td>读</td><td>当前轴、手轮倍率</td><td>新增，读 PLC 输入映像</td></tr>
+          <tr><td>按钮板各按钮、三盏灯</td><td>读</td><td>显示机床已起动、自动、故障；回参考点状态</td><td>部分已有</td></tr>
+          <tr><td>头架辅助启动装置开关</td><td>写 / 读</td><td>带启动装置</td><td>新增（D5）</td></tr>
+          <tr><td>定位循环：轴号、目标、速度、启动脉冲、完成 / 出错</td><td>写 / 读</td><td>定位</td><td>新增，NC 循环（D4）</td></tr>
+          <tr><td>循环启动脉冲（方案 B 时）</td><td>写</td><td>屏幕启动</td><td>新增（D1）</td></tr>
+          <tr><td>方式请求 JOG / AUTO</td><td>写 / 读</td><td>画面切换带动方式</td><td>待定（D7）</td></tr>
+        </tbody>
+      </table></div>
+      <p>和以往一样，没登记的接口对应的键压暗、留在原位，点它时对话行说明"缺映射"，先接哪个就先用哪个。仿真机床同步补上这些量，自检用例覆盖本页。</p>
+    </section>
+
+    <!-- 8 -->
+    <section id="s8">
+      <h2><span class="no">8</span>对第 4 版设计稿的改动</h2>
+      <ul>
+        <li><strong>机床区 JOG：</strong>基本画面改为"手动磨削"。手动的 6 页排在它后面；"头架"页改为"头架托瓦"。</li>
+        <li><strong>按钮板分工（第 4 版规则 6）改为：</strong>停、急停、复位、故障复位、回参考点、头架启停、功能跳过、点动和手轮在硬件上；循环启动看 D1；砂轮启停、拖板往复、给定、倍率在屏幕上，启动类要确认。
+          <ul>
+            <li><code>panelActions</code> 登记本机实际的按钮：急停、钥匙、故障复位、暂停、复位、回参考点、头架正转、头架反转、功能跳过。</li>
+          </ul>
+        </li>
+        <li><strong>自动页状态带：</strong>加进给倍率、主轴倍率两格。点一下进手动磨削页的倍率格；AUTO 下也能调，对话行写"对正在运行的程序立即生效"。</li>
+        <li><strong>屏幕上去掉：</strong>"回参考点"键（辅助循环里）、头架正转 / 反转键——硬件上已经有了。</li>
+      </ul>
+    </section>
+
+    <!-- 9 -->
+    <section id="s9">
+      <h2><span class="no">9</span>工作量</h2>
+      <div class="tw"><table>
+        <thead><tr><th>内容</th><th class="nowrap">工作量</th></tr></thead>
+        <tbody>
+          <tr><td>
+            <ul>
+              <li>手动磨削页：位置、测量、机构、三个驱动单元、位置图。</li>
+              <li>给定与倍率的"标红 → 确认写入"。</li>
+              <li>砂轮、拖板启停键；手持盒状态显示。</li>
+              <li>tagmap 新条目、仿真机床同步、自检用例、手册。</li>
+            </ul>
+          </td><td class="nowrap">约 1.5 周</td></tr>
+          <tr><td>定位（等 NC 定位循环）</td><td class="nowrap">约 0.5 周</td></tr>
+          <tr><td>第 4 版设计稿第二期里手动页的改动，并入上面，不另计</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 10 -->
+    <section id="s10">
+      <h2><span class="no">10</span>需要定下的</h2>
+      <div class="tw"><table>
+        <thead><tr><th class="num">#</th><th>问题</th><th>建议</th></tr></thead>
+        <tbody>
+          <tr><td class="num">D1</td><td>按钮板第二排空位装"循环启动"按钮吗？</td><td>装（方案 A）；不装就用屏幕键加确认</td></tr>
+          <tr><td class="num">D2</td><td>G 代码 MDA 页不做，用 Operate 自带的 MDA（限制造商）。同意吗？</td><td>同意</td></tr>
+          <tr><td class="num">D3</td><td>砂轮启停、拖板往复、转速给定、倍率放在手动磨削页（启动要确认，停不要），这样可以吗？</td><td>是（照原系统屏幕 1）</td></tr>
+          <tr><td class="num">D4</td><td>NC 侧能否提供定位循环（轴号、目标、速度走 R 参数）和手动往复循环？</td><td>要，需电气 / NC 确认</td></tr>
+          <tr><td class="num">D5</td><td>本机有没有头架辅助启动装置？电气图有辅助启动电机和油缸。</td><td>有就加"带启动装置"开关</td></tr>
+          <tr><td class="num">D6</td><td>电气图 I98.6 / I98.7 画的是踏板向前 / 后，实拍板上是头架正转 / 反转。以哪个为准？</td><td>以实拍为准，请电气更新图纸</td></tr>
+          <tr><td class="num">D7</td><td>JOG / AUTO 方式由画面带动（下发作业 = AUTO，回手动磨削 = JOG），PLC 要接一个方式请求位。这样可以吗？</td><td>照原系统做</td></tr>
+          <tr><td class="num">D8</td><td>拖板往复行程默认取辊身两端各留 60 mm，这个默认值对吗？</td><td>请现场给经验值</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <footer>
+      依据：
+      <ul>
+        <li>用户提供的按钮板实拍。</li>
+        <li>MK84160 电气图（=D1 第 7–8 页操作面板与手持操作盒、=H2 头架控制）。</li>
+        <li>MK84160 使用说明书第三部分（3.1 手轮操作、3.2 面板操作、3.3 界面操作）。</li>
+        <li>RGI 控制系统使用说明书（六 手动、七 辅助操作）。</li>
+        <li>SINUMERIK ONE 手册（Operate – Milling 概览 p.24、p.27）。</li>
+        <li>本项目的手动动作规范、机床硬件评估、第 4 版设计稿。</li>
+      </ul>
+      本稿只提设计，源代码没有改。
+    </footer>
+  </main>
+</div>
