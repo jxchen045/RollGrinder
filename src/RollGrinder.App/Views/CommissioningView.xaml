@@ -1,0 +1,219 @@
+<UserControl x:Class="RollGrinder.App.Views.CommissioningView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:RollGrinder.App.Localization"
+             xmlns:ctl="clr-namespace:RollGrinder.App.Controls">
+    <!--
+        调试区（界面最终稿 5.13，只从区域菜单进，制造商）：横键 机床配置 · 标签映射 · 系统。
+        竖键：只看缺失、登记、删除这一行…、试读、空、恢复上一版…、✕ 放弃改动、✓ 保存…；
+        保存前自动备份到 config/backup，改动写入改动记录，重启上位机后生效。
+    -->
+    <Grid>
+        <Grid.Resources>
+
+            <!-- 表单里的一格：名字与单位、输入（文字 / 勾选 / 分段键），不成立时下面一行红字。 -->
+            <DataTemplate x:Key="ConfigFieldTemplate">
+                <Border Style="{StaticResource ParameterCell}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding UnitText}" Style="{StaticResource Text.Label}" />
+                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Path}" />
+                        </DockPanel>
+                        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" Margin="0,4,0,0"
+                                 Visibility="{Binding IsTextual, Converter={StaticResource BoolToVisibility}}" />
+                        <CheckBox IsChecked="{Binding IsChecked}" Margin="0,8,0,0"
+                                  Visibility="{Binding IsFlag, Converter={StaticResource BoolToVisibility}}" />
+                        <ItemsControl ItemsSource="{Binding Choices}" Margin="0,4,0,0"
+                                      Visibility="{Binding IsChoice, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Rows="1" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
+                                            Style="{StaticResource SegmentButton}" Padding="2,0"
+                                            ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding IssueText}" Foreground="{StaticResource Brush.CurrentStep}" TextWrapping="Wrap"
+                                   FontSize="{StaticResource Size.Caption}" Margin="0,4,0,0"
+                                   Visibility="{Binding HasIssue, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+        </Grid.Resources>
+
+        <Border x:Name="MachineConfigEditor" Style="{StaticResource Card}" Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=machineConfig}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding ConfigStatusText}" FontSize="{StaticResource Size.Caption}" VerticalAlignment="Center"
+                                   Foreground="{StaticResource Brush.TextSecondary}" />
+                        <TextBlock Text="{loc:Loc Cfg_MachineHeader}" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center" />
+                    </DockPanel>
+                </Border>
+                <StackPanel DockPanel.Dock="Top" Margin="16,8,16,0">
+                    <TextBlock Text="{loc:Loc Cfg_RestartNote}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" />
+                    <TextBlock Text="{loc:Loc Cfg_ManufacturerOnly}" Style="{StaticResource Text.Label}" TextWrapping="Wrap"
+                               Visibility="{Binding CanEditMachineConfig, Converter={StaticResource InverseBoolVisibility}}" />
+                    <ItemsControl ItemsSource="{Binding ConfigIssues}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Foreground="{StaticResource Brush.CurrentStep}" TextWrapping="Wrap" FontSize="{StaticResource Size.Caption}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8">
+                    <ItemsControl ItemsSource="{Binding MachineGroups}" IsEnabled="{Binding CanEditMachineConfig}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="8,4,8,12">
+                                    <TextBlock Text="{Binding Title}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding Fields}" ItemTemplate="{StaticResource ConfigFieldTemplate}"
+                                                  Background="{StaticResource Brush.GridLine}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="4" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <Border x:Name="TagMappingEditor" Style="{StaticResource Card}" Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=tagMapping}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding ConfigStatusText}" FontSize="{StaticResource Size.Caption}" VerticalAlignment="Center"
+                                   Foreground="{StaticResource Brush.TextSecondary}" TextTrimming="CharacterEllipsis" MaxWidth="900" />
+                        <TextBlock Text="{loc:Loc Cfg_TagMapHeader}" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center" />
+                    </DockPanel>
+                </Border>
+                <DockPanel DockPanel.Dock="Top" Margin="16,8">
+                    <TextBlock Text="{loc:Loc Cfg_Search}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <CheckBox DockPanel.Dock="Right" Content="{loc:Loc Cfg_OnlyMissing}" IsChecked="{Binding ShowMissingTagsOnly}"
+                              VerticalAlignment="Center" Margin="16,0,0,0" />
+                    <TextBox x:Name="TagSearchBox" Text="{Binding TagSearchText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" ctl:TouchInput.IsNumeric="False" />
+                </DockPanel>
+
+                <!-- 选中那一行：地址、类型、方向、单位、说明。只有制造商能改；还没登记的先按"登记"。 -->
+                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="16,10">
+                    <Grid IsEnabled="{Binding CanEditTagMap}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                            <TextBlock Text="{Binding SelectedTag.Key}" Style="{StaticResource Text.CardTitle}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{loc:Loc Cfg_TagAddress}" Style="{StaticResource Text.Label}" Margin="0,6,0,0" />
+                            <TextBox Text="{Binding SelectedTag.Address, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" ctl:TouchInput.IsNumeric="False"
+                                     IsEnabled="{Binding SelectedTag.IsMissing, Converter={StaticResource InverseBool}}" />
+                            <TextBlock Text="{Binding SelectedTag.IssueText}" Foreground="{StaticResource Brush.CurrentStep}" FontSize="{StaticResource Size.Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                            <TextBlock Text="{loc:Loc Cfg_TagDataType}" Style="{StaticResource Text.Label}" />
+                            <ItemsControl ItemsSource="{Binding TagDataTypeChoices}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Rows="1" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
+                                                Style="{StaticResource SegmentButton}" Padding="2,0"
+                                                ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{loc:Loc Cfg_TagAccess}" Style="{StaticResource Text.Label}" Margin="0,6,0,0" />
+                            <ItemsControl ItemsSource="{Binding TagAccessChoices}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Rows="1" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
+                                                Style="{StaticResource SegmentButton}" Padding="2,0"
+                                                ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" IsEnabled="{Binding SelectedTag.IsMissing, Converter={StaticResource InverseBool}}">
+                            <TextBlock Text="{loc:Loc Cfg_TagUnit}" Style="{StaticResource Text.Label}" />
+                            <TextBox Text="{Binding SelectedTag.Unit, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" ctl:TouchInput.IsNumeric="False" />
+                            <TextBlock Text="{loc:Loc Cfg_TagDescription}" Style="{StaticResource Text.Label}" Margin="0,6,0,0" />
+                            <TextBox Text="{Binding SelectedTag.Description, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" ctl:TouchInput.IsNumeric="False" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <DataGrid x:Name="TagMapGrid" ItemsSource="{Binding VisibleTags}" SelectedItem="{Binding SelectedTag}" Style="{StaticResource DataTable}"
+                          AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" FontSize="{StaticResource Size.Caption}" Margin="8,0,8,8">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="{loc:Loc Cfg_TagKey}" Binding="{Binding Key}" Width="2*" />
+                        <DataGridTextColumn Header="{loc:Loc Cfg_TagAddress}" Binding="{Binding Address}" Width="2*" />
+                        <DataGridTextColumn Header="{loc:Loc Cfg_TagDataType}" Binding="{Binding DataType}" Width="*" />
+                        <DataGridTextColumn Header="{loc:Loc Cfg_TagAccess}" Binding="{Binding Access}" Width="*" />
+                        <DataGridTextColumn Header="{loc:Loc Cfg_TagValue}" Binding="{Binding ValueText}" Width="*" />
+                        <DataGridTextColumn Header="{loc:Loc Cfg_TagQuality}" Binding="{Binding QualityText}" Width="0.7*" />
+                        <DataGridTextColumn Header="{loc:Loc Cfg_TagIssue}" Binding="{Binding IssueText}" Width="1.5*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+
+        <!-- 系统：只读——语言、刷新、左栏条目、按钮板动作；配置原文只读查看（竖键 1 / 2）。 -->
+        <Grid Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=system}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="640" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                        <TextBlock Text="{loc:Loc Sys_Header}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <TextBlock DockPanel.Dock="Bottom" Text="{loc:Loc Sys_EditNote}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="16,12" />
+                    <ItemsControl ItemsSource="{Binding SystemRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Height="56" Padding="16,0" BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="0,0,0,1">
+                                    <DockPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" Width="200" />
+                                        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextTrimming="CharacterEllipsis" />
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+            <Border Grid.Column="1" Style="{StaticResource Card}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Sys_RawHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <TextBox Text="{Binding InspectorText, Mode=OneWay}" IsReadOnly="True" ctl:TouchInput.IsNumeric="False"
+                             FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}" Margin="12"
+                             VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                             BorderThickness="0" Background="{StaticResource Brush.Surface}" TextWrapping="NoWrap" />
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

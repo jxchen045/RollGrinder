@@ -194,15 +194,21 @@ public static class Program
         builder.Services.AddSingleton<Navigator>();
         builder.Services.AddSingleton<INavigator>(provider => provider.GetRequiredService<Navigator>());
 
-        // 六个主界面。顺序不重要，外壳按 PageKey 索引。
+        // 确认与对话行：全进程一份。计时用真时钟——仿真加速（--sim-speed）不该把"5 秒不答自动取消"也加速。
+        builder.Services.AddSingleton(provider => new ShellInteraction(TimeProvider.System, localizer));
+
+        // 各画面。顺序不重要，外壳按 PageKey 索引、按 AreaCatalog 归到区域。
         builder.Services.AddSingleton<PageViewModelBase, AutoGrindingViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, ProfileViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, StepsViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, RecordsViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, ManualViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, DiagnosticsViewModel>();
-        builder.Services.AddSingleton<PageViewModelBase, SettingsViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, ParametersViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, JobViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, ManualGrindingViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, LibraryViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, CommissioningViewModel>();
         builder.Services.AddSingleton<JobDraft>();
 
         builder.Services.AddSingleton<ShellViewModel>();

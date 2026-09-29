@@ -3,10 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
-             xmlns:prof="clr-namespace:RollGrinder.Core.Profiles;assembly=RollGrinder.Core">
+             xmlns:prof="clr-namespace:RollGrinder.Core.Profiles;assembly=RollGrinder.Core"
+             xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
     <!--
         作业（修改稿 5.4）：左边五步，右边当前这一步。
-        ① 轧辊 → ② 辊形 → ③ 工艺程序 → ④ 程序步骤 → ⑤ 核对并下发；F1 上一步、F2 下一步。
+        ① 轧辊 → ② 辊形 → ③ 工艺程序 → ④ 程序步骤 → ⑤ 核对并下发；竖键 1 上一步、2 下一步，
+        第 5 步核对通过后竖键 7 / 8 = ✕ 取消 / ✓ 确认下发（界面最终稿 5.6）。
     -->
     <Grid>
         <Grid.Resources>
@@ -246,8 +248,13 @@
                         </ItemsControl>
                     </DockPanel>
 
-                    <!-- ⑤ 核对并下发：有任何错误时"下发 NC"按不下去。 -->
-                    <ScrollViewer Style="{StaticResource Step5Panel}" VerticalScrollBarVisibility="Auto">
+                    <!-- ⑤ 核对并下发：有任何错误时"✓ 确认下发"不出现。下面画"磨成什么样"。 -->
+                    <Grid Style="{StaticResource Step5Panel}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="320" />
+                        </Grid.RowDefinitions>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
                             <ItemsControl ItemsSource="{Binding ReviewRows}">
                                 <ItemsControl.ItemTemplate>
@@ -273,6 +280,15 @@
                             </ItemsControl>
                         </StackPanel>
                     </ScrollViewer>
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,8,0,0">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                                <TextBlock Text="{loc:Loc Job_ReviewCurveHeader}" Style="{StaticResource Text.CardTitle}" />
+                            </Border>
+                            <plot:WpfPlot x:Name="ReviewPlot" />
+                        </DockPanel>
+                    </Border>
+                    </Grid>
                 </Grid>
             </DockPanel>
         </Border>

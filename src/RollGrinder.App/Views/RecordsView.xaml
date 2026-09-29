@@ -3,93 +3,43 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
-             xmlns:model="clr-namespace:RollGrinder.Data.Model;assembly=RollGrinder.Data"
-             xmlns:rec="clr-namespace:RollGrinder.Services.Records;assembly=RollGrinder.Services"
              xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
+    <!--
+        磨削记录（界面最终稿 5.11）：左是记录列表（合格绿、超差红），中是曲线（竖键 1–4 选），
+        右是 12 项指标和备注。查询…、标记完成…、打印、导出 Excel 在竖键 5–8；磨前报表、日报、月报在横键。
+    -->
     <Grid>
-        <Grid.Resources>
-            <!-- 报表预览子视图：开着时盖住本页根部内容，导航槽这时显示"返回 磨削记录"。 -->
-            <!-- 轧辊台账子视图 -->
-            <Style x:Key="LedgerPanel" TargetType="Border" BasedOn="{StaticResource Card}">
-                <Setter Property="Visibility" Value="Collapsed" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_RollLedger">
-                        <Setter Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <Style x:Key="ReportPanel" TargetType="Border" BasedOn="{StaticResource Card}">
-                <Setter Property="Visibility" Value="Collapsed" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_Report">
-                        <Setter Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </Grid.Resources>
-
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="420" />
+            <ColumnDefinition Width="400" />
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="460" />
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
+        <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
             <DockPanel>
-                <!-- 高度随内容：日期一行 + 查询按钮一行。写死高度会把两行裁成半截（曾把"查询"裁掉一半）。 -->
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="Auto" Padding="14,10">
-                    <!-- 日期一行、查询按钮一行：挤在一行时英文界面下按钮会被裁掉。 -->
-                    <Grid VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{loc:Loc Records_FromLabel}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <DatePicker Grid.Column="1" SelectedDate="{Binding FromDate}" Height="38" Margin="8,0" FontSize="15" />
-                        <TextBlock Grid.Column="2" Text="{loc:Loc Records_ToLabel}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <DatePicker Grid.Column="3" SelectedDate="{Binding ToDate}" Height="38" Margin="8,0,0,0" FontSize="15" />
-                        <Button Grid.Row="1" Grid.ColumnSpan="4" Content="{loc:Loc Records_QueryButton}" Command="{Binding QueryCommand}"
-                                Style="{StaticResource PrimaryButton}" Height="38" Margin="0,8,0,0" />
-                    </Grid>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                    <DockPanel>
+                        <TextBlock Text="{loc:Loc Records_ListHeader}" Style="{StaticResource Text.CardTitle}" />
+                        <TextBlock Text="{Binding SummaryText}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </DockPanel>
                 </Border>
-
-                <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
-                        BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,12">
-                    <StackPanel>
-                        <DockPanel>
-                            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.Label}" FontSize="16" />
-                            <TextBlock Text="{Binding SummaryText}" Style="{StaticResource Text.Label}" FontSize="16"
-                                       HorizontalAlignment="Right" />
-                        </DockPanel>
-
-                        <!-- 日报 / 月报那一行；没按过就不占地方 -->
-                        <TextBlock Text="{Binding SummaryLineText}" Style="{StaticResource Text.Label}" FontSize="16"
-                                   Margin="0,8,0,0" TextWrapping="Wrap"
-                                   Foreground="{StaticResource Brush.Accent}"
-                                   Visibility="{Binding SummaryLineText, Converter={StaticResource TextToVisibility}}" />
-                    </StackPanel>
-                </Border>
-
-                <ListBox ItemsSource="{Binding Records}" SelectedItem="{Binding SelectedRecord}"
-                         BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch">
+                <TextBlock DockPanel.Dock="Bottom" Text="{Binding SummaryLineText}" Style="{StaticResource Text.Body}"
+                           Margin="12,8" TextWrapping="Wrap"
+                           Visibility="{Binding SummaryLineText, Converter={StaticResource TextToVisibility}}" />
+                <ListBox ItemsSource="{Binding Records}" SelectedItem="{Binding SelectedRecord}" BorderThickness="0"
+                         Background="Transparent" HorizontalContentAlignment="Stretch" ScrollViewer.PanningMode="VerticalOnly">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border Padding="14,12" BorderBrush="{StaticResource Brush.PlotGridMinor}" BorderThickness="0,0,0,1">
-                                <DockPanel>
+                            <Border Height="56" Padding="12,0" BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="0,0,0,1">
+                                <DockPanel VerticalAlignment="Center">
                                     <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
-                                        <TextBlock Text="{Binding StartedText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                        <TextBlock Text="{Binding StartedText}" FontFamily="{StaticResource Font.Mono}" Style="{StaticResource Text.Label}"
                                                    HorizontalAlignment="Right" />
                                         <TextBlock Text="{Binding StateText}" FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Right"
                                                    Foreground="{StaticResource Brush.Normal}" />
                                     </StackPanel>
                                     <StackPanel>
-                                        <TextBlock Text="{Binding RollCode}" FontFamily="{StaticResource Font.Mono}" FontSize="19" />
+                                        <TextBlock Text="{Binding RollCode}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Body}" FontWeight="SemiBold" />
                                         <TextBlock Text="{Binding ProfileTypeText}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
                                     </StackPanel>
                                 </DockPanel>
@@ -100,255 +50,123 @@
             </DockPanel>
         </Border>
 
-        <Grid Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding SelectedRecord.RollCode}" Style="{StaticResource Text.CardTitle}"
-                                       Foreground="{StaticResource Brush.TextPrimary}" />
-                            <TextBlock Text="{loc:Loc Records_ResultHeader}" Style="{StaticResource Text.CardTitle}" Margin="10,0,0,0" />
-                        </StackPanel>
-                    </Border>
-                    <ItemsControl ItemsSource="{Binding Metrics}" Background="{StaticResource Brush.GridLine}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="6" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource ParameterCell}">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
-                                        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.DataRow}" Margin="0,4,0,0" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </DockPanel>
-            </Border>
-
-            <!-- 四种曲线：磨前/磨后辊形、误差、圆度、补偿收敛过程 -->
-            <Border Grid.Row="1" Style="{StaticResource Card}">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="52">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Content="{loc:Loc Curve_BeforeAfter}" Command="{Binding SelectCurveCommand}"
-                                    CommandParameter="{x:Static rec:RecordCurveKind.BeforeAfterProfile}"
-                                    Style="{StaticResource SegmentButton}" Margin="0,0,10,0"
-                                    ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=BeforeAfterProfile}" />
-                            <Button Content="{loc:Loc Curve_Error}" Command="{Binding SelectCurveCommand}"
-                                    CommandParameter="{x:Static rec:RecordCurveKind.Deviation}"
-                                    Style="{StaticResource SegmentButton}" Margin="0,0,10,0"
-                                    ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=Deviation}" />
-                            <Button Content="{loc:Loc Curve_Roundness}" Command="{Binding SelectCurveCommand}"
-                                    CommandParameter="{x:Static rec:RecordCurveKind.Roundness}"
-                                    Style="{StaticResource SegmentButton}" Margin="0,0,10,0"
-                                    ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=Roundness}" />
-                            <Button Content="{loc:Loc Curve_Convergence}" Command="{Binding SelectCurveCommand}"
-                                    CommandParameter="{x:Static rec:RecordCurveKind.CompensationConvergence}"
-                                    Style="{StaticResource SegmentButton}"
-                                    ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=CompensationConvergence}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border DockPanel.Dock="Bottom" Background="{StaticResource Brush.HeaderFill}"
-                            BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,10">
-                        <!-- 备注写明是备注；"完成"按钮按文字自适应宽度，英文下不被截断。 -->
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{loc:Loc Records_NoteLabel}" Style="{StaticResource Text.Label}"
-                                       VerticalAlignment="Center" Margin="0,0,10,0" />
-                            <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}"
-                                     Style="{StaticResource ValueTextBox}" Width="320" />
-                            <Button Content="{loc:Loc Records_FinishButton}" Command="{Binding FinishSelectedCommand}"
-                                    Style="{StaticResource SecondaryButton}" Height="46" MinWidth="160" Padding="20,0" Margin="10,0,0,0" />
-                        </StackPanel>
-                    </Border>
-
-                    <Grid Margin="8">
-                        <plot:WpfPlot x:Name="RecordPlot"
-                                      Visibility="{Binding CurveHasData, Converter={StaticResource BoolToVisibility}}" />
-                        <TextBlock Text="{Binding CurveEmptyText}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Body}">
-                                    <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
-                                    <Setter Property="Visibility" Value="Visible" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding CurveHasData}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Grid>
-                </DockPanel>
-            </Border>
-        </Grid>
-
-        <!-- 轧辊台账：左边所有辊，右边选中那支的登记表与磨削履历。尺寸在这里登记、修改，作业只是选一支辊。 -->
-        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource LedgerPanel}">
+        <!-- 中：曲线（竖键 1–4 选哪条），磨前 / 磨后叠在一起看这一趟磨掉了什么。 -->
+        <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,6,0">
             <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
-                    <DockPanel>
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Content="{loc:Loc Ledger_New}" Command="{Binding NewLedgerRollCommand}"
-                                    Style="{StaticResource SecondaryButton}" Height="44" Padding="16,0" Margin="0,0,10,0" />
-                            <Button Content="{loc:Loc Ledger_Save}" Command="{Binding SaveLedgerRollCommand}"
-                                    Style="{StaticResource PrimaryButton}" Height="44" Padding="20,0" />
-                        </StackPanel>
-                        <TextBlock Text="{loc:Loc Records_LedgerHeader}" Style="{StaticResource Text.CardTitle}"
-                                   VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding StatusText}" FontSize="15" Margin="16,0,0,0" VerticalAlignment="Center"
-                                   Foreground="{StaticResource Brush.TextSecondary}" />
-                    </DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                    <TextBlock Text="{Binding CurveTitle}" Style="{StaticResource Text.CardTitle}" />
                 </Border>
-                <Grid Margin="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="620" />
-                    </Grid.ColumnDefinitions>
-
-                    <DataGrid ItemsSource="{Binding Ledger}" SelectedItem="{Binding SelectedLedgerRow}"
-                              AutoGenerateColumns="False" IsReadOnly="True" Style="{StaticResource DataTable}"
-                              HeadersVisibility="Column" FontSize="16" Margin="0,0,12,0">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="{loc:Loc Ledger_Code}" Binding="{Binding RollId}" Width="1.2*" />
-                            <DataGridTextColumn Header="{loc:Loc Ledger_Kind}" Binding="{Binding KindText}" Width="*" />
-                            <DataGridTextColumn Header="{loc:Loc Ledger_Diameter}" Binding="{Binding DiameterText}" Width="*" />
-                            <DataGridTextColumn Header="{loc:Loc Ledger_CurrentDiameter}" Binding="{Binding CurrentDiameterText}" Width="*" />
-                            <DataGridTextColumn Header="{loc:Loc Ledger_BodyLength}" Binding="{Binding BodyLengthText}" Width="*" />
-                            <DataGridTextColumn Header="{loc:Loc Ledger_GrindCount}" Binding="{Binding GrindCountText}" Width="0.8*" />
-                            <DataGridTextColumn Header="{loc:Loc Ledger_LastGround}" Binding="{Binding LastGroundText}" Width="1.5*" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-
-                    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <Grid>
-                                <Grid.Resources>
-                                    <Style x:Key="LedgerLabel" TargetType="TextBlock" BasedOn="{StaticResource Text.Label}">
-                                        <Setter Property="VerticalAlignment" Value="Center" />
-                                        <Setter Property="Margin" Value="0,0,8,0" />
-                                    </Style>
-                                    <Style x:Key="LedgerBox" TargetType="TextBox" BasedOn="{StaticResource ValueTextBox}">
-                                        <Setter Property="Margin" Value="0,0,0,8" />
-                                    </Style>
-                                </Grid.Resources>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="16" />
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-
-                                <!-- 辊号：新登记时可填；已有的辊不能改号（作业与记录都按它找）。 -->
-                                <TextBlock Grid.Row="0" Text="{loc:Loc Ledger_Code}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding LedgerRollId, UpdateSourceTrigger=PropertyChanged}"
-                                         IsEnabled="{Binding IsNewLedgerRoll}" Style="{StaticResource LedgerBox}" />
-                                <TextBlock Grid.Row="0" Grid.Column="3" Text="{loc:Loc Ledger_Kind}" Style="{StaticResource LedgerLabel}" />
-                                <UniformGrid Grid.Row="0" Grid.Column="4" Rows="1" Margin="0,0,0,8">
-                                    <Button Content="{loc:Loc RollKind_WorkRoll}" Command="{Binding SetLedgerKindCommand}"
-                                            CommandParameter="{x:Static model:RollKind.WorkRoll}"
-                                            Style="{StaticResource SegmentButton}" Height="46" Margin="0,0,6,0"
-                                            ctl:ButtonStates.IsSelected="{Binding LedgerIsWorkRoll}" />
-                                    <Button Content="{loc:Loc RollKind_BackupRoll}" Command="{Binding SetLedgerKindCommand}"
-                                            CommandParameter="{x:Static model:RollKind.BackupRoll}"
-                                            Style="{StaticResource SegmentButton}" Height="46"
-                                            ctl:ButtonStates.IsSelected="{Binding LedgerIsBackupRoll}" />
-                                </UniformGrid>
-
-                                <TextBlock Grid.Row="1" Text="{loc:Loc Ledger_BodyLengthLabel}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding LedgerBodyLengthText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-                                <TextBlock Grid.Row="1" Grid.Column="3" Text="{loc:Loc Ledger_Material}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="1" Grid.Column="4" Text="{Binding LedgerMaterial, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-
-                                <TextBlock Grid.Row="2" Text="{loc:Loc Ledger_DiameterLabel}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding LedgerDiameterText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-                                <TextBlock Grid.Row="2" Grid.Column="3" Text="{loc:Loc Ledger_CurrentDiameterLabel}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="2" Grid.Column="4" Text="{Binding LedgerCurrentDiameterText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-
-                                <TextBlock Grid.Row="3" Text="{loc:Loc RollData_GrindStart}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding LedgerGrindStartText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-                                <TextBlock Grid.Row="3" Grid.Column="3" Text="{loc:Loc RollData_CurveLength}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="3" Grid.Column="4" Text="{Binding LedgerCurveLengthText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-
-                                <TextBlock Grid.Row="4" Text="{loc:Loc RollData_CurveTolerance}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding LedgerCurveToleranceText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-                                <TextBlock Grid.Row="4" Grid.Column="3" Text="{loc:Loc RollData_NetWeight}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="4" Grid.Column="4" Text="{Binding LedgerNetWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-
-                                <TextBlock Grid.Row="5" Text="{loc:Loc RollData_HeadBoxWeight}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding LedgerHeadBoxWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-                                <TextBlock Grid.Row="5" Grid.Column="3" Text="{loc:Loc RollData_TailBoxWeight}" Style="{StaticResource LedgerLabel}" />
-                                <TextBox Grid.Row="5" Grid.Column="4" Text="{Binding LedgerTailBoxWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-
-                                <TextBlock Grid.Row="6" Grid.Column="3" Text="{loc:Loc Ledger_TotalWeight}" Style="{StaticResource LedgerLabel}" />
-                                <TextBlock Grid.Row="6" Grid.Column="4" Text="{Binding LedgerTotalWeightText}" FontFamily="{StaticResource Font.Mono}"
-                                           FontSize="18" VerticalAlignment="Center" />
-                            </Grid>
-
-                            <ItemsControl ItemsSource="{Binding LedgerProblems}" Margin="0,8,0,0">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}" FontSize="16" TextWrapping="Wrap" Margin="0,2,0,0"
-                                                   Foreground="{StaticResource Brush.CurrentStep}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-
-                            <TextBlock Text="{loc:Loc Ledger_HistoryHeader}" Style="{StaticResource Text.Label}" Margin="0,16,0,6" />
-                            <DataGrid ItemsSource="{Binding LedgerHistory}" AutoGenerateColumns="False" IsReadOnly="True"
-                                      Style="{StaticResource DataTable}" HeadersVisibility="Column" FontSize="15" MaxHeight="260">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="{loc:Loc Ledger_HistoryStarted}" Binding="{Binding StartedText}" Width="1.4*" />
-                                    <DataGridTextColumn Header="{loc:Loc Ledger_HistoryJob}" Binding="{Binding JobId}" Width="1.4*" />
-                                    <DataGridTextColumn Header="{loc:Loc Ledger_HistoryState}" Binding="{Binding StateText}" Width="*" />
-                                    <DataGridTextColumn Header="{loc:Loc Ledger_HistoryDuration}" Binding="{Binding DurationText}" Width="0.8*" />
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </StackPanel>
-                    </ScrollViewer>
+                <Grid Margin="8">
+                    <plot:WpfPlot x:Name="RecordPlot" Visibility="{Binding CurveHasData, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock Text="{Binding CurveEmptyText}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Body}">
+                                <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurveHasData}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </Grid>
             </DockPanel>
         </Border>
 
-        <!--
-            报表预览：纸上是什么样，这里就是什么样（同一份 FlowDocument），
-            所以"预览没问题"就真的能打出来。
-        -->
-        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource ReportPanel}">
+        <!-- 右：12 项指标 + 备注 -->
+        <Border Grid.Column="2" Style="{StaticResource Card}">
             <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="56">
-                    <DockPanel>
-                        <TextBlock Text="{loc:Loc Report_PreviewHeader}" Style="{StaticResource Text.CardTitle}"
-                                   VerticalAlignment="Center" />
-                        <Button Content="{loc:Loc Report_PrintButton}" Click="OnPrintClick"
-                                Style="{StaticResource PrimaryButton}" Height="40" Padding="20,0"
-                                HorizontalAlignment="Right" />
-                    </DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding SelectedRecord.RollCode}" Style="{StaticResource Text.CardTitle}" FontWeight="Bold" />
+                        <TextBlock Text="{loc:Loc Records_ResultHeader}" Style="{StaticResource Text.CardTitle}" Margin="10,0,0,0" />
+                    </StackPanel>
                 </Border>
-                <FlowDocumentScrollViewer x:Name="ReportPreview" Margin="12"
-                                          Background="{StaticResource Brush.Surface}"
+                <StackPanel DockPanel.Dock="Bottom" Margin="12,8">
+                    <TextBlock Text="{loc:Loc Records_NoteLabel}" Style="{StaticResource Text.Label}" />
+                    <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                             ctl:TouchInput.IsNumeric="False" Margin="0,4,0,0" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding Metrics}" Background="{StaticResource Brush.GridLine}" Margin="8">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="2" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource ParameterCell}" Padding="12,6">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
+                                    <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.DataRow}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <!-- 查询…：起止日期（点日期弹月历）与三个快捷范围；竖键 7 / 8 = 取消 / 查询。 -->
+        <Border x:Name="QueryPanel" Grid.ColumnSpan="3" Background="#B3101418"
+                Visibility="{Binding IsQueryOpen, Converter={StaticResource BoolToVisibility}}">
+            <Border Style="{StaticResource Card}" Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                        <TextBlock Text="{loc:Loc SubView_Query}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <StackPanel Margin="24,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{loc:Loc Records_FromLabel}" Style="{StaticResource Text.Body}" VerticalAlignment="Center" />
+                            <DatePicker Grid.Column="1" SelectedDate="{Binding FromDate}" Height="56" Margin="10,0,20,0"
+                                        FontSize="{StaticResource Size.Body}" VerticalContentAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{loc:Loc Records_ToLabel}" Style="{StaticResource Text.Body}" VerticalAlignment="Center" />
+                            <DatePicker Grid.Column="3" SelectedDate="{Binding ToDate}" Height="56" Margin="10,0,0,0"
+                                        FontSize="{StaticResource Size.Body}" VerticalContentAlignment="Center" />
+                        </Grid>
+                        <UniformGrid Rows="1" Margin="0,16,0,0">
+                            <Button Content="{loc:Loc Records_RangeToday}" Command="{Binding SetRangeCommand}" CommandParameter="1"
+                                    Style="{StaticResource SegmentButton}" Margin="0,0,8,0" />
+                            <Button Content="{loc:Loc Records_RangeWeek}" Command="{Binding SetRangeCommand}" CommandParameter="7"
+                                    Style="{StaticResource SegmentButton}" Margin="0,0,8,0" />
+                            <Button Content="{loc:Loc Records_RangeMonth}" Command="{Binding SetRangeCommand}" CommandParameter="30"
+                                    Style="{StaticResource SegmentButton}" />
+                        </UniformGrid>
+                        <TextBlock Text="{loc:Loc Records_QueryHint}" Style="{StaticResource Text.Label}" Margin="0,14,0,0" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </Border>
+
+        <!--
+            报表预览：纸上是什么样，这里就是什么样（同一份 FlowDocument），所以"预览没问题"就真的能打出来。
+            竖键 1"打印"、8"« 返回"。
+        -->
+        <Border Grid.ColumnSpan="3">
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource Card}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_Report">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                    <TextBlock Text="{loc:Loc Report_PreviewHeader}" Style="{StaticResource Text.CardTitle}" />
+                </Border>
+                <FlowDocumentScrollViewer x:Name="ReportPreview" Margin="12" Background="{StaticResource Brush.Surface}"
                                           VerticalScrollBarVisibility="Auto" />
             </DockPanel>
         </Border>

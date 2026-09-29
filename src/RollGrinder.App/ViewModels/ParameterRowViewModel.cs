@@ -71,6 +71,40 @@ public sealed partial class ParameterRowViewModel : ObservableObject
 
     public bool IsBoolean => this.descriptor.Kind == ParameterValueKind.Boolean;
 
+    /// <summary>数值型：输入框再点一下弹数字键盘，超出范围不收（最终稿 4.5）。</summary>
+    public bool IsNumber => this.descriptor.Kind == ParameterValueKind.Number;
+
+    /// <summary>下限（数字键盘校验用）；不限为 NaN。</summary>
+    public double Minimum => this.descriptor.MinValue ?? double.NaN;
+
+    /// <summary>上限（数字键盘校验用）；不限为 NaN。</summary>
+    public double Maximum => this.descriptor.MaxValue ?? double.NaN;
+
+    /// <summary>
+    /// 选中这一格时对话行上的说明（最终稿 4.5）：它是什么、单位、允许范围。
+    /// 有专门说明（ParamHelp_键名）的用专门说明。
+    /// </summary>
+    public string HintText
+    {
+        get
+        {
+            string help = this.localizer["ParamHelp_" + this.descriptor.Key];
+            string what = help.StartsWith('!') ? Label : help;
+            var parts = new List<string> { what };
+            if (UnitText.Length > 0)
+            {
+                parts.Add(UnitText);
+            }
+
+            if (RangeText.Length > 0)
+            {
+                parts.Add(this.localizer.Format("Keypad_RangeFormat", this.descriptor.MinValue, this.descriptor.MaxValue));
+            }
+
+            return string.Join(" · ", parts);
+        }
+    }
+
     /// <summary>开关或选项型：界面渲染成一排分段按钮，不给自由输入。</summary>
     public bool HasChoices => Choices.Count > 0;
 

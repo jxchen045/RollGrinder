@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -96,9 +97,12 @@ public sealed class FunctionKeyStyleConverter : IValueConverter
                 FunctionKeyKind.Navigation => "NavigationButton",
                 FunctionKeyKind.AreaMenu => "AreaMenuKeyButton",
                 FunctionKeyKind.AreaMenuCurrent => "AreaMenuKeyCurrentButton",
-                _ => "SecondaryButton",
+                FunctionKeyKind.Cancel => "CancelKeyButton",
+                FunctionKeyKind.Confirm => "ConfirmKeyButton",
+                FunctionKeyKind.Help => "HelpKeyButton",
+                _ => "SoftKeyButton",
             }
-            : "SecondaryButton";
+            : "SoftKeyButton";
 
         return Application.Current.Resources[key];
     }
@@ -169,6 +173,16 @@ public sealed class InverseBooleanToVisibilityConverter : IValueConverter
         throw new NotSupportedException();
 }
 
+/// <summary>多个布尔全为真才可见（例如"有报警且不在急停中"）。</summary>
+public sealed class AllTrueToVisibilityConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object? parameter, CultureInfo culture) =>
+        values.All(value => value is true) ? Visibility.Visible : Visibility.Collapsed;
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
 /// <summary>文本非空 → 可见。空字符串就收起来，不留一行空白。</summary>
 public sealed class TextToVisibilityConverter : IValueConverter
 {
@@ -184,6 +198,19 @@ public sealed class NullToVisibilityConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         value is null ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>
+/// 值等于参数时显示，否则收起。一页里按"当前组"切换窗口用（诊断区的 报警 / 变量监视 / 改动记录……）：
+/// <c>Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=alarms}"</c>。
+/// </summary>
+public sealed class EqualsToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        string.Equals(value?.ToString(), parameter?.ToString(), StringComparison.Ordinal) ? Visibility.Visible : Visibility.Collapsed;
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();

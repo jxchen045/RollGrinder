@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Contracts.Dtos;
@@ -15,9 +16,11 @@ using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
+using RollGrinder.Core.Units;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Manual;
 using RollGrinder.Services.Session;
 using RollGrinder.Services.Jobs;
 using RollGrinder.Services.Records;
@@ -86,6 +89,9 @@ public sealed partial class JobViewModel : PageViewModelBase
     private readonly MachineCapability capability;
     private readonly HmiSettings settings;
     private readonly JobDraft draft;
+    private readonly IManualGrindingService manualGrinding;
+    private readonly FunctionKeyViewModel cancelReviewKey;
+    private readonly FunctionKeyViewModel confirmDownloadKey;
     private readonly RelayCommand nextCommand;
     private readonly RelayCommand previousCommand;
     private readonly AsyncRelayCommand downloadCommand;
@@ -106,10 +112,12 @@ public sealed partial class JobViewModel : PageViewModelBase
         MachineCapability capability,
         HmiSettings settings,
         JobDraft draft,
+        IManualGrindingService manualGrinding,
         IStringLocalizer localizer,
         IAlarmSink alarms,
-        INavigator navigator)
-        : base(alarms, localizer, navigator)
+        INavigator navigator,
+        ShellInteraction interaction)
+        : base(alarms, localizer, navigator, interaction)
     {
         this.recordService = recordService ?? throw new ArgumentNullException(nameof(recordService));
         this.ledger = ledger ?? throw new ArgumentNullException(nameof(ledger));
@@ -122,6 +130,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         this.capability = capability ?? throw new ArgumentNullException(nameof(capability));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
+        this.manualGrinding = manualGrinding ?? throw new ArgumentNullException(nameof(manualGrinding));
 
         StepItems = new ObservableCollection<JobStepItemViewModel>(new[]
         {
@@ -145,18 +154,29 @@ public sealed partial class JobViewModel : PageViewModelBase
         this.downloadCommand = new AsyncRelayCommand(DownloadAsync, () => ActiveStep == ReviewStep && CanDownload);
         this.jobId = NewJobId();
 
-        SetFunctionKeys(new[]
-        {
-            new FunctionKeyViewModel("Fn_PreviousStep", this.previousCommand, localizer),
-            new FunctionKeyViewModel("Fn_NextStep", this.nextCommand, localizer, FunctionKeyKind.Primary),
-            new FunctionKeyViewModel("Fn_NewJob", NewJobCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Fn_RegisterRoll", RegisterRollCommand, localizer),
+        // 横键：机床区 JOG 那一排（最终稿 5.1），"作业"青底。
+        SetFunctionKeys(MachineAreaKeys.Create(Navigator, localizer, MachineAreaKeys.Job));
 
-            // 下发是唯一的写机床通道；自动循环挂着程序时锁掉，免得把运行中的程序改了。
-            new FunctionKeyViewModel("Fn_DownloadNc", this.downloadCommand, localizer, requiresEditable: true),
-            FunctionKeyViewModel.ForAction(
-                "Fn_EnterAuto", localizer, () => Navigator.GoToArea(PageKey.AutoGrinding), FunctionKeyKind.Start),
+        // 竖键（最终稿 5.6）：上一步 · 下一步 · 新登记轧辊 · 打开辊形 · 打开程序 · 空 · 取消作业…；
+        // 第 5 步核对全部通过时第 7 / 8 格是"✕ 取消 / ✓ 确认下发"——确认下发就是那一次确认，不再多问。
+        SetVerticalKeys(new FunctionKeyViewModel?[]
+        {
+            new FunctionKeyViewModel("Vk_PreviousStep", this.previousCommand, localizer),
+            new FunctionKeyViewModel("Vk_NextStep", this.nextCommand, localizer) { PreconditionResourceKey = "Job_NextNeedsSelection" },
+            new FunctionKeyViewModel("Vk_RegisterRoll", RegisterRollCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_OpenProfile", OpenProfileCommand, localizer) { PreconditionResourceKey = "Job_NothingSelected" },
+            new FunctionKeyViewModel("Vk_OpenProgram", OpenProgramCommand, localizer) { PreconditionResourceKey = "Job_NothingSelected" },
+            null,
+            new FunctionKeyViewModel("Vk_CancelJob", new RelayCommand(AskCancelJob), localizer, requiresEditable: true),
         });
+
+        this.cancelReviewKey = new FunctionKeyViewModel("Vk_Cancel", this.previousCommand, localizer, FunctionKeyKind.Cancel);
+
+        // 下发是唯一的写机床通道；自动循环挂着程序时锁掉，免得把运行中的程序改了。
+        this.confirmDownloadKey = new FunctionKeyViewModel("Vk_ConfirmDownload", this.downloadCommand, localizer, FunctionKeyKind.Confirm, requiresEditable: true)
+        {
+            IsMachineCommand = true,
+        };
 
         RefreshStepItems();
     }
@@ -256,14 +276,52 @@ public sealed partial class JobViewModel : PageViewModelBase
         RefreshStepItems();
     }
 
+    partial void OnCanDownloadChanged(bool value) => RefreshCommitPair();
+
+    /// <summary>第 5 步、核对通过：竖键 7 / 8 = 取消 / 确认下发。</summary>
+    private void RefreshCommitPair()
+    {
+        bool ready = ActiveStep == ReviewStep && CanDownload;
+        SetCommitPair(ready ? this.cancelReviewKey : null, ready ? this.confirmDownloadKey : null);
+    }
+
+    /// <summary>打开辊形：到辊形区把选中的辊形打开来改，改完"« 返回"回到作业。</summary>
+    [RelayCommand(CanExecute = nameof(HasSelectedProfile))]
+    private void OpenProfile()
+    {
+        this.draft.ProfileToOpen = SelectedProfile?.ProfileId;
+        Navigator.StartTask(PageKey.Profile, PageKey.Job);
+    }
+
+    /// <summary>打开程序：到工艺区把选中的程序打开来改。</summary>
+    [RelayCommand(CanExecute = nameof(HasSelectedProgram))]
+    private void OpenProgram()
+    {
+        this.draft.ProgramToOpen = SelectedProgram?.ProgramId;
+        Navigator.StartTask(PageKey.Steps, PageKey.Job);
+    }
+
+    private bool HasSelectedProfile() => SelectedProfile is not null;
+
+    private bool HasSelectedProgram() => SelectedProgram is not null;
+
+    /// <summary>取消作业…：问一句，清掉所有选择从第 ① 步重来。</summary>
+    private void AskCancelJob() => Ask("Job_AskCancel", NewJob);
+
     partial void OnSelectedRollChanged(RollLedgerRowViewModel? value) =>
         _ = RunGuardedAsync(token => LoadRollAsync(value?.RollId, token), CancellationToken.None);
 
-    partial void OnSelectedProfileChanged(RollProfileSummary? value) =>
+    partial void OnSelectedProfileChanged(RollProfileSummary? value)
+    {
+        OpenProfileCommand.NotifyCanExecuteChanged();
         _ = RunGuardedAsync(token => LoadProfileAsync(value?.ProfileId, token), CancellationToken.None);
+    }
 
-    partial void OnSelectedProgramChanged(ProgramSummary? value) =>
+    partial void OnSelectedProgramChanged(ProgramSummary? value)
+    {
+        OpenProgramCommand.NotifyCanExecuteChanged();
         _ = RunGuardedAsync(token => LoadProgramAsync(value?.ProgramId, token), CancellationToken.None);
+    }
 
     partial void OnFitModeChanged(ProfileFitMode? value)
     {
@@ -279,7 +337,8 @@ public sealed partial class JobViewModel : PageViewModelBase
     private async Task RefreshListsAsync(CancellationToken cancellationToken)
     {
         string? keepRoll = this.draft.RegisteredRollId ?? SelectedRoll?.RollId;
-        string? keepProfile = SelectedProfile?.ProfileId;
+        string? keepProfile = this.draft.PendingProfileId ?? SelectedProfile?.ProfileId;
+        this.draft.PendingProfileId = null;
         string? keepProgram = this.draft.PendingProgramId ?? SelectedProgram?.ProgramId;
         this.draft.RegisteredRollId = null;
         this.draft.PendingProgramId = null;
@@ -465,12 +524,12 @@ public sealed partial class JobViewModel : PageViewModelBase
         RefreshStepItems();
     }
 
-    /// <summary>台账里没有这支辊：派去台账新登记一支，登记完按导航槽回来就选上它。</summary>
+    /// <summary>台账里没有这支辊：派去库 › 轧辊台账新登记一支，登记完"« 返回"回来就选上它。</summary>
     [RelayCommand]
     private void RegisterRoll()
     {
         this.draft.RegisterNewRollRequested = true;
-        Navigator.StartTask(PageKey.Records, PageKey.Job);
+        Navigator.StartTask(PageKey.Library, PageKey.Job);
     }
 
     /// <summary>拼出这份作业；缺哪样返回 null。</summary>
@@ -510,7 +569,27 @@ public sealed partial class JobViewModel : PageViewModelBase
         };
     }
 
-    /// <summary>核对页：列出这份作业的全部要点，跑下发前同一套校验；有错时"下发 NC"按不下去。</summary>
+    /// <summary>
+    /// 第 5 步的"磨成什么样"（最终稿 5.6）：辊形按选好的拉伸 / 居中套在辊身上，横轴辊身坐标，纵轴直径量 µm。
+    /// 下发之前就能看见会磨成什么样，把选错辊形、选错长度拦在下发之前。
+    /// </summary>
+    public IReadOnlyList<(double BodyPositionMm, double DiameterMicrometer)> ReviewCurve { get; private set; } =
+        Array.Empty<(double, double)>();
+
+    /// <summary>核对曲线变了（视图重画）。</summary>
+    public event EventHandler? ReviewCurveChanged;
+
+    private void RefreshReviewCurve(GrindingJob? job)
+    {
+        ReviewCurve = job is null
+            ? Array.Empty<(double, double)>()
+            : job.Profile.Compose(job.Geometry, this.profileTypes, this.settings.ProfileSampleCount).Points
+                .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)))
+                .ToArray();
+        ReviewCurveChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>核对页：列出这份作业的全部要点，跑下发前同一套校验；有错时"✓ 确认下发"不出现。</summary>
     private void Review()
     {
         ReviewRows.Clear();
@@ -528,6 +607,7 @@ public sealed partial class JobViewModel : PageViewModelBase
             job = null;
         }
 
+        RefreshReviewCurve(job);
         if (job is null)
         {
             StatusResourceKey = "Job_Incomplete";
@@ -580,11 +660,20 @@ public sealed partial class JobViewModel : PageViewModelBase
             {
                 StatusResourceKey = "Job_HandedOver";
 
-                // Q3：下发成功就进自动加工页，操作员接着按启动。下一支辊从一张新作业开始。
+                // Q3 / M7：下发成功就请 NC 切 AUTO、画面转到自动磨削，操作员在按钮板上按循环启动。
+                // 方式请求只是请求：PLC 决定切不切；tagmap 没登记就不请求，操作员在机床面板上切。
+                ManualCommandResult mode = await this.manualGrinding
+                    .RequestModeAsync(MachineModeRequest.Auto, token).ConfigureAwait(true);
+                if (!mode.Succeeded && mode.Outcome != ManualCommandOutcome.NotMapped)
+                {
+                    Alarms.Raise(AlarmSeverity.Warning, mode.ReasonResourceKey!, detail: null, code: AlarmCodes.Unspecified);
+                }
+
+                // 下一支辊从一张新作业开始。
                 JobId = NewJobId();
                 CanDownload = false;
                 this.downloadCommand.NotifyCanExecuteChanged();
-                Navigator.GoToArea(PageKey.AutoGrinding);
+                Navigator.GoTo(PageKey.AutoGrinding);
                 return;
             }
 
@@ -607,6 +696,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         this.nextCommand.NotifyCanExecuteChanged();
         this.previousCommand.NotifyCanExecuteChanged();
         this.downloadCommand.NotifyCanExecuteChanged();
+        RefreshCommitPair();
     }
 
     private void RefreshStepSummaries()

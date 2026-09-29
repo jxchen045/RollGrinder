@@ -2,138 +2,127 @@ using System;
 
 namespace RollGrinder.App.Navigation;
 
-/// <summary>底部功能条最后一个键（导航槽）当前扮演的角色。</summary>
-public enum NavigationKeyRole
+/// <summary>"返回"（Esc、路径条上的"«"）现在会做什么。</summary>
+public enum BackRole
 {
-    /// <summary>主页根部：本页没有上一级，这个键用来打开页面菜单。</summary>
-    OpenAreaMenu = 0,
+    /// <summary>已经在区域的根上，没有可退的。换区域用左栏或区域菜单。</summary>
+    None = 0,
 
-    /// <summary>子页面根部：回主页（自动磨削）。</summary>
-    BackToHome = 1,
+    /// <summary>区域菜单开着：收起，横键条变回本画面的功能组。</summary>
+    CloseAreaMenu = 1,
 
-    /// <summary>因任务跳转而来（如工序编程 → 选择辊形）：回发起页。</summary>
-    BackToTask = 2,
+    /// <summary>画面里开着子功能（例如自动磨削 › 补偿）：关掉，回画面根部。</summary>
+    CloseSubView = 2,
 
-    /// <summary>页内二级子视图：关掉子视图，回本页根部。</summary>
-    CloseSubView = 3,
-
-    /// <summary>软键条正处于页面菜单态：取消，软键条变回本页的功能键。</summary>
-    CloseAreaMenu = 4,
+    /// <summary>这一页是被别的页派来办事的（例如作业向导 › 打开辊形）：回发起页。</summary>
+    BackToTask = 3,
 }
 
-/// <summary>
-/// 导航槽当前的样子。标签永远说明"按下去到哪儿"，不做隐藏模式。
-/// </summary>
+/// <summary>"返回"的样子：做什么，回到哪一页（关子功能时是本页）。</summary>
 /// <param name="Role">角色。</param>
-/// <param name="LabelResourceKey">标签资源键；带 {0} 的由外壳填入目的页名。</param>
-/// <param name="TargetArea">目的区域；打开菜单与关闭子视图时为 null（不换页）。</param>
-public sealed record NavigationKeyDescriptor(
-    NavigationKeyRole Role,
-    string LabelResourceKey,
-    PageKey? TargetArea);
+/// <param name="Target">目的画面；None 与收起菜单时为 null。</param>
+public sealed record BackDescriptor(BackRole Role, PageKey? Target);
 
 /// <summary>
-/// 页面切换的状态机。刻意做成纯逻辑（不引用 WPF、不引用本地化），
-/// 这样切换规则可以被单元测试直接覆盖。
+/// 画面切换的状态机（最终稿 4.1、4.4）。刻意做成纯逻辑（不引用 WPF、不引用本地化），规则直接单测。
 ///
-/// 结构：主页（自动磨削）+ 6 个子页面，每页可再打开一层子视图，最深三层。
+/// 结构：8 个区域，每个区域一个或几个画面（机床区：手动磨削、自动磨削、手动动作页、作业），
+/// 画面里还可以开一层子功能（补偿、轧辊台账……）。
 /// 规则：
-/// 1. 区域之间永远是"平的"——从任何区域到任何区域都是一步，不叠历史栈；
-/// 2. 导航槽（第 8 键）只退一级，且标签写明退到哪；
-/// 3. 只有"任务跳转"（A 页派你去 B 页取个东西）才记返回点。
+/// 1. 区域之间是平的——左栏一点、区域菜单一选，从哪儿到哪儿都是一步，不叠历史栈；
+/// 2. 只有"任务跳转"（A 页派你去 B 页取个东西）才记返回点；
 ///    A 页自己也是被派来的（工艺程序 → 作业 → 台账登记新辊）时，回到 A 页，A 页原来的返回点还在；
-///    只多记这一层，不是历史栈。
+///    只多记这一层，不是历史栈；
+/// 3. "返回"只退一级：先收菜单，再关子功能，再回任务发起页；都没有就不动。
 /// </summary>
 public sealed class NavigationModel
 {
     /// <summary>
-    /// 平常的主页。<see cref="INavigator"/> 的默认参数要一个编译期常量，所以它得是 const。
+    /// 平常开机停在哪一页：机床区的手动磨削（NC 在 AUTO 时外壳会换成自动磨削）。
+    /// <see cref="INavigator"/> 的默认参数要一个编译期常量，所以它得是 const。
     /// </summary>
-    public const PageKey DefaultHomeArea = PageKey.AutoGrinding;
+    public const PageKey DefaultHomePage = PageKey.ManualGrinding;
 
-    /// <summary>
-    /// 本次运行的主页。开机停在这里，任何地方按"返回主页"也回这里。
-    ///
-    /// 离线模式下自动磨削页用不了（没有机床可监控），主页改成工序编程——
-    /// 否则"返回主页"会把人送到一个只能看不能用的页面上。
-    /// </summary>
-    public PageKey HomeArea { get; }
-
-    public NavigationModel(PageKey? homeArea = null)
+    public NavigationModel(PageKey? homePage = null)
     {
-        HomeArea = homeArea ?? DefaultHomeArea;
-        CurrentArea = HomeArea;
+        HomePage = homePage ?? DefaultHomePage;
+        CurrentPage = HomePage;
     }
 
-    /// <summary>当前一级区域。</summary>
-    public PageKey CurrentArea { get; private set; }
+    /// <summary>
+    /// 本次运行的开机画面，也是任务没有返回点时的落脚处。
+    /// 离线模式下机床区用不了，外壳会把它换成第一个离线能用的画面。
+    /// </summary>
+    public PageKey HomePage { get; }
 
-    /// <summary>当前二级子视图的资源键；null 表示停在一级页根部。</summary>
+    /// <summary>当前画面。</summary>
+    public PageKey CurrentPage { get; private set; }
+
+    /// <summary>当前区域。</summary>
+    public AreaKey CurrentArea => AreaCatalog.AreaOf(CurrentPage);
+
+    /// <summary>当前子功能的资源键；null 表示停在画面根部。</summary>
     public string? CurrentSubViewKey { get; private set; }
 
     /// <summary>任务返回点；null 表示当前不是被"派"来的。</summary>
-    public PageKey? TaskReturnArea { get; private set; }
+    public PageKey? TaskReturnPage { get; private set; }
 
     /// <summary>
     /// 发起页自己的返回点：任务是从一个"被派来"的页上再派出去的，回到发起页时恢复它。
-    /// 例：工艺程序 → 作业（返回 工艺程序）→ 台账（返回 作业）；登记完回到作业页，第 8 键仍是"返回 工艺程序"。
     /// </summary>
-    private PageKey? returnAreaOfIssuer;
+    private PageKey? returnPageOfIssuer;
 
-    /// <summary>区域菜单是否展开。</summary>
+    /// <summary>区域菜单是否展开（横键条换成 8 个区域）。</summary>
     public bool IsAreaMenuOpen { get; private set; }
 
-    /// <summary>当前深度：主页根部 1，一级子页或主页子视图 2，子页的子视图 3。</summary>
-    public int Depth => (CurrentArea == HomeArea ? 1 : 2) + (CurrentSubViewKey is null ? 0 : 1);
-
-    /// <summary>切到某个区域。这是"平的"切换：清掉子视图与任务返回点。</summary>
-    /// <returns>区域确实变了返回 true。</returns>
-    public bool GoToArea(PageKey area)
+    /// <summary>切到某个画面。这是"平的"切换：清掉子功能与任务返回点，收起区域菜单。</summary>
+    /// <returns>画面确实变了返回 true。</returns>
+    public bool GoTo(PageKey page)
     {
         IsAreaMenuOpen = false;
         CurrentSubViewKey = null;
-        TaskReturnArea = null;
-        this.returnAreaOfIssuer = null;
+        TaskReturnPage = null;
+        this.returnPageOfIssuer = null;
 
-        if (CurrentArea == area)
+        if (CurrentPage == page)
         {
             return false;
         }
 
-        CurrentArea = area;
+        CurrentPage = page;
         return true;
     }
 
     /// <summary>
     /// 任务跳转：从 <paramref name="returnTo"/> 派到 <paramref name="target"/>，
-    /// 办完由导航槽送回。目的地就是发起页时退化成普通切换。
+    /// 办完由"返回"送回。目的地就是发起页时退化成普通切换。
     /// </summary>
     public bool StartTask(PageKey target, PageKey returnTo)
     {
         if (target == returnTo)
         {
-            return GoToArea(target);
+            return GoTo(target);
         }
 
         // 发起页就是当前页、且它自己也是被派来的：记下它的返回点，回来时还给它。
-        PageKey? issuerReturn = CurrentArea == returnTo ? TaskReturnArea : null;
-        bool changed = GoToArea(target);
-        TaskReturnArea = returnTo;
-        this.returnAreaOfIssuer = issuerReturn == target ? null : issuerReturn;
+        PageKey? issuerReturn = CurrentPage == returnTo ? TaskReturnPage : null;
+        bool changed = GoTo(target);
+        TaskReturnPage = returnTo;
+        this.returnPageOfIssuer = issuerReturn == target ? null : issuerReturn;
         return changed;
     }
 
-    /// <summary>任务办完，回发起页（发起页原来的返回点一并恢复）。没有返回点时回主页。</summary>
+    /// <summary>任务办完，回发起页（发起页原来的返回点一并恢复）。没有返回点时回开机画面。</summary>
     public bool CompleteTask()
     {
-        PageKey target = TaskReturnArea ?? HomeArea;
-        PageKey? restored = TaskReturnArea is null ? null : this.returnAreaOfIssuer;
-        bool changed = GoToArea(target);
-        TaskReturnArea = restored;
+        PageKey target = TaskReturnPage ?? HomePage;
+        PageKey? restored = TaskReturnPage is null ? null : this.returnPageOfIssuer;
+        bool changed = GoTo(target);
+        TaskReturnPage = restored;
         return changed;
     }
 
-    /// <summary>打开本页的二级子视图。</summary>
+    /// <summary>打开本画面的一个子功能。</summary>
     public void OpenSubView(string subViewKey)
     {
         ArgumentException.ThrowIfNullOrEmpty(subViewKey);
@@ -141,7 +130,7 @@ public sealed class NavigationModel
         CurrentSubViewKey = subViewKey;
     }
 
-    /// <summary>关掉二级子视图，回本页根部。</summary>
+    /// <summary>关掉子功能，回画面根部。</summary>
     /// <returns>确实关掉了返回 true。</returns>
     public bool CloseSubView()
     {
@@ -160,35 +149,30 @@ public sealed class NavigationModel
     /// <summary>收起区域菜单。</summary>
     public void CloseAreaMenu() => IsAreaMenuOpen = false;
 
+    /// <summary>区域方块、F10：开着就收，收着就开。</summary>
+    public void ToggleAreaMenu() => IsAreaMenuOpen = !IsAreaMenuOpen;
+
     /// <summary>
-    /// 导航槽当前该显示什么。优先级：菜单态 &gt; 子视图 &gt; 任务返回点 &gt; 回主页 &gt; 打开菜单。
-    /// 任何位置都有明确含义，不存在按了没反应的死键。
-    ///
-    /// 菜单态排第一：页面菜单是把底部软键条原地换成区域键（对齐 Operate 的 MENU SELECT），
-    /// 这时第 8 键就是"取消"，按下去软键条变回来，不换页。
+    /// "返回"现在会做什么。优先级：菜单 &gt; 子功能 &gt; 任务返回点。
+    /// 区域根部没有"回主页"：区域是平的，换区域是左栏一点。
     /// </summary>
-    public NavigationKeyDescriptor DescribeNavigationKey()
+    public BackDescriptor DescribeBack()
     {
         if (IsAreaMenuOpen)
         {
-            return new NavigationKeyDescriptor(NavigationKeyRole.CloseAreaMenu, "Menu_Cancel", null);
+            return new BackDescriptor(BackRole.CloseAreaMenu, null);
         }
 
         if (CurrentSubViewKey is not null)
         {
-            return new NavigationKeyDescriptor(NavigationKeyRole.CloseSubView, "Nav_BackToPageFormat", CurrentArea);
+            return new BackDescriptor(BackRole.CloseSubView, CurrentPage);
         }
 
-        if (TaskReturnArea is PageKey returnArea)
+        if (TaskReturnPage is PageKey returnPage)
         {
-            return new NavigationKeyDescriptor(NavigationKeyRole.BackToTask, "Nav_BackToPageFormat", returnArea);
+            return new BackDescriptor(BackRole.BackToTask, returnPage);
         }
 
-        if (CurrentArea != HomeArea)
-        {
-            return new NavigationKeyDescriptor(NavigationKeyRole.BackToHome, "Nav_BackToHome", HomeArea);
-        }
-
-        return new NavigationKeyDescriptor(NavigationKeyRole.OpenAreaMenu, "Nav_AreaMenu", null);
+        return new BackDescriptor(BackRole.None, null);
     }
 }

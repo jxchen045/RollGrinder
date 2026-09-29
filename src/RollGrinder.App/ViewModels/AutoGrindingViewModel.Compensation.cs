@@ -95,26 +95,22 @@ public sealed partial class AutoGrindingViewModel
         this.strokeLog = log ?? throw new ArgumentNullException(nameof(log));
         this.tuning.Changed += (_, _) => OnUiThread(LoadTuningTexts);
 
-        this.saveTuningCommand = new AsyncRelayCommand(() => SaveTuningAsync(CancellationToken.None), () => IsCompensationOpen);
-        this.resetTuningCommand = new AsyncRelayCommand(() => ResetTuningAsync(CancellationToken.None), () => IsCompensationOpen);
+        // 保存、恢复都先问一句（最终稿 4.5）：改的是 NC 行程间补偿用的增益与限幅。
+        this.saveTuningCommand = new AsyncRelayCommand(
+            () =>
+            {
+                Ask("Comp_AskSave", () => SaveTuningAsync(CancellationToken.None));
+                return Task.CompletedTask;
+            },
+            () => IsCompensationOpen);
+        this.resetTuningCommand = new AsyncRelayCommand(
+            () =>
+            {
+                Ask("Comp_AskReset", () => ResetTuningAsync(CancellationToken.None));
+                return Task.CompletedTask;
+            },
+            () => IsCompensationOpen);
         PropertyChanged += OnCompensationPropertyChanged;
-
-        // 右侧竖键（修改稿 5.5 线框）：曲线 ▸、补偿、补偿设定的保存与恢复、测量记录。
-        SetVerticalKeys(new[]
-        {
-            new FunctionKeyViewModel("Vk_Curves", new RelayCommand(OpenCurveMenu), Localizer),
-            new FunctionKeyViewModel("Vk_Compensation", new RelayCommand(OpenCompensation), Localizer),
-            new FunctionKeyViewModel("Vk_SaveTuning", this.saveTuningCommand, Localizer, FunctionKeyKind.Primary)
-            {
-                RequiredPermission = Permission.EditCompensation,
-            },
-            new FunctionKeyViewModel("Vk_ResetTuning", this.resetTuningCommand, Localizer)
-            {
-                RequiredPermission = Permission.EditCompensation,
-            },
-            new FunctionKeyViewModel("Vk_MeasurementRecords", new RelayCommand(() => Navigator.GoToArea(PageKey.Records)), Localizer),
-        });
-
         LoadTuningTexts();
     }
 
@@ -130,11 +126,6 @@ public sealed partial class AutoGrindingViewModel
 
     protected override void OnAccessChanged() => OnPropertyChanged(nameof(CanEditCompensation));
 
-    /// <summary>曲线 ▸：五种曲线一键一个（和图上方那一排分段键一样）。</summary>
-    private void OpenCurveMenu() => OpenVerticalMenu("Vk_CurvesTitle", Enum.GetValues<CurveKind>()
-        .Select(kind => MenuChoice("Curve_" + kind, () => SelectCurve(kind), requiresEditable: false)));
-
-    [RelayCommand]
     private void OpenCompensation()
     {
         Navigator.OpenSubView(CompensationSubView);
@@ -270,6 +261,7 @@ public sealed partial class AutoGrindingViewModel
             token => this.tuning.SaveAsync(edited, this.userSession.CurrentUser?.UserName ?? string.Empty, token),
             cancellationToken).ConfigureAwait(true);
         TuningStatusText = Localizer["Comp_Saved"];
+        Interaction.Say(TuningStatusText);
     }
 
     private async Task ResetTuningAsync(CancellationToken cancellationToken)
@@ -284,6 +276,7 @@ public sealed partial class AutoGrindingViewModel
             token => this.tuning.ResetAsync(this.userSession.CurrentUser?.UserName ?? string.Empty, token),
             cancellationToken).ConfigureAwait(true);
         TuningStatusText = Localizer["Comp_Reset"];
+        Interaction.Say(TuningStatusText);
     }
 
     private static bool TryParse(string text, out double value) =>

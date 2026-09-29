@@ -5,13 +5,28 @@
         xmlns:vm="clr-namespace:RollGrinder.App.ViewModels"
         xmlns:views="clr-namespace:RollGrinder.App.Views"
         xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
+        xmlns:ia="clr-namespace:RollGrinder.App.Interaction"
+        x:Name="Root"
         Title="{loc:Loc App_Title}"
         Width="1920"
         Height="1080"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
+        Stylus.IsPressAndHoldEnabled="False"
         Background="{StaticResource Brush.Background}"
         FontFamily="{StaticResource Font.Sans}">
+
+    <!--
+      外壳（界面最终稿 4.1）：
+      ┌──80──┬──────────── 1640 ────────────┬──200──┐
+      │ 左栏 │ 标题行 52                     │ 区域/方式方块 │
+      │      │ 路径条 32（其他区域：青色窗口标题）│ 功能键块 3×48 │
+      │      │ 通道行 32（只在机床区）         │ 竖键 8        │
+      │      │ 工作区                         │               │
+      │      ├── 对话行 34 ───────────────────────────────┤
+      │      ├── 横键 8 × 200×74 + "›"翻页 ───────────────┤
+      Windows 的"长按当右键"关掉（Stylus.IsPressAndHoldEnabled），长按 0.6 秒由 ctl:TouchInput 处理。
+    -->
 
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:AutoGrindingViewModel}">
@@ -32,299 +47,79 @@
         <DataTemplate DataType="{x:Type vm:ManualViewModel}">
             <views:ManualView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
-            <views:SettingsView />
+        <DataTemplate DataType="{x:Type vm:ParametersViewModel}">
+            <views:ParametersView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ManualGrindingViewModel}">
+            <views:ManualGrindingView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:LibraryViewModel}">
+            <views:LibraryView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:CommissioningViewModel}">
+            <views:CommissioningView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:DiagnosticsViewModel}">
             <views:DiagnosticsView />
         </DataTemplate>
+
+        <!-- 一个软键：按不了的留在原位灰字，点它时外壳在对话行说原因（所以按钮本身不禁用）。 -->
+        <DataTemplate x:Key="SoftKeyTemplate" DataType="{x:Type vm:FunctionKeyViewModel}">
+            <Button Command="{Binding DataContext.PressKeyCommand, ElementName=Root}"
+                    CommandParameter="{Binding}"
+                    Style="{Binding Kind, Converter={StaticResource FunctionKeyStyle}}"
+                    ctl:ButtonStates.IsSelected="{Binding IsActive}"
+                    ctl:ButtonStates.IsUnavailable="{Binding IsUsable, Converter={StaticResource InverseBool}}"
+                    Margin="3">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" TextAlignment="Center"
+                               TextWrapping="Wrap" MaxHeight="52" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding ShortcutText}"
+                               FontFamily="{StaticResource Font.Mono}"
+                               FontSize="{StaticResource Size.Caption}"
+                               Opacity="0.8" HorizontalAlignment="Center"
+                               Visibility="{Binding ShortcutText, Converter={StaticResource TextToVisibility}}" />
+                </StackPanel>
+            </Button>
+        </DataTemplate>
     </Window.Resources>
 
-    <DockPanel>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="80" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="200" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="52" />
+            <RowDefinition Height="32" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="34" />
+            <RowDefinition Height="84" />
+        </Grid.RowDefinitions>
 
-        <!-- 顶栏 76：品牌 / 页面上下文 / 状态条 / NC 连接 / 权限 / 时钟 -->
-        <Border DockPanel.Dock="Top" Height="76" Background="{StaticResource Brush.Accent}" Padding="20,0">
-            <DockPanel LastChildFill="True">
-                <!-- 左上角恒为"菜单"：位置固定，任何页面、任何深度都能按。
-                     按下去是把底部软键条换成区域键（再按一次收回），不弹浮层。 -->
-                <Button DockPanel.Dock="Left"
-                        Command="{Binding ToggleAreaMenuCommand}"
-                        ToolTip="{loc:Loc Shell_OpenAreaMenu}"
-                        ToolTipService.Placement="Bottom"
-                        Padding="16,0"
-                        Height="56"
-                        VerticalAlignment="Center"
-                        Margin="0,0,20,0"
-                        Style="{StaticResource TopBarDarkButton}">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="&#x2630;"
-                                   FontSize="26"
-                                   Foreground="{StaticResource Brush.OnAccent}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,10,0" />
-                        <TextBlock Text="{Binding Brand}"
-                                   FontSize="{StaticResource Size.Brand}"
-                                   FontWeight="Bold"
-                                   Foreground="{StaticResource Brush.OnAccent}"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-
-                <!-- 当前页的直达快捷键：常驻，让"Ctrl+数字一键切页"不用翻手册也能被发现 -->
-                <Border DockPanel.Dock="Left"
-                        Background="{StaticResource Brush.AccentDark}"
-                        Height="32" Padding="10,0" Margin="0,0,12,0"
-                        VerticalAlignment="Center"
-                        ToolTip="{loc:Loc Nav_ShortcutBadgeHint}"
-                        ToolTipService.Placement="Bottom">
-                    <TextBlock Text="{Binding CurrentAreaShortcutText}"
-                               FontFamily="{StaticResource Font.Mono}"
-                               FontSize="15"
-                               Foreground="{StaticResource Brush.OnAccentMuted}"
-                               VerticalAlignment="Center" />
-                </Border>
-
-                <!-- 面包屑：当前在哪一层，一眼可见 -->
-                <TextBlock DockPanel.Dock="Left"
-                           Text="{Binding BreadcrumbText}"
-                           FontSize="{StaticResource Size.PageTitle}"
-                           Foreground="{StaticResource Brush.OnAccent}"
-                           VerticalAlignment="Center"
-                           Margin="0,0,16,0" />
-
-                <!-- 已修改 / 运行中只读：两个状态角标，改动与锁定都不靠猜 -->
-                <Border DockPanel.Dock="Left"
-                        Background="{StaticResource Brush.NextStep}"
-                        Height="32" Padding="10,0" Margin="0,0,10,0"
-                        VerticalAlignment="Center"
-                        Visibility="{Binding CurrentPage.IsDirty, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{loc:Loc Shell_Modified}"
-                               FontSize="15"
-                               Foreground="{StaticResource Brush.OnNextStep}"
-                               VerticalAlignment="Center" />
-                </Border>
-
-                <Border DockPanel.Dock="Left"
-                        Background="{StaticResource Brush.AccentDark}"
-                        Height="32" Padding="10,0" Margin="0,0,20,0"
-                        VerticalAlignment="Center"
-                        Visibility="{Binding CurrentPage.IsRunLocked, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{loc:Loc Shell_ReadOnlyRunning}"
-                               FontSize="15"
-                               Foreground="{StaticResource Brush.OnAccent}"
-                               VerticalAlignment="Center" />
-                </Border>
-
-                <!-- 当前权限改不了这一页：写明要哪一级（修改稿 Q9） -->
-                <Border x:Name="RoleLockBadge" DockPanel.Dock="Left"
-                        Background="{StaticResource Brush.AccentDark}"
-                        Height="32" Padding="10,0" Margin="0,0,20,0"
-                        VerticalAlignment="Center"
-                        Visibility="{Binding CurrentPage.IsRoleLocked, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding CurrentPage.RoleLockText}"
-                               FontSize="15"
-                               Foreground="{StaticResource Brush.OnAccent}"
-                               VerticalAlignment="Center" />
-                </Border>
-
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="{StaticResource Brush.AccentDark}" Height="46" Padding="14,0" Margin="16,0,0,0">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Ellipse Width="12" Height="12" VerticalAlignment="Center">
-                                <Ellipse.Style>
-                                    <Style TargetType="Ellipse">
-                                        <Setter Property="Fill" Value="{StaticResource Brush.CurrentStep}" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsConnected}" Value="True">
-                                                <Setter Property="Fill" Value="#45C07C" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Ellipse.Style>
-                            </Ellipse>
-                            <TextBlock Text="{Binding ConnectionText}"
-                                       FontSize="16"
-                                       Foreground="{StaticResource Brush.OnAccent}"
-                                       VerticalAlignment="Center"
-                                       Margin="8,0,0,0" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="{StaticResource Brush.WarningFill}" Height="46" Padding="14,0" Margin="16,0,0,0"
-                            Visibility="{Binding IsOffline, Converter={StaticResource BoolToVisibility}}">
-                        <TextBlock Text="{loc:Loc Top_OfflineMode}"
-                                   FontSize="17"
-                                   Foreground="{StaticResource Brush.OnAccent}"
-                                   VerticalAlignment="Center" />
-                    </Border>
-
-                    <Border Background="{StaticResource Brush.AccentDark}" Height="46" Padding="14,0" Margin="16,0,0,0">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding RoleText}"
-                                       FontSize="17"
-                                       Foreground="{StaticResource Brush.OnAccent}"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding UserNameText}"
-                                       FontSize="17"
-                                       Foreground="{StaticResource Brush.OnAccent}"
-                                       VerticalAlignment="Center" Margin="10,0,0,0"
-                                       Visibility="{Binding IsSignedIn, Converter={StaticResource BoolToVisibility}}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Button Content="{loc:Loc Users_Manage}" Command="{Binding OpenUserAdminCommand}"
-                            Style="{StaticResource SecondaryButton}" Height="46" Margin="10,0,0,0" Padding="14,0"
-                            Visibility="{Binding CanManageUsers, Converter={StaticResource BoolToVisibility}}" />
-
-                    <Button Content="{loc:Loc SignIn_SignOut}" Command="{Binding SignOutCommand}"
-                            Style="{StaticResource SecondaryButton}" Height="46" Margin="10,0,0,0" Padding="14,0"
-                            Visibility="{Binding IsSignedIn, Converter={StaticResource BoolToVisibility}}" />
-
-                    <TextBlock Text="{Binding ClockText}"
-                               FontFamily="{StaticResource Font.Mono}"
-                               FontSize="{StaticResource Size.PageTitle}"
-                               Foreground="{StaticResource Brush.OnAccent}"
-                               VerticalAlignment="Center"
-                               Margin="16,0,0,0" />
-                </StackPanel>
-
-                <!-- 中间：页面上下文 + 状态条 -->
-                <DockPanel LastChildFill="True">
-                    <ItemsControl DockPanel.Dock="Left" ItemsSource="{Binding CurrentPage.ContextItems}"
-                                  VerticalAlignment="Center" Margin="0,0,16,0">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,20,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding LabelResourceKey, Converter={StaticResource LocalizeConverter}}"
-                                               FontSize="15"
-                                               Foreground="{StaticResource Brush.OnAccentMuted}"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,6,0" />
-                                    <TextBlock Text="{Binding Value}"
-                                               FontSize="20"
-                                               Foreground="{StaticResource Brush.OnAccent}"
-                                               VerticalAlignment="Center" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <Border Height="46"
-                            VerticalAlignment="Center"
-                            Padding="16,0"
-                            Background="{Binding BannerSeverity, Converter={StaticResource SeverityToBrush}}"
-                            BorderThickness="4,0,0,0">
-                        <Border.BorderBrush>
-                            <SolidColorBrush Color="#45C07C" />
-                        </Border.BorderBrush>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <!-- 报警号用白字：浅蓝（OnAccentMuted）在警告棕底上只有 3.9:1、错误红底上 4.3:1。
-                                 和后面的文字靠等宽字体区分，不靠变淡。 -->
-                            <TextBlock Text="{Binding BannerCode}"
-                                       FontFamily="{StaticResource Font.Mono}"
-                                       FontSize="15"
-                                       Foreground="{StaticResource Brush.OnAccent}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,10,0" />
-                            <TextBlock Text="{Binding BannerText}"
-                                       FontSize="18"
-                                       Foreground="{StaticResource Brush.OnAccent}"
-                                       VerticalAlignment="Center"
-                                       TextTrimming="CharacterEllipsis" />
-                        </StackPanel>
-                    </Border>
-                </DockPanel>
-            </DockPanel>
-        </Border>
-
-        <!-- 底部功能条 86：8 个等宽键，最后一个是导航槽。
-             页面菜单态时前 7 格原地换成区域键（对齐 Operate 的 MENU SELECT），
-             整条换强调色上沿，一眼看出现在按下去是"换页"而不是"干活"。 -->
-        <Border DockPanel.Dock="Bottom" Height="86" Padding="14,12">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Setter Property="Background" Value="{StaticResource Brush.FunctionBar}" />
-                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Divider}" />
-                    <Setter Property="BorderThickness" Value="0,2,0,0" />
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsAreaMenuOpen}" Value="True">
-                            <Setter Property="Background" Value="{StaticResource Brush.AccentDark}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
-                            <Setter Property="BorderThickness" Value="0,4,0,0" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Border.Style>
-            <ItemsControl ItemsSource="{Binding FunctionKeys}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Rows="1" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Command="{Binding Command}"
-                                IsEnabled="{Binding IsEnabled}"
-                                ToolTip="{Binding HintText}"
-                                ToolTipService.ShowOnDisabled="True"
-                                ToolTipService.Placement="Top"
-                                Style="{Binding Kind, Converter={StaticResource FunctionKeyStyle}}"
-                                Margin="5,0">
-                            <StackPanel HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding Label}"
-                                           HorizontalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding ShortcutText}"
-                                           FontFamily="{StaticResource Font.Mono}"
-                                           FontSize="{StaticResource Size.Caption}"
-                                           Opacity="0.8"
-                                           HorizontalAlignment="Center"
-                                           Visibility="{Binding ShortcutText, Converter={StaticResource TextToVisibility}}" />
-                            </StackPanel>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
-
-        <!-- 右侧竖向软键 8 格（修改稿原则 1）：本页的编辑动作；带 ▸ 的开一层子菜单，子菜单第 8 格是"返回"。
-             键盘 Shift+F1…F8。子菜单打开时顶上写着它是什么菜单。 -->
-        <Border DockPanel.Dock="Right" Width="200" Padding="8,10"
-                Background="{StaticResource Brush.FunctionBar}"
-                BorderBrush="{StaticResource Brush.Divider}" BorderThickness="2,0,0,0"
-                IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}">
+        <!-- 左栏：7 个快捷入口（machine.json quickBar），Ctrl+1…7；当前项青底，进不去的灰字。 -->
+        <Border x:Name="QuickBar" Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Background="{StaticResource Brush.LeftBar}" Padding="3,4">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Text="{Binding CurrentPage.VerticalMenuTitle}"
-                           Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="4,0,4,6"
-                           Visibility="{Binding CurrentPage.VerticalMenuTitle, Converter={StaticResource TextToVisibility}}" />
-                <ItemsControl ItemsSource="{Binding CurrentPage.VerticalKeys}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <UniformGrid Columns="1" Rows="8" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
+                <Border DockPanel.Dock="Bottom" Height="60" Background="{StaticResource Brush.LeftBarKey}" Margin="0,4,0,0"
+                        IsEnabled="False">
+                    <TextBlock Text="{loc:Loc Quick_SideScreen}" Foreground="{StaticResource Brush.OnAccent}"
+                               FontSize="{StaticResource Size.Caption}" TextWrapping="Wrap" TextAlignment="Center"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <ItemsControl ItemsSource="{Binding QuickBarItems}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button Command="{Binding Command}"
-                                    IsEnabled="{Binding IsEnabled}"
-                                    ToolTip="{Binding HintText}"
-                                    ToolTipService.ShowOnDisabled="True"
-                                    ToolTipService.Placement="Left"
-                                    Style="{Binding Kind, Converter={StaticResource FunctionKeyStyle}}"
-                                    Margin="0,4">
+                        <DataTemplate DataType="{x:Type vm:QuickBarItemViewModel}">
+                            <Button Command="{Binding Command}" Height="88" Margin="0,0,0,3"
+                                    Style="{StaticResource ShellDarkButton}"
+                                    ctl:ButtonStates.IsSelected="{Binding IsCurrent}"
+                                    ctl:ButtonStates.IsUnavailable="{Binding IsAvailable, Converter={StaticResource InverseBool}}">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="{Binding Label}" HorizontalAlignment="Center"
-                                               TextWrapping="Wrap" TextAlignment="Center" />
-                                    <TextBlock Text="{Binding ShortcutText}"
-                                               FontFamily="{StaticResource Font.Mono}"
-                                               FontSize="{StaticResource Size.Caption}"
-                                               Opacity="0.8" HorizontalAlignment="Center"
-                                               Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Text="{Binding Glyph}" FontSize="{StaticResource Size.DataRow}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding ShortcutText}" FontFamily="{StaticResource Font.Mono}"
+                                               FontSize="{StaticResource Size.Caption}" Opacity="0.8" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </DataTemplate>
@@ -333,200 +128,539 @@
             </DockPanel>
         </Border>
 
-        <Grid>
-            <ContentControl Content="{Binding CurrentPage}"
-                            Margin="12"
-                            IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}" />
+        <!-- 标题行：软件名、机床、报警（红字、报警号、+N）、用户、连接、时间。急停时整行变红。 -->
+        <Border x:Name="TitleRow" Grid.Row="0" Grid.Column="1" Padding="12,0">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{StaticResource Brush.TitleRow}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsEmergencyStop}" Value="True">
+                            <Setter Property="Background" Value="{StaticResource Brush.Alarm}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Brand}" FontSize="{StaticResource Size.PageTitle}" FontWeight="Bold"
+                               Foreground="{StaticResource Brush.TextPrimary}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding MachineName}" Style="{StaticResource Text.Body}"
+                               Foreground="{StaticResource Brush.TextSecondary}" Margin="14,0,0,0" VerticalAlignment="Center" />
+                    <Border Background="{StaticResource Brush.WarningFill}" Padding="10,2" Margin="14,0,0,0" VerticalAlignment="Center"
+                            Visibility="{Binding IsOffline, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{loc:Loc Top_OfflineMode}" FontSize="{StaticResource Size.Body}" Foreground="{StaticResource Brush.OnAccent}" />
+                    </Border>
+                </StackPanel>
 
-            <!-- 离开确认：脏页切走时拦一道，三个选择都写清楚后果 -->
-            <Grid x:Name="LeaveConfirmOverlay" Background="#B3101418"
-                  Visibility="{Binding IsLeaveConfirmOpen, Converter={StaticResource BoolToVisibility}}">
-                <Border Background="{StaticResource Brush.Surface}"
-                        BorderBrush="{StaticResource Brush.CurrentStep}"
-                        BorderThickness="3"
-                        Width="820"
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Center"
-                        Padding="32,28">
-                    <StackPanel>
-                        <TextBlock FontSize="30"
-                                   Foreground="{StaticResource Brush.TextPrimary}"
-                                   TextWrapping="Wrap"
-                                   Text="{Binding LeaveConfirmPageTitle, Converter={StaticResource LeaveTitle}}" />
-                        <TextBlock Text="{loc:Loc Leave_Message}"
-                                   FontSize="19"
-                                   Foreground="{StaticResource Brush.TextSecondary}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,14,0,0" />
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,28,0,0">
-                            <Button Content="{loc:Loc Leave_Cancel}"
-                                    Command="{Binding CancelLeaveCommand}"
-                                    Style="{StaticResource DialogPrimaryButton}" />
-                            <Button Content="{loc:Loc Leave_Save}"
-                                    Command="{Binding SaveAndLeaveCommand}"
-                                    Style="{StaticResource DialogButton}"
-                                    Visibility="{Binding LeaveConfirmCanSave, Converter={StaticResource BoolToVisibility}}" />
-                            <Button Content="{loc:Loc Leave_Discard}"
-                                    Command="{Binding DiscardAndLeaveCommand}"
-                                    Style="{StaticResource DialogDangerButton}" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="UserButton" Command="{Binding PressUserCommand}" Style="{StaticResource TitleRowButton}" Height="46">
+                        <TextBlock Text="{Binding UserText}" FontSize="{StaticResource Size.Body}" Foreground="{StaticResource Brush.TextPrimary}" />
+                    </Button>
+                    <Ellipse Width="12" Height="12" Margin="14,0,6,0" VerticalAlignment="Center">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{StaticResource Brush.CurrentStep}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                        <Setter Property="Fill" Value="{StaticResource Brush.Normal}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="{Binding ConnectionText}" FontSize="{StaticResource Size.Body}"
+                               Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding ClockText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Body}"
+                               Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                </StackPanel>
+
+                <Grid Margin="20,0">
+                    <!-- 急停：整行红底白字，写明怎么解除（最终稿 4.7）。 -->
+                    <TextBlock Text="{loc:Loc Top_EmergencyStop}" FontSize="{StaticResource Size.DataRow}" FontWeight="Bold"
+                               Foreground="{StaticResource Brush.OnAccent}" VerticalAlignment="Center"
+                               Visibility="{Binding IsEmergencyStop, Converter={StaticResource BoolToVisibility}}" />
+                    <!-- 报警：红字，点它到诊断 › 报警。 -->
+                    <Button x:Name="AlarmButton" Command="{Binding OpenAlarmsCommand}" Style="{StaticResource TitleRowButton}"
+                            Height="46" HorizontalAlignment="Left" HorizontalContentAlignment="Left">
+                        <Button.Visibility>
+                            <MultiBinding Converter="{StaticResource AllTrueToVisibility}">
+                                <Binding Path="HasAlarm" />
+                                <Binding Path="IsEmergencyStop" Converter="{StaticResource InverseBool}" />
+                            </MultiBinding>
+                        </Button.Visibility>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding AlarmCode}" FontFamily="{StaticResource Font.Mono}" FontWeight="Bold"
+                                       FontSize="{StaticResource Size.Body}" Foreground="{StaticResource Brush.Alarm}" Margin="0,0,10,0" />
+                            <TextBlock Text="{Binding AlarmText}" FontWeight="Bold" FontSize="{StaticResource Size.Body}"
+                                       Foreground="{StaticResource Brush.Alarm}" TextTrimming="CharacterEllipsis" MaxWidth="820" />
+                            <TextBlock Text="{Binding AlarmMoreText}" FontWeight="Bold" FontSize="{StaticResource Size.Body}"
+                                       Foreground="{StaticResource Brush.Alarm}" Margin="10,0,0,0" />
                         </StackPanel>
-                    </StackPanel>
-                </Border>
-            </Grid>
+                    </Button>
+                </Grid>
+            </DockPanel>
+        </Border>
 
-            <!-- 登录：退不掉的浮层。没登录就什么都不给。 -->
-            <Border x:Name="SignInOverlay" Background="#E6101418"
-                    Visibility="{Binding IsSignInOpen, Converter={StaticResource BoolToVisibility}}">
-                <Border Style="{StaticResource Card}" Width="480"
-                        HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <StackPanel Margin="28">
-                        <TextBlock Text="{loc:Loc SignIn_Title}" Style="{StaticResource Text.CardTitle}"
-                                   FontSize="24" Margin="0,0,0,20" />
-
-                        <TextBlock Text="{loc:Loc SignIn_UserName}" Style="{StaticResource Text.Label}" />
-                        <TextBox Text="{Binding SignInUserName, UpdateSourceTrigger=PropertyChanged}"
-                                 Height="50" FontSize="18" Margin="0,8,0,8" VerticalContentAlignment="Center" />
-                        <!-- 已有的用户：一人一个键，按一下填进上面的框（不用下拉）。 -->
-                        <ItemsControl ItemsSource="{Binding KnownUserChoices}" Margin="0,0,0,16">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,6,6"
-                                            Style="{StaticResource SegmentButton}" Height="40"
-                                            ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <!-- 常规登录 -->
-                        <StackPanel Visibility="{Binding IsNormalSignIn, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Text="{loc:Loc SignIn_Password}" Style="{StaticResource Text.Label}" />
-                            <PasswordBox x:Name="SignInPasswordBox" PasswordChanged="OnSignInPasswordChanged"
-                                         Height="50" FontSize="18" Margin="0,8,0,16"
-                                         VerticalContentAlignment="Center" />
-                        </StackPanel>
-
-                        <!-- 首次登录：先设一个口令 -->
-                        <StackPanel Visibility="{Binding NeedsNewPassword, Converter={StaticResource BoolToVisibility}}">
-                            <TextBlock Text="{loc:Loc SignIn_NewPassword}" Style="{StaticResource Text.Label}" />
-                            <PasswordBox PasswordChanged="OnNewPasswordChanged"
-                                         Height="50" FontSize="18" Margin="0,8,0,16"
-                                         VerticalContentAlignment="Center" />
-                            <TextBlock Text="{loc:Loc SignIn_ConfirmPassword}" Style="{StaticResource Text.Label}" />
-                            <PasswordBox PasswordChanged="OnConfirmPasswordChanged"
-                                         Height="50" FontSize="18" Margin="0,8,0,16"
-                                         VerticalContentAlignment="Center" />
-                        </StackPanel>
-
-                        <TextBlock Text="{Binding SignInMessage}" FontSize="16"
-                                   Foreground="{StaticResource Brush.WarningFill}" TextWrapping="Wrap"
-                                   Visibility="{Binding SignInMessage, Converter={StaticResource TextToVisibility}}"
-                                   Margin="0,0,0,16" />
-
-                        <Button Content="{loc:Loc SignIn_Confirm}" Command="{Binding SignInCommand}"
-                                Style="{StaticResource PrimaryButton}" Height="56" IsDefault="True" />
-                    </StackPanel>
-                </Border>
+        <!-- 右上两个方块：区域（点它或 F10 开区域菜单）、方式（JOG / AUTO，只显示）。 -->
+        <UniformGrid Grid.Row="0" Grid.Column="2" Columns="2" Background="{StaticResource Brush.LeftBar}">
+            <Button x:Name="AreaTile" Command="{Binding ToggleAreaMenuCommand}" Style="{StaticResource ShellTileButton}" Margin="1"
+                    ctl:ButtonStates.IsSelected="{Binding IsAreaMenuOpen}">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding AreaTileGlyph}" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding AreaTileText}" FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Center" />
+                </StackPanel>
+            </Button>
+            <Border Background="{StaticResource Brush.Tile}" Margin="1">
+                <TextBlock Text="{Binding ModeText}" FontFamily="{StaticResource Font.Mono}" FontWeight="Bold"
+                           FontSize="{StaticResource Size.Body}" Foreground="{StaticResource Brush.OnAccent}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
+        </UniformGrid>
 
-            <!-- 用户管理：管理员以上才开得出来 -->
-            <Border x:Name="UserAdminOverlay" Background="#CC101418"
-                    Visibility="{Binding IsUserAdminOpen, Converter={StaticResource BoolToVisibility}}">
-                <Border Style="{StaticResource Card}" Width="760" Height="560"
-                        HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <DockPanel>
-                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                            <TextBlock Text="{loc:Loc Users_Title}" Style="{StaticResource Text.CardTitle}" />
-                        </Border>
-
-                        <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}"
-                                BorderThickness="0,1,0,0" Padding="14">
-                            <StackPanel>
-                                <TextBlock Text="{loc:Loc Users_NewUser}" Style="{StaticResource Text.Label}"
-                                           Margin="0,0,0,8" />
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="330" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0" Text="{Binding NewUserName, UpdateSourceTrigger=PropertyChanged}"
-                                             Height="48" FontSize="17" Margin="0,0,8,0"
-                                             VerticalContentAlignment="Center" />
-                                    <PasswordBox Grid.Column="1" PasswordChanged="OnNewUserPasswordChanged"
-                                                 Height="48" FontSize="17" Margin="0,0,8,0"
-                                                 VerticalContentAlignment="Center" />
-                                    <ItemsControl Grid.Column="2" ItemsSource="{Binding RoleChoices}" Margin="0,0,8,0">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Rows="1" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
-                                                        Style="{StaticResource SegmentButton}" Height="48" Padding="4,0"
-                                                        ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                    <Button Grid.Column="3" Content="{loc:Loc Users_Create}"
-                                            Command="{Binding CreateUserCommand}"
-                                            Style="{StaticResource PrimaryButton}" Height="48" Width="100" />
-                                </Grid>
-                                <TextBlock Text="{loc:Loc Users_PasswordHint}" Style="{StaticResource Text.Label}"
-                                           Foreground="{StaticResource Brush.TextMuted}" Margin="0,8,0,0" />
-
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-                                    <Button Content="{loc:Loc Users_ResetPassword}"
-                                            Command="{Binding ResetUserPasswordCommand}"
-                                            Style="{StaticResource SecondaryButton}" Height="52" Width="130"
-                                            Margin="0,0,10,0" />
-                                    <Button Content="{loc:Loc Users_Delete}" Command="{Binding DeleteUserCommand}"
-                                            Style="{StaticResource DialogDangerButton}" Height="52" Width="110"
-                                            Margin="0,0,10,0" />
-                                    <Button Content="{loc:Loc Users_Close}" Command="{Binding CloseUserAdminCommand}"
-                                            Style="{StaticResource SecondaryButton}" Height="52" Width="110" />
+        <!-- 路径条：机床区灰色（程序路径、上下文），其他区域是当前窗口的青色标题。右端是未保存与只读标记。 -->
+        <Border x:Name="PathBar" Grid.Row="1" Grid.Column="1" Padding="6,0,12,0">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{StaticResource Brush.Active}" />
+                    <Setter Property="TextElement.Foreground" Value="{StaticResource Brush.OnAccent}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsMachineArea}" Value="True">
+                            <Setter Property="Background" Value="{StaticResource Brush.PathBar}" />
+                            <Setter Property="TextElement.Foreground" Value="{StaticResource Brush.TextPrimary}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Left" Command="{Binding BackCommand}" Style="{StaticResource PathBackButton}"
+                        Height="28" Margin="0,0,10,0" Content="{Binding BackText}"
+                        Visibility="{Binding BackText, Converter={StaticResource TextToVisibility}}" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Loc Shell_Modified}" FontWeight="Bold" FontSize="{StaticResource Size.Body}" Margin="12,0,0,0"
+                               Visibility="{Binding CurrentPage.IsDirty, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock Text="{loc:Loc Shell_ReadOnlyRunning}" FontWeight="Bold" FontSize="{StaticResource Size.Body}" Margin="12,0,0,0"
+                               Visibility="{Binding CurrentPage.IsRunLocked, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock x:Name="RoleLockBadge" Text="{Binding CurrentPage.RoleLockText}" FontWeight="Bold"
+                               FontSize="{StaticResource Size.Body}" Margin="12,0,0,0"
+                               Visibility="{Binding CurrentPage.IsRoleLocked, Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding PathText}" FontWeight="Bold" FontSize="{StaticResource Size.Body}" Margin="6,0,18,0" />
+                    <ItemsControl ItemsSource="{Binding CurrentPage.ContextItems}" VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,18,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding LabelResourceKey, Converter={StaticResource LocalizeConverter}}"
+                                               FontSize="{StaticResource Size.Body}" Opacity="0.85" Margin="0,0,6,0" />
+                                    <TextBlock Text="{Binding Value}" FontSize="{StaticResource Size.Body}" />
                                 </StackPanel>
-                            </StackPanel>
-                        </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </DockPanel>
+        </Border>
 
-                        <DataGrid ItemsSource="{Binding UserAccounts}" SelectedItem="{Binding SelectedUserAccount}"
-                                  AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
-                                  Margin="14,8" FontSize="16" RowHeight="44">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="{loc:Loc Users_ColumnName}"
-                                                    Binding="{Binding UserName}" Width="*" />
-                                <DataGridTextColumn Header="{loc:Loc Users_ColumnRole}"
-                                                    Binding="{Binding Role}" Width="180" />
-                                <DataGridTemplateColumn Header="{loc:Loc Users_ColumnPasswordSet}" Width="120">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock VerticalAlignment="Center">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Text" Value="{loc:Loc Users_PasswordSet}" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding MustSetPassword}" Value="True">
-                                                                <Setter Property="Text" Value="{loc:Loc Users_PasswordNotSet}" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </DockPanel>
+        <!-- 通道行（只在机床区）：左通道状态与回参考点，中机床已起动（钥匙），右手持盒的轴、手轮倍率、使能。 -->
+        <Border x:Name="ChannelRow" Grid.Row="2" Grid.Column="1" Height="32" Padding="12,0"
+                Background="{StaticResource Brush.ChannelRow}"
+                Visibility="{Binding IsMachineArea, Converter={StaticResource BoolToVisibility}}">
+            <Grid TextElement.Foreground="{StaticResource Brush.OnAccent}" TextElement.FontSize="{StaticResource Size.Body}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding ChannelText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsChannelRunning}" Value="True">
+                                    <Setter Property="FontWeight" Value="Bold" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Grid.Column="1" Text="{Binding MachineOnText}" VerticalAlignment="Center" Margin="16,0" />
+                <TextBlock Grid.Column="2" Text="{Binding PendantText}" VerticalAlignment="Center" HorizontalAlignment="Right"
+                           TextTrimming="CharacterEllipsis" />
+            </Grid>
+        </Border>
+
+        <!-- 工作区 -->
+        <Border Grid.Row="3" Grid.Column="1" Background="{StaticResource Brush.PathBar}">
+            <ContentControl Content="{Binding CurrentPage}" Margin="6"
+                            IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}" />
+        </Border>
+
+        <!-- 右栏：功能键块（撤销 / 重做、键盘 / 计算、帮助 / 截屏）+ 8 个竖键。 -->
+        <DockPanel Grid.Row="1" Grid.RowSpan="3" Grid.Column="2" Background="{StaticResource Brush.PathBar}"
+                   IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}">
+            <UniformGrid x:Name="FunctionBlock" DockPanel.Dock="Top" Columns="2" Rows="3" Height="144"
+                         Background="{StaticResource Brush.LeftBar}">
+                <Button Command="{Binding UndoCommand}" Content="{loc:Loc Fb_Undo}" Style="{StaticResource ShellDarkButton}" Margin="1" />
+                <Button Command="{Binding RedoCommand}" Content="{loc:Loc Fb_Redo}" Style="{StaticResource ShellDarkButton}" Margin="1" />
+                <Button Command="{Binding ShowTouchKeyboardCommand}" Content="{loc:Loc Fb_Keyboard}" Style="{StaticResource ShellDarkButton}" Margin="1" />
+                <Button Command="{Binding ShowCalculatorCommand}" Content="{loc:Loc Fb_Calculator}" Style="{StaticResource ShellDarkButton}" Margin="1" />
+                <Button Command="{Binding ToggleHelpCommand}" Content="{loc:Loc Fb_Help}" Style="{StaticResource ShellDarkButton}" Margin="1"
+                        ctl:ButtonStates.IsSelected="{Binding Help.IsOpen}" />
+                <Button Command="{Binding TakeScreenshotCommand}" Content="{loc:Loc Fb_Screenshot}" Style="{StaticResource ShellDarkButton}" Margin="1" />
+            </UniformGrid>
+            <TextBlock DockPanel.Dock="Top" Text="{Binding CurrentPage.VerticalMenuTitle}" Style="{StaticResource Text.Body}"
+                       FontWeight="Bold" TextWrapping="Wrap" Margin="6,4,6,0"
+                       Visibility="{Binding CurrentPage.VerticalMenuTitle, Converter={StaticResource TextToVisibility}}" />
+            <ItemsControl x:Name="VerticalKeyBar" ItemsSource="{Binding VerticalKeys}" ItemTemplate="{StaticResource SoftKeyTemplate}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="1" Rows="8" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </DockPanel>
+
+        <!-- 对话行：说明、消息、灰键原因、确认问题（淡黄底粗体）。 -->
+        <Border x:Name="DialogLine" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Padding="14,0">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{StaticResource Brush.PathBar}" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding DialogKind}" Value="{x:Static ia:DialogLineKind.Question}">
+                            <Setter Property="Background" Value="{StaticResource Brush.Question}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock Text="{Binding DialogText}" FontSize="{StaticResource Size.Body}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding DialogKind}" Value="{x:Static ia:DialogLineKind.Question}">
+                                <Setter Property="FontWeight" Value="Bold" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding DialogKind}" Value="{x:Static ia:DialogLineKind.Error}">
+                                <Setter Property="FontWeight" Value="Bold" />
+                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStepPressed}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding DialogKind}" Value="{x:Static ia:DialogLineKind.Reason}">
+                                <Setter Property="FontWeight" Value="Bold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Border>
+
+        <!-- 横键条：8 个功能组（区域菜单态时是 8 个区域），右端"›"翻页与页码。 -->
+        <Grid x:Name="HorizontalKeyBar" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Background="{StaticResource Brush.PathBar}"
+              IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="200" />
+            </Grid.ColumnDefinitions>
+            <ItemsControl ItemsSource="{Binding HorizontalKeys}" ItemTemplate="{StaticResource SoftKeyTemplate}" Margin="0,2">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="1" Columns="8" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+            <Grid Grid.Column="1" Margin="0,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="72" />
+                </Grid.ColumnDefinitions>
+                <Button Command="{Binding NextHorizontalPageCommand}" Style="{StaticResource SoftKeyButton}" Margin="3"
+                        FontWeight="Bold" FontSize="{StaticResource Size.DataRow}" Content="{loc:Loc Fn_NextPage}"
+                        ctl:ButtonStates.IsUnavailable="{Binding HasMoreHorizontalKeys, Converter={StaticResource InverseBool}}" />
+                <TextBlock Grid.Column="1" Text="{Binding HorizontalPageText}" FontFamily="{StaticResource Font.Mono}"
+                           FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+        </Grid>
+
+        <!-- 黄色帮助（最终稿 F9）：工作区右侧，全屏时盖满工作区；表单照样能填。 -->
+        <Border x:Name="HelpPanel" Grid.Row="1" Grid.RowSpan="3" Grid.Column="1" Background="{StaticResource Brush.Help}"
+                BorderBrush="{StaticResource Brush.HelpBorder}" BorderThickness="2" Padding="18,12"
+                Visibility="{Binding Help.IsOpen, Converter={StaticResource BoolToVisibility}}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Width" Value="620" />
+                    <Setter Property="HorizontalAlignment" Value="Right" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Help.IsFullScreen}" Value="True">
+                            <Setter Property="Width" Value="NaN" />
+                            <Setter Property="HorizontalAlignment" Value="Stretch" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="{Binding Help.TopicTitle}" FontSize="{StaticResource Size.DataRow}"
+                           FontWeight="Bold" TextDecorations="Underline" Foreground="{StaticResource Brush.TextPrimary}" Margin="0,0,0,10" />
+                <TextBox DockPanel.Dock="Top" Text="{Binding Help.SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource ValueTextBox}" ctl:TouchInput.IsNumeric="False" Margin="0,0,0,10"
+                         Visibility="{Binding Help.IsSearchShown, Converter={StaticResource BoolToVisibility}}" />
+                <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Help.VisibleTopics}" Margin="0,0,0,10"
+                              Visibility="{Binding Help.IsListShown, Converter={StaticResource BoolToVisibility}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:HelpTopicItem}">
+                            <Button Content="{Binding Title}" Command="{Binding Command}" Style="{StaticResource HelpKeyButton}"
+                                    Height="56" Margin="0,0,0,4" HorizontalContentAlignment="Left" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                    <TextBlock Text="{Binding Help.TopicBody}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" LineHeight="30" />
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- 数字键盘（最终稿 4.5）：停靠在工作区右下，不挡对话行与软键。 -->
+        <Border x:Name="KeypadPanel" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Margin="0,0,8,8" Width="336" Background="{StaticResource Brush.Surface}"
+                BorderBrush="{StaticResource Brush.Active}" BorderThickness="2"
+                Visibility="{Binding Keypad.IsOpen, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+                <Border Background="{StaticResource Brush.Active}" Padding="10,6">
+                    <TextBlock Text="{Binding Keypad.Caption}" Foreground="{StaticResource Brush.OnAccent}" FontWeight="Bold"
+                               FontSize="{StaticResource Size.Body}" TextTrimming="CharacterEllipsis" />
                 </Border>
+                <TextBlock Text="{Binding Keypad.RangeText}" Style="{StaticResource Text.Label}" Margin="10,6,10,0"
+                           Visibility="{Binding Keypad.RangeText, Converter={StaticResource TextToVisibility}}" />
+                <Border Background="{StaticResource Brush.FocusField}" Margin="8,6" Height="56" Padding="10,0">
+                    <TextBlock Text="{Binding Keypad.Text}" Style="{StaticResource Text.DataRow}" HorizontalAlignment="Right"
+                               VerticalAlignment="Center" />
+                </Border>
+                <UniformGrid Columns="4" Rows="4" Margin="4,0,4,4">
+                    <Button Content="7" Command="{Binding Keypad.DigitCommand}" CommandParameter="7" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="8" Command="{Binding Keypad.DigitCommand}" CommandParameter="8" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="9" Command="{Binding Keypad.DigitCommand}" CommandParameter="9" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="{loc:Loc Keypad_Backspace}" Command="{Binding Keypad.KeyCommand}" CommandParameter="Backspace" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" />
+                    <Button Content="4" Command="{Binding Keypad.DigitCommand}" CommandParameter="4" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="5" Command="{Binding Keypad.DigitCommand}" CommandParameter="5" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="6" Command="{Binding Keypad.DigitCommand}" CommandParameter="6" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="{loc:Loc Keypad_Clear}" Command="{Binding Keypad.KeyCommand}" CommandParameter="Clear" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" />
+                    <Button Content="1" Command="{Binding Keypad.DigitCommand}" CommandParameter="1" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="2" Command="{Binding Keypad.DigitCommand}" CommandParameter="2" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="3" Command="{Binding Keypad.DigitCommand}" CommandParameter="3" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="{loc:Loc Keypad_Sign}" Command="{Binding Keypad.KeyCommand}" CommandParameter="Sign" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="0" Command="{Binding Keypad.DigitCommand}" CommandParameter="0" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="." Command="{Binding Keypad.KeyCommand}" CommandParameter="DecimalPoint" Style="{StaticResource SoftKeyButton}" Height="72" Margin="2" FontSize="{StaticResource Size.DataRow}" />
+                    <Button Content="{loc:Loc Keypad_Cancel}" Command="{Binding Keypad.CloseCommand}" Style="{StaticResource CancelKeyButton}" Height="72" Margin="2" />
+                    <Button Content="{loc:Loc Keypad_Enter}" Click="OnKeypadEnter" Style="{StaticResource ConfirmKeyButton}" Height="72" Margin="2" />
+                </UniformGrid>
+            </StackPanel>
+        </Border>
+
+        <!-- 用户小菜单：签退、用户管理（管理员以上）。 -->
+        <Border x:Name="UserMenu" Grid.Row="1" Grid.RowSpan="3" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="0,0,180,0" Width="300" Style="{StaticResource Card}" Padding="10"
+                Visibility="{Binding IsUserMenuOpen, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+                <Button Content="{loc:Loc Users_Manage}" Command="{Binding OpenUserAdminCommand}" Style="{StaticResource SoftKeyButton}"
+                        Height="60" Margin="0,0,0,6"
+                        Visibility="{Binding CanManageUsers, Converter={StaticResource BoolToVisibility}}" />
+                <Button Content="{loc:Loc SignIn_SignOut}" Command="{Binding SignOutCommand}" Style="{StaticResource SoftKeyButton}"
+                        Height="60" Margin="0,0,0,6" />
+                <Button Content="{loc:Loc Menu_Cancel}" Click="OnCloseUserMenu" Style="{StaticResource SoftKeyButton}" Height="60" />
+            </StackPanel>
+        </Border>
+
+        <!-- 离开确认：脏页切走时拦一道，三个选择都写清楚后果 -->
+        <Grid x:Name="LeaveConfirmOverlay" Grid.Row="1" Grid.RowSpan="3" Grid.Column="1" Background="#B3101418"
+              Visibility="{Binding IsLeaveConfirmOpen, Converter={StaticResource BoolToVisibility}}">
+            <Border Background="{StaticResource Brush.Surface}"
+                    BorderBrush="{StaticResource Brush.CurrentStep}"
+                    BorderThickness="3"
+                    Width="820"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Padding="32,28">
+                <StackPanel>
+                    <TextBlock FontSize="30"
+                               Foreground="{StaticResource Brush.TextPrimary}"
+                               TextWrapping="Wrap"
+                               Text="{Binding LeaveConfirmPageTitle, Converter={StaticResource LeaveTitle}}" />
+                    <TextBlock Text="{loc:Loc Leave_Message}"
+                               FontSize="19"
+                               Foreground="{StaticResource Brush.TextSecondary}"
+                               TextWrapping="Wrap"
+                               Margin="0,14,0,0" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,28,0,0">
+                        <Button Content="{loc:Loc Leave_Cancel}"
+                                Command="{Binding CancelLeaveCommand}"
+                                Style="{StaticResource DialogPrimaryButton}" />
+                        <Button Content="{loc:Loc Leave_Save}"
+                                Command="{Binding SaveAndLeaveCommand}"
+                                Style="{StaticResource DialogButton}"
+                                Visibility="{Binding LeaveConfirmCanSave, Converter={StaticResource BoolToVisibility}}" />
+                        <Button Content="{loc:Loc Leave_Discard}"
+                                Command="{Binding DiscardAndLeaveCommand}"
+                                Style="{StaticResource DialogDangerButton}" />
+                    </StackPanel>
+                </StackPanel>
             </Border>
         </Grid>
-    </DockPanel>
+
+        <!-- 登录：退不掉的浮层。没登录就什么都不给。 -->
+        <Border x:Name="SignInOverlay" Grid.Row="1" Grid.RowSpan="5" Grid.Column="0" Grid.ColumnSpan="3" Background="#E6101418"
+                Visibility="{Binding IsSignInOpen, Converter={StaticResource BoolToVisibility}}">
+            <Border Style="{StaticResource Card}" Width="480"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Margin="28">
+                    <TextBlock Text="{loc:Loc SignIn_Title}" Style="{StaticResource Text.CardTitle}"
+                               FontSize="24" Margin="0,0,0,20" />
+
+                    <TextBlock Text="{loc:Loc SignIn_UserName}" Style="{StaticResource Text.Label}" />
+                    <TextBox Text="{Binding SignInUserName, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="False"
+                             Height="56" FontSize="{StaticResource Size.DataRow}" Margin="0,8,0,8" VerticalContentAlignment="Center" />
+                    <!-- 已有的用户：一人一个键，按一下填进上面的框（不用下拉）。 -->
+                    <ItemsControl ItemsSource="{Binding KnownUserChoices}" Margin="0,0,0,16">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,6,6"
+                                        Style="{StaticResource SegmentButton}"
+                                        ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 常规登录 -->
+                    <StackPanel Visibility="{Binding IsNormalSignIn, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{loc:Loc SignIn_Password}" Style="{StaticResource Text.Label}" />
+                        <PasswordBox x:Name="SignInPasswordBox" PasswordChanged="OnSignInPasswordChanged"
+                                     Height="56" FontSize="{StaticResource Size.DataRow}" Margin="0,8,0,16"
+                                     VerticalContentAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- 首次登录：先设一个口令 -->
+                    <StackPanel Visibility="{Binding NeedsNewPassword, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{loc:Loc SignIn_NewPassword}" Style="{StaticResource Text.Label}" />
+                        <PasswordBox PasswordChanged="OnNewPasswordChanged"
+                                     Height="56" FontSize="{StaticResource Size.DataRow}" Margin="0,8,0,16"
+                                     VerticalContentAlignment="Center" />
+                        <TextBlock Text="{loc:Loc SignIn_ConfirmPassword}" Style="{StaticResource Text.Label}" />
+                        <PasswordBox PasswordChanged="OnConfirmPasswordChanged"
+                                     Height="56" FontSize="{StaticResource Size.DataRow}" Margin="0,8,0,16"
+                                     VerticalContentAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding SignInMessage}" FontSize="16"
+                               Foreground="{StaticResource Brush.WarningFill}" TextWrapping="Wrap"
+                               Visibility="{Binding SignInMessage, Converter={StaticResource TextToVisibility}}"
+                               Margin="0,0,0,16" />
+
+                    <Button Content="{loc:Loc SignIn_Confirm}" Command="{Binding SignInCommand}"
+                            Style="{StaticResource PrimaryButton}" Height="56" IsDefault="True" />
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- 用户管理：管理员以上才开得出来 -->
+        <Border x:Name="UserAdminOverlay" Grid.Row="1" Grid.RowSpan="3" Grid.Column="1" Background="#CC101418"
+                Visibility="{Binding IsUserAdminOpen, Converter={StaticResource BoolToVisibility}}">
+            <Border Style="{StaticResource Card}" Width="820" Height="620"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Users_Title}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+
+                    <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}"
+                            BorderThickness="0,1,0,0" Padding="14">
+                        <StackPanel>
+                            <TextBlock Text="{loc:Loc Users_NewUser}" Style="{StaticResource Text.Label}"
+                                       Margin="0,0,0,8" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="330" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Text="{Binding NewUserName, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="False"
+                                         Height="56" FontSize="{StaticResource Size.Body}" Margin="0,0,8,0"
+                                         VerticalContentAlignment="Center" />
+                                <PasswordBox Grid.Column="1" PasswordChanged="OnNewUserPasswordChanged"
+                                             Height="56" FontSize="{StaticResource Size.Body}" Margin="0,0,8,0"
+                                             VerticalContentAlignment="Center" />
+                                <ItemsControl Grid.Column="2" ItemsSource="{Binding RoleChoices}" Margin="0,0,8,0">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Rows="1" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
+                                                    Style="{StaticResource SegmentButton}" Padding="4,0"
+                                                    ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Button Grid.Column="3" Content="{loc:Loc Users_Create}"
+                                        Command="{Binding CreateUserCommand}"
+                                        Style="{StaticResource PrimaryButton}" Height="56" Width="110" />
+                            </Grid>
+                            <TextBlock Text="{loc:Loc Users_PasswordHint}" Style="{StaticResource Text.Label}"
+                                       Foreground="{StaticResource Brush.TextMuted}" Margin="0,8,0,0" />
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                                <Button Content="{loc:Loc Users_ResetPassword}"
+                                        Command="{Binding ResetUserPasswordCommand}"
+                                        Style="{StaticResource SecondaryButton}" Height="56" Width="140"
+                                        Margin="0,0,10,0" />
+                                <Button Content="{loc:Loc Users_Delete}" Command="{Binding DeleteUserCommand}"
+                                        Style="{StaticResource DialogDangerButton}" Height="56" Width="120"
+                                        Margin="0,0,10,0" />
+                                <Button Content="{loc:Loc Users_Close}" Command="{Binding CloseUserAdminCommand}"
+                                        Style="{StaticResource SecondaryButton}" Height="56" Width="120" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <DataGrid ItemsSource="{Binding UserAccounts}" SelectedItem="{Binding SelectedUserAccount}"
+                              AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                              Margin="14,8" FontSize="{StaticResource Size.Body}" RowHeight="56">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{loc:Loc Users_ColumnName}"
+                                                Binding="{Binding UserName}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Users_ColumnRole}"
+                                                Binding="{Binding Role}" Width="180" />
+                            <DataGridTemplateColumn Header="{loc:Loc Users_ColumnPasswordSet}" Width="120">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="{loc:Loc Users_PasswordSet}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding MustSetPassword}" Value="True">
+                                                            <Setter Property="Text" Value="{loc:Loc Users_PasswordNotSet}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+        </Border>
+    </Grid>
 </Window>

@@ -133,5 +133,8 @@
     "steadyRest": 2,
     "tailstockLock": 3,
     "measuringArm": 4
-  }
+  },
+  "quickBar": [ "machine", "profile", "steps", "wheel", "library", "records", "diagnostics" ],
+  "panelActions": [ "cycleStart", "feedHold" ],
+  "manualStrokeMarginMm": 60.0
 }

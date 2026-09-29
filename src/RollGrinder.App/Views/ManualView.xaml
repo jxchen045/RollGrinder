@@ -1,154 +1,120 @@
 <UserControl x:Class="RollGrinder.App.Views.ManualView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="clr-namespace:RollGrinder.App.Localization">
+             xmlns:loc="clr-namespace:RollGrinder.App.Localization"
+             xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
+             xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
+    <!--
+        手动动作页（界面最终稿 5.4、5.5）。版式：上面是本页相关的位置（L1）和测量，下面是本页机构的状态格；
+        动作只在右侧竖键上，一个动作一个键——卡片里不再放一批同样的按钮（双入口，C5）。
+        测量对中换版：左边测点表 + 沿 Z 的直径小曲线，右边对中比对，两端之差 L1，并写出往哪边调。
+    -->
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="560" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-
-        <Grid Grid.Column="0" Margin="0,0,12,0">
+        <!-- 动作页 -->
+        <Grid x:Name="ActionPage" Visibility="{Binding IsCentring, Converter={StaticResource InverseBoolVisibility}}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="560" />
+            </Grid.ColumnDefinitions>
 
-            <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
+            <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,6">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Manual_AxisHeader}" Style="{StaticResource Text.CardTitle}" />
+                        <TextBlock Text="{loc:Loc Manual_PositionHeader}" Style="{StaticResource Text.CardTitle}" />
                     </Border>
-                    <ItemsControl ItemsSource="{Binding AxisValues}" Background="{StaticResource Brush.GridLine}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="3" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource ParameterCell}">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
-                                        <TextBlock Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}" FontSize="26" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding SelectedGroup.Axes}" ItemTemplate="{StaticResource AxisReadoutTemplate}" Margin="6" />
                 </DockPanel>
             </Border>
 
-            <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,12">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Manual_SpindleHeader}" Style="{StaticResource Text.CardTitle}" />
-                    </Border>
-                    <ItemsControl ItemsSource="{Binding SpindleValues}" Background="{StaticResource Brush.GridLine}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="4" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource ParameterCell}">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
-                                        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.DataRow}" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </DockPanel>
-            </Border>
-
-            <Border Grid.Row="2" Style="{StaticResource Card}">
+            <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,0,6">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                         <TextBlock Text="{loc:Loc Manual_MeasureHeader}" Style="{StaticResource Text.CardTitle}" />
                     </Border>
-
-                    <Grid DockPanel.Dock="Top" Background="{StaticResource Brush.GridLine}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-
-                        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource ParameterCell}">
+                    <StackPanel Margin="16,8">
+                        <TextBlock Text="{loc:Loc Manual_RollDiameter}" Style="{StaticResource Text.Label}" />
+                        <TextBlock Text="{Binding MeasuredDiameterText}" Style="{StaticResource Text.Measurement}" />
+                        <UniformGrid Columns="2" Margin="0,6,0,0">
                             <StackPanel>
-                                <TextBlock Text="{loc:Loc Live_ProbeA}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
-                                <TextBlock Text="{Binding ProbeAText}" FontFamily="{StaticResource Font.Mono}" FontSize="26" />
+                                <TextBlock Text="{loc:Loc Live_ProbeA}" Style="{StaticResource Text.Label}" />
+                                <TextBlock Text="{Binding ProbeAText}" Style="{StaticResource Text.DataRow}" />
                             </StackPanel>
-                        </Border>
-                        <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource ParameterCell}">
                             <StackPanel>
-                                <TextBlock Text="{loc:Loc Live_ProbeB}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
-                                <TextBlock Text="{Binding ProbeBText}" FontFamily="{StaticResource Font.Mono}" FontSize="26" />
+                                <TextBlock Text="{loc:Loc Live_ProbeB}" Style="{StaticResource Text.Label}" />
+                                <TextBlock Text="{Binding ProbeBText}" Style="{StaticResource Text.DataRow}" />
                             </StackPanel>
-                        </Border>
-                        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource ParameterCell}">
-                            <StackPanel>
-                                <TextBlock Text="{loc:Loc Manual_RollDiameter}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
-                                <TextBlock Text="{Binding MeasuredDiameterText}" FontFamily="{StaticResource Font.Mono}" FontSize="26"
-                                           Foreground="{StaticResource Brush.Accent}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource ParameterCell}">
-                            <StackPanel>
-                                <TextBlock Text="{loc:Loc Manual_MountingDeviation}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
-                                <TextBlock Text="{Binding MountingDeviationText}" FontFamily="{StaticResource Font.Mono}" FontSize="26"
-                                           Foreground="{StaticResource Brush.CurrentStep}" />
-                            </StackPanel>
-                        </Border>
-                    </Grid>
+                        </UniformGrid>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
 
-                    <!-- 对中：两端各记一组，比的是两端之差 -->
-                    <!-- 两排各三个等宽按钮：跟着列宽走。横排自然宽度在英文下会超出卡片右边。 -->
-                    <UniformGrid DockPanel.Dock="Top" Columns="3" Margin="10,12,10,0">
-                        <Button Content="{loc:Loc Centring_CaptureHead}" Command="{Binding CaptureHeadCommand}"
-                                Style="{StaticResource SecondaryButton}" Height="46" Margin="4,0" Padding="6,0" />
-                        <Button Content="{loc:Loc Centring_CaptureTail}" Command="{Binding CaptureTailCommand}"
-                                Style="{StaticResource SecondaryButton}" Height="46" Margin="4,0" Padding="6,0" />
-                        <Button Content="{loc:Loc Centring_ClearButton}" Command="{Binding ClearCentringCommand}"
-                                Style="{StaticResource SecondaryButton}" Height="46" Margin="4,0" Padding="6,0" />
-                    </UniformGrid>
-
-                    <UniformGrid DockPanel.Dock="Top" Columns="3" Margin="10,8,10,0">
-                        <Button Content="{loc:Loc Measurement_CaptureButton}" Command="{Binding CapturePointCommand}"
-                                Style="{StaticResource SecondaryButton}" Height="46" Margin="4,0" Padding="6,0" />
-                        <Button Content="{loc:Loc Measurement_ClearButton}" Command="{Binding ClearPointsCommand}"
-                                Style="{StaticResource SecondaryButton}" Height="46" Margin="4,0" Padding="6,0" />
-                        <Button Content="{loc:Loc Measurement_SaveButton}" Command="{Binding SaveMeasurementCommand}"
-                                Style="{StaticResource SecondaryButton}" Height="46" Margin="4,0" Padding="6,0" />
-                    </UniformGrid>
-
-                    <!-- 归档到哪个作业：单独一行并写明是"作业号"，否则只是一个看不出用途的空框。 -->
-                    <DockPanel DockPanel.Dock="Top" Margin="14,8,14,0">
-                        <TextBlock Text="{loc:Loc Job_JobIdLabel}" Style="{StaticResource Text.Label}"
-                                   VerticalAlignment="Center" Margin="0,0,10,0" />
-                        <TextBox Text="{Binding JobId, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource ValueTextBox}" Height="42" />
-                    </DockPanel>
-
-                    <Border DockPanel.Dock="Bottom" Padding="14,10">
-                        <StackPanel>
-                            <TextBlock Text="{Binding AlignmentHintText}" FontSize="16" TextWrapping="Wrap"
-                                       Foreground="{StaticResource Brush.CurrentStep}"
-                                       Visibility="{Binding HasAlignmentProblem, Converter={StaticResource BoolToVisibility}}" />
-                            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.Label}" Margin="0,6,0,0" />
+            <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Card}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding SelectedGroup.Title}" Style="{StaticResource Text.CardTitle}" />
+                            <TextBlock Text="{loc:Loc Manual_ActionsHint}" Style="{StaticResource Text.Label}"
+                                       Foreground="{StaticResource Brush.OnAccent}" Margin="16,0,0,0" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
+                    <ItemsControl ItemsSource="{Binding SelectedGroup.Lamps}" ItemTemplate="{StaticResource StatusLampTemplate}" Margin="16">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="4" VerticalAlignment="Top" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+        </Grid>
 
-                    <DataGrid ItemsSource="{Binding Centring}" Style="{StaticResource DataTable}"
-                              Margin="14,12,14,0"
-                              BorderThickness="1" BorderBrush="{StaticResource Brush.Divider}">
+        <!-- 测量对中 -->
+        <Grid x:Name="CentringPage" Visibility="{Binding IsCentring, Converter={StaticResource BoolToVisibility}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="640" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                        <TextBlock Text="{loc:Loc Manual_PointsHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <Border DockPanel.Dock="Bottom" Height="300" Margin="8">
+                        <plot:WpfPlot x:Name="PointsPlot" />
+                    </Border>
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="12,8">
+                        <TextBlock Text="{loc:Loc Manual_JobIdLabel}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBox Text="{Binding JobId, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                                 ctl:TouchInput.IsNumeric="False" Width="300" />
+                    </StackPanel>
+                    <DataGrid ItemsSource="{Binding Points}" Style="{StaticResource DataTable}" Margin="8">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{loc:Loc Measurement_ColumnPosition}" Binding="{Binding BodyPositionText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Measurement_ColumnDiameter}" Binding="{Binding DiameterText}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Card}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Manual_CentringHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <StackPanel DockPanel.Dock="Top" Margin="16,10">
+                        <TextBlock Text="{loc:Loc Centring_Difference}" Style="{StaticResource Text.Label}" />
+                        <TextBlock Text="{Binding CentringDifferenceText}" Style="{StaticResource Text.Measurement}" />
+                        <TextBlock Text="{Binding AlignmentHintText}" Style="{StaticResource Text.Body}" FontWeight="Bold" TextWrapping="Wrap"
+                                   Foreground="{StaticResource Brush.CurrentStep}"
+                                   Visibility="{Binding HasAlignmentProblem, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Text="{loc:Loc Manual_CentringRule}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                    </StackPanel>
+                    <DataGrid ItemsSource="{Binding Centring}" Style="{StaticResource DataTable}" Margin="8">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="{loc:Loc Centring_Quantity}" Binding="{Binding QuantityText}" Width="*" />
                             <DataGridTextColumn Header="{loc:Loc Manual_HeadSide}" Binding="{Binding HeadText}" Width="*" />
@@ -157,9 +123,8 @@
                                 <DataGridTextColumn.CellStyle>
                                     <Style TargetType="DataGridCell" BasedOn="{StaticResource DataTableCell}">
                                         <Style.Triggers>
-                                            <!-- 超差的那一行标出来：一眼看到该调哪一项 -->
                                             <DataTrigger Binding="{Binding IsOutOfTolerance}" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource Brush.WarningFill}" />
+                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
                                                 <Setter Property="FontWeight" Value="Bold" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -171,55 +136,5 @@
                 </DockPanel>
             </Border>
         </Grid>
-
-        <StackPanel Grid.Column="1">
-            <!-- 动作发出去的回执：停几秒自己消失，不占报警条 -->
-            <Border Background="{StaticResource Brush.NormalFill}"
-                    BorderBrush="{StaticResource Brush.Normal}"
-                    BorderThickness="0,0,0,2"
-                    Height="40"
-                    Padding="14,0"
-                    Margin="0,0,0,12"
-                    Visibility="{Binding LastActionText, Converter={StaticResource TextToVisibility}}">
-                <TextBlock Text="{Binding LastActionText}"
-                           Style="{StaticResource Text.Body}"
-                           VerticalAlignment="Center" />
-            </Border>
-
-            <!-- 当前这一页的机构（修改稿 5.6）：到位状态灯 + 动作。动作在右侧竖键上，一个动作一个键（Shift+F1…）；
-                 这里的按钮是同一批动作，给触摸屏用。 -->
-            <Border x:Name="ManualGroupCard" Style="{StaticResource Card}">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{Binding SelectedGroup.Title}" Style="{StaticResource Text.CardTitle}" />
-                    </Border>
-                    <StackPanel Margin="14,12">
-                        <TextBlock Text="{loc:Loc Manual_StatusHeader}" Style="{StaticResource Text.Label}" Margin="0,0,0,6"
-                                   Visibility="{Binding SelectedGroup.HasMachineActions, Converter={StaticResource BoolToVisibility}}" />
-                        <ItemsControl ItemsSource="{Binding SelectedGroup.Lamps}" ItemTemplate="{StaticResource StatusLampTemplate}"
-                                      Margin="0,0,0,14">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                        <ItemsControl ItemsSource="{Binding SelectedGroup.Actions}"
-                                      ItemTemplate="{StaticResource MachineActionTemplate}"
-                                      IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Columns="4" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                        <TextBlock Text="{loc:Loc Manual_KeysHint}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,12,0,0"
-                                   Visibility="{Binding SelectedGroup.HasMachineActions, Converter={StaticResource BoolToVisibility}}" />
-                        <TextBlock Text="{loc:Loc Manual_MeasureCentringHint}" Style="{StaticResource Text.Body}" TextWrapping="Wrap"
-                                   Visibility="{Binding SelectedGroup.HasMachineActions, Converter={StaticResource InverseBoolVisibility}}" />
-                    </StackPanel>
-                </DockPanel>
-            </Border>
-        </StackPanel>
     </Grid>
 </UserControl>

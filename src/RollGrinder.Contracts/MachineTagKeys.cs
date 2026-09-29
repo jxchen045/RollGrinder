@@ -306,6 +306,113 @@ public static class MachineTagKeys
         return string.Concat(prefix, ".", axisName, ".", suffix);
     }
 
+    // ── 最终稿 7.2：手动磨削、方式、按钮板、手持盒 ──────────────────────────────
+    // 物理地址（PLC 输入、DB 位、R 参数）由电气和 NC 在 tagmap 里填；没填的键压暗并说明"缺标签"。
+
+    /// <summary>急停（I32.0 或 I97.2 合成）。</summary>
+    public const string EmergencyStop = "status.emergencyStop";
+
+    /// <summary>机床已起动（钥匙）。</summary>
+    public const string MachineOn = "status.machineOn";
+
+    /// <summary>各轴已回参考点。</summary>
+    public const string Referenced = "status.referenced";
+
+    /// <summary>故障级别：0 无 / 1 轻 / 2 重。</summary>
+    public const string FaultLevel = "status.faultLevel";
+
+    /// <summary>手持盒选的轴：1 X、2 Y/U、3 Z、4 X1、5 头架点动。</summary>
+    public const string PendantAxisSelect = "pendant.axisSelect";
+
+    /// <summary>手轮倍率：0、1、10、100。</summary>
+    public const string PendantHandwheelFactor = "pendant.handwheelFactor";
+
+    /// <summary>手持盒使能。</summary>
+    public const string PendantEnable = "pendant.enable";
+
+    /// <summary>Z1 − Z2 同步差（mm）。</summary>
+    public const string CarriageSyncDiffMm = "axis.Z.syncDiffMm";
+
+    /// <summary>砂轮线速度给定（m/s，写）。</summary>
+    public const string ManualWheelSurfaceSpeedSetpoint = "manual.wheel.surfaceSpeedSetpointMPerSec";
+
+    /// <summary>头架转速给定（r/min，写）。</summary>
+    public const string ManualHeadstockSpeedSetpoint = "manual.headstock.speedSetpointRpm";
+
+    /// <summary>进给倍率（%，读写，PLC 限幅 20–100）。</summary>
+    public const string OverrideFeedPercent = "override.feedPercent";
+
+    /// <summary>砂轮倍率（%，读写，PLC 限幅 50–100）。</summary>
+    public const string OverrideWheelPercent = "override.wheelPercent";
+
+    /// <summary>头架倍率（%，读写，PLC 限幅 50–100）。</summary>
+    public const string OverrideHeadstockPercent = "override.headstockPercent";
+
+    /// <summary>拖板往复速度（mm/min，写）。</summary>
+    public const string ManualCarriageSpeed = "manual.carriage.speedMmPerMin";
+
+    /// <summary>拖板往复行程起点（Z，mm，写）。</summary>
+    public const string ManualCarriageStrokeStart = "manual.carriage.strokeStartMm";
+
+    /// <summary>拖板往复行程终点（Z，mm，写）。</summary>
+    public const string ManualCarriageStrokeEnd = "manual.carriage.strokeEndMm";
+
+    /// <summary>拖板往复启动（脉冲）。</summary>
+    public const string ManualCarriageStart = "manual.carriage.start";
+
+    /// <summary>拖板往复停止（脉冲）。</summary>
+    public const string ManualCarriageStop = "manual.carriage.stop";
+
+    /// <summary>拖板往复中（读）。</summary>
+    public const string ManualCarriageRunning = "manual.carriage.running.state";
+
+    /// <summary>头架带启动装置（保持）。</summary>
+    public const string ManualHeadstockAssist = "manual.headstock.assistStart";
+
+    /// <summary>头架带启动装置的回读。</summary>
+    public const string ManualHeadstockAssistState = "manual.headstock.assistStart.state";
+
+    /// <summary>定位循环：轴号（写）。</summary>
+    public const string ManualPositionAxis = "manual.position.axis";
+
+    /// <summary>定位循环：目标（mm，写）。</summary>
+    public const string ManualPositionTarget = "manual.position.targetMm";
+
+    /// <summary>定位循环：速度（mm/min，写）。</summary>
+    public const string ManualPositionSpeed = "manual.position.speedMmPerMin";
+
+    /// <summary>定位循环：启动（脉冲）。</summary>
+    public const string ManualPositionStart = "manual.position.start";
+
+    /// <summary>定位循环：状态 0 空闲 / 1 运行 / 2 完成 / 3 出错（读）。</summary>
+    public const string ManualPositionState = "manual.position.state";
+
+    /// <summary>方式请求：1 JOG、2 AUTO（写；PLC 决定能不能切）。</summary>
+    public const string ModeRequest = "machine.modeRequest";
+
+    /// <summary>按钮板循环启动（空位新装，读；只用于显示和日志）。</summary>
+    public const string PanelCycleStart = "panel.cycleStart";
+
+    /// <summary>手动磨削页、通道行、急停显示要读的键。</summary>
+    public static System.Collections.Generic.IReadOnlyList<string> ManualGrindingKeys { get; } = new[]
+    {
+        EmergencyStop,
+        MachineOn,
+        Referenced,
+        FaultLevel,
+        PendantAxisSelect,
+        PendantHandwheelFactor,
+        PendantEnable,
+        CarriageSyncDiffMm,
+        OverrideFeedPercent,
+        OverrideWheelPercent,
+        OverrideHeadstockPercent,
+        ManualCarriageRunning,
+        ManualHeadstockAssistState,
+        ManualPositionState,
+        PanelCycleStart,
+    };
+
     /// <summary>按机床描述列出监控需要读取的逻辑名（缺哪一项由 tagmap 决定，读不到的会被跳过）。</summary>
     public static System.Collections.Generic.IReadOnlyList<string> MonitoringKeys(MachineDescription machine)
     {
@@ -349,6 +456,9 @@ public static class MachineTagKeys
         // 状态带：操作方式与机构到位状态位（Q7）。
         keys.Add(OperatingMode);
         keys.AddRange(StatusIndicatorKeys);
+
+        // 手动磨削页、通道行、急停（最终稿 7.2）。
+        keys.AddRange(ManualGrindingKeys);
 
         foreach (AxisDescription axis in machine.Axes)
         {

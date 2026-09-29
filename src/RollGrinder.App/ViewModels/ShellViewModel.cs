@@ -1,54 +1,55 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
-using RollGrinder.Core;
 using RollGrinder.Data;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Monitoring;
 using RollGrinder.Services.Session;
+using Serilog;
 
 namespace RollGrinder.App.ViewModels;
 
 /// <summary>
-/// 界面外壳：顶栏（菜单 / 页面上下文 / 状态条 / NC 连接 / 权限 / 时钟）、
-/// 页面容器、底部 8 键功能条（前 7 个来自页面，第 8 个是导航槽），
-/// 以及离开确认浮层。页面菜单不是浮层：它是功能条原地换成区域键（对齐 Operate 的 MENU SELECT）。
+/// 界面外壳（最终稿 4.1）：左栏快捷入口、标题行（报警、用户、连接、时间）、右上区域 / 方式方块、
+/// 程序路径条（其他区域是当前窗口的青色标题）、通道行（只在机床区）、功能键块、对话行、
+/// 横键条（功能组，右端"&gt;"翻页）、竖键条（本组的操作），以及登录、用户管理、离开确认、数字键盘、帮助。
 ///
-/// 页面切换的规则只有这一处，见 <see cref="NavigationModel"/>：
-/// 区域之间是平的（不叠历史栈），导航槽只退一级且标签写明退到哪，
-/// 脏页离开要经确认，自动循环运行期间编辑页落只读锁。
+/// 画面切换的规则只有一处，见 <see cref="NavigationModel"/>：区域之间是平的，
+/// "返回"只退一级，脏页离开要经确认，自动循环运行期间编辑页落只读锁。
+/// 按不了的键不吞掉点击：对话行说明原因（没权限 / 运行中 / 缺映射 / 前置条件 / 急停）。
 ///
-/// 刷新节拍由窗口的定时器驱动（hmi.json 的 uiRefreshHz，5–10 Hz），
-/// 只有当前页会收到 OnTick。
+/// 刷新节拍由窗口的定时器驱动（hmi.json 的 uiRefreshHz，5–10 Hz），只有当前页会收到 OnTick。
 /// </summary>
 public sealed partial class ShellViewModel : ViewModelBase
 {
-    private const string NoAlarmCode = "0000";
-
     private readonly IAlarmLog alarmLog;
     private readonly IMachineMonitor monitor;
     private readonly IUserSession userSession;
     private readonly IUserDirectory userDirectory;
     private readonly IStringLocalizer localizer;
+    private readonly ShellInteraction interaction;
     private readonly Navigator navigator;
     private readonly NavigationModel model;
     private readonly Dictionary<PageKey, PageViewModelBase> pages;
-    private readonly FunctionKeyViewModel navigationKey;
+    private readonly SoftKeyRow<FunctionKeyViewModel> horizontalRow = new();
+    private readonly IAppOptions options;
+    private string culture;
 
-    private long lastShownAlarmId = -1;
-    private PageKey? pendingArea;
+    private PageKey? pendingPage;
     private bool pendingIsTaskReturn;
     private PageKey? pendingReturnTo;
+    private string? pendingGroup;
 
     public ShellViewModel(
         IEnumerable<PageViewModelBase> pages,
@@ -59,15 +60,34 @@ public sealed partial class ShellViewModel : ViewModelBase
         IUserDirectory userDirectory,
         IAppOptions options,
         HmiSettings settings,
+        MachineDescription machine,
+        ShellInteraction interaction,
         IStringLocalizer localizer)
         : base(alarmLog)
     {
         ArgumentNullException.ThrowIfNull(pages);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(machine);
         this.navigator = navigator ?? throw new ArgumentNullException(nameof(navigator));
         this.alarmLog = alarmLog ?? throw new ArgumentNullException(nameof(alarmLog));
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
         this.userDirectory = userDirectory ?? throw new ArgumentNullException(nameof(userDirectory));
+        this.localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
+        this.interaction = interaction ?? throw new ArgumentNullException(nameof(interaction));
+
+        this.pages = pages.ToDictionary(page => page.Key);
+        this.options = options;
+        this.culture = settings.Culture;
+        IsOffline = options.IsOffline;
+        MachineName = machine.DisplayName;
+        ScreenshotDirectory = System.IO.Path.Combine(options.DataDirectory, "screenshots");
+        RefreshInterval = TimeSpan.FromSeconds(1.0 / settings.UiRefreshHz);
+        Keypad = new NumericKeypadViewModel(interaction, localizer);
+        Help = new HelpViewModel(localizer);
+        Help.PropertyChanged += OnHelpChanged;
+
         this.newUserRole = settings.DefaultRole;
         foreach (UserRole role in AssignableRoles)
         {
@@ -79,110 +99,102 @@ public sealed partial class ShellViewModel : ViewModelBase
             });
         }
 
-        this.localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
-        ArgumentNullException.ThrowIfNull(settings);
+        // 离线模式下机床区用不了（没有机床），开机画面改成第一个离线能用的区域。
+        this.model = new NavigationModel(IsOffline ? FirstOfflinePage() : null);
 
-        ArgumentNullException.ThrowIfNull(options);
-        this.pages = pages.ToDictionary(page => page.Key);
-        IsOffline = options.IsOffline;
-
-        // 离线模式下自动磨削页用不了（没有机床可监控），主页改成第一个离线可用的区域——
-        // 否则"返回主页"会把人送到一个只能看不能用的页面上。
-        this.model = new NavigationModel(IsOffline ? FirstOfflineArea() : null);
-        RefreshInterval = TimeSpan.FromSeconds(1.0 / settings.UiRefreshHz);
-
-        this.navigationKey = new FunctionKeyViewModel(
-            "Nav_AreaMenu",
-            new RelayCommand(ActivateNavigationKey),
-            localizer,
-            FunctionKeyKind.Navigation);
-
-        foreach (PageKey area in AreaMenuLayout.DefaultOrder)
+        IReadOnlyList<QuickBarEntry> entries = QuickBarCatalog.Resolve(machine.QuickBar, out IReadOnlyList<string> rejected);
+        foreach (string id in rejected)
         {
-            if (!this.pages.TryGetValue(area, out PageViewModelBase? page))
-            {
-                continue;
-            }
-
-            PageKey target = area;
-            bool available = !IsOffline || page.WorksOffline;
-            AreaMenuItems.Add(new AreaMenuItemViewModel(
-                target,
-                AreaMenuItems.Count + 1,
-                page.TitleResourceKey,
-                page.MenuHintResourceKey,
-                new RelayCommand(() => ChooseArea(target), () => available),
-                localizer,
-                available));
+            Log.Warning("machine.json quickBar entry {Entry} is unknown, duplicated or beyond the seven slots; ignored", id);
         }
 
+        foreach (QuickBarEntry entry in entries.Where(e => this.pages.ContainsKey(AreaCatalog.EntryPage(e.Area, MachineMode.Jog))))
+        {
+            QuickBarEntry target = entry;
+            QuickBarItems.Add(new QuickBarItemViewModel(
+                entry, QuickBarItems.Count + 1, new RelayCommand(() => PressQuickBar(target)), localizer));
+        }
+
+        this.interaction.DialogLine.Changed += (_, _) => OnUiThread(SyncDialogLine);
         this.navigator.Requested += (_, request) => Handle(request);
 
-        this.currentPage = this.pages[this.model.HomeArea];
+        this.currentPage = this.pages[this.model.CurrentPage];
+        this.currentPage.PropertyChanged += OnCurrentPagePropertyChanged;
+        this.currentPage.FunctionKeys.CollectionChanged += OnCurrentPageKeysChanged;
         this.userSession.SessionChanged += (_, _) => OnUiThread(ApplyAccess);
         ApplyAccess();
-        RebuildFunctionKeys();
+        RebuildHorizontalKeys();
         SyncNavigation();
         this.currentPage.OnActivated();
-    }
-
-    /// <summary>登录、签退、改权限后，把"当前能做什么"推给每一页（修改稿 Q9，权限表见 PermissionPolicy）。</summary>
-    private void ApplyAccess()
-    {
-        foreach (PageViewModelBase page in this.pages.Values)
-        {
-            page.ApplyAccess(this.userSession.Can);
-        }
-
-        OnPropertyChanged(nameof(CanManageUsers));
     }
 
     /// <summary>界面刷新周期。</summary>
     public TimeSpan RefreshInterval { get; }
 
-    /// <summary>报警列表（报警页与弹出条共用）。</summary>
-    public ObservableCollection<AlarmRowViewModel> AlarmRows { get; } = new();
-
-    /// <summary>底部功能条实际渲染的 8 格：前 7 格来自页面（不足补空位），第 8 格是导航槽。</summary>
-    public ObservableCollection<FunctionKeyViewModel> FunctionKeys { get; } = new();
-
-    /// <summary>页面菜单里的区域（最多 7 个）：菜单态的软键与 Ctrl+1…7 都按它排。</summary>
-    public ObservableCollection<AreaMenuItemViewModel> AreaMenuItems { get; } = new();
-
-    [ObservableProperty]
-    private PageViewModelBase currentPage;
-
-    [ObservableProperty]
-    private string clockText = "--:--:--";
-
-    [ObservableProperty]
-    private string bannerCode = NoAlarmCode;
-
-    [ObservableProperty]
-    private string bannerText = string.Empty;
-
-    [ObservableProperty]
-    private AlarmSeverity bannerSeverity = AlarmSeverity.Information;
-
-    [ObservableProperty]
-    private bool isConnected;
-
-    [ObservableProperty]
-    private string connectionText = string.Empty;
-
-    [ObservableProperty]
-    private string roleText = string.Empty;
+    /// <summary>截屏存到哪里（数据目录下的 screenshots）。</summary>
+    public string ScreenshotDirectory { get; }
 
     /// <summary>
-    /// 页面菜单是否展开。展开 = 底部软键条原地换成区域键（对齐 Operate 的 MENU SELECT），
-    /// **不是浮层**：页面照常显示、照常可用，磨削监控一刻都不被遮挡。
+    /// 离线模式：没有机床。标题行标出来，免得有人对着一台"连不上"的机床查半天线路。
     /// </summary>
+    public bool IsOffline { get; }
+
+    /// <summary>左栏（最多 7 个，Ctrl+1…7）。</summary>
+    public ObservableCollection<QuickBarItemViewModel> QuickBarItems { get; } = new();
+
+    /// <summary>横键条实际渲染的 8 格：当前画面的功能组（分页），或区域菜单的 8 个区域。</summary>
+    public ObservableCollection<FunctionKeyViewModel> HorizontalKeys { get; } = new();
+
+    /// <summary>数字键盘。</summary>
+    public NumericKeypadViewModel Keypad { get; }
+
+    /// <summary>黄色帮助。</summary>
+    public HelpViewModel Help { get; }
+
+    /// <summary>竖键条实际渲染的 8 格：帮助模式下是帮助的键，否则是当前画面的。</summary>
+    public IReadOnlyList<FunctionKeyViewModel> VerticalKeys => Help.IsOpen ? Help.Keys : CurrentPage.VerticalKeys;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VerticalKeys))]
+    [NotifyPropertyChangedFor(nameof(IsMachineArea))]
+    private PageViewModelBase currentPage;
+
+    /// <summary>区域菜单是否展开：横键条原地换成 8 个区域（对齐 Operate 的 MENU SELECT），不是浮层。</summary>
     [ObservableProperty]
     private bool isAreaMenuOpen;
 
-    /// <summary>当前页的直达快捷键（如 Ctrl+3），常驻在顶栏面包屑前——一键切页不该是隐藏知识。</summary>
+    /// <summary>横键不止一页时右端的页码，例如"1/2"；只有一页时为空。</summary>
     [ObservableProperty]
-    private string currentAreaShortcutText = string.Empty;
+    private string horizontalPageText = string.Empty;
+
+    /// <summary>横键有下一页（"&gt;"亮着）。</summary>
+    [ObservableProperty]
+    private bool hasMoreHorizontalKeys;
+
+    /// <summary>当前在机床区：显示灰色程序路径条和通道行；其他区域显示青色的当前窗口标题。</summary>
+    public bool IsMachineArea => CurrentPage.Area == AreaKey.Machine;
+
+    /// <summary>右上区域方块的符号与名字。</summary>
+    [ObservableProperty]
+    private string areaTileGlyph = string.Empty;
+
+    [ObservableProperty]
+    private string areaTileText = string.Empty;
+
+    /// <summary>路径条 / 窗口标题：画面、子功能与上下文。</summary>
+    [ObservableProperty]
+    private string pathText = string.Empty;
+
+    /// <summary>路径条左端"« xxx"：有可退的（子功能、任务返回点）时出现。</summary>
+    [ObservableProperty]
+    private string backText = string.Empty;
+
+    /// <summary>对话行。</summary>
+    [ObservableProperty]
+    private string dialogText = string.Empty;
+
+    [ObservableProperty]
+    private DialogLineKind dialogKind;
 
     /// <summary>离开确认框是否展开。</summary>
     [ObservableProperty]
@@ -196,43 +208,14 @@ public sealed partial class ShellViewModel : ViewModelBase
     [ObservableProperty]
     private bool leaveConfirmCanSave;
 
-    /// <summary>当前面包屑：主页 / 主页 › 子页 / 主页 › 子页 › 子视图。</summary>
-    [ObservableProperty]
-    private string breadcrumbText = string.Empty;
-
     /// <summary>自动循环是否还挂着程序：挂着就锁编辑页。</summary>
     [ObservableProperty]
     private bool isMachineRunning;
 
-    /// <summary>品牌标识。</summary>
-    public string Brand => this.localizer["Shell_Brand"];
-
     /// <summary>
-    /// 离线模式：没有机床。顶栏标出来，免得有人对着一台"连不上"的机床查半天线路。
+    /// 有浮层挡着时，底下的画面与软键不接受点击。数字键盘与帮助不算：它们停靠在旁边，表单照样能填。
     /// </summary>
-    public bool IsOffline { get; }
-
-    /// <summary>离线时第一个能进的区域，兼作主页。</summary>
-    private PageKey FirstOfflineArea()
-    {
-        foreach (PageKey area in AreaMenuLayout.DefaultOrder)
-        {
-            if (this.pages.TryGetValue(area, out PageViewModelBase? page) && page.WorksOffline)
-            {
-                return area;
-            }
-        }
-
-        return NavigationModel.DefaultHomeArea;
-    }
-
-    /// <summary>
-    /// 有浮层挡着时，底下的页面与功能条不接受点击。
-    /// 页面菜单不算浮层：它就长在软键条上，不挡任何东西。
-    /// </summary>
-    public bool IsOverlayOpen => IsLeaveConfirmOpen || IsSignInOpen || IsUserAdminOpen;
-
-    partial void OnIsAreaMenuOpenChanged(bool value) => RebuildFunctionKeys();
+    public bool IsOverlayOpen => IsLeaveConfirmOpen || IsSignInOpen || IsUserAdminOpen || IsUserMenuOpen;
 
     partial void OnIsLeaveConfirmOpenChanged(bool value) => OnPropertyChanged(nameof(IsOverlayOpen));
 
@@ -240,396 +223,329 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     partial void OnIsUserAdminOpenChanged(bool value) => OnPropertyChanged(nameof(IsOverlayOpen));
 
-    // ── 登录 ──────────────────────────────────────────────────────────────────
-    //
-    // 没登录就什么都不给：登录浮层是 IsOverlayOpen 的一部分，
-    // 所以功能键与页面点击在签退状态下自动不透传，不用每个页面各自记得判断。
+    partial void OnIsUserMenuOpenChanged(bool value) => OnPropertyChanged(nameof(IsOverlayOpen));
 
-    /// <summary>登录浮层开着没有。启动时是开着的。</summary>
-    [ObservableProperty]
-    private bool isSignInOpen = true;
+    partial void OnCurrentPageChanged(PageViewModelBase? oldValue, PageViewModelBase newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.PropertyChanged -= OnCurrentPagePropertyChanged;
+            oldValue.FunctionKeys.CollectionChanged -= OnCurrentPageKeysChanged;
+        }
 
-    /// <summary>登录了没有——顶栏按它显示用户名还是"未登录"。</summary>
-    [ObservableProperty]
-    private bool isSignedIn;
+        newValue.PropertyChanged += OnCurrentPagePropertyChanged;
+        newValue.FunctionKeys.CollectionChanged += OnCurrentPageKeysChanged;
+    }
 
-    /// <summary>当前用户名，顶栏显示。</summary>
-    [ObservableProperty]
-    private string userNameText = string.Empty;
+    private void OnCurrentPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(PageViewModelBase.ActiveSubViewKey))
+        {
+            SyncNavigation();
+        }
+    }
 
-    /// <summary>登录框里选/填的用户名。</summary>
-    [ObservableProperty]
-    private string signInUserName = string.Empty;
+    private void OnCurrentPageKeysChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (!this.model.IsAreaMenuOpen)
+        {
+            RebuildHorizontalKeys();
+        }
+    }
 
-    /// <summary>登录框里的口令。由 PasswordBox 的事件推进来——WPF 不让绑 Password。</summary>
-    [ObservableProperty]
-    private string signInPassword = string.Empty;
+    private void OnHelpChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(HelpViewModel.IsOpen))
+        {
+            OnPropertyChanged(nameof(VerticalKeys));
+        }
+    }
 
-    /// <summary>首次设口令时的新口令与确认。</summary>
-    [ObservableProperty]
-    private string newPassword = string.Empty;
+    /// <summary>登录、签退、改权限后，把"当前能做什么"推给每一页（权限表见 PermissionPolicy）。</summary>
+    private void ApplyAccess()
+    {
+        foreach (PageViewModelBase page in this.pages.Values)
+        {
+            page.ApplyAccess(this.userSession.Can);
+        }
 
-    [ObservableProperty]
-    private string confirmPassword = string.Empty;
+        OnPropertyChanged(nameof(CanManageUsers));
+        RefreshQuickBar();
+        if (this.model.IsAreaMenuOpen)
+        {
+            RebuildHorizontalKeys();
+        }
+    }
 
-    /// <summary>这个账号还没设过口令：登录框切到"先设一个口令"。</summary>
-    [ObservableProperty]
-    private bool needsNewPassword;
+    /// <summary>离线时第一个能进的画面，兼作开机画面。</summary>
+    private PageKey FirstOfflinePage()
+    {
+        foreach (AreaKey area in AreaCatalog.MenuOrder)
+        {
+            PageKey entry = AreaCatalog.EntryPage(area, MachineMode.Jog);
+            if (this.pages.TryGetValue(entry, out PageViewModelBase? page) && page.WorksOffline)
+            {
+                return entry;
+            }
+        }
 
-    /// <summary>常规登录（不是"先设口令"那一支）。给界面切换两块输入区用。</summary>
-    public bool IsNormalSignIn => !NeedsNewPassword;
+        return NavigationModel.DefaultHomePage;
+    }
 
-    partial void OnNeedsNewPasswordChanged(bool value) => OnPropertyChanged(nameof(IsNormalSignIn));
-
-    /// <summary>登录框里的提示（口令不对、两次不一致……）；没有提示时为空。</summary>
-    [ObservableProperty]
-    private string signInMessage = string.Empty;
-
-    /// <summary>库里有哪些用户名，登录框做成下拉，省得在触摸屏上打字。</summary>
-    public ObservableCollection<string> KnownUserNames { get; } = new();
-
-    /// <summary>账号列表，用户管理浮层用。</summary>
-    public ObservableCollection<UserAccount> UserAccounts { get; } = new();
-
-    [ObservableProperty]
-    private bool isUserAdminOpen;
-
-    [ObservableProperty]
-    private UserAccount? selectedUserAccount;
-
-    /// <summary>新建账号的用户名、口令与权限。</summary>
-    [ObservableProperty]
-    private string newUserName = string.Empty;
-
-    [ObservableProperty]
-    private string newUserPassword = string.Empty;
-
-    [ObservableProperty]
-    private UserRole newUserRole;
-
-    /// <summary>管理员以上才看得到"用户管理"。</summary>
-    public bool CanManageUsers => this.userSession.Can(Permission.ManageUsers);
-
-    /// <summary>新用户可选的权限。</summary>
-    public IReadOnlyList<UserRole> AssignableRoles { get; } =
-        new[] { UserRole.Operator, UserRole.Administrator, UserRole.Manufacturer };
+    // ── 软键 ──────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// 新用户的权限：三个分段键，一眼看全，按键和触摸都好按（修改稿原则 1：去掉下拉）。
-    /// 以前是下拉，还直接显示英文枚举名。
+    /// 按下一个软键（点屏、F 键、Shift+F 键都走这里）：能按就执行；按不了就在对话行说原因——
+    /// 灰键不吞点击，否则人会以为屏坏了（最终稿 4.4）。
     /// </summary>
-    public ObservableCollection<ParameterChoiceViewModel> RoleChoices { get; } = new();
-
-    /// <summary>登录框里已有的用户名：一人一个键，按一下填进用户名框；新名字照样手输。</summary>
-    public ObservableCollection<ParameterChoiceViewModel> KnownUserChoices { get; } = new();
-
-    partial void OnNewUserRoleChanged(UserRole value)
-    {
-        foreach (ParameterChoiceViewModel choice in RoleChoices)
-        {
-            choice.IsSelected = choice.Key == value.ToString();
-        }
-    }
-
-    partial void OnSignInUserNameChanged(string value)
-    {
-        foreach (ParameterChoiceViewModel choice in KnownUserChoices)
-        {
-            choice.IsSelected = string.Equals(choice.Key, value, StringComparison.Ordinal);
-        }
-    }
-
-    /// <summary>启动后把用户名列表拉进来，登录框的下拉才有东西可选。</summary>
-    public async Task InitializeAsync(CancellationToken cancellationToken)
-    {
-        await RefreshUserNamesAsync(cancellationToken).ConfigureAwait(true);
-    }
-
     [RelayCommand]
-    private async Task SignInAsync(CancellationToken cancellationToken)
+    private void PressKey(FunctionKeyViewModel? key)
     {
-        SignInMessage = string.Empty;
-
-        try
-        {
-            if (NeedsNewPassword)
-            {
-                await CompleteFirstPasswordAsync(cancellationToken).ConfigureAwait(true);
-                return;
-            }
-
-            SignInResult result = await this.userDirectory
-                .SignInAsync(SignInUserName, SignInPassword, cancellationToken).ConfigureAwait(true);
-
-            switch (result.Outcome)
-            {
-                case SignInOutcome.Succeeded:
-                    Accept(result.Account!);
-                    break;
-
-                case SignInOutcome.PasswordNotSet:
-                    // 首次启动种下的管理账号走这一支：先设口令再放行。
-                    NeedsNewPassword = true;
-                    SignInMessage = this.localizer["SignIn_SetPasswordFirst"];
-                    break;
-
-                default:
-                    // 用户名不存在与口令不对不分开报——分开报等于告诉人哪个用户名存在。
-                    SignInMessage = this.localizer["SignIn_Rejected"];
-                    break;
-            }
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    private async Task CompleteFirstPasswordAsync(CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrEmpty(NewPassword))
-        {
-            SignInMessage = this.localizer["SignIn_PasswordEmpty"];
-            return;
-        }
-
-        if (!string.Equals(NewPassword, ConfirmPassword, StringComparison.Ordinal))
-        {
-            SignInMessage = this.localizer["SignIn_PasswordMismatch"];
-            return;
-        }
-
-        try
-        {
-            await this.userDirectory
-                .SetPasswordAsync(SignInUserName, NewPassword, cancellationToken).ConfigureAwait(true);
-
-            SignInResult result = await this.userDirectory
-                .SignInAsync(SignInUserName, NewPassword, cancellationToken).ConfigureAwait(true);
-            if (result.Account is not null)
-            {
-                Accept(result.Account);
-            }
-        }
-        catch (DomainException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    private void Accept(UserAccount account)
-    {
-        this.userSession.SignIn(account);
-        IsSignedIn = true;
-        UserNameText = account.UserName;
-        IsSignInOpen = false;
-        ClearSignInFields();
-        OnPropertyChanged(nameof(CanManageUsers));
-    }
-
-    [RelayCommand]
-    private void SignOut()
-    {
-        this.userSession.SignOut();
-        IsSignedIn = false;
-        UserNameText = string.Empty;
-        IsUserAdminOpen = false;
-        ClearSignInFields();
-        IsSignInOpen = true;
-        OnPropertyChanged(nameof(CanManageUsers));
-    }
-
-    private void ClearSignInFields()
-    {
-        SignInPassword = string.Empty;
-        NewPassword = string.Empty;
-        ConfirmPassword = string.Empty;
-        NeedsNewPassword = false;
-        SignInMessage = string.Empty;
-    }
-
-    private async Task RefreshUserNamesAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            IReadOnlyList<UserAccount> accounts =
-                await this.userDirectory.ListAsync(cancellationToken).ConfigureAwait(true);
-
-            KnownUserNames.Clear();
-            KnownUserChoices.Clear();
-            UserAccounts.Clear();
-            foreach (UserAccount account in accounts)
-            {
-                KnownUserNames.Add(account.UserName);
-                string userName = account.UserName;
-                KnownUserChoices.Add(new ParameterChoiceViewModel(
-                    userName, userName, new RelayCommand(() => SignInUserName = userName))
-                {
-                    IsSelected = string.Equals(userName, SignInUserName, StringComparison.Ordinal),
-                });
-                UserAccounts.Add(account);
-            }
-
-            if (string.IsNullOrEmpty(SignInUserName))
-            {
-                SignInUserName = KnownUserNames.FirstOrDefault() ?? string.Empty;
-            }
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    // ── 用户管理 ──────────────────────────────────────────────────────────────
-
-    [RelayCommand]
-    private async Task OpenUserAdminAsync(CancellationToken cancellationToken)
-    {
-        if (!CanManageUsers)
+        if (key is null || IsOverlayOpen || key.IsPlaceholder)
         {
             return;
         }
 
-        await RefreshUserNamesAsync(cancellationToken).ConfigureAwait(true);
-        SelectedUserAccount = UserAccounts.FirstOrDefault();
-        IsUserAdminOpen = true;
+        if (!key.IsUsable)
+        {
+            this.interaction.Refuse(key.ReasonText);
+            return;
+        }
+
+        key.Command.Execute(null);
     }
 
-    [RelayCommand]
-    private void CloseUserAdmin() => IsUserAdminOpen = false;
-
-    [RelayCommand]
-    private async Task CreateUserAsync(CancellationToken cancellationToken)
+    /// <summary>键盘 F1–F8：横键第 n 个（n 从 0 起）。本页开着命名框之类时不透传。</summary>
+    public void PressHorizontalKey(int index)
     {
-        try
-        {
-            // 口令留空表示"首次登录时再设"，和出厂那个管理账号一样。
-            await this.userDirectory.CreateAsync(
-                NewUserName,
-                string.IsNullOrEmpty(NewUserPassword) ? null : NewUserPassword,
-                NewUserRole,
-                cancellationToken).ConfigureAwait(true);
-
-            NewUserName = string.Empty;
-            NewUserPassword = string.Empty;
-            await RefreshUserNamesAsync(cancellationToken).ConfigureAwait(true);
-        }
-        catch (DomainException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    [RelayCommand]
-    private async Task DeleteUserAsync(CancellationToken cancellationToken)
-    {
-        if (SelectedUserAccount is null)
+        if (CurrentPage.HasModalPrompt || index < 0 || index >= HorizontalKeys.Count)
         {
             return;
         }
 
-        try
-        {
-            await this.userDirectory
-                .DeleteAsync(SelectedUserAccount.UserName, cancellationToken).ConfigureAwait(true);
-            await RefreshUserNamesAsync(cancellationToken).ConfigureAwait(true);
-        }
-        catch (DomainException ex)
-        {
-            // 最后一个制造商级账号不许删——删了这台机器就再也没人能管了。
-            Alarms.RaiseException(ex);
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
+        PressKey(HorizontalKeys[index]);
     }
 
-    /// <summary>把选中账号的口令清掉：下次登录时由本人重设，管理员看不到明文。</summary>
-    [RelayCommand]
-    private async Task ResetUserPasswordAsync(CancellationToken cancellationToken)
-    {
-        if (SelectedUserAccount is null)
-        {
-            return;
-        }
-
-        try
-        {
-            await this.userDirectory.DeleteAsync(SelectedUserAccount.UserName, cancellationToken).ConfigureAwait(true);
-            await this.userDirectory.CreateAsync(
-                SelectedUserAccount.UserName, null, SelectedUserAccount.Role, cancellationToken).ConfigureAwait(true);
-            await RefreshUserNamesAsync(cancellationToken).ConfigureAwait(true);
-        }
-        catch (DomainException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    /// <summary>界面定时器每一拍调用。</summary>
-    public void Tick(DateTimeOffset nowUtc)
-    {
-        ClockText = nowUtc.ToLocalTime().ToString("HH:mm:ss", CultureInfo.CurrentCulture);
-
-        MachineStateSnapshot snapshot = this.monitor.Current;
-        IsConnected = snapshot.ConnectionState == GatewayConnectionState.Connected;
-        ConnectionText = this.localizer[IsConnected ? "Top_NcConnected" : "Top_NcDisconnected"];
-        RoleText = this.userSession.IsSignedIn
-            ? this.localizer["Role_" + this.userSession.CurrentRole]
-            : this.localizer["Role_SignedOut"];
-
-        ApplyRunState(snapshot);
-        RefreshBanner(snapshot);
-        CurrentPage.OnTick(nowUtc);
-    }
-
-    /// <summary>键盘/软键按下第 n 个功能键（n 从 0 起）。浮层挡着时不透传。</summary>
-    public void PressFunctionKey(int index)
-    {
-        if (IsOverlayOpen || CurrentPage.HasModalPrompt || index < 0 || index >= FunctionKeys.Count)
-        {
-            return;
-        }
-
-        FunctionKeyViewModel key = FunctionKeys[index];
-        if (key.IsEnabled && key.Command.CanExecute(null))
-        {
-            key.Command.Execute(null);
-        }
-    }
-
-    /// <summary>右侧第 n 个竖向软键（n 从 0 起；键盘 Shift+F(n+1)）。浮层挡着时不透传。</summary>
+    /// <summary>键盘 Shift+F1–F8：竖键第 n 个。</summary>
     public void PressVerticalKey(int index)
     {
-        if (IsOverlayOpen || IsAreaMenuOpen || CurrentPage.HasModalPrompt
-            || index < 0 || index >= CurrentPage.VerticalKeys.Count)
+        IReadOnlyList<FunctionKeyViewModel> keys = VerticalKeys;
+        if ((CurrentPage.HasModalPrompt && !Help.IsOpen) || index < 0 || index >= keys.Count)
         {
             return;
         }
 
-        FunctionKeyViewModel key = CurrentPage.VerticalKeys[index];
-        if (key.IsEnabled && key.Command.CanExecute(null))
+        PressKey(keys[index]);
+    }
+
+    /// <summary>横键条右端的"&gt;"：翻到下一页功能组。</summary>
+    [RelayCommand]
+    private void NextHorizontalPage()
+    {
+        if (!this.model.IsAreaMenuOpen && this.horizontalRow.NextPage())
         {
-            key.Command.Execute(null);
+            SyncHorizontalSlots();
         }
     }
 
-    /// <summary>Esc：有浮层先收浮层（等同于"取消"），没有才退一级。</summary>
+    /// <summary>
+    /// 重建横键条：区域菜单开着就是 8 个区域，否则是当前画面的功能组（一页 8 个，分页）。
+    /// </summary>
+    private void RebuildHorizontalKeys()
+    {
+        if (this.model.IsAreaMenuOpen)
+        {
+            HorizontalKeys.Clear();
+            foreach (FunctionKeyViewModel key in BuildAreaKeys())
+            {
+                HorizontalKeys.Add(key);
+            }
+
+            HorizontalPageText = string.Empty;
+            HasMoreHorizontalKeys = false;
+            return;
+        }
+
+        this.horizontalRow.Set(CurrentPage.FunctionKeys.Select(key => key.IsPlaceholder ? null : key));
+        SyncHorizontalSlots();
+    }
+
+    private void SyncHorizontalSlots()
+    {
+        HorizontalKeys.Clear();
+        int index = 0;
+        foreach (FunctionKeyViewModel? slot in this.horizontalRow.Slots)
+        {
+            index++;
+            FunctionKeyViewModel key = slot ?? FunctionKeyViewModel.Empty(this.localizer);
+            key.ShortcutText = key.IsPlaceholder ? null : this.localizer.Format("Fn_ShortcutFormat", index);
+            HorizontalKeys.Add(key);
+        }
+
+        HasMoreHorizontalKeys = this.horizontalRow.PageCount > 1;
+        HorizontalPageText = HasMoreHorizontalKeys
+            ? this.localizer.Format("Fn_PageFormat", this.horizontalRow.PageIndex + 1, this.horizontalRow.PageCount)
+            : string.Empty;
+    }
+
+    /// <summary>区域菜单态的 8 个区域键：F(n) = 第 n 个区域；进不去的留在原位变灰，按了说原因。</summary>
+    private IEnumerable<FunctionKeyViewModel> BuildAreaKeys()
+    {
+        List<AreaKey> areas = AreaCatalog.MenuOrder
+            .Where(area => this.pages.ContainsKey(AreaCatalog.EntryPage(area, MachineMode.Jog)))
+            .ToList();
+        IReadOnlyList<AreaSoftKey> layout = AreaCatalog.BuildMenu(areas, this.model.CurrentArea, area => AreaUnavailableReason(area) is null);
+
+        foreach (AreaSoftKey slot in layout)
+        {
+            AreaKey area = slot.Area;
+            var key = new FunctionKeyViewModel(
+                AreaCatalog.TitleKey(area),
+                new RelayCommand(() => ChooseArea(area)),
+                this.localizer,
+                slot.IsCurrent ? FunctionKeyKind.AreaMenuCurrent : FunctionKeyKind.AreaMenu)
+            {
+                ShortcutText = this.localizer.Format("Fn_ShortcutFormat", slot.SlotNumber),
+            };
+            key.DisabledReason = AreaUnavailableReason(area);
+            key.IsEnabled = key.DisabledReason is null;
+            yield return key;
+        }
+    }
+
+    /// <summary>某个区域现在为什么进不去；进得去为 null。</summary>
+    private string? AreaUnavailableReason(AreaKey area)
+    {
+        PageKey entry = AreaCatalog.EntryPage(area, MachineMode.Jog);
+        if (!this.pages.TryGetValue(entry, out PageViewModelBase? page))
+        {
+            return this.localizer["Nav_OfflineUnavailable"];
+        }
+
+        if (IsOffline && !page.WorksOffline)
+        {
+            return this.localizer["Nav_OfflineUnavailable"];
+        }
+
+        if (area == AreaKey.Commissioning && !this.userSession.Can(Permission.EditMachineConfig))
+        {
+            return this.localizer["Nav_NeedsManufacturer"];
+        }
+
+        return null;
+    }
+
+    private void RefreshQuickBar()
+    {
+        foreach (QuickBarItemViewModel item in QuickBarItems)
+        {
+            item.UnavailableReason = AreaUnavailableReason(item.Entry.Area);
+            item.IsAvailable = item.UnavailableReason is null;
+            item.IsCurrent = item.Entry.Area == this.model.CurrentArea
+                && (item.Entry.GroupKey is null
+                    ? !QuickBarItems.Any(other => other.Entry.Area == item.Entry.Area && other.Entry.GroupKey is { } g && CurrentGroupIs(g))
+                    : CurrentGroupIs(item.Entry.GroupKey));
+        }
+    }
+
+    private string? currentGroup;
+
+    private bool CurrentGroupIs(string groupKey) => string.Equals(this.currentGroup, groupKey, StringComparison.Ordinal);
+
+    // ── 左栏、区域菜单 ────────────────────────────────────────────────────────
+
+    /// <summary>左栏：一点直达（Ctrl+n 同）。进不去就说原因。</summary>
+    private void PressQuickBar(QuickBarEntry entry)
+    {
+        if (IsOverlayOpen)
+        {
+            return;
+        }
+
+        if (AreaUnavailableReason(entry.Area) is { } reason)
+        {
+            this.interaction.Refuse(reason);
+            return;
+        }
+
+        RequestArea(entry.Area, entry.GroupKey);
+    }
+
+    /// <summary>键盘 Ctrl+1…7。</summary>
+    public void PressQuickBar(int index)
+    {
+        if (index >= 0 && index < QuickBarItems.Count)
+        {
+            QuickBarItems[index].Command.Execute(null);
+        }
+    }
+
+    /// <summary>右上区域方块、F10：打开 / 收起区域菜单。</summary>
+    [RelayCommand]
+    private void ToggleAreaMenu()
+    {
+        if (IsOverlayOpen)
+        {
+            return;
+        }
+
+        this.model.ToggleAreaMenu();
+        SyncNavigation();
+    }
+
+    [RelayCommand]
+    private void CloseAreaMenu()
+    {
+        this.model.CloseAreaMenu();
+        SyncNavigation();
+    }
+
+    private void ChooseArea(AreaKey area)
+    {
+        this.model.CloseAreaMenu();
+        RequestArea(area, groupKey: null);
+    }
+
+    /// <summary>路径条左端"« xxx"与 Esc 的最后一级："返回"。</summary>
+    [RelayCommand]
+    private void Back()
+    {
+        BackDescriptor back = this.model.DescribeBack();
+        switch (back.Role)
+        {
+            case BackRole.CloseAreaMenu:
+                CloseAreaMenu();
+                break;
+
+            case BackRole.CloseSubView:
+                CloseSubView();
+                break;
+
+            case BackRole.BackToTask:
+                RequestPage(back.Target ?? this.model.HomePage, isTaskReturn: true, returnTo: null);
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    // ── 键盘 ──────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Esc（最终稿 4.6）：先收浮层与键盘，再取消待确认的事，再收本页的框、竖键子菜单，最后"返回"。
+    /// </summary>
     public void PressEscape()
     {
         if (IsSignInOpen)
         {
             // 登录框退不掉：没登录就什么都不给。
+            return;
+        }
+
+        if (IsUserMenuOpen)
+        {
+            IsUserMenuOpen = false;
             return;
         }
 
@@ -645,9 +561,20 @@ public sealed partial class ShellViewModel : ViewModelBase
             return;
         }
 
-        if (IsAreaMenuOpen)
+        if (Keypad.IsOpen)
         {
-            CloseAreaMenu();
+            Keypad.Close();
+            return;
+        }
+
+        if (this.interaction.Confirmations.Cancel())
+        {
+            return;
+        }
+
+        if (Help.IsOpen)
+        {
+            Help.Close();
             return;
         }
 
@@ -656,53 +583,125 @@ public sealed partial class ShellViewModel : ViewModelBase
             return;
         }
 
-        // 竖键停在子菜单里：Esc 先退子菜单，和按"返回"一样。
         if (CurrentPage.CloseVerticalMenu())
         {
             return;
         }
 
-        ActivateNavigationKey();
+        Back();
     }
 
-    [RelayCommand]
-    private void OpenAreaMenu()
+    /// <summary>回车：有待确认的事就是"✓ 确认"（最终稿 4.5）。返回 true 表示回车被用掉了。</summary>
+    public bool PressEnter()
     {
-        this.model.OpenAreaMenu();
-        SyncNavigation();
-    }
-
-    /// <summary>顶栏左上角的菜单键：开着就收，收着就开——鼠标点同一处就能反悔。</summary>
-    [RelayCommand]
-    private void ToggleAreaMenu()
-    {
-        if (this.model.IsAreaMenuOpen)
+        if (IsOverlayOpen || this.interaction.Confirmations.Pending is null)
         {
-            CloseAreaMenu();
+            return false;
+        }
+
+        _ = this.interaction.Confirmations.ConfirmAsync();
+        return true;
+    }
+
+    // ── 功能键块 ──────────────────────────────────────────────────────────────
+
+    /// <summary>"↶ 撤销"。</summary>
+    [RelayCommand]
+    private void Undo()
+    {
+        if (CurrentPage.CanUndo)
+        {
+            CurrentPage.Undo();
         }
         else
         {
-            OpenAreaMenu();
+            this.interaction.Refuse(this.localizer["Fb_NothingToUndo"]);
         }
     }
 
+    /// <summary>"↷ 重做"。</summary>
     [RelayCommand]
-    private void CloseAreaMenu()
+    private void Redo()
     {
-        this.model.CloseAreaMenu();
-        SyncNavigation();
+        if (CurrentPage.CanRedo)
+        {
+            CurrentPage.Redo();
+        }
+        else
+        {
+            this.interaction.Refuse(this.localizer["Fb_NothingToRedo"]);
+        }
     }
 
+    /// <summary>"i 帮助"：开着就关，关着就按本画面的条目打开。</summary>
     [RelayCommand]
-    private void ClearAlarms()
+    private void ToggleHelp()
     {
-        this.alarmLog.Clear();
-        this.lastShownAlarmId = -1;
-        AlarmRows.Clear();
-        BannerCode = NoAlarmCode;
-        BannerText = string.Empty;
-        BannerSeverity = AlarmSeverity.Information;
+        if (Help.IsOpen)
+        {
+            Help.Close();
+        }
+        else
+        {
+            Help.Open(CurrentPage.HelpTopicKey);
+        }
     }
+
+    /// <summary>"⌨ 键盘"、"▦ 计算"、"◉ 截屏"是视图层的事（系统键盘、计算器、截图），由窗口接。</summary>
+    public event EventHandler<ShellViewRequest>? ViewRequested;
+
+    [RelayCommand]
+    private void ShowTouchKeyboard() => ViewRequested?.Invoke(this, ShellViewRequest.TouchKeyboard);
+
+    [RelayCommand]
+    private void ShowCalculator() => ViewRequested?.Invoke(this, ShellViewRequest.Calculator);
+
+    [RelayCommand]
+    private void TakeScreenshot() => ViewRequested?.Invoke(this, ShellViewRequest.Screenshot);
+
+    /// <summary>
+    /// Ctrl+L：中文 ⇄ English。问一句再改 hmi.json，重启上位机后生效——
+    /// 界面文字在载入时取定，当场换会弄出一半中文一半英文的画面。
+    /// </summary>
+    public void ToggleLanguage()
+    {
+        string next = this.culture.StartsWith("zh", StringComparison.OrdinalIgnoreCase) ? "en-US" : "zh-CN";
+        this.interaction.Ask(
+            this.localizer.Format("Language_SwitchQuestion", this.localizer["Language_" + next.Replace("-", string.Empty, StringComparison.Ordinal)]),
+            async () =>
+            {
+                try
+                {
+                    await RollGrinder.Composition.JsonHmiSettingsProvider
+                        .SaveCultureAsync(this.options, next, CancellationToken.None).ConfigureAwait(true);
+                    this.culture = next;
+                    this.interaction.Say(this.localizer["Language_Saved"]);
+                }
+                catch (Exception ex) when (ex is GatewayException or System.IO.IOException or UnauthorizedAccessException)
+                {
+                    Alarms.RaiseException(ex);
+                }
+            });
+    }
+
+    /// <summary>视图层做完一件事后在对话行报个结果。</summary>
+    public void Report(string resourceKey, bool failed, params object?[] arguments)
+    {
+        string text = this.localizer.Format(resourceKey, arguments);
+        if (failed)
+        {
+            this.interaction.Fail(text);
+        }
+        else
+        {
+            this.interaction.Say(text);
+        }
+    }
+
+    /// <summary>对话行上的常驻说明（输入框获得焦点时由视图层推进来：含义、单位、范围）。</summary>
+    public void ShowFieldHint(string? text) => this.interaction.Hint(text);
+
+    // ── 离开确认 ──────────────────────────────────────────────────────────────
 
     /// <summary>离开确认框："保存并离开"。</summary>
     [RelayCommand]
@@ -733,32 +732,33 @@ public sealed partial class ShellViewModel : ViewModelBase
     [RelayCommand]
     private void CancelLeave()
     {
-        this.pendingArea = null;
+        this.pendingPage = null;
         this.pendingIsTaskReturn = false;
         this.pendingReturnTo = null;
+        this.pendingGroup = null;
         IsLeaveConfirmOpen = false;
     }
 
-    private void ChooseArea(PageKey area)
-    {
-        this.model.CloseAreaMenu();
-        RequestArea(area, isTaskReturn: false);
-    }
+    // ── 换页 ──────────────────────────────────────────────────────────────────
 
     private void Handle(NavigationRequest request)
     {
         switch (request.Kind)
         {
-            case NavigationRequestKind.GoToArea:
-                RequestArea(request.Target, isTaskReturn: false);
+            case NavigationRequestKind.GoTo:
+                RequestPage(request.Target, isTaskReturn: false, returnTo: null, request.SubViewKey);
+                break;
+
+            case NavigationRequestKind.GoToArea when request.Area is AreaKey area:
+                RequestArea(area, request.SubViewKey);
                 break;
 
             case NavigationRequestKind.StartTask:
-                RequestTask(request.Target, request.ReturnTo ?? this.model.CurrentArea);
+                RequestPage(request.Target, isTaskReturn: false, returnTo: request.ReturnTo ?? this.model.CurrentPage);
                 break;
 
             case NavigationRequestKind.CompleteTask:
-                RequestArea(this.model.TaskReturnArea ?? this.model.HomeArea, isTaskReturn: true);
+                RequestPage(this.model.TaskReturnPage ?? this.model.HomePage, isTaskReturn: true, returnTo: null);
                 break;
 
             case NavigationRequestKind.OpenSubView:
@@ -776,38 +776,8 @@ public sealed partial class ShellViewModel : ViewModelBase
                 break;
 
             case NavigationRequestKind.OpenAreaMenu:
-                OpenAreaMenu();
-                break;
-
-            default:
-                break;
-        }
-    }
-
-    /// <summary>导航槽：按角色退一级或打开菜单。标签已经说明了会发生什么。</summary>
-    private void ActivateNavigationKey()
-    {
-        NavigationKeyDescriptor descriptor = this.model.DescribeNavigationKey();
-        switch (descriptor.Role)
-        {
-            case NavigationKeyRole.OpenAreaMenu:
-                OpenAreaMenu();
-                break;
-
-            case NavigationKeyRole.CloseAreaMenu:
-                CloseAreaMenu();
-                break;
-
-            case NavigationKeyRole.CloseSubView:
-                CloseSubView();
-                break;
-
-            case NavigationKeyRole.BackToTask:
-                RequestArea(descriptor.TargetArea ?? this.model.HomeArea, isTaskReturn: true);
-                break;
-
-            case NavigationKeyRole.BackToHome:
-                RequestArea(this.model.HomeArea, isTaskReturn: false);
+                this.model.OpenAreaMenu();
+                SyncNavigation();
                 break;
 
             default:
@@ -825,55 +795,53 @@ public sealed partial class ShellViewModel : ViewModelBase
         SyncNavigation();
     }
 
-    /// <summary>切区域的唯一入口：脏页先拦一道，确认过了才真换。</summary>
-    private void RequestArea(PageKey area, bool isTaskReturn)
+    /// <summary>去一个区域：入口画面随 NC 方式（机床区），并打开指定的功能组。</summary>
+    private void RequestArea(AreaKey area, string? groupKey)
     {
-        if (area == this.model.CurrentArea)
+        PageKey target = AreaCatalog.EntryPage(area, MachineMode);
+        if (!this.pages.ContainsKey(target))
         {
-            // 已经在这页了：收掉菜单与子视图，不做无意义的切换。
+            target = AreaCatalog.PagesOf(area).FirstOrDefault(this.pages.ContainsKey, target);
+        }
+
+        // 已经在这个区域的某个画面上：左栏再点一下回区域入口（机床区回基本画面）。
+        RequestPage(target, isTaskReturn: false, returnTo: null, groupKey);
+    }
+
+    /// <summary>切画面的唯一入口：脏页先拦一道，确认过了才真换。</summary>
+    private void RequestPage(PageKey page, bool isTaskReturn, PageKey? returnTo, string? groupKey = null)
+    {
+        if (!this.pages.ContainsKey(page))
+        {
+            return;
+        }
+
+        if (page == this.model.CurrentPage && returnTo is null && !isTaskReturn)
+        {
+            // 已经在这页了：收掉菜单与子功能，打开要的功能组，不做无意义的切换。
             CloseSubView();
             this.model.CloseAreaMenu();
+            ShowGroup(groupKey);
             SyncNavigation();
             return;
         }
 
-        if (!this.pages.ContainsKey(area))
+        if (CurrentPage.IsDirty && page != this.model.CurrentPage)
         {
+            OpenLeaveConfirm(page, isTaskReturn, returnTo, groupKey);
             return;
         }
 
-        if (CurrentPage.IsDirty)
-        {
-            OpenLeaveConfirm(area, isTaskReturn, returnTo: null);
-            return;
-        }
-
-        Commit(area, isTaskReturn, returnTo: null);
-    }
-
-    private void RequestTask(PageKey target, PageKey returnTo)
-    {
-        if (target == returnTo || !this.pages.ContainsKey(target))
-        {
-            RequestArea(target, isTaskReturn: false);
-            return;
-        }
-
-        if (CurrentPage.IsDirty)
-        {
-            OpenLeaveConfirm(target, isTaskReturn: false, returnTo: returnTo);
-            return;
-        }
-
-        Commit(target, isTaskReturn: false, returnTo: returnTo);
+        Commit(page, isTaskReturn, returnTo, groupKey);
     }
 
     /// <summary>脏页要走了：把这次跳转的意图存下来，先问操作员。</summary>
-    private void OpenLeaveConfirm(PageKey area, bool isTaskReturn, PageKey? returnTo)
+    private void OpenLeaveConfirm(PageKey page, bool isTaskReturn, PageKey? returnTo, string? groupKey)
     {
-        this.pendingArea = area;
+        this.pendingPage = page;
         this.pendingIsTaskReturn = isTaskReturn;
         this.pendingReturnTo = returnTo;
+        this.pendingGroup = groupKey;
         LeaveConfirmPageTitle = CurrentPage.Title;
         LeaveConfirmCanSave = CurrentPage.CanSave;
         this.model.CloseAreaMenu();
@@ -883,211 +851,119 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     private void CommitPendingNavigation()
     {
-        PageKey? area = this.pendingArea;
+        PageKey? page = this.pendingPage;
         bool isTaskReturn = this.pendingIsTaskReturn;
         PageKey? returnTo = this.pendingReturnTo;
-        this.pendingArea = null;
-        this.pendingIsTaskReturn = false;
-        this.pendingReturnTo = null;
-        IsLeaveConfirmOpen = false;
+        string? groupKey = this.pendingGroup;
+        CancelLeave();
 
-        if (area is PageKey target)
+        if (page is PageKey target)
         {
-            Commit(target, isTaskReturn, returnTo);
+            Commit(target, isTaskReturn, returnTo, groupKey);
         }
     }
 
-    private void Commit(PageKey area, bool isTaskReturn, PageKey? returnTo)
+    private void Commit(PageKey page, bool isTaskReturn, PageKey? returnTo, string? groupKey)
     {
+        // 换页时没答的确认一律作废：问题是针对上一页说的。
+        this.interaction.Confirmations.Cancel();
+        Keypad.Close();
+
         PageViewModelBase previous = CurrentPage;
         previous.ActiveSubViewKey = null;
         previous.ResetVerticalMenu();
 
         if (isTaskReturn)
         {
-            this.model.CompleteTask();
+            if (this.model.TaskReturnPage == page)
+            {
+                this.model.CompleteTask();
+            }
+            else
+            {
+                this.model.GoTo(page);
+            }
         }
         else if (returnTo is PageKey origin)
         {
-            this.model.StartTask(area, origin);
+            this.model.StartTask(page, origin);
         }
         else
         {
-            this.model.GoToArea(area);
+            this.model.GoTo(page);
         }
 
-        PageViewModelBase next = this.pages[this.model.CurrentArea];
+        PageViewModelBase next = this.pages[this.model.CurrentPage];
         if (!ReferenceEquals(previous, next))
         {
             previous.OnDeactivated();
+            this.currentGroup = null;
             CurrentPage = next;
-            RebuildFunctionKeys();
             next.ApplyRunState(IsMachineRunning);
+            next.ApplyEmergencyStop(IsEmergencyStop);
             next.OnActivated();
         }
 
+        ShowGroup(groupKey);
+        RebuildHorizontalKeys();
         SyncNavigation();
     }
 
-    /// <summary>
-    /// 重建 8 格：页面的键不足 7 个时补空位，保证导航槽永远在最右边同一格。
-    /// 菜单态时前 7 格换成区域键，第 8 格（导航槽）变成"取消"。
-    /// </summary>
-    private void RebuildFunctionKeys()
+    private void ShowGroup(string? groupKey)
     {
-        FunctionKeys.Clear();
-        IEnumerable<FunctionKeyViewModel> keys = this.model.IsAreaMenuOpen
-            ? BuildAreaKeys()
-            : CurrentPage.FunctionKeys;
-        foreach (FunctionKeyViewModel key in keys)
-        {
-            FunctionKeys.Add(key);
-        }
-
-        while (FunctionKeys.Count < PageViewModelBase.PageFunctionKeyCount)
-        {
-            FunctionKeys.Add(new FunctionKeyViewModel(
-                "Fn_Empty",
-                new RelayCommand(() => { }, () => false),
-                this.localizer)
-            {
-                IsEnabled = false,
-            });
-        }
-
-        FunctionKeys.Add(this.navigationKey);
+        this.currentGroup = groupKey is not null && CurrentPage.ShowGroup(groupKey) ? groupKey : null;
     }
 
-    /// <summary>菜单态的区域键：F(n) = Ctrl+n = 第 n 个区域，键上印着快捷键，悬停说明里面有什么。</summary>
-    private IEnumerable<FunctionKeyViewModel> BuildAreaKeys()
-    {
-        var byArea = AreaMenuItems.ToDictionary(item => item.Key);
-        IReadOnlyList<AreaSoftKey> layout = AreaMenuLayout.Build(
-            AreaMenuItems.Select(item => item.Key).ToList(),
-            this.model.CurrentArea,
-            area => byArea[area].IsAvailable);
-
-        foreach (AreaSoftKey slot in layout)
-        {
-            AreaMenuItemViewModel item = byArea[slot.Area];
-            string hint = !slot.IsAvailable
-                ? item.UnavailableHint
-                : slot.IsCurrent
-                    ? this.localizer["Menu_Current"] + " · " + item.Hint
-                    : item.Hint;
-
-            yield return new FunctionKeyViewModel(
-                item.TitleResourceKey,
-                item.Command,
-                this.localizer,
-                slot.IsCurrent ? FunctionKeyKind.AreaMenuCurrent : FunctionKeyKind.AreaMenu)
-            {
-                IsEnabled = slot.IsAvailable,
-                ShortcutText = this.localizer.Format("Nav_ShortcutFormat", slot.ShortcutNumber),
-                HintText = hint,
-            };
-        }
-    }
-
-    /// <summary>把状态机的当前样子刷到界面：导航槽标签、菜单态、面包屑、当前页快捷键。</summary>
+    /// <summary>把状态机的当前样子刷到界面：区域菜单、区域方块、路径条、左栏当前项。</summary>
     private void SyncNavigation()
     {
-        NavigationKeyDescriptor descriptor = this.model.DescribeNavigationKey();
-        this.navigationKey.LabelResourceKey = descriptor.LabelResourceKey;
-        this.navigationKey.LabelArgument = descriptor.Role is NavigationKeyRole.CloseSubView or NavigationKeyRole.BackToTask
-            && descriptor.TargetArea is PageKey target
-                ? this.localizer[this.pages[target].TitleResourceKey]
-                : null;
-
+        bool menuChanged = IsAreaMenuOpen != this.model.IsAreaMenuOpen;
         IsAreaMenuOpen = this.model.IsAreaMenuOpen;
+        if (menuChanged)
+        {
+            RebuildHorizontalKeys();
+        }
 
-        AreaMenuItemViewModel? current = AreaMenuItems.FirstOrDefault(item => item.Key == this.model.CurrentArea);
-        CurrentAreaShortcutText = current is null
-            ? string.Empty
-            : this.localizer.Format("Nav_ShortcutFormat", current.ShortcutNumber);
+        AreaKey area = this.model.CurrentArea;
+        AreaTileGlyph = AreaCatalog.Glyph(area);
+        AreaTileText = this.localizer[AreaCatalog.TitleKey(area)];
 
-        BreadcrumbText = BuildBreadcrumb();
+        string separator = this.localizer["Nav_PathSeparator"];
+        string path = CurrentPage.Title;
+        if (this.model.CurrentSubViewKey is { } subView)
+        {
+            path += separator + this.localizer[subView];
+        }
+
+        PathText = path;
+
+        BackDescriptor back = this.model.DescribeBack();
+        BackText = back.Role switch
+        {
+            BackRole.CloseSubView or BackRole.BackToTask when back.Target is PageKey target && this.pages.TryGetValue(target, out PageViewModelBase? page)
+                => this.localizer.Format("Nav_BackToPageFormat", page.Title),
+            _ => string.Empty,
+        };
+
+        RefreshQuickBar();
     }
 
-    private string BuildBreadcrumb()
+    private void SyncDialogLine()
     {
-        string home = this.localizer[this.pages[this.model.HomeArea].TitleResourceKey];
-        string separator = this.localizer["Nav_BreadcrumbSeparator"];
-
-        if (this.model.CurrentArea == this.model.HomeArea)
-        {
-            return this.model.CurrentSubViewKey is null
-                ? home
-                : home + separator + this.localizer[this.model.CurrentSubViewKey];
-        }
-
-        string area = this.localizer[this.pages[this.model.CurrentArea].TitleResourceKey];
-        string trail = home + separator + area;
-        return this.model.CurrentSubViewKey is null
-            ? trail
-            : trail + separator + this.localizer[this.model.CurrentSubViewKey];
+        DialogText = this.interaction.DialogLine.Text;
+        DialogKind = this.interaction.DialogLine.Kind;
     }
+}
 
-    private void ApplyRunState(MachineStateSnapshot snapshot)
-    {
-        double? channelState = snapshot.GetNumberOrNull(MachineTagKeys.ChannelState);
-        bool running = channelState is not null && (NcChannelState)(int)channelState.Value != NcChannelState.Reset;
-        if (running == IsMachineRunning)
-        {
-            return;
-        }
+/// <summary>外壳请视图层做的事。</summary>
+public enum ShellViewRequest
+{
+    /// <summary>调出系统触摸键盘（输名称、备注）。</summary>
+    TouchKeyboard = 0,
 
-        IsMachineRunning = running;
-        foreach (PageViewModelBase page in this.pages.Values)
-        {
-            page.ApplyRunState(running);
-        }
-    }
+    /// <summary>调出计算器。</summary>
+    Calculator = 1,
 
-    private void RefreshBanner(MachineStateSnapshot snapshot)
-    {
-        IReadOnlyList<AlarmEntry> entries = this.alarmLog.Snapshot();
-
-        if (entries.Count == 0)
-        {
-            if (AlarmRows.Count > 0)
-            {
-                AlarmRows.Clear();
-            }
-
-            BannerCode = NoAlarmCode;
-            BannerText = DescribeMachineState(snapshot);
-            BannerSeverity = AlarmSeverity.Information;
-            return;
-        }
-
-        if (entries[0].Id != this.lastShownAlarmId)
-        {
-            this.lastShownAlarmId = entries[0].Id;
-            AlarmRows.Clear();
-            foreach (AlarmEntry entry in entries)
-            {
-                AlarmRows.Add(new AlarmRowViewModel(entry, this.localizer));
-            }
-        }
-
-        AlarmEntry newest = entries[0];
-        BannerCode = newest.Code == AlarmCodes.Unspecified
-            ? NoAlarmCode
-            : newest.Code.ToString(CultureInfo.InvariantCulture);
-        BannerText = string.IsNullOrEmpty(newest.Detail)
-            ? this.localizer[newest.MessageResourceKey]
-            : this.localizer[newest.MessageResourceKey] + " · " + newest.Detail;
-        BannerSeverity = newest.Severity;
-    }
-
-    private string DescribeMachineState(MachineStateSnapshot snapshot)
-    {
-        double? channelState = snapshot.GetNumberOrNull(MachineTagKeys.ChannelState);
-        string stateText = channelState is null
-            ? this.localizer["ChannelState_Unknown"]
-            : this.localizer["ChannelState_" + (NcChannelState)(int)channelState.Value];
-
-        return stateText + " · " + this.localizer["Banner_NoAlarm"];
-    }
+    /// <summary>截屏存进数据目录。</summary>
+    Screenshot = 2,
 }

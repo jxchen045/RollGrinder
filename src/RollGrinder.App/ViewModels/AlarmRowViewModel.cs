@@ -21,6 +21,9 @@ public sealed class AlarmRowViewModel
 
     public long Id => this.entry.Id;
 
+    /// <summary>报警号（0 = 未分配）。</summary>
+    public int Code => this.entry.Code;
+
     /// <summary>报警号；未登记号时显示 "--"。</summary>
     public string CodeText => this.entry.Code == Services.Alarms.AlarmCodes.Unspecified
         ? "--"

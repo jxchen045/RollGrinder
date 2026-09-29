@@ -145,10 +145,13 @@ public sealed class OfflinePageCapabilityTests
             ["StepsViewModel"] = true,
             ["ProfileViewModel"] = true,
             ["RecordsViewModel"] = true,
-            ["SettingsViewModel"] = true,
+            ["ParametersViewModel"] = true,
+            ["LibraryViewModel"] = true,
+            ["CommissioningViewModel"] = true,
+            ["DiagnosticsViewModel"] = true,
             ["AutoGrindingViewModel"] = false,
             ["ManualViewModel"] = false,
-            ["DiagnosticsViewModel"] = false,
+            ["ManualGrindingViewModel"] = false,
         };
 
         IReadOnlySet<string> overriding = TypesDeclaring("get_WorksOffline");

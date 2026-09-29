@@ -244,9 +244,6 @@
   <data name="AxisRole_WorkpieceSpindle" xml:space="preserve">
     <value>Workpiece spindle</value>
   </data>
-  <data name="Banner_NoAlarm" xml:space="preserve">
-    <value>No alarms</value>
-  </data>
   <data name="ChannelState_Interrupted" xml:space="preserve">
     <value>Interrupted</value>
   </data>
@@ -380,7 +377,7 @@
     <value>tagmap.json check passed</value>
   </data>
   <data name="Fn_AuditLog" xml:space="preserve">
-    <value>Audit log</value>
+    <value>Change log</value>
   </data>
   <data name="Fn_BackupRestore" xml:space="preserve">
     <value>Backup / restore</value>
@@ -391,26 +388,11 @@
   <data name="Fn_DailyReport" xml:space="preserve">
     <value>Daily report</value>
   </data>
-  <data name="Fn_DownloadNc" xml:space="preserve">
-    <value>Hand over</value>
-  </data>
   <data name="Fn_EndEarly" xml:space="preserve">
     <value>End early</value>
   </data>
-  <data name="Fn_EnterAuto" xml:space="preserve">
-    <value>Go to grinding</value>
-  </data>
-  <data name="Fn_ExportExcel" xml:space="preserve">
-    <value>Export Excel</value>
-  </data>
-  <data name="Fn_ExportSnapshot" xml:space="preserve">
-    <value>Export snapshot</value>
-  </data>
   <data name="Fn_GeneratePoints" xml:space="preserve">
     <value>Generate points</value>
-  </data>
-  <data name="Fn_HmiReset" xml:space="preserve">
-    <value>HMI reset</value>
   </data>
   <data name="Fn_ImportPoints" xml:space="preserve">
     <value>Import points</value>
@@ -421,26 +403,14 @@
   <data name="Fn_MonthlyReport" xml:space="preserve">
     <value>Monthly report</value>
   </data>
-  <data name="Fn_OpenRecord" xml:space="preserve">
-    <value>Open record</value>
-  </data>
   <data name="Fn_Pause" xml:space="preserve">
     <value>Pause</value>
-  </data>
-  <data name="Fn_Print" xml:space="preserve">
-    <value>Print</value>
   </data>
   <data name="Fn_ProfileLibrary" xml:space="preserve">
     <value>Profile library</value>
   </data>
   <data name="Fn_ProgramLibrary" xml:space="preserve">
     <value>Program library</value>
-  </data>
-  <data name="Fn_Records" xml:space="preserve">
-    <value>Records</value>
-  </data>
-  <data name="Fn_RollLedger" xml:space="preserve">
-    <value>Roll ledger</value>
   </data>
   <data name="Fn_RunLog" xml:space="preserve">
     <value>Run log</value>
@@ -453,12 +423,6 @@
   </data>
   <data name="Fn_SaveProgram" xml:space="preserve">
     <value>Save program</value>
-  </data>
-  <data name="Fn_SkipStep" xml:space="preserve">
-    <value>Skip step</value>
-  </data>
-  <data name="Fn_Start" xml:space="preserve">
-    <value>Start</value>
   </data>
   <data name="Fn_TagMapping" xml:space="preserve">
     <value>Tag mapping</value>
@@ -523,20 +487,11 @@
   <data name="Live_WheelDiameter" xml:space="preserve">
     <value>Wheel diameter</value>
   </data>
-  <data name="Live_WheelSpeed" xml:space="preserve">
-    <value>Wheel speed rpm</value>
-  </data>
-  <data name="Live_WorkpieceSpeed" xml:space="preserve">
-    <value>Workpiece speed rpm</value>
-  </data>
   <data name="Manual_AlignHeadInward" xml:space="preserve">
     <value>Ends differ by {0:F3} mm, beyond tolerance; adjust the headstock-side steady rest inward</value>
   </data>
   <data name="Manual_AlignTailInward" xml:space="preserve">
     <value>Ends differ by {0:F3} mm, beyond tolerance; adjust the tailstock-side steady rest inward</value>
-  </data>
-  <data name="Manual_AxisHeader" xml:space="preserve">
-    <value>Axis positions</value>
   </data>
   <data name="Manual_HeadSide" xml:space="preserve">
     <value>Headstock side</value>
@@ -549,9 +504,6 @@
   </data>
   <data name="Manual_RollDiameter" xml:space="preserve">
     <value>Roll diameter mm</value>
-  </data>
-  <data name="Manual_SpindleHeader" xml:space="preserve">
-    <value>Spindles</value>
   </data>
   <data name="Manual_TailSide" xml:space="preserve">
     <value>Tailstock side</value>
@@ -673,9 +625,6 @@
   <data name="Profile_Library" xml:space="preserve">
     <value>Profile library</value>
   </data>
-  <data name="Profile_LibraryClose" xml:space="preserve">
-    <value>Close</value>
-  </data>
   <data name="Profile_LibraryColumnModified" xml:space="preserve">
     <value>Modified</value>
   </data>
@@ -684,18 +633,6 @@
   </data>
   <data name="Profile_LibraryColumnSegments" xml:space="preserve">
     <value>Segments</value>
-  </data>
-  <data name="Profile_LibraryColumnType" xml:space="preserve">
-    <value>Main curve</value>
-  </data>
-  <data name="Profile_LibraryDelete" xml:space="preserve">
-    <value>Delete</value>
-  </data>
-  <data name="Profile_LibraryEmpty" xml:space="preserve">
-    <value>The library is empty</value>
-  </data>
-  <data name="Profile_LibraryOpen" xml:space="preserve">
-    <value>Open</value>
   </data>
   <data name="Profile_Name" xml:space="preserve">
     <value>Profile name</value>
@@ -718,21 +655,6 @@
   <data name="Program_ColumnSteps" xml:space="preserve">
     <value>Steps</value>
   </data>
-  <data name="Program_Library" xml:space="preserve">
-    <value>Program library</value>
-  </data>
-  <data name="Program_LibraryClose" xml:space="preserve">
-    <value>Close</value>
-  </data>
-  <data name="Program_LibraryDelete" xml:space="preserve">
-    <value>Delete</value>
-  </data>
-  <data name="Program_LibraryEmpty" xml:space="preserve">
-    <value>The library is empty</value>
-  </data>
-  <data name="Program_LibraryOpen" xml:space="preserve">
-    <value>Open</value>
-  </data>
   <data name="Program_Name" xml:space="preserve">
     <value>Program name</value>
   </data>
@@ -747,21 +669,6 @@
   </data>
   <data name="Choice_touchMode_manual" xml:space="preserve">
     <value>Manual</value>
-  </data>
-  <data name="Fn_NewWheel" xml:space="preserve">
-    <value>New wheel</value>
-  </data>
-  <data name="Fn_ReloadSettings" xml:space="preserve">
-    <value>Reload</value>
-  </data>
-  <data name="Fn_SaveSettings" xml:space="preserve">
-    <value>Save</value>
-  </data>
-  <data name="Menu_SettingsHint" xml:space="preserve">
-    <value>Site calibration: wheel, probes, touch-off, tolerances</value>
-  </data>
-  <data name="Page_Settings" xml:space="preserve">
-    <value>Settings</value>
   </data>
   <data name="Parameter_centringToleranceMicrometer" xml:space="preserve">
     <value>Centring tolerance</value>
@@ -814,14 +721,8 @@
   <data name="Settings_AuditHeader" xml:space="preserve">
     <value>Change log</value>
   </data>
-  <data name="Settings_CalibrationHeader" xml:space="preserve">
-    <value>Site calibration</value>
-  </data>
   <data name="Settings_NeedsAdministrator" xml:space="preserve">
     <value>Not enough rights to change calibration</value>
-  </data>
-  <data name="Settings_ReadOnlyHint" xml:space="preserve">
-    <value>Administrator rights required to edit</value>
   </data>
   <data name="Settings_Saved" xml:space="preserve">
     <value>Calibration saved</value>
@@ -846,9 +747,6 @@
   </data>
   <data name="Auto_MatrixParameterColumn" xml:space="preserve">
     <value>Parameter</value>
-  </data>
-  <data name="Auto_MatrixDiscard" xml:space="preserve">
-    <value>Discard</value>
   </data>
   <data name="Auto_MatrixInvalid" xml:space="preserve">
     <value>{0} is beyond the machine limits — nothing was sent</value>
@@ -934,9 +832,6 @@
   <data name="Records_Exported" xml:space="preserve">
     <value>Exported</value>
   </data>
-  <data name="Records_FinishButton" xml:space="preserve">
-    <value>Mark completed</value>
-  </data>
   <data name="Records_Finished" xml:space="preserve">
     <value>Marked as completed</value>
   </data>
@@ -948,9 +843,6 @@
   </data>
   <data name="Records_NoSelection" xml:space="preserve">
     <value>Select a record first</value>
-  </data>
-  <data name="Records_QueryButton" xml:space="preserve">
-    <value>Query</value>
   </data>
   <data name="Records_ResultHeader" xml:space="preserve">
     <value>· grinding result</value>
@@ -1186,53 +1078,17 @@
   <data name="Leave_TitleFormat" xml:space="preserve">
     <value>{0} has unsaved changes</value>
   </data>
-  <data name="Menu_AutoGrindingHint" xml:space="preserve">
-    <value>The roll on the machine: progress, curves, live data</value>
-  </data>
   <data name="Menu_Cancel" xml:space="preserve">
     <value>Cancel</value>
-  </data>
-  <data name="Menu_Current" xml:space="preserve">
-    <value>Current</value>
-  </data>
-  <data name="Menu_DiagnosticsHint" xml:space="preserve">
-    <value>Connection, tags, logs and machine capabilities</value>
-  </data>
-  <data name="Menu_ManualHint" xml:space="preserve">
-    <value>Jogging, measuring and alignment, auxiliary actions</value>
-  </data>
-  <data name="Menu_ProfileHint" xml:space="preserve">
-    <value>Profile segments, preview and validation</value>
-  </data>
-  <data name="Menu_RecordsHint" xml:space="preserve">
-    <value>History, curves and reports</value>
-  </data>
-  <data name="Menu_StepsHint" xml:space="preserve">
-    <value>Start → steps → End, step parameters and program-step defaults</value>
-  </data>
-  <data name="Nav_AreaMenu" xml:space="preserve">
-    <value>Page menu</value>
-  </data>
-  <data name="Nav_BackToHome" xml:space="preserve">
-    <value>Back to home</value>
   </data>
   <data name="Nav_BackToPageFormat" xml:space="preserve">
     <value>Back to {0}</value>
   </data>
-  <data name="Nav_BreadcrumbSeparator" xml:space="preserve">
-    <value> › </value>
-  </data>
   <data name="Shell_Modified" xml:space="preserve">
     <value>Modified</value>
   </data>
-  <data name="Shell_OpenAreaMenu" xml:space="preserve">
-    <value>Page menu: the soft keys turn into pages (same as F8; press again to close); Ctrl+1…7 jumps directly</value>
-  </data>
   <data name="Shell_ReadOnlyRunning" xml:space="preserve">
     <value>Running · read-only</value>
-  </data>
-  <data name="SubView_TagMonitor" xml:space="preserve">
-    <value>Tag monitor</value>
   </data>
   <data name="Choice_speedVariationTarget_off" xml:space="preserve">
     <value>Off</value>
@@ -1357,9 +1213,6 @@
   <data name="Manual_CommandSentFormat" xml:space="preserve">
     <value>{0} · sent</value>
   </data>
-  <data name="Manual_ConfirmAgain" xml:space="preserve">
-    <value>Press again</value>
-  </data>
   <data name="Option_hasContactDetection" xml:space="preserve">
     <value>Wheel contact detection</value>
   </data>
@@ -1429,12 +1282,6 @@
   <data name="Alarm_StepEndedEarly" xml:space="preserve">
     <value>The current step ended early</value>
   </data>
-  <data name="Auto_JumpToStep" xml:space="preserve">
-    <value>Jump to step</value>
-  </data>
-  <data name="Fn_ConfirmAgain" xml:space="preserve">
-    <value>Press again</value>
-  </data>
   <data name="Auto_CurveNoTraceYet" xml:space="preserve">
     <value>No data collected for this roll yet</value>
   </data>
@@ -1470,9 +1317,6 @@
   </data>
   <data name="Report_PreviewHeader" xml:space="preserve">
     <value>Report preview</value>
-  </data>
-  <data name="Report_PrintButton" xml:space="preserve">
-    <value>Print</value>
   </data>
   <data name="Report_JobMissing" xml:space="preserve">
     <value>This record has no job to trace back to; no report can be produced</value>
@@ -1573,14 +1417,8 @@
   <data name="WheelChange_Header" xml:space="preserve">
     <value>Wheel change wizard</value>
   </data>
-  <data name="WheelChange_Next" xml:space="preserve">
-    <value>Next</value>
-  </data>
   <data name="WheelChange_Skip" xml:space="preserve">
     <value>Continue without correcting</value>
-  </data>
-  <data name="WheelChange_Cancel" xml:space="preserve">
-    <value>Abandon</value>
   </data>
   <data name="WheelChange_ExpectedDiameter" xml:space="preserve">
     <value>Expected roll diameter (mm)</value>
@@ -1741,15 +1579,6 @@
   <data name="Records_CurveNoData" xml:space="preserve">
     <value>This roll has no data of this kind</value>
   </data>
-  <data name="SubView_RollLedger" xml:space="preserve">
-    <value>Roll ledger</value>
-  </data>
-  <data name="Records_LedgerHeader" xml:space="preserve">
-    <value>Roll ledger</value>
-  </data>
-  <data name="Records_LedgerEmpty" xml:space="preserve">
-    <value>No rolls on file yet</value>
-  </data>
   <data name="Records_DailySummaryFormat" xml:space="preserve">
     <value>Today: {0} started, {1} completed, {2} pass rate, {3} h total</value>
   </data>
@@ -1774,26 +1603,11 @@
   <data name="Ledger_LastGround" xml:space="preserve">
     <value>Last ground</value>
   </data>
-  <data name="SubView_MachineConfig" xml:space="preserve">
-    <value>Machine configuration</value>
-  </data>
-  <data name="SubView_TagMapping" xml:space="preserve">
-    <value>Tag mapping</value>
-  </data>
-  <data name="SubView_AuditLog" xml:space="preserve">
-    <value>Calibration audit</value>
-  </data>
   <data name="Diag_InspectorHeader" xml:space="preserve">
     <value>Read-only view</value>
   </data>
-  <data name="Diag_AuditHeader" xml:space="preserve">
-    <value>Calibration audit: who last changed each value</value>
-  </data>
   <data name="Diag_NoRunLog" xml:space="preserve">
     <value>There are no log files in the log directory yet</value>
-  </data>
-  <data name="Diag_AuditEntryFormat" xml:space="preserve">
-    <value>{0} · {1}</value>
   </data>
   <data name="Diag_SnapshotExported" xml:space="preserve">
     <value>Diagnostics snapshot exported</value>
@@ -1846,9 +1660,6 @@
   <data name="Action_ReferencePoint" xml:space="preserve">
     <value>Home axes</value>
   </data>
-  <data name="Manual_HmiReset" xml:space="preserve">
-    <value>HMI alarm list cleared</value>
-  </data>
   <data name="Alarm_CycleStartRequested" xml:space="preserve">
     <value>Cycle start requested</value>
   </data>
@@ -1857,12 +1668,6 @@
   </data>
   <data name="Nav_ShortcutFormat" xml:space="preserve">
     <value>Ctrl+{0}</value>
-  </data>
-  <data name="Nav_ShortcutBadgeHint" xml:space="preserve">
-    <value>Press Ctrl+1…7 to jump straight to a page without opening the page menu</value>
-  </data>
-  <data name="SubView_RunLog" xml:space="preserve">
-    <value>Run log</value>
   </data>
   <data name="Records_NoteLabel" xml:space="preserve">
     <value>Note</value>
@@ -2062,9 +1867,6 @@
   <data name="Profile_PointValue" xml:space="preserve">
     <value>Diameter offset (µm)</value>
   </data>
-  <data name="Profile_ImportReference" xml:space="preserve">
-    <value>Import reference</value>
-  </data>
   <data name="Profile_LegendSelected" xml:space="preserve">
     <value>Selected segment</value>
   </data>
@@ -2097,9 +1899,6 @@
   </data>
   <data name="Profile_Issue_SymmetryType" xml:space="preserve">
     <value>Symmetric editing: a segment is not symmetric (CVC); switch symmetric editing off first</value>
-  </data>
-  <data name="Ledger_New" xml:space="preserve">
-    <value>Register roll</value>
   </data>
   <data name="Ledger_Save" xml:space="preserve">
     <value>Save</value>
@@ -2172,15 +1971,6 @@
   </data>
   <data name="Fn_Job" xml:space="preserve">
     <value>Job</value>
-  </data>
-  <data name="Fn_PreviousStep" xml:space="preserve">
-    <value>Previous</value>
-  </data>
-  <data name="Fn_NextStep" xml:space="preserve">
-    <value>Next</value>
-  </data>
-  <data name="Fn_RegisterRoll" xml:space="preserve">
-    <value>Register roll</value>
   </data>
   <data name="Fn_NewProgram" xml:space="preserve">
     <value>New program</value>
@@ -2292,9 +2082,6 @@
   </data>
   <data name="Program_SaveBeforeUse" xml:space="preserve">
     <value>Save the program first; jobs use the program in the library</value>
-  </data>
-  <data name="Fn_NewJob" xml:space="preserve">
-    <value>New job</value>
   </data>
   <data name="Profile_MirrorNotForRelief" xml:space="preserve">
     <value>Point tables, CVC etc. can be mirrored; a taper always faces the end of the half it sits in</value>
@@ -2710,23 +2497,11 @@
   <data name="SubView_Compensation" xml:space="preserve">
     <value>Compensation</value>
   </data>
-  <data name="Vk_Curves" xml:space="preserve">
-    <value>Curves ▸</value>
-  </data>
-  <data name="Vk_CurvesTitle" xml:space="preserve">
-    <value>Choose curve</value>
-  </data>
-  <data name="Vk_Compensation" xml:space="preserve">
-    <value>Compensation</value>
-  </data>
   <data name="Vk_SaveTuning" xml:space="preserve">
     <value>Save tuning</value>
   </data>
   <data name="Vk_ResetTuning" xml:space="preserve">
     <value>Reset to config</value>
-  </data>
-  <data name="Vk_MeasurementRecords" xml:space="preserve">
-    <value>Measurements</value>
   </data>
   <data name="Comp_TuningHeader" xml:space="preserve">
     <value>HMI compensation tuning</value>
@@ -2812,47 +2587,11 @@
   <data name="ChangeArea_tagMap" xml:space="preserve">
     <value>Tag map</value>
   </data>
-  <data name="ManualGroup_measuringArm" xml:space="preserve">
-    <value>Gauge arms</value>
-  </data>
-  <data name="ManualGroup_tailstock" xml:space="preserve">
-    <value>Tailstock</value>
-  </data>
-  <data name="ManualGroup_headstock" xml:space="preserve">
-    <value>Headstock</value>
-  </data>
-  <data name="ManualGroup_softLanding" xml:space="preserve">
-    <value>Soft landing</value>
-  </data>
-  <data name="ManualGroup_wheelCoolant" xml:space="preserve">
-    <value>Wheel/coolant</value>
-  </data>
-  <data name="ManualGroup_measureCentring" xml:space="preserve">
-    <value>Measure/centre</value>
-  </data>
   <data name="Fn_AuxCycles" xml:space="preserve">
     <value>Cycles ▸</value>
   </data>
-  <data name="Vk_AuxCyclesTitle" xml:space="preserve">
-    <value>Auxiliary cycles</value>
-  </data>
-  <data name="Manual_StatusHeader" xml:space="preserve">
-    <value>Status (check the result here after a command)</value>
-  </data>
-  <data name="Manual_KeysHint" xml:space="preserve">
-    <value>Actions are on the right-hand keys (Shift+F1…F8); red keys need two presses. The HMI only requests; the PLC interlocks decide.</value>
-  </data>
-  <data name="Manual_MeasureCentringHint" xml:space="preserve">
-    <value>Points and the centring table are on the left; capture, save and record ends are on the right-hand keys.</value>
-  </data>
-  <data name="Vk_SaveConfig" xml:space="preserve">
-    <value>Save (backs up)</value>
-  </data>
   <data name="Vk_RestorePrevious" xml:space="preserve">
-    <value>Load previous</value>
-  </data>
-  <data name="Vk_DiscardConfig" xml:space="preserve">
-    <value>Discard edits</value>
+    <value>Restore previous…</value>
   </data>
   <data name="Vk_OnlyMissing" xml:space="preserve">
     <value>Missing only</value>
@@ -2861,7 +2600,7 @@
     <value>Register</value>
   </data>
   <data name="Vk_DeleteTag" xml:space="preserve">
-    <value>Delete row</value>
+    <value>Delete row…</value>
   </data>
   <data name="Vk_TestRead" xml:space="preserve">
     <value>Test read</value>
@@ -3073,9 +2812,6 @@
   <data name="CfgField_maxWeightKg" xml:space="preserve">
     <value>Max weight</value>
   </data>
-  <data name="Diag_AuditCalibrationHeader" xml:space="preserve">
-    <value>Calibration: who changed each value last</value>
-  </data>
   <data name="Diag_ChangeLogHeader" xml:space="preserve">
     <value>Change log (compensation, machine config, tag map)</value>
   </data>
@@ -3147,5 +2883,929 @@
   </data>
   <data name="CalGroup_Other" xml:space="preserve">
     <value>Other</value>
+  </data>
+  <data name="Action_AsksFormat" xml:space="preserve">
+    <value>{0}…</value>
+  </data>
+  <data name="Action_WheelStop" xml:space="preserve">
+    <value>Wheel stop</value>
+  </data>
+  <data name="Alarm_ResetHmi" xml:space="preserve">
+    <value>HMI alarm: clear it here with "Clear HMI alarms…"</value>
+  </data>
+  <data name="Alarm_ResetNc" xml:space="preserve">
+    <value>NC alarm: remove the cause, then press RESET on the machine control panel</value>
+  </data>
+  <data name="Alarm_ResetPlc" xml:space="preserve">
+    <value>PLC alarm: remove the cause, then press "Fault reset" on the button panel</value>
+  </data>
+  <data name="Alarm_StepParametersUpdated" xml:space="preserve">
+    <value>Step parameter changes sent to the NC</value>
+  </data>
+  <data name="Alarm_StepUpdateNotArchived" xml:space="preserve">
+    <value>Step parameters were sent, but the change record was not stored</value>
+  </data>
+  <data name="Alarm_ValueOutOfRange" xml:space="preserve">
+    <value>Value out of range, not written to the machine</value>
+  </data>
+  <data name="Auto_AskCycleStart" xml:space="preserve">
+    <value>Cycle start: press "✓ Confirm" to start grinding this roll</value>
+  </data>
+  <data name="Auto_AskEndEarly" xml:space="preserve">
+    <value>End the current step early? Press "✓ Confirm"; the NC finishes at the end of this step</value>
+  </data>
+  <data name="Auto_AskJump" xml:space="preserve">
+    <value>Jump to {0}? Press "✓ Confirm"; the NC continues there after the current step</value>
+  </data>
+  <data name="Centring_AskClear" xml:space="preserve">
+    <value>Clear the centring readings of both ends?</value>
+  </data>
+  <data name="Cfg_AskDeleteTag" xml:space="preserve">
+    <value>Delete {0} from the tag map? (written to the file on save)</value>
+  </data>
+  <data name="Cfg_AskRestore" xml:space="preserve">
+    <value>Load the latest backup into the editor? Current edits are lost; nothing is written until "✓ Save…"</value>
+  </data>
+  <data name="Cfg_AskSaveFormat" xml:space="preserve">
+    <value>Save {0} change(s) to {1}? The old file is backed up to config/backup, the change is logged, and it takes effect after restarting the HMI</value>
+  </data>
+  <data name="Cfg_SaveOrDiscardFirst" xml:space="preserve">
+    <value>Save or discard the edits to this file before switching to the other one</value>
+  </data>
+  <data name="Cfg_SelectMappedRow" xml:space="preserve">
+    <value>Select a mapped tag first</value>
+  </data>
+  <data name="Cfg_SelectMissingRow" xml:space="preserve">
+    <value>Select a missing tag first</value>
+  </data>
+  <data name="Channel_MachineOff" xml:space="preserve">
+    <value>Machine off</value>
+  </data>
+  <data name="Channel_MachineOn" xml:space="preserve">
+    <value>Machine on</value>
+  </data>
+  <data name="Channel_MachineOnUnknown" xml:space="preserve">
+    <value>Power --</value>
+  </data>
+  <data name="Channel_NotReferenced" xml:space="preserve">
+    <value>Not referenced</value>
+  </data>
+  <data name="Channel_PendantFormat" xml:space="preserve">
+    <value>Pendant {0} ×{1} · {2}</value>
+  </data>
+  <data name="Channel_PendantUnknown" xml:space="preserve">
+    <value>Pendant --</value>
+  </data>
+  <data name="Channel_Referenced" xml:space="preserve">
+    <value>Referenced</value>
+  </data>
+  <data name="Channel_ReferencedUnknown" xml:space="preserve">
+    <value>Reference --</value>
+  </data>
+  <data name="Common_Sent" xml:space="preserve">
+    <value>Sent</value>
+  </data>
+  <data name="Comp_AskReset" xml:space="preserve">
+    <value>Reset the compensation tuning to factory values?</value>
+  </data>
+  <data name="Comp_AskSave" xml:space="preserve">
+    <value>Save the compensation tuning? The next roll is compensated with the new settings</value>
+  </data>
+  <data name="Context_BodyLength" xml:space="preserve">
+    <value>Body</value>
+  </data>
+  <data name="Context_Roll" xml:space="preserve">
+    <value>Roll</value>
+  </data>
+  <data name="Diag_AlarmDetailHeader" xml:space="preserve">
+    <value>details</value>
+  </data>
+  <data name="Diag_AlarmResetLabel" xml:space="preserve">
+    <value>How to clear</value>
+  </data>
+  <data name="Diag_AlarmsCleared" xml:space="preserve">
+    <value>HMI alarms cleared</value>
+  </data>
+  <data name="Diag_AskClearAlarms" xml:space="preserve">
+    <value>Clear the HMI alarm list? Machine (PLC, NC) alarms are cleared on the machine and will come back here</value>
+  </data>
+  <data name="Diag_BackupHeader" xml:space="preserve">
+    <value>Backup and restore</value>
+  </data>
+  <data name="Diag_BackupNote" xml:space="preserve">
+    <value>"Backup" packs config/ and data/ (configuration, profiles, programs, records) into one zip at a place you choose (a USB stick is best). It can run while the machine grinds.</value>
+  </data>
+  <data name="Diag_RestoreNote" xml:space="preserve">
+    <value>Restore with the machine stopped: close the HMI, unpack config/ and data/ from the backup into the install folder, then start again. These files are never swapped while running.</value>
+  </data>
+  <data name="Fb_Calculator" xml:space="preserve">
+    <value>▦ Calc</value>
+  </data>
+  <data name="Fb_CalculatorFailed" xml:space="preserve">
+    <value>Could not open the calculator</value>
+  </data>
+  <data name="Fb_Help" xml:space="preserve">
+    <value>i Help</value>
+  </data>
+  <data name="Fb_Keyboard" xml:space="preserve">
+    <value>⌨ Keys</value>
+  </data>
+  <data name="Fb_KeyboardFailed" xml:space="preserve">
+    <value>Could not open the touch keyboard</value>
+  </data>
+  <data name="Fb_NothingToRedo" xml:space="preserve">
+    <value>Nothing to redo</value>
+  </data>
+  <data name="Fb_NothingToUndo" xml:space="preserve">
+    <value>Nothing to undo</value>
+  </data>
+  <data name="Fb_Redo" xml:space="preserve">
+    <value>↷ Redo</value>
+  </data>
+  <data name="Fb_Screenshot" xml:space="preserve">
+    <value>◉ Shot</value>
+  </data>
+  <data name="Fb_ScreenshotFailed" xml:space="preserve">
+    <value>Screenshot not saved: {0}</value>
+  </data>
+  <data name="Fb_ScreenshotSaved" xml:space="preserve">
+    <value>Screenshot saved: {0}</value>
+  </data>
+  <data name="Fb_Undo" xml:space="preserve">
+    <value>↶ Undo</value>
+  </data>
+  <data name="Fn_Alarms" xml:space="preserve">
+    <value>Alarms</value>
+  </data>
+  <data name="Fn_Calibration" xml:space="preserve">
+    <value>Calibration</value>
+  </data>
+  <data name="Fn_CalibrationAudit" xml:space="preserve">
+    <value>Calibration audit</value>
+  </data>
+  <data name="Fn_Compensation" xml:space="preserve">
+    <value>Compensation</value>
+  </data>
+  <data name="Fn_Connection" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="Fn_CycleStart" xml:space="preserve">
+    <value>Cycle start…</value>
+  </data>
+  <data name="Fn_GrindingRecords" xml:space="preserve">
+    <value>Records</value>
+  </data>
+  <data name="Fn_ImportReference" xml:space="preserve">
+    <value>Import reference</value>
+  </data>
+  <data name="Fn_JumpToStep" xml:space="preserve">
+    <value>Jump to ▸</value>
+  </data>
+  <data name="Fn_ManualGrinding" xml:space="preserve">
+    <value>Manual grinding</value>
+  </data>
+  <data name="Fn_NextPage" xml:space="preserve">
+    <value>&gt;</value>
+  </data>
+  <data name="Fn_PageFormat" xml:space="preserve">
+    <value>{0}/{1}</value>
+  </data>
+  <data name="Fn_ShortcutFormat" xml:space="preserve">
+    <value>F{0}</value>
+  </data>
+  <data name="Fn_StatusOverview" xml:space="preserve">
+    <value>Status overview</value>
+  </data>
+  <data name="Fn_System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Help_Confirmation_Title" xml:space="preserve">
+    <value>Confirmation: asked before acting</value>
+  </data>
+  <data name="Help_Confirmation_Body" xml:space="preserve">
+    <value>Requests that move the machine (wheel start, carriage traverse, positioning, homing, cycles, arm calibration), downloads (job, step matrix, setpoints, overrides), deletes and clears, saving tuning or configuration are asked on the dialog line first.&#10;Vertical keys 7 / 8 then become "✕ Cancel / ✓ Confirm": ✓ or Enter does it; ✕ or Esc drops it; no answer in 5 seconds drops it.&#10;Stops (wheel stop, carriage stop), display switches and coolant are not asked.</value>
+  </data>
+  <data name="Help_Contents" xml:space="preserve">
+    <value>Contents</value>
+  </data>
+  <data name="Help_Exit" xml:space="preserve">
+    <value>Exit help</value>
+  </data>
+  <data name="Help_FullScreen" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="Help_Index" xml:space="preserve">
+    <value>Index</value>
+  </data>
+  <data name="Help_Intro" xml:space="preserve">
+    <value>Pick a topic under "Contents" or "Index", or type a word under "Search". The form stays usable while help is open; "Exit help" or Esc returns to the diagram.</value>
+  </data>
+  <data name="Help_Keypad_Title" xml:space="preserve">
+    <value>Numeric keypad</value>
+  </data>
+  <data name="Help_Keypad_Body" xml:space="preserve">
+    <value>Tap a value to select it (cyan; the dialog line shows meaning, unit and range), tap again for the keypad.&#10;"↵ Enter" takes the value and moves to the next field; out-of-range values are refused with the reason. The decimal point is always ".".&#10;Values that act on the machine at once (setpoints, overrides, step matrix) turn red and are written only after you confirm.</value>
+  </data>
+  <data name="Help_ManualGrinding_Title" xml:space="preserve">
+    <value>Manual grinding</value>
+  </data>
+  <data name="Help_ManualGrinding_Body" xml:space="preserve">
+    <value>Top: positions (X, X1, Z, U) and mechanism lamps; middle: wheel, headstock and carriage windows; bottom: position strip along the roll body.&#10;Setpoints and overrides: tap a field to change it; it turns red and is written only after "✓ Confirm". −5 / +5 change the overrides. Headstock start/stop and direction are on the button panel.&#10;Carriage traverse: enter speed and stroke (or tap the strip), press "Carriage traverse…" and confirm; press again to stop (not asked).&#10;Position ▸: carriage to Z, to ¼ / ½ / ¾ of the body, arms to roll / home, infeed to safe position — each is confirmed.&#10;The pendant's axis and factor are shown on the channel row; jog with the pendant, not on screen.</value>
+  </data>
+  <data name="Help_ProfileSegment_Title" xml:space="preserve">
+    <value>Profile segment parameters</value>
+  </data>
+  <data name="Help_ProfileSegment_Body" xml:space="preserve">
+    <value>A profile is a chain of segments: each has a start Z (first segment only) and a length L; later segments start where the previous one ends.&#10;Crown, taper, CVC, sine and point table each have their own parameters; point tables choose an interpolation ("Interpolation ▸").&#10;In symmetric editing only the headstock side is edited and the tailstock side mirrors it; tapers face the end by themselves.&#10;Checked as you type: a segment past the body or an invalid length turns red and Save goes grey.</value>
+  </data>
+  <data name="Help_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Help_SoftKeys_Title" xml:space="preserve">
+    <value>Soft keys</value>
+  </data>
+  <data name="Help_SoftKeys_Body" xml:space="preserve">
+    <value>The bottom row picks the function group of this area (F1–F8; "&gt;" pages when there are more than 8); the right column holds the actions of that group (Shift+F1–F8).&#10;Vertical slot 8 is "« Back" in a sub menu or "≡▸" when there are more than 8 keys; while something waits for confirmation or has edits, 7 / 8 are cancel / confirm.&#10;A grey key does nothing when pressed; the dialog line says why (missing tag, emergency stop, role, running …).&#10;Area menu: F10 or the area tile at the top right; the left bar jumps straight to common areas (Ctrl+1…7).</value>
+  </data>
+  <data name="Help_StepParameters_Title" xml:space="preserve">
+    <value>Step parameters</value>
+  </data>
+  <data name="Help_StepParameters_Body" xml:space="preserve">
+    <value>The step sequence is on the left; on the right the diagram of the selected step above and its parameter form below. The parameter under the cursor lights up on the diagram, and the dialog line gives its meaning, unit and range.&#10;"Insert step ▸" picks a step by category; "Defaults" resets the step (asked first).&#10;Stock allocation and cross-step checks run on save; a program with errors cannot be saved or used for a job.</value>
+  </data>
+  <data name="Help_Title" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="Job_AskCancel" xml:space="preserve">
+    <value>Cancel this job and start again? The chosen roll, profile and program are cleared</value>
+  </data>
+  <data name="Job_NextNeedsSelection" xml:space="preserve">
+    <value>Make a choice on this step first</value>
+  </data>
+  <data name="Job_NothingSelected" xml:space="preserve">
+    <value>Nothing chosen yet</value>
+  </data>
+  <data name="Job_ReviewCurveAxis" xml:space="preserve">
+    <value>Diameter µm</value>
+  </data>
+  <data name="Job_ReviewCurveHeader" xml:space="preserve">
+    <value>Target profile (at job length)</value>
+  </data>
+  <data name="Key_EmergencyStop" xml:space="preserve">
+    <value>Emergency stop: no machine commands are sent</value>
+  </data>
+  <data name="Key_MissingTagFormat" xml:space="preserve">
+    <value>Missing tag {0}</value>
+  </data>
+  <data name="Key_NeedsRoleFormat" xml:space="preserve">
+    <value>Needs {0}</value>
+  </data>
+  <data name="Key_NotNow" xml:space="preserve">
+    <value>Not possible now</value>
+  </data>
+  <data name="Key_RunLocked" xml:space="preserve">
+    <value>The cycle is running; this page is read-only</value>
+  </data>
+  <data name="Keypad_Backspace" xml:space="preserve">
+    <value>⌫</value>
+  </data>
+  <data name="Keypad_Cancel" xml:space="preserve">
+    <value>✕ Cancel</value>
+  </data>
+  <data name="Keypad_Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Keypad_Enter" xml:space="preserve">
+    <value>↵ Enter</value>
+  </data>
+  <data name="Keypad_Error_Empty" xml:space="preserve">
+    <value>No number entered</value>
+  </data>
+  <data name="Keypad_Error_NotANumber" xml:space="preserve">
+    <value>That is not a number</value>
+  </data>
+  <data name="Keypad_Error_BelowMinimum" xml:space="preserve">
+    <value>Below the minimum, not taken ({0})</value>
+  </data>
+  <data name="Keypad_Error_AboveMaximum" xml:space="preserve">
+    <value>Above the maximum, not taken ({0})</value>
+  </data>
+  <data name="Keypad_MaximumFormat" xml:space="preserve">
+    <value>≤ {0}</value>
+  </data>
+  <data name="Keypad_MinimumFormat" xml:space="preserve">
+    <value>≥ {0}</value>
+  </data>
+  <data name="Keypad_RangeFormat" xml:space="preserve">
+    <value>{0} … {1}</value>
+  </data>
+  <data name="Keypad_Sign" xml:space="preserve">
+    <value>±</value>
+  </data>
+  <data name="Language_Saved" xml:space="preserve">
+    <value>Language changed; it takes effect after restarting the HMI</value>
+  </data>
+  <data name="Language_SwitchQuestion" xml:space="preserve">
+    <value>Switch the interface to {0}? Takes effect after restarting the HMI</value>
+  </data>
+  <data name="Language_zhCN" xml:space="preserve">
+    <value>Chinese</value>
+  </data>
+  <data name="Language_enUS" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Lib_AskDelete" xml:space="preserve">
+    <value>Delete "{0}"? This cannot be undone (downloaded jobs are not affected)</value>
+  </data>
+  <data name="Lib_Copied" xml:space="preserve">
+    <value>Copied as "{0}"</value>
+  </data>
+  <data name="Lib_CopyTitle" xml:space="preserve">
+    <value>Copy as</value>
+  </data>
+  <data name="Lib_Deleted" xml:space="preserve">
+    <value>Deleted "{0}"</value>
+  </data>
+  <data name="Lib_ExportedFormat" xml:space="preserve">
+    <value>Exported {0} item(s) to {1}</value>
+  </data>
+  <data name="Lib_FileFilter" xml:space="preserve">
+    <value>Profile and program exchange file|*.rgxlib</value>
+  </data>
+  <data name="Lib_ImportedFormat" xml:space="preserve">
+    <value>Imported {0} profile(s) and {1} program(s) (clashing names got "(2)")</value>
+  </data>
+  <data name="Lib_Jobs" xml:space="preserve">
+    <value>Jobs</value>
+  </data>
+  <data name="Lib_Ledger" xml:space="preserve">
+    <value>Roll ledger</value>
+  </data>
+  <data name="Lib_NothingSelected" xml:space="preserve">
+    <value>Select an entry first</value>
+  </data>
+  <data name="Lib_PreviewBodyLength" xml:space="preserve">
+    <value>Body length mm</value>
+  </data>
+  <data name="Lib_PreviewHeader" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Lib_PreviewJob" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="Lib_PreviewSegments" xml:space="preserve">
+    <value>Segments</value>
+  </data>
+  <data name="Lib_PreviewStepFormat" xml:space="preserve">
+    <value>Step</value>
+  </data>
+  <data name="Lib_ProfileDetailFormat" xml:space="preserve">
+    <value>{0} segment(s) · {1} mm</value>
+  </data>
+  <data name="Lib_Profiles" xml:space="preserve">
+    <value>Profiles</value>
+  </data>
+  <data name="Lib_ProgramDetailFormat" xml:space="preserve">
+    <value>{0} step(s)</value>
+  </data>
+  <data name="Lib_Programs" xml:space="preserve">
+    <value>Programs</value>
+  </data>
+  <data name="Lib_RenameTitle" xml:space="preserve">
+    <value>Rename to</value>
+  </data>
+  <data name="Lib_Renamed" xml:space="preserve">
+    <value>Renamed to "{0}"</value>
+  </data>
+  <data name="Lib_TitleFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Lib_Usb" xml:space="preserve">
+    <value>USB</value>
+  </data>
+  <data name="Lib_UsbHelp" xml:space="preserve">
+    <value>Export the selected profile or program as one .rgxlib file ("Export to USB"), or the whole library at once ("Export all"); on another machine use "Import from USB". Imports never overwrite: clashing names get "(2)".</value>
+  </data>
+  <data name="MG_ArmLowered" xml:space="preserve">
+    <value>lowered</value>
+  </data>
+  <data name="MG_ArmRaised" xml:space="preserve">
+    <value>raised</value>
+  </data>
+  <data name="MG_ArmStateFormat" xml:space="preserve">
+    <value>Outer A {0} · inner B {1}</value>
+  </data>
+  <data name="MG_ArmsHome" xml:space="preserve">
+    <value>Arms home…</value>
+  </data>
+  <data name="MG_ArmsToRoll" xml:space="preserve">
+    <value>Arms to roll…</value>
+  </data>
+  <data name="MG_AskCarriageFormat" xml:space="preserve">
+    <value>Carriage traverse {0} → {1} mm at {2} mm/min. Press "✓ Confirm" to start</value>
+  </data>
+  <data name="MG_AskPositionFormat" xml:space="preserve">
+    <value>{0} (target {1})? Press "✓ Confirm" to start positioning</value>
+  </data>
+  <data name="MG_AskValueFormat" xml:space="preserve">
+    <value>{0} {1} → {2} {3}. Press "✓ Confirm" to write</value>
+  </data>
+  <data name="MG_CarriageHeader" xml:space="preserve">
+    <value>Carriage</value>
+  </data>
+  <data name="MG_CarriageRunning" xml:space="preserve">
+    <value>● Traversing</value>
+  </data>
+  <data name="MG_CarriageStart" xml:space="preserve">
+    <value>Carriage traverse…</value>
+  </data>
+  <data name="MG_CarriageStartName" xml:space="preserve">
+    <value>Carriage traverse</value>
+  </data>
+  <data name="MG_CarriageStop" xml:space="preserve">
+    <value>Carriage stop</value>
+  </data>
+  <data name="MG_CarriageStopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="MG_ContextNoRoll" xml:space="preserve">
+    <value>No roll job loaded</value>
+  </data>
+  <data name="MG_DiameterStep" xml:space="preserve">
+    <value>Step to previous</value>
+  </data>
+  <data name="MG_FeedOverride" xml:space="preserve">
+    <value>Feed override</value>
+  </data>
+  <data name="MG_GrindingCurrent" xml:space="preserve">
+    <value>Grinding current A</value>
+  </data>
+  <data name="MG_HeadstockAssist" xml:space="preserve">
+    <value>Headstock assist</value>
+  </data>
+  <data name="MG_HeadstockHeader" xml:space="preserve">
+    <value>Headstock</value>
+  </data>
+  <data name="MG_HeadstockOnPanel" xml:space="preserve">
+    <value>Start/stop and direction: button panel</value>
+  </data>
+  <data name="MG_HeadstockOverride" xml:space="preserve">
+    <value>Headstock override</value>
+  </data>
+  <data name="MG_HeadstockSetpoint" xml:space="preserve">
+    <value>Headstock setpoint</value>
+  </data>
+  <data name="MG_InfeedSafe" xml:space="preserve">
+    <value>Infeed to safe position…</value>
+  </data>
+  <data name="MG_MeasureHeader" xml:space="preserve">
+    <value>Measurement</value>
+  </data>
+  <data name="MG_MechanismHeader" xml:space="preserve">
+    <value>Mechanism</value>
+  </data>
+  <data name="MG_NeedsConfigX1Home" xml:space="preserve">
+    <value>machine.json has no arm home position (thresholds.positionX1HomeMm)</value>
+  </data>
+  <data name="MG_NeedsConfigX1Roll" xml:space="preserve">
+    <value>machine.json has no arm-at-roll position (thresholds.positionX1AtRollMm)</value>
+  </data>
+  <data name="MG_NeedsConfigXSafe" xml:space="preserve">
+    <value>machine.json has no infeed safe position (thresholds.positionXSafeMm)</value>
+  </data>
+  <data name="MG_NeedsRoll" xml:space="preserve">
+    <value>Needs a roll job (to know where the body is)</value>
+  </data>
+  <data name="MG_NoTarget" xml:space="preserve">
+    <value>Tap the position strip or enter "Target Z" first</value>
+  </data>
+  <data name="MG_PendantLegend" xml:space="preserve">
+    <value>Jog with the pendant</value>
+  </data>
+  <data name="MG_Position" xml:space="preserve">
+    <value>Position ▸</value>
+  </data>
+  <data name="MG_PositionHeader" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="MG_PositionTarget" xml:space="preserve">
+    <value>Target Z</value>
+  </data>
+  <data name="MG_PositionTitle" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="MG_StripHeader" xml:space="preserve">
+    <value>Along the roll body (tap = positioning target)</value>
+  </data>
+  <data name="MG_StrokeEnd" xml:space="preserve">
+    <value>Stroke end</value>
+  </data>
+  <data name="MG_StrokeInvalid" xml:space="preserve">
+    <value>Enter traverse speed and stroke first (end must be past start)</value>
+  </data>
+  <data name="MG_StrokeStart" xml:space="preserve">
+    <value>Stroke start</value>
+  </data>
+  <data name="MG_SyncDiff" xml:space="preserve">
+    <value>Z1 − Z2 sync</value>
+  </data>
+  <data name="MG_TargetPickedFormat" xml:space="preserve">
+    <value>Target Z = {0}</value>
+  </data>
+  <data name="MG_ToHalf" xml:space="preserve">
+    <value>To ½ of body…</value>
+  </data>
+  <data name="MG_ToQuarter" xml:space="preserve">
+    <value>To ¼ of body…</value>
+  </data>
+  <data name="MG_ToThreeQuarter" xml:space="preserve">
+    <value>To ¾ of body…</value>
+  </data>
+  <data name="MG_ToZ" xml:space="preserve">
+    <value>Carriage to Z…</value>
+  </data>
+  <data name="MG_TraverseSpeed" xml:space="preserve">
+    <value>Traverse speed</value>
+  </data>
+  <data name="MG_ValueWrittenFormat" xml:space="preserve">
+    <value>{0} written</value>
+  </data>
+  <data name="MG_WheelHeader" xml:space="preserve">
+    <value>Wheel</value>
+  </data>
+  <data name="MG_WheelOverride" xml:space="preserve">
+    <value>Wheel override</value>
+  </data>
+  <data name="MG_WheelSetpoint" xml:space="preserve">
+    <value>Wheel setpoint</value>
+  </data>
+  <data name="MG_WheelSurfaceFormat" xml:space="preserve">
+    <value>{0} m/s · Ø {1}</value>
+  </data>
+  <data name="ManualPage_driver" xml:space="preserve">
+    <value>Driver</value>
+  </data>
+  <data name="ManualPage_measureCentring" xml:space="preserve">
+    <value>Measure / centre</value>
+  </data>
+  <data name="ManualPage_measuringArm" xml:space="preserve">
+    <value>Measuring arm</value>
+  </data>
+  <data name="ManualPage_steadyRest" xml:space="preserve">
+    <value>Steady rest</value>
+  </data>
+  <data name="ManualPage_tailstock" xml:space="preserve">
+    <value>Tailstock</value>
+  </data>
+  <data name="Manual_ActionsHint" xml:space="preserve">
+    <value>Actions are on the vertical keys; watch the lamps for position</value>
+  </data>
+  <data name="Manual_AskFormat" xml:space="preserve">
+    <value>{0}? Press "✓ Confirm" to send</value>
+  </data>
+  <data name="Manual_CentringHeader" xml:space="preserve">
+    <value>Centring</value>
+  </data>
+  <data name="Manual_CentringRule" xml:space="preserve">
+    <value>Record the headstock end and the tailstock end; the roll is true when the difference is within tolerance</value>
+  </data>
+  <data name="Manual_JobIdLabel" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="Manual_PointsAxis" xml:space="preserve">
+    <value>Diameter mm</value>
+  </data>
+  <data name="Manual_PointsHeader" xml:space="preserve">
+    <value>Points</value>
+  </data>
+  <data name="Manual_PositionHeader" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="Measurement_AskClear" xml:space="preserve">
+    <value>Clear the captured points?</value>
+  </data>
+  <data name="Measurement_ColumnDiameter" xml:space="preserve">
+    <value>Diameter mm</value>
+  </data>
+  <data name="Measurement_ColumnPosition" xml:space="preserve">
+    <value>Z mm</value>
+  </data>
+  <data name="Mode_Unknown" xml:space="preserve">
+    <value>--</value>
+  </data>
+  <data name="Nav_NeedsManufacturer" xml:space="preserve">
+    <value>Commissioning needs the manufacturer role</value>
+  </data>
+  <data name="Nav_PathSeparator" xml:space="preserve">
+    <value> · </value>
+  </data>
+  <data name="Page_Commissioning" xml:space="preserve">
+    <value>Commissioning</value>
+  </data>
+  <data name="Page_Library" xml:space="preserve">
+    <value>Library</value>
+  </data>
+  <data name="Page_ManualGrinding" xml:space="preserve">
+    <value>Manual grinding</value>
+  </data>
+  <data name="Page_Parameters" xml:space="preserve">
+    <value>Parameters</value>
+  </data>
+  <data name="Pendant_Axis1" xml:space="preserve">
+    <value>X</value>
+  </data>
+  <data name="Pendant_Axis2" xml:space="preserve">
+    <value>X1</value>
+  </data>
+  <data name="Pendant_Axis3" xml:space="preserve">
+    <value>Z</value>
+  </data>
+  <data name="Pendant_Axis4" xml:space="preserve">
+    <value>U</value>
+  </data>
+  <data name="Pendant_Axis5" xml:space="preserve">
+    <value>B</value>
+  </data>
+  <data name="Pendant_Disabled" xml:space="preserve">
+    <value>disabled</value>
+  </data>
+  <data name="Pendant_Enabled" xml:space="preserve">
+    <value>enabled</value>
+  </data>
+  <data name="Profile_AskClear" xml:space="preserve">
+    <value>Clear all profile segments?</value>
+  </data>
+  <data name="Quick_Diagnostics" xml:space="preserve">
+    <value>Diag</value>
+  </data>
+  <data name="Quick_Library" xml:space="preserve">
+    <value>Library</value>
+  </data>
+  <data name="Quick_Machine" xml:space="preserve">
+    <value>Machine</value>
+  </data>
+  <data name="Quick_Parameters" xml:space="preserve">
+    <value>Params</value>
+  </data>
+  <data name="Quick_Profile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Quick_Records" xml:space="preserve">
+    <value>Records</value>
+  </data>
+  <data name="Quick_SideScreen" xml:space="preserve">
+    <value>Side</value>
+  </data>
+  <data name="Quick_Steps" xml:space="preserve">
+    <value>Program</value>
+  </data>
+  <data name="Quick_Wheel" xml:space="preserve">
+    <value>Wheel</value>
+  </data>
+  <data name="Records_AskFinish" xml:space="preserve">
+    <value>Mark the record of {0} as finished? The note is saved with it</value>
+  </data>
+  <data name="Records_ListHeader" xml:space="preserve">
+    <value>Records</value>
+  </data>
+  <data name="Records_QueryHint" xml:space="preserve">
+    <value>Tap a date for the calendar; vertical key 8 "Query", 7 "Cancel"</value>
+  </data>
+  <data name="Records_RangeMonth" xml:space="preserve">
+    <value>Last 30 days</value>
+  </data>
+  <data name="Records_RangeToday" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Records_RangeWeek" xml:space="preserve">
+    <value>Last 7 days</value>
+  </data>
+  <data name="Setpoint_HintFormat" xml:space="preserve">
+    <value>{0} ({1}), range {2} … {3}</value>
+  </data>
+  <data name="Settings_Reloaded" xml:space="preserve">
+    <value>Reloaded from the database</value>
+  </data>
+  <data name="SignIn_PinFormat" xml:space="preserve">
+    <value>Operators use a 4–8 digit PIN</value>
+  </data>
+  <data name="Steps_AskDefaults" xml:space="preserve">
+    <value>Reset this step's parameters to defaults?</value>
+  </data>
+  <data name="SubView_Query" xml:space="preserve">
+    <value>Query</value>
+  </data>
+  <data name="SubView_StatusOverview" xml:space="preserve">
+    <value>Status overview</value>
+  </data>
+  <data name="Sys_EditNote" xml:space="preserve">
+    <value>These values live in config/hmi.json and machine.json (Machine config group) and take effect after restarting the HMI. Ctrl+L also switches the language.</value>
+  </data>
+  <data name="Sys_Header" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Sys_Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Sys_Machine" xml:space="preserve">
+    <value>Machine</value>
+  </data>
+  <data name="Sys_PanelActions" xml:space="preserve">
+    <value>Panel actions</value>
+  </data>
+  <data name="Sys_QuickBar" xml:space="preserve">
+    <value>Left bar</value>
+  </data>
+  <data name="Sys_RawHeader" xml:space="preserve">
+    <value>Configuration text (read-only)</value>
+  </data>
+  <data name="Sys_Refresh" xml:space="preserve">
+    <value>Poll · UI refresh</value>
+  </data>
+  <data name="Sys_TagCount" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Top_AlarmMoreFormat" xml:space="preserve">
+    <value>+{0}</value>
+  </data>
+  <data name="Top_EmergencyStop" xml:space="preserve">
+    <value>EMERGENCY STOP</value>
+  </data>
+  <data name="Vk_Backup" xml:space="preserve">
+    <value>Backup</value>
+  </data>
+  <data name="Vk_Cancel" xml:space="preserve">
+    <value>✕ Cancel</value>
+  </data>
+  <data name="Vk_CancelJob" xml:space="preserve">
+    <value>Cancel job…</value>
+  </data>
+  <data name="Vk_ChangeLog" xml:space="preserve">
+    <value>Change log</value>
+  </data>
+  <data name="Vk_ChangeWheel" xml:space="preserve">
+    <value>Change wheel ▸</value>
+  </data>
+  <data name="Vk_ClearHmiAlarms" xml:space="preserve">
+    <value>Clear HMI alarms…</value>
+  </data>
+  <data name="Vk_Confirm" xml:space="preserve">
+    <value>✓ Confirm</value>
+  </data>
+  <data name="Vk_ConfirmDownload" xml:space="preserve">
+    <value>✓ Download</value>
+  </data>
+  <data name="Vk_Copy" xml:space="preserve">
+    <value>Copy…</value>
+  </data>
+  <data name="Vk_Delete" xml:space="preserve">
+    <value>Delete…</value>
+  </data>
+  <data name="Vk_DiscardEdits" xml:space="preserve">
+    <value>✕ Discard</value>
+  </data>
+  <data name="Vk_DownloadEdits" xml:space="preserve">
+    <value>✓ Send edits</value>
+  </data>
+  <data name="Vk_ExportAll" xml:space="preserve">
+    <value>Export all</value>
+  </data>
+  <data name="Vk_ExportExcel" xml:space="preserve">
+    <value>Export Excel</value>
+  </data>
+  <data name="Vk_ExportSnapshot" xml:space="preserve">
+    <value>Export snapshot</value>
+  </data>
+  <data name="Vk_ExportUsb" xml:space="preserve">
+    <value>Export to USB</value>
+  </data>
+  <data name="Vk_FirstPage" xml:space="preserve">
+    <value>≡◂</value>
+  </data>
+  <data name="Vk_ImportUsb" xml:space="preserve">
+    <value>Import from USB</value>
+  </data>
+  <data name="Vk_JumpTitle" xml:space="preserve">
+    <value>Jump to step</value>
+  </data>
+  <data name="Vk_JumpToFormat" xml:space="preserve">
+    <value>{0}…</value>
+  </data>
+  <data name="Vk_MarkFinished" xml:space="preserve">
+    <value>Mark finished…</value>
+  </data>
+  <data name="Vk_New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Vk_NewJob" xml:space="preserve">
+    <value>New job</value>
+  </data>
+  <data name="Vk_NewRoll" xml:space="preserve">
+    <value>New roll</value>
+  </data>
+  <data name="Vk_NextPage" xml:space="preserve">
+    <value>≡▸</value>
+  </data>
+  <data name="Vk_NextStep" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Vk_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Vk_OpenProfile" xml:space="preserve">
+    <value>Open profile</value>
+  </data>
+  <data name="Vk_OpenProgram" xml:space="preserve">
+    <value>Open program</value>
+  </data>
+  <data name="Vk_OpenRecord" xml:space="preserve">
+    <value>Open record</value>
+  </data>
+  <data name="Vk_PreviousStep" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Vk_Print" xml:space="preserve">
+    <value>Print</value>
+  </data>
+  <data name="Vk_PrintNow" xml:space="preserve">
+    <value>Print</value>
+  </data>
+  <data name="Vk_Query" xml:space="preserve">
+    <value>✓ Query</value>
+  </data>
+  <data name="Vk_QueryAsk" xml:space="preserve">
+    <value>Query…</value>
+  </data>
+  <data name="Vk_RegisterRoll" xml:space="preserve">
+    <value>Register roll</value>
+  </data>
+  <data name="Vk_RegisterWheel" xml:space="preserve">
+    <value>Register wheel</value>
+  </data>
+  <data name="Vk_Reload" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="Vk_Rename" xml:space="preserve">
+    <value>Rename…</value>
+  </data>
+  <data name="Vk_Save" xml:space="preserve">
+    <value>✓ Save</value>
+  </data>
+  <data name="Vk_SaveAsk" xml:space="preserve">
+    <value>✓ Save…</value>
+  </data>
+  <data name="Vk_SaveRoll" xml:space="preserve">
+    <value>Save roll</value>
+  </data>
+  <data name="Vk_UseForJob" xml:space="preserve">
+    <value>Use for job</value>
+  </data>
+  <data name="Vk_ViewMachineJson" xml:space="preserve">
+    <value>View machine.json</value>
+  </data>
+  <data name="Vk_ViewTagMapJson" xml:space="preserve">
+    <value>View tagmap.json</value>
+  </data>
+  <data name="Vk_WizardCancel" xml:space="preserve">
+    <value>Abandon…</value>
+  </data>
+  <data name="Vk_WizardNext" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Vk_WizardSkip" xml:space="preserve">
+    <value>Skip correction</value>
+  </data>
+  <data name="WheelChange_AskCancel" xml:space="preserve">
+    <value>Abandon the wheel change? Touch mode is switched back if it was changed</value>
+  </data>
+  <data name="WheelChange_SkipOnlyAtVerify" xml:space="preserve">
+    <value>Only the verify step can skip the correction</value>
+  </data>
+  <data name="Wheel_RegisterHint" xml:space="preserve">
+    <value>New wheel delivered: enter its nominal diameter under "New wheel diameter" and press "✓ Save"; after mounting it, run "Change wheel ▸" to find the true diameter</value>
+  </data>
+  <data name="Area_Machine" xml:space="preserve">
+    <value>Machine</value>
+  </data>
+  <data name="Area_Profile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Area_Steps" xml:space="preserve">
+    <value>Program</value>
+  </data>
+  <data name="Area_Library" xml:space="preserve">
+    <value>Library</value>
+  </data>
+  <data name="Area_Parameters" xml:space="preserve">
+    <value>Parameters</value>
+  </data>
+  <data name="Area_Records" xml:space="preserve">
+    <value>Records</value>
+  </data>
+  <data name="Area_Diagnostics" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="Area_Commissioning" xml:space="preserve">
+    <value>Commissioning</value>
   </data>
 </root>

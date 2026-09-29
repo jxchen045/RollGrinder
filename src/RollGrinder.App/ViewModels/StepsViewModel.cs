@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Contracts.Dtos;
@@ -285,8 +286,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
         HmiSettings settings,
         IStringLocalizer localizer,
         IAlarmSink alarms,
-        INavigator navigator)
-        : base(alarms, localizer, navigator)
+        INavigator navigator,
+        ShellInteraction interaction)
+        : base(alarms, localizer, navigator, interaction)
     {
         this.capability = capability ?? throw new ArgumentNullException(nameof(capability));
         this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
@@ -336,7 +338,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
             // 阶段 2 线框上的另外三个键（修改稿 5.3）：余量分配、默认值、程序步骤。
             new FunctionKeyViewModel("Vk_AllocateStock", new RelayCommand(AllocateStock), localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_StepDefaults", new RelayCommand(() => ResetStepToDefaults(SelectedStep)), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_StepDefaults", new RelayCommand(() => Ask("Steps_AskDefaults", () => ResetStepToDefaults(SelectedStep))), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_ProgramOptions", new RelayCommand(() => ProgramOptionsFocusRequested?.Invoke(this, EventArgs.Empty)), localizer),
         });
 
@@ -348,17 +350,20 @@ public sealed partial class StepsViewModel : PageViewModelBase
             }
         };
 
-        SetFunctionKeys(new[]
+        // 横键（最终稿 5.8）：程序库 · 保存 · 另存为… · 空 · 新建程序 · 校验 · 空 · 用于作业。和辊形编辑同构（C5）。
+        SetFunctionKeys(new FunctionKeyViewModel?[]
         {
+            FunctionKeyViewModel.ForAction("Fn_ProgramLibrary", localizer, () => Navigator.GoToArea(AreaKey.Library, "programs")),
             new FunctionKeyViewModel("Fn_SaveProgram", new AsyncRelayCommand(
-                () => SaveAsync(CancellationToken.None)), localizer, FunctionKeyKind.Primary, requiresEditable: true),
+                () => SaveAsync(CancellationToken.None)), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_SaveAs", SaveProgramAsCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Fn_ProgramLibrary", OpenProgramLibraryCommand, localizer),
+            null,
             new FunctionKeyViewModel("Fn_NewProgram", NewProgramCommand, localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
+            null,
 
-            // 用这支程序去拼一份作业：派到作业页，导航槽会显示"返回 工艺程序"。
-            new FunctionKeyViewModel("Fn_UseForJob", UseForJobCommand, localizer, FunctionKeyKind.Start),
+            // 用这支程序去拼一份作业：派到作业向导，路径条上"« 返回 工艺程序"。
+            new FunctionKeyViewModel("Fn_UseForJob", UseForJobCommand, localizer),
         });
 
         ResetToEmptyProgram();
@@ -369,7 +374,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     public override string TitleResourceKey => "Page_Steps";
 
-    public override string MenuHintResourceKey => "Menu_StepsHint";
+    /// <summary>黄色帮助：工序参数（最终稿 F9）。</summary>
+    public override string? HelpTopicKey => "Help_StepParameters";
+
 
     /// <summary>编辑页：自动循环挂着程序时落只读锁。</summary>
     public override bool LocksDuringRun => true;
@@ -491,7 +498,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
                 AddStep();
             },
             canChoose: () => option.IsAvailable);
-        key.HintText = option.IsAvailable ? null : option.DisplayName;
+        key.Blocker = option.IsAvailable ? null : option.DisplayName;
         return key;
     }
 
@@ -840,15 +847,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
     [ObservableProperty]
     private string? programId;
 
-    /// <summary>库里现有的程序。</summary>
-    public ObservableCollection<ProgramSummary> ProgramLibraryEntries { get; } = new();
-
-    [ObservableProperty]
-    private bool isProgramLibraryOpen;
-
-    [ObservableProperty]
-    private ProgramSummary? selectedProgramEntry;
-
     partial void OnProgramNameChanged(string value)
     {
         MarkEdited();
@@ -1062,52 +1060,16 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
     }
 
-    [RelayCommand]
-    private async Task OpenProgramLibraryAsync(CancellationToken cancellationToken)
+    /// <summary>把库里一支程序调进编辑器（库区"打开"、作业向导"打开程序"都走这里），整串工序与开关一起换掉。</summary>
+    private async Task OpenFromLibraryAsync(string programId, CancellationToken cancellationToken)
     {
         try
         {
-            IReadOnlyList<ProgramSummary> entries =
-                await this.programs.ListAsync(LibraryListLimit, cancellationToken).ConfigureAwait(true);
-
-            ProgramLibraryEntries.Clear();
-            foreach (ProgramSummary entry in entries)
+            GrindingProgram? program = await this.programs.GetAsync(programId, cancellationToken).ConfigureAwait(true);
+            if (program is not null)
             {
-                ProgramLibraryEntries.Add(entry);
+                ApplyProgram(program);
             }
-
-            SelectedProgramEntry = ProgramLibraryEntries.FirstOrDefault();
-            IsProgramLibraryOpen = true;
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    [RelayCommand]
-    private void CloseProgramLibrary() => IsProgramLibraryOpen = false;
-
-    /// <summary>把选中的那支程序调进编辑器，整串工序与开关一起换掉。</summary>
-    [RelayCommand]
-    private async Task LoadProgramAsync(CancellationToken cancellationToken)
-    {
-        if (SelectedProgramEntry is null)
-        {
-            return;
-        }
-
-        try
-        {
-            GrindingProgram? program = await this.programs
-                .GetAsync(SelectedProgramEntry.ProgramId, cancellationToken).ConfigureAwait(true);
-            if (program is null)
-            {
-                return;
-            }
-
-            ApplyProgram(program);
-            IsProgramLibraryOpen = false;
         }
         catch (DataStoreException ex)
         {
@@ -1151,34 +1113,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
         SelectDefaultStep();
     }
 
-    [RelayCommand]
-    private async Task DeleteProgramAsync(CancellationToken cancellationToken)
-    {
-        if (SelectedProgramEntry is null)
-        {
-            return;
-        }
-
-        try
-        {
-            await this.programs.DeleteAsync(SelectedProgramEntry.ProgramId, cancellationToken).ConfigureAwait(true);
-            if (string.Equals(ProgramId, SelectedProgramEntry.ProgramId, StringComparison.Ordinal))
-            {
-                // 编辑器里还开着它：工序留着，但它已经不在库里了，再存就是新的一支。
-                ProgramId = null;
-            }
-
-            await OpenProgramLibraryAsync(cancellationToken).ConfigureAwait(true);
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    /// <summary>库面板一次列多少条。</summary>
-    private const int LibraryListLimit = 200;
-
     /// <summary>新条目的标识。精确到毫秒：只到秒的话，一秒内另存两次会悄悄盖掉前一支。</summary>
     private static string NewProgramId() =>
         string.Create(CultureInfo.InvariantCulture, $"G{DateTimeOffset.Now:yyyyMMddHHmmssfff}");
@@ -1187,8 +1121,23 @@ public sealed partial class StepsViewModel : PageViewModelBase
         new KeyValuePair<string, ParameterValue>(
             row.Descriptor.Key, ParameterValue.FromBoolean(row.IsOn))));
 
-    /// <summary>切到本页时记住当前程序，"放弃修改"才有东西可回。</summary>
-    public override void OnActivated() => Capture();
+    /// <summary>切到本页时记住当前程序，"放弃修改"才有东西可回；从库区或作业向导"打开"过来的先调进来。</summary>
+    public override void OnActivated()
+    {
+        Capture();
+        if (this.jobDraft.ProgramToOpen is { } id)
+        {
+            this.jobDraft.ProgramToOpen = null;
+            if (id == JobDraft.NewEntry)
+            {
+                NewProgram();
+            }
+            else
+            {
+                _ = RunGuardedAsync(token => OpenFromLibraryAsync(id, token), CancellationToken.None);
+            }
+        }
+    }
 
     /// <summary>放弃修改：回到进入本页（或上次下发成功）时的程序。</summary>
     public override void DiscardChanges()

@@ -1,6 +1,8 @@
 <!--
-  字号规范见 docs/design/配色与字号规范.png：
-  主测量值 54 / 参数值 30 / 数据行 24 / 正文与按钮 19 / 标签 15。
+  字号层级（界面最终稿 F1、4.2）：
+  L1 主读数 54（Size.Measurement：手动磨削的 X、X1、Z、U，测量直径，自动页实测直径，对中两端之差）；
+  L2 次读数 32（Size.Secondary：砂轮、头架、拖板实际值，自动页状态带 X、Z）；
+  L3 数值格、表格 24（Size.DataRow）；正文、标签、软键 19（Size.Body）；最小 15（Size.Caption，只用于辅助信息）。
 
   两套字体都**编译进程序集**（src/RollGrinder.App/Fonts/，OFL 授权）：
   中文 Noto Sans SC，数字与位置值 IBM Plex Mono（Regular / Medium / SemiBold 三个字重）。
@@ -18,6 +20,7 @@
   <FontFamily x:Key="Font.Mono">pack://application:,,,/Fonts/#IBM Plex Mono, Consolas, Cascadia Mono</FontFamily>
 
   <sys:Double x:Key="Size.Measurement">54</sys:Double>
+  <sys:Double x:Key="Size.Secondary">32</sys:Double>
   <sys:Double x:Key="Size.Parameter">30</sys:Double>
   <sys:Double x:Key="Size.DataRow">24</sys:Double>
   <sys:Double x:Key="Size.Body">19</sys:Double>
@@ -33,6 +36,14 @@
     <Setter Property="FontSize" Value="{StaticResource Size.Measurement}" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{StaticResource Brush.Accent}" />
+  </Style>
+
+  <!-- L2 次读数：实际值、状态带坐标 -->
+  <Style x:Key="Text.Secondary" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Mono}" />
+    <Setter Property="FontSize" Value="{StaticResource Size.Secondary}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
   </Style>
 
   <Style x:Key="Text.Parameter" TargetType="TextBlock">

@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Controls;
 using RollGrinder.Core.Steps;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Contracts.Dtos;
@@ -23,26 +24,43 @@ using RollGrinder.Services.Session;
 namespace RollGrinder.App.ViewModels;
 
 /// <summary>
-/// 设置页：现场标定值。
+/// 参数区（界面最终稿 5.10）：横键 砂轮 · 标定 · 空 · 标定审计。
 ///
-/// 这一页改的是**换一次砂轮就变**的那些值（砂轮直径、探头距离、对刀偏移、各项验收公差），
-/// 不是机床固有能力——轴、行程、选装装置仍然由 machine.json 描述，装机时定下就不动。
+/// 这一区改的是**换一次砂轮就变**的那些值（砂轮直径、探头距离、对刀偏移、各项验收公差），
+/// 不是机床固有能力——轴、行程、选装装置仍然由 machine.json 描述，装机时定下就不动（那是调试区的事）。
 ///
 /// 参数格完全由 <see cref="MachineCalibration.Schema"/> 生成：
 /// 新增一项标定值只写一行 schema + 一条 resx 文案，这一页与持久化都不用改（架构约束 ④）。
+/// 有改动时竖键 7 / 8 变成"✕ 放弃改动 / ✓ 保存"；权限不够时路径条写"只读 · 要管理员权限"。
 /// </summary>
-public sealed partial class SettingsViewModel : PageViewModelBase
+public sealed partial class ParametersViewModel : PageViewModelBase
 {
+    /// <summary>横键"砂轮"（左栏的"砂轮"入口也打开它）。</summary>
+    public const string WheelGroup = QuickBarCatalog.WheelGroup;
+
+    /// <summary>横键"标定"。</summary>
+    public const string CalibrationGroup = "calibration";
+
+    /// <summary>横键"标定审计"。</summary>
+    public const string AuditGroup = "audit";
+
     private readonly ICalibrationService calibration;
     private readonly IWheelChangeService wheelChange;
     private readonly IUserSession userSession;
     private readonly IWheelHistory wheelHistory;
     private readonly MachineCapability capability;
+    private readonly Dictionary<string, FunctionKeyViewModel> groupKeys = new(StringComparer.Ordinal);
+    private readonly IReadOnlyList<FunctionKeyViewModel?> wheelKeys;
+    private readonly IReadOnlyList<FunctionKeyViewModel?> calibrationKeys;
+    private readonly IReadOnlyList<FunctionKeyViewModel?> auditKeys;
+    private readonly IReadOnlyList<FunctionKeyViewModel?> wizardKeys;
+    private readonly FunctionKeyViewModel discardKey;
+    private readonly FunctionKeyViewModel saveKey;
 
-    /// <summary>进入本页时的取值，"放弃修改"回到这里。</summary>
+    /// <summary>进入本页时的取值，"放弃改动"回到这里。</summary>
     private IReadOnlyList<string> committed = Array.Empty<string>();
 
-    public SettingsViewModel(
+    public ParametersViewModel(
         ICalibrationService calibration,
         IWheelChangeService wheelChange,
         IUserSession userSession,
@@ -50,8 +68,9 @@ public sealed partial class SettingsViewModel : PageViewModelBase
         MachineCapability capability,
         IStringLocalizer localizer,
         IAlarmSink alarms,
-        INavigator navigator)
-        : base(alarms, localizer, navigator)
+        INavigator navigator,
+        ShellInteraction interaction)
+        : base(alarms, localizer, navigator, interaction)
     {
         this.wheelHistory = wheelHistory ?? throw new ArgumentNullException(nameof(wheelHistory));
         this.capability = capability ?? throw new ArgumentNullException(nameof(capability));
@@ -59,20 +78,61 @@ public sealed partial class SettingsViewModel : PageViewModelBase
         this.wheelChange = wheelChange ?? throw new ArgumentNullException(nameof(wheelChange));
         this.userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
 
-        SetFunctionKeys(new[]
+        foreach ((string group, string label) in new[]
         {
-            new FunctionKeyViewModel("Fn_SaveSettings", new AsyncRelayCommand(
-                () => SaveAsync(CancellationToken.None)), localizer, FunctionKeyKind.Primary, requiresEditable: true),
-            new FunctionKeyViewModel("Fn_ReloadSettings", ReloadCommand, localizer),
-            new FunctionKeyViewModel("Fn_NewWheel", StartWheelChangeCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Fn_Wheel", OpenWheelCommand, localizer),
+            (WheelGroup, "Fn_Wheel"), (CalibrationGroup, "Fn_Calibration"), (AuditGroup, "Fn_CalibrationAudit"),
+        })
+        {
+            string target = group;
+            this.groupKeys[group] = FunctionKeyViewModel.ForAction(label, localizer, () => ShowGroup(target));
+        }
+
+        SetFunctionKeys(new FunctionKeyViewModel?[]
+        {
+            this.groupKeys[WheelGroup], this.groupKeys[CalibrationGroup], null, this.groupKeys[AuditGroup],
         });
+
+        var reload = new FunctionKeyViewModel("Vk_Reload", ReloadCommand, localizer);
+        this.wheelKeys = new FunctionKeyViewModel?[]
+        {
+            new FunctionKeyViewModel("Vk_ChangeWheel", StartWheelChangeCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_RegisterWheel", RegisterNewWheelCommand, localizer, requiresEditable: true),
+            reload,
+        };
+        this.calibrationKeys = new FunctionKeyViewModel?[] { reload };
+        this.auditKeys = new FunctionKeyViewModel?[] { new FunctionKeyViewModel("Vk_Reload", new AsyncRelayCommand(RefreshAuditAsync), localizer) };
+        this.wizardKeys = new FunctionKeyViewModel?[]
+        {
+            new FunctionKeyViewModel("Vk_WizardNext", WheelChangeNextCommand, localizer, FunctionKeyKind.Primary, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_WizardSkip", SkipWheelCorrectionCommand, localizer, requiresEditable: true)
+            {
+                PreconditionResourceKey = "WheelChange_SkipOnlyAtVerify",
+            },
+            null,
+            null,
+            null,
+            null,
+            null,
+            new FunctionKeyViewModel("Vk_WizardCancel", new RelayCommand(AskCancelWheelChange), localizer, FunctionKeyKind.Danger),
+        };
+        this.discardKey = new FunctionKeyViewModel("Vk_DiscardEdits", new RelayCommand(DiscardChanges), localizer, FunctionKeyKind.Cancel);
+        this.saveKey = new FunctionKeyViewModel(
+            "Vk_Save", new AsyncRelayCommand(() => SaveAsync(CancellationToken.None)), localizer, FunctionKeyKind.Confirm, requiresEditable: true);
 
         MaxSurfaceSpeedText = capability.MaxWheelSurfaceSpeedMPerSec is double maxSpeed
             ? localizer.Format("Wheel_MaxSurfaceSpeedFormat", maxSpeed)
             : "--";
 
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(IsDirty) or nameof(ActiveSubViewKey))
+            {
+                RefreshCommitPair();
+            }
+        };
+
         Rebuild();
+        ShowGroup(WheelGroup);
         this.calibration.Changed += (_, _) => OnUiThread(Rebuild);
         this.wheelChange.Changed += (_, _) => OnUiThread(RefreshWheelChange);
 
@@ -80,10 +140,60 @@ public sealed partial class SettingsViewModel : PageViewModelBase
         this.wheelHistory.Changed += (_, _) => this.wheelHistoryStale = true;
     }
 
-    // ── 砂轮页（修改稿 5.7）：砂轮数据、修整参数、修整与更换记录 ──────────────────
+    /// <summary>当前是哪一组。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsWheelGroup), nameof(IsCalibrationGroup), nameof(IsAuditGroup))]
+    private string group = WheelGroup;
 
-    /// <summary>砂轮子视图的资源键，同时用作面包屑文案。</summary>
-    public const string WheelSubView = "SubView_Wheel";
+    public bool IsWheelGroup => Group == WheelGroup;
+
+    public bool IsCalibrationGroup => Group == CalibrationGroup;
+
+    public bool IsAuditGroup => Group == AuditGroup;
+
+    public override bool ShowGroup(string groupKey)
+    {
+        if (!this.groupKeys.TryGetValue(groupKey, out FunctionKeyViewModel? key))
+        {
+            return false;
+        }
+
+        if (ActiveSubViewKey is not null)
+        {
+            Navigator.CloseSubView();
+        }
+
+        Group = groupKey;
+        MarkActiveFunctionKey(key);
+        SetVerticalKeys(GroupKeys());
+        if (groupKey == WheelGroup)
+        {
+            FocusedWheelKey = CalibrationKeys.WheelDiameterMm;
+            _ = RunGuardedAsync(RefreshWheelHistoryAsync, CancellationToken.None);
+        }
+        else if (groupKey == AuditGroup)
+        {
+            _ = RefreshAuditAsync(CancellationToken.None);
+        }
+
+        return true;
+    }
+
+    private IReadOnlyList<FunctionKeyViewModel?> GroupKeys() => Group switch
+    {
+        CalibrationGroup => this.calibrationKeys,
+        AuditGroup => this.auditKeys,
+        _ => this.wheelKeys,
+    };
+
+    /// <summary>有没存的改动、又不在向导里：竖键 7 / 8 是"✕ 放弃改动 / ✓ 保存"。</summary>
+    private void RefreshCommitPair()
+    {
+        bool show = IsDirty && ActiveSubViewKey is null;
+        SetCommitPair(show ? this.discardKey : null, show ? this.saveKey : null);
+    }
+
+    // ── 砂轮（最终稿 5.10）：砂轮数据、修整参数、修整与更换记录 ──────────────────
 
     private static readonly string[] WheelKeys =
     {
@@ -96,7 +206,7 @@ public sealed partial class SettingsViewModel : PageViewModelBase
         CalibrationKeys.DressFeedMmPerMin, CalibrationKeys.DressIntervalRolls,
     };
 
-    /// <summary>砂轮数据的参数格（和标定值同一批格子：在这里改、按"保存"一起存）。</summary>
+    /// <summary>砂轮数据的参数格（和标定值同一批格子：在这里改、按"✓ 保存"一起存）。</summary>
     public ObservableCollection<ParameterRowViewModel> WheelRows { get; } = new();
 
     /// <summary>修整参数的参数格。程序里插"砂轮修整"时照这里的值填。</summary>
@@ -108,43 +218,24 @@ public sealed partial class SettingsViewModel : PageViewModelBase
     /// <summary>机床允许的砂轮最高线速度（machine.json）；没配为"--"。</summary>
     public string MaxSurfaceSpeedText { get; }
 
-    /// <summary>光标所在的砂轮 / 修整参数：简图上亮它，说明行写它。</summary>
+    /// <summary>光标所在的砂轮 / 修整参数：简图上亮它。</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(WheelHelpText))]
     private string focusedWheelKey = CalibrationKeys.WheelDiameterMm;
 
-    /// <summary>简图下面那一行：参数名 — 说明　单位　范围。</summary>
-    public string WheelHelpText
-    {
-        get
-        {
-            ParameterRowViewModel? row = Row(FocusedWheelKey);
-            if (row is null)
-            {
-                return string.Empty;
-            }
-
-            var parts = new List<string> { Localizer.Format("Steps_HelpHeadFormat", row.Label, Localizer["ParamHelp_" + row.Key]) };
-            if (row.UnitText.Length > 0)
-            {
-                parts.Add(Localizer.Format("Steps_HelpUnitFormat", row.UnitText));
-            }
-
-            if (row.RangeText.Length > 0)
-            {
-                parts.Add(Localizer.Format("Steps_HelpRangeFormat", row.RangeText));
-            }
-
-            return string.Join(Localizer["Steps_HelpSeparator"], parts);
-        }
-    }
-
+    /// <summary>
+    /// 竖键"新砂轮登记"：新砂轮到货先把标称直径登上（还没装上去）。光标落到"新砂轮直径"格、对话行说怎么做；
+    /// 装上以后再走"换砂轮 ▸"向导试磨反推真实直径。
+    /// </summary>
     [RelayCommand]
-    private void OpenWheel()
+    private void RegisterNewWheel()
     {
-        FocusedWheelKey = CalibrationKeys.WheelDiameterMm;
-        Navigator.OpenSubView(WheelSubView);
-        _ = RunGuardedAsync(RefreshWheelHistoryAsync, CancellationToken.None);
+        FocusedWheelKey = CalibrationKeys.NewWheelDiameterMm;
+        if (Row(CalibrationKeys.NewWheelDiameterMm) is { } row)
+        {
+            Interaction.Hint(row.HintText);
+        }
+
+        Say("Wheel_RegisterHint");
     }
 
     private async Task RefreshWheelHistoryAsync(CancellationToken cancellationToken)
@@ -190,15 +281,15 @@ public sealed partial class SettingsViewModel : PageViewModelBase
 
     partial void OnWheelChangeStageChanged(WheelChangeStage value)
     {
+        SkipWheelCorrectionCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(WizardDiagramMode));
         OnPropertyChanged(nameof(WizardHighlightKey));
     }
 
-    public override PageKey Key => PageKey.Settings;
+    public override PageKey Key => PageKey.Parameters;
 
-    public override string TitleResourceKey => "Page_Settings";
+    public override string TitleResourceKey => "Page_Parameters";
 
-    public override string MenuHintResourceKey => "Menu_SettingsHint";
 
     /// <summary>自动循环挂着程序时落只读锁：标定值一改，正在跑的程序算出来的位置就变了。</summary>
     public override bool LocksDuringRun => true;
@@ -265,10 +356,6 @@ public sealed partial class SettingsViewModel : PageViewModelBase
     [ObservableProperty]
     private string wheelWearText = "--";
 
-    /// <summary>页面状态提示的资源键。</summary>
-    [ObservableProperty]
-    private string statusResourceKey = string.Empty;
-
     /// <summary>
     /// 管理员以上才改得动。操作工看得见但改不了——
     /// 藏起来只会让人以为软件少做，标出来才知道是权限不够。
@@ -281,7 +368,7 @@ public sealed partial class SettingsViewModel : PageViewModelBase
     {
         if (!CanEdit)
         {
-            StatusResourceKey = "Settings_NeedsAdministrator";
+            Interaction.Refuse(Localizer["Settings_NeedsAdministrator"]);
             return false;
         }
 
@@ -291,7 +378,7 @@ public sealed partial class SettingsViewModel : PageViewModelBase
             ParameterValue? value = row.ToParameterValue();
             if (value is null)
             {
-                StatusResourceKey = "Settings_ValueInvalid";
+                Interaction.Refuse(Localizer["Settings_ValueInvalid"]);
                 return false;
             }
 
@@ -306,7 +393,7 @@ public sealed partial class SettingsViewModel : PageViewModelBase
                 cancellationToken).ConfigureAwait(true);
 
             IsDirty = false;
-            StatusResourceKey = "Settings_Saved";
+            Say("Settings_Saved");
             await RefreshAuditAsync(cancellationToken).ConfigureAwait(true);
             return true;
         }
@@ -329,7 +416,7 @@ public sealed partial class SettingsViewModel : PageViewModelBase
         try
         {
             await this.calibration.LoadAsync(cancellationToken).ConfigureAwait(true);
-            StatusResourceKey = string.Empty;
+            Say("Settings_Reloaded");
         }
         catch (DataStoreException ex)
         {
@@ -380,7 +467,18 @@ public sealed partial class SettingsViewModel : PageViewModelBase
         TrialMeasuredDiameterText = string.Empty;
         RefreshWheelChange();
         Navigator.OpenSubView(WheelChangeSubView);
+        SetVerticalKeys(this.wizardKeys);
     }
+
+    /// <summary>向导收起：竖键回到本组。</summary>
+    private void CloseWizard()
+    {
+        Navigator.CloseSubView();
+        SetVerticalKeys(GroupKeys());
+    }
+
+    /// <summary>竖键"放弃换砂轮…"：已经切成手动对刀的话会切回去，所以先问一句。</summary>
+    private void AskCancelWheelChange() => Ask("WheelChange_AskCancel", () => CancelWheelChangeAsync(CancellationToken.None));
 
     /// <summary>向导的"下一步"。每一步各自做各自的事，做不成就停在原地说为什么。</summary>
     [RelayCommand]
@@ -394,7 +492,7 @@ public sealed partial class SettingsViewModel : PageViewModelBase
                 case WheelChangeStage.EnterNewWheel:
                     if (!TryParse(NewWheelDiameterText, out double diameterMm))
                     {
-                        StatusResourceKey = "WheelChange_NeedDiameter";
+                        Interaction.Refuse(Localizer["WheelChange_NeedDiameter"]);
                         return;
                     }
 
@@ -409,7 +507,7 @@ public sealed partial class SettingsViewModel : PageViewModelBase
                     if (!TryParse(TrialExpectedDiameterText, out double expectedMm)
                         || !TryParse(TrialMeasuredDiameterText, out double measuredMm))
                     {
-                        StatusResourceKey = "WheelChange_NeedTrialDiameters";
+                        Interaction.Refuse(Localizer["WheelChange_NeedTrialDiameters"]);
                         return;
                     }
 
@@ -422,20 +520,19 @@ public sealed partial class SettingsViewModel : PageViewModelBase
 
                 case WheelChangeStage.RestoreTouchMode:
                     await this.wheelChange.FinishAsync(changedBy, token).ConfigureAwait(true);
-                    StatusResourceKey = "WheelChange_Done";
-                    Navigator.CloseSubView();
+                    Say("WheelChange_Done");
+                    CloseWizard();
                     return;
 
                 default:
                     return;
             }
 
-            StatusResourceKey = string.Empty;
             RefreshWheelChange();
         }, cancellationToken);
 
     /// <summary>这一刀不作数：不改砂轮直径，但对刀方式照样要改回去。</summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanSkipWheelCorrection))]
     private void SkipWheelCorrection()
     {
         if (this.wheelChange.Current?.Stage != WheelChangeStage.Verify)
@@ -447,8 +544,9 @@ public sealed partial class SettingsViewModel : PageViewModelBase
         RefreshWheelChange();
     }
 
+    private bool CanSkipWheelCorrection() => WheelChangeStage == WheelChangeStage.Verify;
+
     /// <summary>中途放弃：已经切成手动对刀的话，退出前切回去。</summary>
-    [RelayCommand]
     private Task CancelWheelChangeAsync(CancellationToken cancellationToken) =>
         RunGuardedAsync(async token =>
         {
@@ -456,7 +554,7 @@ public sealed partial class SettingsViewModel : PageViewModelBase
                 .CancelAsync(this.userSession.CurrentUser?.UserName ?? string.Empty, token)
                 .ConfigureAwait(true);
 
-            Navigator.CloseSubView();
+            CloseWizard();
         }, cancellationToken);
 
     private void RefreshWheelChange()
@@ -496,9 +594,17 @@ public sealed partial class SettingsViewModel : PageViewModelBase
 
     public override void OnActivated()
     {
-        Capture();
+        if (!IsDirty)
+        {
+            Capture();
+        }
+
         OnPropertyChanged(nameof(CanEdit));
         _ = RefreshAuditAsync(CancellationToken.None);
+        if (IsWheelGroup)
+        {
+            _ = RunGuardedAsync(RefreshWheelHistoryAsync, CancellationToken.None);
+        }
     }
 
     private ParameterRowViewModel? Row(string key) =>

@@ -7,96 +7,34 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
-using RollGrinder.Core.Compensation;
 using RollGrinder.Core.Centring;
+using RollGrinder.Core.Compensation;
 using RollGrinder.Core.Units;
 using RollGrinder.Services.Alarms;
-using RollGrinder.Services.Calibration;
 using RollGrinder.Services.Manual;
 using RollGrinder.Services.Measurement;
 using RollGrinder.Services.Monitoring;
 
 namespace RollGrinder.App.ViewModels;
 
-/// <summary>
-/// 按钮矩阵里的一个动作。
-///
-/// 按钮有四种样子：可按、压暗（tagmap 没登记）、禁用（自动循环挂着程序）、
-/// 待确认（危险动作按第一下之后）。保持型动作亮着表示正开着。
-/// </summary>
-public sealed partial class MachineActionViewModel : ObservableObject
-{
-    private readonly IStringLocalizer localizer;
-
-    public MachineActionViewModel(
-        ManualCommandDescriptor descriptor,
-        IStringLocalizer localizer,
-        System.Windows.Input.ICommand command)
-    {
-        Descriptor = descriptor ?? throw new ArgumentNullException(nameof(descriptor));
-        this.localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
-        Command = command ?? throw new ArgumentNullException(nameof(command));
-    }
-
-    public ManualCommandDescriptor Descriptor { get; }
-
-    public System.Windows.Input.ICommand Command { get; }
-
-    /// <summary>按钮上的字。等确认时换成"再按一次"，让人知道第一下没白按。</summary>
-    public string Label => IsAwaitingConfirmation
-        ? this.localizer["Manual_ConfirmAgain"]
-        : this.localizer[Descriptor.ResourceKey];
-
-    /// <summary>原本的动作名，报警与提示里用。</summary>
-    public string ActionName => this.localizer[Descriptor.ResourceKey];
-
-    /// <summary>tagmap 里登记了这个动作没有。</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEnabled))]
-    private bool isMapped = true;
-
-    /// <summary>现在能不能按（连接、通道状态）。</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEnabled))]
-    private bool isAllowed = true;
-
-    /// <summary>保持型动作当前是不是开着。</summary>
-    [ObservableProperty]
-    private bool isActive;
-
-    /// <summary>危险动作按了第一下，正等第二下。</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Label))]
-    private bool isAwaitingConfirmation;
-
-    /// <summary>按钮可不可按。没登记的动作压暗但留在原位——键位不跳动。</summary>
-    public bool IsEnabled => IsMapped && IsAllowed;
-
-    /// <summary>不能按时的说明，做成 ToolTip：让人知道是缺映射还是机床在忙。</summary>
-    [ObservableProperty]
-    private string? disabledHint;
-
-    /// <summary>第二下的截止时刻；过了就自动撤销，免得一小时后误触当成确认。</summary>
-    internal DateTimeOffset ConfirmDeadlineUtc { get; set; }
-}
-
-/// <summary>手动页的一页：一组机构动作（竖键与触摸按钮）和这组机构的到位状态灯。</summary>
+/// <summary>手动动作页的一页：一组机构动作（竖键）、相关的位置（L1）和这组机构的到位状态灯。</summary>
 public sealed partial class ManualGroupViewModel : ObservableObject
 {
     public ManualGroupViewModel(
         string key,
         string title,
-        IReadOnlyList<MachineActionViewModel> actions,
+        IReadOnlyList<AxisReadoutViewModel> axes,
         IReadOnlyList<StatusLampViewModel> lamps,
-        IReadOnlyList<FunctionKeyViewModel> verticalKeys)
+        IReadOnlyList<FunctionKeyViewModel?> verticalKeys)
     {
         Key = key;
         Title = title;
-        Actions = actions;
+        Axes = axes;
         Lamps = lamps;
         VerticalKeys = verticalKeys;
     }
@@ -105,15 +43,14 @@ public sealed partial class ManualGroupViewModel : ObservableObject
 
     public string Title { get; }
 
-    public IReadOnlyList<MachineActionViewModel> Actions { get; }
+    /// <summary>本页相关的位置（L1）。</summary>
+    public IReadOnlyList<AxisReadoutViewModel> Axes { get; }
 
+    /// <summary>本页机构的到位状态：灯亮 = 到位，虚框 = 读不到。</summary>
     public IReadOnlyList<StatusLampViewModel> Lamps { get; }
 
-    /// <summary>这一页在右侧竖键上的键。</summary>
-    public IReadOnlyList<FunctionKeyViewModel> VerticalKeys { get; }
-
-    /// <summary>这一页有没有机构动作（测量与对中那一页没有：它的动作在左边的测点与对中表上）。</summary>
-    public bool HasMachineActions => Actions.Count > 0;
+    /// <summary>这一页在右侧竖键上的键，一个动作一个键（null = 空键）。</summary>
+    public IReadOnlyList<FunctionKeyViewModel?> VerticalKeys { get; }
 
     [ObservableProperty]
     private bool isSelected;
@@ -135,164 +72,127 @@ public sealed record CentringRow(
     bool IsOutOfTolerance = false);
 
 /// <summary>
-/// 手动与辅助操作。版面见 docs/design/B-Manual-手动与辅助操作.html。
-/// 左侧是只读的实时数据与对中判断，右侧是动作按钮矩阵。
+/// 手动动作页（界面最终稿 5.4、5.5）：机床区 JOG 方式下横键"测量臂""尾架""头架拨盘""托瓦""测量对中""辅助循环 ▸"。
+/// 版式：上面是本页相关的位置（L1）和测量，下面是本页机构的状态格，竖键一个动作一个键。
+/// 动作只在竖键上（不再在卡片里放一批同样的按钮——双入口，C5）。
 /// </summary>
 public sealed partial class ManualViewModel : PageViewModelBase
 {
-    /// <summary>危险动作第二下的等待窗口。太短来不及按，太长就成了误触的机会。</summary>
-    private static readonly TimeSpan ConfirmationWindow = TimeSpan.FromSeconds(4.0);
-
-    /// <summary>"已发出"提示在界面上停留多久。</summary>
-    private static readonly TimeSpan FeedbackWindow = TimeSpan.FromSeconds(3.0);
-
     private readonly IMachineMonitor monitor;
     private readonly IMeasurementService measurementService;
-    private readonly IManualCommandService commands;
     private readonly MachineDescription machine;
-    private readonly ICalibrationService calibration;
     private readonly ICentringService centring;
-    private readonly IAlarmLog alarmLog;
-    private readonly HmiSettings settings;
-
-    private DateTimeOffset feedbackExpiryUtc;
+    private readonly ManualActionKeys actionKeys;
 
     public ManualViewModel(
         IMachineMonitor monitor,
         IMeasurementService measurementService,
         IManualCommandService commands,
         MachineDescription machine,
-        HmiSettings settings,
-        ICalibrationService calibration,
         ICentringService centring,
-        IAlarmLog alarmLog,
         IStringLocalizer localizer,
         IAlarmSink alarms,
-        INavigator navigator)
-        : base(alarms, localizer, navigator)
+        INavigator navigator,
+        ShellInteraction interaction)
+        : base(alarms, localizer, navigator, interaction)
     {
-        this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.centring = centring ?? throw new ArgumentNullException(nameof(centring));
-        this.alarmLog = alarmLog ?? throw new ArgumentNullException(nameof(alarmLog));
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.measurementService = measurementService ?? throw new ArgumentNullException(nameof(measurementService));
-        this.commands = commands ?? throw new ArgumentNullException(nameof(commands));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
-        this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
-
-        AxisValues = new ObservableCollection<LiveValueViewModel>(
-            machine.Axes.Where(axis => axis.IsPresent)
-                .Select(axis => new LiveValueViewModel("AxisRole_" + axis.Role, localizer)));
-        this.axisNames = machine.Axes.Where(axis => axis.IsPresent).Select(axis => axis.Name).ToArray();
-
-        SpindleValues = new ObservableCollection<LiveValueViewModel>
-        {
-            new("Live_WheelSpeed", localizer),
-            new("Live_WheelDiameter", localizer),
-            new("Live_GrindingCurrent", localizer),
-            new("Live_WorkpieceSpeed", localizer),
-        };
-
-        MeasuringArmActions = BuildActions(ManualCommandCatalog.MeasuringArm);
-        TailstockActions = BuildActions(ManualCommandCatalog.Tailstock);
-        OtherActions = BuildActions(ManualCommandCatalog.Other);
-
-        // 辅助循环不进按钮矩阵，挂在功能键上——它们是"跑一段程序"，
-        // 不是"动一下某个机构"。走的仍是同一套脉冲与门禁。
-        CycleActions = BuildActions(ManualCommandCatalog.Cycles);
-        RefreshActionAvailability();
+        this.actionKeys = new ManualActionKeys(
+            commands ?? throw new ArgumentNullException(nameof(commands)),
+            interaction,
+            localizer,
+            alarms,
+            CapturePointAsync);
 
         BuildGroups();
-
-        // 底部功能键（修改稿 5.6）：六页机构动作一页一个键，第 7 个是"辅助循环 ▸"。
-        // 页里的动作在右侧竖键上，一个动作一个键；卡片里也有同样的按钮给触摸屏用。
-        var keys = Groups
-            .Select(group => new FunctionKeyViewModel(
-                "ManualGroup_" + group.Key, new RelayCommand(() => SelectGroup(group)), localizer))
-            .ToList();
-        keys.Add(new FunctionKeyViewModel("Fn_AuxCycles", new RelayCommand(OpenAuxiliaryMenu), localizer));
-        SetFunctionKeys(keys);
-        SelectGroup(Groups[0]);
+        SetFunctionKeys(MachineAreaKeys.Create(Navigator, localizer, MachineAreaKeys.MeasuringArm));
+        Select(Groups[0]);
     }
 
-    /// <summary>手动页的六页（测量臂、尾架套筒、头架、软着陆与中心架、砂轮冷却、测量对中）。</summary>
+    public override PageKey Key => PageKey.Manual;
+
+    public override string TitleResourceKey => "Page_Manual";
+
+    /// <summary>手动磨削页有帮助条目；动作页用同一条（位置、测量、状态灯的读法一样）。</summary>
+    public override string? HelpTopicKey => "Help_ManualGrinding";
+
+    /// <summary>4 个动作页、测量对中、辅助循环。</summary>
     public ObservableCollection<ManualGroupViewModel> Groups { get; } = new();
 
     /// <summary>当前那一页。</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCentring))]
     private ManualGroupViewModel? selectedGroup;
 
-    /// <summary>"辅助循环 ▸"里的竖键：几个 NC 循环、各轴归位与 HMI 复位。</summary>
-    private IReadOnlyList<FunctionKeyViewModel> auxiliaryKeys = Array.Empty<FunctionKeyViewModel>();
+    /// <summary>当前是测量对中（版式不同：测点表 + 对中比对）。</summary>
+    public bool IsCentring => SelectedGroup?.Key == ManualPageLayout.MeasureAndCentringKey;
 
     private void BuildGroups()
     {
-        Dictionary<string, MachineActionViewModel> byKey = AllActions
-            .GroupBy(action => action.Descriptor.Key, StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
-
         foreach (ManualPage page in ManualPageLayout.Pages)
         {
-            MachineActionViewModel[] actions = page.ActionKeys.Select(key => byKey[key]).ToArray();
-            IReadOnlyList<FunctionKeyViewModel> verticalKeys = page.Key == ManualPageLayout.MeasureAndCentringKey
+            IReadOnlyList<FunctionKeyViewModel?> keys = page.Key == ManualPageLayout.MeasureAndCentringKey
                 ? MeasureAndCentringKeys()
-                : actions.Select(ActionKey).ToArray();
+                : page.ActionKeys.Select(this.actionKeys.Create).ToArray();
             Groups.Add(new ManualGroupViewModel(
                 page.Key,
-                Localizer["ManualGroup_" + page.Key],
-                actions,
+                Localizer["ManualPage_" + page.Key],
+                AxisReadoutViewModel.For(this.machine, Localizer, AxisRoles(page.Key)),
                 page.Indicators.Select(indicator => new StatusLampViewModel(indicator, Localizer)).ToArray(),
-                verticalKeys));
+                keys));
         }
 
-        this.auxiliaryKeys = ManualPageLayout.AuxiliaryKeys
-            .Select(key => ActionKey(byKey[key]))
-            .Append(new FunctionKeyViewModel("Fn_HmiReset", ResetHmiCommand, Localizer, FunctionKeyKind.Danger))
-            .ToArray();
+        // 辅助循环 ▸：跑一段 NC 程序的循环，全要确认（最终稿 4.5）。回参考点在按钮板上。
+        Groups.Add(new ManualGroupViewModel(
+            MachineAreaKeys.Cycles,
+            Localizer["Fn_AuxCycles"],
+            AxisReadoutViewModel.For(this.machine, Localizer, AxisRoles(MachineAreaKeys.Cycles)),
+            MachineStatusCatalog.All.Select(indicator => new StatusLampViewModel(indicator, Localizer)).ToArray(),
+            ManualPageLayout.AuxiliaryKeys.Select(this.actionKeys.Create).ToArray()));
     }
 
-    /// <summary>测量与对中这一页的竖键：动作是上位机自己的，不写机床。</summary>
-    private IReadOnlyList<FunctionKeyViewModel> MeasureAndCentringKeys() => new[]
+    /// <summary>每页上面显示哪几根轴的位置。</summary>
+    private static string[] AxisRoles(string group) => group switch
     {
-        new FunctionKeyViewModel("Measurement_CaptureButton", CapturePointCommand, Localizer, FunctionKeyKind.Primary),
-        new FunctionKeyViewModel("Measurement_ClearButton", ClearPointsCommand, Localizer),
-        new FunctionKeyViewModel("Measurement_SaveButton", SaveMeasurementCommand, Localizer),
-        new FunctionKeyViewModel("Centring_CaptureHead", CaptureHeadCommand, Localizer),
-        new FunctionKeyViewModel("Centring_CaptureTail", CaptureTailCommand, Localizer),
-        new FunctionKeyViewModel("Centring_ClearButton", ClearCentringCommand, Localizer),
+        "measuringArm" => new[] { MachineAxisRoles.MeasuringCarriage, MachineAxisRoles.Carriage },
+        "tailstock" or "driver" => new[] { MachineAxisRoles.Carriage },
+        "steadyRest" => new[] { MachineAxisRoles.RollProfile, MachineAxisRoles.Carriage },
+        ManualPageLayout.MeasureAndCentringKey => new[] { MachineAxisRoles.Carriage, MachineAxisRoles.InfeedRadius },
+        _ => new[] { MachineAxisRoles.InfeedRadius, MachineAxisRoles.MeasuringCarriage, MachineAxisRoles.Carriage, MachineAxisRoles.RollProfile },
     };
 
     /// <summary>
-    /// 把一个动作做成竖键：按下去就是按那个动作（同一个命令、同一套门禁）。
-    /// 要按两下的动作是红键，按了第一下键上换成"再按一次"；按不了时键是灰的，悬停说原因。
+    /// 测量对中的竖键（最终稿 5.5）：采集测点、清空测点…、归档测量、空、记录头架侧、记录尾架侧、清除对中…。
+    /// 动作是上位机自己的，不写机床。
     /// </summary>
-    private FunctionKeyViewModel ActionKey(MachineActionViewModel action)
+    private IReadOnlyList<FunctionKeyViewModel?> MeasureAndCentringKeys() => new FunctionKeyViewModel?[]
     {
-        var command = new RelayCommand(() => action.Command.Execute(null), () => action.IsEnabled);
-        var key = new FunctionKeyViewModel(
-            action.Descriptor.ResourceKey,
-            command,
-            Localizer,
-            action.Descriptor.RequiresConfirmation ? FunctionKeyKind.Danger : FunctionKeyKind.Normal);
-        action.PropertyChanged += (_, e) =>
+        new FunctionKeyViewModel("Measurement_CaptureButton", CapturePointCommand, Localizer),
+        new FunctionKeyViewModel("Measurement_ClearButton", new RelayCommand(() => Ask("Measurement_AskClear", ClearPoints)), Localizer),
+        new FunctionKeyViewModel("Measurement_SaveButton", SaveMeasurementCommand, Localizer),
+        null,
+        new FunctionKeyViewModel("Centring_CaptureHead", CaptureHeadCommand, Localizer),
+        new FunctionKeyViewModel("Centring_CaptureTail", CaptureTailCommand, Localizer),
+        new FunctionKeyViewModel("Centring_ClearButton", new RelayCommand(() => Ask("Centring_AskClear", ClearCentring)), Localizer),
+    };
+
+    /// <summary>横键选页（测量臂、尾架……）：外壳按组键调进来。</summary>
+    public override bool ShowGroup(string groupKey)
+    {
+        ManualGroupViewModel? group = Groups.FirstOrDefault(g => string.Equals(g.Key, groupKey, StringComparison.Ordinal));
+        if (group is null)
         {
-            switch (e.PropertyName)
-            {
-                case nameof(MachineActionViewModel.IsEnabled):
-                    command.NotifyCanExecuteChanged();
-                    break;
-                case nameof(MachineActionViewModel.IsAwaitingConfirmation):
-                    key.LabelResourceKey = action.IsAwaitingConfirmation ? "Manual_ConfirmAgain" : action.Descriptor.ResourceKey;
-                    break;
-                case nameof(MachineActionViewModel.DisabledHint):
-                    key.HintText = action.DisabledHint;
-                    break;
-            }
-        };
-        return key;
+            return false;
+        }
+
+        Select(group);
+        return true;
     }
 
-    private void SelectGroup(ManualGroupViewModel group)
+    private void Select(ManualGroupViewModel group)
     {
         foreach (ManualGroupViewModel other in Groups)
         {
@@ -300,50 +200,9 @@ public sealed partial class ManualViewModel : PageViewModelBase
         }
 
         SelectedGroup = group;
+        MachineAreaKeys.MarkActive(FunctionKeys, group.Key);
         SetVerticalKeys(group.VerticalKeys);
     }
-
-    /// <summary>辅助循环 ▸：跑一段 NC 循环的请求、各轴归位、HMI 复位。子菜单不自己收起——要按两下的键得按在同一个位置上。</summary>
-    private void OpenAuxiliaryMenu() => OpenVerticalMenu("Vk_AuxCyclesTitle", this.auxiliaryKeys);
-
-    private readonly IReadOnlyList<string> axisNames;
-
-    public override PageKey Key => PageKey.Manual;
-
-    public override string TitleResourceKey => "Page_Manual";
-
-    public override string MenuHintResourceKey => "Menu_ManualHint";
-
-    public ObservableCollection<LiveValueViewModel> AxisValues { get; }
-
-    public ObservableCollection<LiveValueViewModel> SpindleValues { get; }
-
-    public ObservableCollection<MachineActionViewModel> MeasuringArmActions { get; }
-
-    public ObservableCollection<MachineActionViewModel> TailstockActions { get; }
-
-    public ObservableCollection<MachineActionViewModel> OtherActions { get; }
-
-    /// <summary>三组按钮的合集，刷新状态时遍历它。</summary>
-    /// <summary>辅助循环：手动磨削、基准标定、砂轮修整、辊对中、回参考点。</summary>
-    public ObservableCollection<MachineActionViewModel> CycleActions { get; }
-
-    private IEnumerable<MachineActionViewModel> AllActions =>
-        MeasuringArmActions.Concat(TailstockActions).Concat(OtherActions).Concat(CycleActions);
-
-    /// <summary>最近一个动作的"已发出"提示，停留几秒后自己消失。</summary>
-    [ObservableProperty]
-    private string lastActionText = string.Empty;
-
-    /// <summary>手动采下的测点。</summary>
-    public ObservableCollection<MeasurementRowViewModel> Points { get; } = new();
-
-    /// <summary>
-    /// 对中比对表：头架侧与尾架侧各记一组，逐项比。
-    ///
-    /// 量的是**装夹**不是辊形——所以比的是两端之差，不是某一端的绝对值。
-    /// </summary>
-    public ObservableCollection<CentringRow> Centring { get; } = new();
 
     [ObservableProperty]
     private string probeAText = "--";
@@ -356,6 +215,10 @@ public sealed partial class ManualViewModel : PageViewModelBase
 
     [ObservableProperty]
     private string mountingDeviationText = "--";
+
+    /// <summary>对中比对里两端之差（L1 显示，最终稿 5.5）。</summary>
+    [ObservableProperty]
+    private string centringDifferenceText = "--";
 
     [ObservableProperty]
     private string alignmentHintText = string.Empty;
@@ -371,22 +234,18 @@ public sealed partial class ManualViewModel : PageViewModelBase
 
     public string StatusText => string.IsNullOrEmpty(StatusResourceKey) ? string.Empty : Localizer[StatusResourceKey];
 
-    partial void OnStatusResourceKeyChanged(string value) => OnPropertyChanged(nameof(StatusText));
+    partial void OnStatusResourceKeyChanged(string value)
+    {
+        OnPropertyChanged(nameof(StatusText));
+        if (value.Length > 0)
+        {
+            Interaction.Say(Localizer[value]);
+        }
+    }
 
     public override void OnTick(DateTimeOffset nowUtc)
     {
         MachineStateSnapshot snapshot = this.monitor.Current;
-
-        for (int i = 0; i < AxisValues.Count; i++)
-        {
-            AxisValues[i].ValueText = Format(
-                snapshot.GetNumberOrNull(MachineTagKeys.AxisActualPositionMm(this.axisNames[i])), "F4");
-        }
-
-        SpindleValues[0].ValueText = Format(snapshot.GetNumberOrNull(MachineTagKeys.WheelSpeedRpm), "F1");
-        SpindleValues[1].ValueText = Format(snapshot.GetNumberOrNull(MachineTagKeys.WheelDiameterMm), "F2");
-        SpindleValues[2].ValueText = Format(snapshot.GetNumberOrNull(MachineTagKeys.GrindingCurrentA), "F1");
-        SpindleValues[3].ValueText = Format(WorkpieceSpeed(snapshot), "F1");
 
         double? probeA = snapshot.GetNumberOrNull(MachineTagKeys.MeasureProbeAMm);
         double? probeB = snapshot.GetNumberOrNull(MachineTagKeys.MeasureProbeBMm);
@@ -397,16 +256,31 @@ public sealed partial class ManualViewModel : PageViewModelBase
             ? "--"
             : Format((probeA.Value - probeB.Value) / 2.0, "F4", showSign: true);
 
-        RefreshActionAvailability();
+        this.actionKeys.Refresh(Block);
 
-        foreach (ManualGroupViewModel group in Groups)
+        if (SelectedGroup is { } group)
         {
+            foreach (AxisReadoutViewModel axis in group.Axes)
+            {
+                axis.Update(snapshot);
+            }
+
             foreach (StatusLampViewModel lamp in group.Lamps)
             {
                 lamp.Update(snapshot);
             }
         }
     }
+
+    /// <summary>手动采下的测点。</summary>
+    public ObservableCollection<MeasurementRowViewModel> Points { get; } = new();
+
+    /// <summary>
+    /// 对中比对表：头架侧与尾架侧各记一组，逐项比。
+    ///
+    /// 量的是**装夹**不是辊形——所以比的是两端之差，不是某一端的绝对值。
+    /// </summary>
+    public ObservableCollection<CentringRow> Centring { get; } = new();
 
     [RelayCommand]
     private Task CapturePointAsync(CancellationToken cancellationToken) =>
@@ -415,14 +289,18 @@ public sealed partial class ManualViewModel : PageViewModelBase
             MeasurementPoint point = await this.measurementService.CapturePointAsync(token).ConfigureAwait(true);
             Points.Add(new MeasurementRowViewModel(point));
             StatusResourceKey = "Measurement_PointCaptured";
+            PointsChanged?.Invoke(this, EventArgs.Empty);
         }, cancellationToken);
 
-    [RelayCommand]
     private void ClearPoints()
     {
         Points.Clear();
         StatusResourceKey = string.Empty;
+        PointsChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>测点变了：视图重画"沿 Z 的直径"小曲线。</summary>
+    public event EventHandler? PointsChanged;
 
     [RelayCommand]
     private Task SaveMeasurementAsync(CancellationToken cancellationToken) =>
@@ -450,7 +328,6 @@ public sealed partial class ManualViewModel : PageViewModelBase
         CaptureCentringAsync(RollEnd.Tail, cancellationToken);
 
     /// <summary>清掉两端的记录，重新找正。</summary>
-    [RelayCommand]
     private void ClearCentring()
     {
         this.centring.Clear();
@@ -477,6 +354,7 @@ public sealed partial class ManualViewModel : PageViewModelBase
         Centring.Clear();
         AlignmentHintText = string.Empty;
         HasAlignmentProblem = false;
+        CentringDifferenceText = "--";
 
         CentringReading? head = this.centring.Reading(RollEnd.Head);
         CentringReading? tail = this.centring.Reading(RollEnd.Tail);
@@ -486,6 +364,10 @@ public sealed partial class ManualViewModel : PageViewModelBase
         }
 
         CentringComparison? comparison = this.centring.Compare();
+        if (comparison is not null)
+        {
+            CentringDifferenceText = Localizer.Format("Centring_MicrometerFormat", comparison.DeviationDifferenceMicrometer);
+        }
 
         Centring.Add(Row("Live_ProbeA", head?.ProbeARadiusMm, tail?.ProbeARadiusMm, "F4"));
         Centring.Add(Row("Live_ProbeB", head?.ProbeBRadiusMm, tail?.ProbeBRadiusMm, "F4"));
@@ -536,146 +418,6 @@ public sealed partial class ManualViewModel : PageViewModelBase
             string.Empty);
     }
 
-    private double? WorkpieceSpeed(MachineStateSnapshot snapshot)
-    {
-        AxisDescription? spindle = this.machine.Axes.FirstOrDefault(axis =>
-            axis.IsPresent && string.Equals(axis.Role, MachineAxisRoles.WorkpieceSpindle, StringComparison.Ordinal));
-
-        return spindle is null ? null : snapshot.GetNumberOrNull(MachineTagKeys.AxisActualSpeedRpm(spindle.Name));
-    }
-
-    /// <summary>
-    /// HMI 复位：清掉上位机自己的报警表。
-    ///
-    /// **不碰机床。** 机床报警要在机床上复位，机床的使能链也不归上位机管；
-    /// 这个键解决的是"上位机这边显示卡住了"，不是"机床出故障了"。
-    /// </summary>
-    [RelayCommand]
-    private void ResetHmi()
-    {
-        this.alarmLog.Clear();
-        LastActionText = Localizer["Manual_HmiReset"];
-        this.feedbackExpiryUtc = DateTimeOffset.UtcNow + FeedbackWindow;
-    }
-
-    private ObservableCollection<MachineActionViewModel> BuildActions(
-        IReadOnlyList<ManualCommandDescriptor> descriptors)
-    {
-        var actions = new ObservableCollection<MachineActionViewModel>();
-        foreach (ManualCommandDescriptor descriptor in descriptors)
-        {
-            MachineActionViewModel action = null!;
-            action = new MachineActionViewModel(
-                descriptor,
-                Localizer,
-                new AsyncRelayCommand(() => PressAsync(action, CancellationToken.None)));
-            actions.Add(action);
-        }
-
-        return actions;
-    }
-
-    /// <summary>
-    /// 按下一个动作按钮。
-    ///
-    /// 顺序是：先问能不能按（缺映射 / 没连上 / 机床在忙），不能按就说清楚原因；
-    /// 危险动作第一下只是"预备"，第二下才真发；本地动作（测量采样）不写机床。
-    /// </summary>
-    private async Task PressAsync(MachineActionViewModel action, CancellationToken cancellationToken)
-    {
-        ManualCommandDescriptor descriptor = action.Descriptor;
-
-        ManualCommandResult permission = this.commands.CanExecute(descriptor);
-        if (!permission.Succeeded)
-        {
-            CancelConfirmation(action);
-            Alarms.Raise(AlarmSeverity.Warning, permission.ReasonResourceKey!, action.ActionName);
-            return;
-        }
-
-        if (descriptor.RequiresConfirmation && !action.IsAwaitingConfirmation)
-        {
-            BeginConfirmation(action);
-            return;
-        }
-
-        CancelConfirmation(action);
-
-        if (descriptor.Kind == ManualCommandKind.Local)
-        {
-            // 测量采样不写机床：走测量服务把当前读数存成一个测点。
-            await CapturePointAsync(cancellationToken).ConfigureAwait(true);
-            return;
-        }
-
-        await RunGuardedAsync(async token =>
-        {
-            ManualCommandResult result = await this.commands
-                .ExecuteAsync(descriptor, desiredState: null, token).ConfigureAwait(true);
-
-            if (result.Succeeded)
-            {
-                ShowFeedback(action.ActionName);
-                return;
-            }
-
-            Alarms.Raise(AlarmSeverity.Warning, result.ReasonResourceKey!, action.ActionName);
-        }, cancellationToken).ConfigureAwait(true);
-    }
-
-    private void BeginConfirmation(MachineActionViewModel action)
-    {
-        // 同一时刻只留一个待确认的按钮，免得两个红按钮并排让人按错。
-        foreach (MachineActionViewModel other in AllActions)
-        {
-            CancelConfirmation(other);
-        }
-
-        action.IsAwaitingConfirmation = true;
-        action.ConfirmDeadlineUtc = DateTimeOffset.UtcNow + ConfirmationWindow;
-    }
-
-    private static void CancelConfirmation(MachineActionViewModel action)
-    {
-        action.IsAwaitingConfirmation = false;
-        action.ConfirmDeadlineUtc = default;
-    }
-
-    private void ShowFeedback(string actionName)
-    {
-        LastActionText = Localizer.Format("Manual_CommandSentFormat", actionName);
-        this.feedbackExpiryUtc = DateTimeOffset.UtcNow + FeedbackWindow;
-    }
-
-    /// <summary>
-    /// 每一拍刷新按钮状态：缺映射的压暗、机床在忙的禁用、保持型的点亮、
-    /// 待确认的到点自动撤销。全部按机床的当前快照算，不缓存判断。
-    /// </summary>
-    private void RefreshActionAvailability()
-    {
-        DateTimeOffset nowUtc = DateTimeOffset.UtcNow;
-
-        foreach (MachineActionViewModel action in AllActions)
-        {
-            ManualCommandResult permission = this.commands.CanExecute(action.Descriptor);
-
-            action.IsMapped = permission.Outcome != ManualCommandOutcome.NotMapped;
-            action.IsAllowed = permission.Succeeded;
-            action.DisabledHint = permission.Succeeded ? null : Localizer[permission.ReasonResourceKey!];
-            action.IsActive = this.commands.ReadState(action.Descriptor) ?? false;
-
-            if (action.IsAwaitingConfirmation
-                && (nowUtc > action.ConfirmDeadlineUtc || !permission.Succeeded))
-            {
-                CancelConfirmation(action);
-            }
-        }
-
-        if (LastActionText.Length > 0 && nowUtc > this.feedbackExpiryUtc)
-        {
-            LastActionText = string.Empty;
-        }
-    }
 
     private static string Format(double? value, string format, bool showSign = false)
     {

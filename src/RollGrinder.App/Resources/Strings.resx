@@ -244,9 +244,6 @@
   <data name="AxisRole_WorkpieceSpindle" xml:space="preserve">
     <value>头架</value>
   </data>
-  <data name="Banner_NoAlarm" xml:space="preserve">
-    <value>无报警</value>
-  </data>
   <data name="ChannelState_Interrupted" xml:space="preserve">
     <value>中断</value>
   </data>
@@ -380,37 +377,22 @@
     <value>tagmap.json 校验通过</value>
   </data>
   <data name="Fn_AuditLog" xml:space="preserve">
-    <value>审计日志</value>
+    <value>改动记录</value>
   </data>
   <data name="Fn_BackupRestore" xml:space="preserve">
     <value>备份与恢复</value>
   </data>
   <data name="Fn_Coolant" xml:space="preserve">
-    <value>冷却水</value>
+    <value>冷却液</value>
   </data>
   <data name="Fn_DailyReport" xml:space="preserve">
     <value>磨削日报</value>
   </data>
-  <data name="Fn_DownloadNc" xml:space="preserve">
-    <value>下发 NC</value>
-  </data>
   <data name="Fn_EndEarly" xml:space="preserve">
     <value>提前结束</value>
   </data>
-  <data name="Fn_EnterAuto" xml:space="preserve">
-    <value>进入自动磨削</value>
-  </data>
-  <data name="Fn_ExportExcel" xml:space="preserve">
-    <value>导出 Excel</value>
-  </data>
-  <data name="Fn_ExportSnapshot" xml:space="preserve">
-    <value>导出故障快照</value>
-  </data>
   <data name="Fn_GeneratePoints" xml:space="preserve">
     <value>生成点列</value>
-  </data>
-  <data name="Fn_HmiReset" xml:space="preserve">
-    <value>HMI 复位</value>
   </data>
   <data name="Fn_ImportPoints" xml:space="preserve">
     <value>点表导入</value>
@@ -421,26 +403,14 @@
   <data name="Fn_MonthlyReport" xml:space="preserve">
     <value>磨削月报</value>
   </data>
-  <data name="Fn_OpenRecord" xml:space="preserve">
-    <value>打开记录</value>
-  </data>
   <data name="Fn_Pause" xml:space="preserve">
     <value>暂停</value>
-  </data>
-  <data name="Fn_Print" xml:space="preserve">
-    <value>打印</value>
   </data>
   <data name="Fn_ProfileLibrary" xml:space="preserve">
     <value>辊形库</value>
   </data>
   <data name="Fn_ProgramLibrary" xml:space="preserve">
     <value>程序库</value>
-  </data>
-  <data name="Fn_Records" xml:space="preserve">
-    <value>磨削记录</value>
-  </data>
-  <data name="Fn_RollLedger" xml:space="preserve">
-    <value>轧辊台账</value>
   </data>
   <data name="Fn_RunLog" xml:space="preserve">
     <value>运行日志</value>
@@ -453,12 +423,6 @@
   </data>
   <data name="Fn_SaveProgram" xml:space="preserve">
     <value>保存程序</value>
-  </data>
-  <data name="Fn_SkipStep" xml:space="preserve">
-    <value>工序跳转</value>
-  </data>
-  <data name="Fn_Start" xml:space="preserve">
-    <value>启动</value>
   </data>
   <data name="Fn_TagMapping" xml:space="preserve">
     <value>标签映射</value>
@@ -523,20 +487,11 @@
   <data name="Live_WheelDiameter" xml:space="preserve">
     <value>砂轮直径</value>
   </data>
-  <data name="Live_WheelSpeed" xml:space="preserve">
-    <value>砂轮转速 r/min</value>
-  </data>
-  <data name="Live_WorkpieceSpeed" xml:space="preserve">
-    <value>头架转速 r/min</value>
-  </data>
   <data name="Manual_AlignHeadInward" xml:space="preserve">
     <value>两端差 {0:F3} mm，超出公差，建议向内调整头架侧中心架</value>
   </data>
   <data name="Manual_AlignTailInward" xml:space="preserve">
     <value>两端差 {0:F3} mm，超出公差，建议向内调整尾座侧中心架</value>
-  </data>
-  <data name="Manual_AxisHeader" xml:space="preserve">
-    <value>轴位置</value>
   </data>
   <data name="Manual_HeadSide" xml:space="preserve">
     <value>头架侧</value>
@@ -549,9 +504,6 @@
   </data>
   <data name="Manual_RollDiameter" xml:space="preserve">
     <value>轧辊直径 mm</value>
-  </data>
-  <data name="Manual_SpindleHeader" xml:space="preserve">
-    <value>主轴</value>
   </data>
   <data name="Manual_TailSide" xml:space="preserve">
     <value>尾座侧</value>
@@ -673,9 +625,6 @@
   <data name="Profile_Library" xml:space="preserve">
     <value>辊形库</value>
   </data>
-  <data name="Profile_LibraryClose" xml:space="preserve">
-    <value>关闭</value>
-  </data>
   <data name="Profile_LibraryColumnModified" xml:space="preserve">
     <value>修改时间</value>
   </data>
@@ -684,18 +633,6 @@
   </data>
   <data name="Profile_LibraryColumnSegments" xml:space="preserve">
     <value>段数</value>
-  </data>
-  <data name="Profile_LibraryColumnType" xml:space="preserve">
-    <value>主曲线</value>
-  </data>
-  <data name="Profile_LibraryDelete" xml:space="preserve">
-    <value>删除</value>
-  </data>
-  <data name="Profile_LibraryEmpty" xml:space="preserve">
-    <value>库里还没有辊形</value>
-  </data>
-  <data name="Profile_LibraryOpen" xml:space="preserve">
-    <value>打开</value>
   </data>
   <data name="Profile_Name" xml:space="preserve">
     <value>辊形名</value>
@@ -718,21 +655,6 @@
   <data name="Program_ColumnSteps" xml:space="preserve">
     <value>工序数</value>
   </data>
-  <data name="Program_Library" xml:space="preserve">
-    <value>程序库</value>
-  </data>
-  <data name="Program_LibraryClose" xml:space="preserve">
-    <value>关闭</value>
-  </data>
-  <data name="Program_LibraryDelete" xml:space="preserve">
-    <value>删除</value>
-  </data>
-  <data name="Program_LibraryEmpty" xml:space="preserve">
-    <value>库里还没有程序</value>
-  </data>
-  <data name="Program_LibraryOpen" xml:space="preserve">
-    <value>打开</value>
-  </data>
   <data name="Program_Name" xml:space="preserve">
     <value>程序名</value>
   </data>
@@ -747,21 +669,6 @@
   </data>
   <data name="Choice_touchMode_manual" xml:space="preserve">
     <value>手动</value>
-  </data>
-  <data name="Fn_NewWheel" xml:space="preserve">
-    <value>换新砂轮</value>
-  </data>
-  <data name="Fn_ReloadSettings" xml:space="preserve">
-    <value>重新读取</value>
-  </data>
-  <data name="Fn_SaveSettings" xml:space="preserve">
-    <value>保存</value>
-  </data>
-  <data name="Menu_SettingsHint" xml:space="preserve">
-    <value>现场标定值：砂轮、探头、对刀、公差</value>
-  </data>
-  <data name="Page_Settings" xml:space="preserve">
-    <value>设置</value>
   </data>
   <data name="Parameter_centringToleranceMicrometer" xml:space="preserve">
     <value>对中公差</value>
@@ -814,14 +721,8 @@
   <data name="Settings_AuditHeader" xml:space="preserve">
     <value>改动记录</value>
   </data>
-  <data name="Settings_CalibrationHeader" xml:space="preserve">
-    <value>现场标定值</value>
-  </data>
   <data name="Settings_NeedsAdministrator" xml:space="preserve">
     <value>权限不够，改不了标定值</value>
-  </data>
-  <data name="Settings_ReadOnlyHint" xml:space="preserve">
-    <value>需要管理员权限才能修改</value>
   </data>
   <data name="Settings_Saved" xml:space="preserve">
     <value>标定值已保存</value>
@@ -846,9 +747,6 @@
   </data>
   <data name="Auto_MatrixParameterColumn" xml:space="preserve">
     <value>参数</value>
-  </data>
-  <data name="Auto_MatrixDiscard" xml:space="preserve">
-    <value>放弃</value>
   </data>
   <data name="Auto_MatrixInvalid" xml:space="preserve">
     <value>{0} 超出机床能力，没有下发</value>
@@ -934,9 +832,6 @@
   <data name="Records_Exported" xml:space="preserve">
     <value>已导出</value>
   </data>
-  <data name="Records_FinishButton" xml:space="preserve">
-    <value>标记完成</value>
-  </data>
   <data name="Records_Finished" xml:space="preserve">
     <value>已标记完成</value>
   </data>
@@ -948,9 +843,6 @@
   </data>
   <data name="Records_NoSelection" xml:space="preserve">
     <value>请先选中一条记录</value>
-  </data>
-  <data name="Records_QueryButton" xml:space="preserve">
-    <value>查询</value>
   </data>
   <data name="Records_ResultHeader" xml:space="preserve">
     <value>· 磨削结果</value>
@@ -1186,53 +1078,17 @@
   <data name="Leave_TitleFormat" xml:space="preserve">
     <value>{0} 有未保存的修改</value>
   </data>
-  <data name="Menu_AutoGrindingHint" xml:space="preserve">
-    <value>运行中的这支辊：进度、曲线、实时数据</value>
-  </data>
   <data name="Menu_Cancel" xml:space="preserve">
     <value>取消</value>
-  </data>
-  <data name="Menu_Current" xml:space="preserve">
-    <value>当前页</value>
-  </data>
-  <data name="Menu_DiagnosticsHint" xml:space="preserve">
-    <value>连接、变量、日志与机床能力</value>
-  </data>
-  <data name="Menu_ManualHint" xml:space="preserve">
-    <value>点动、测量与对中、辅助动作</value>
-  </data>
-  <data name="Menu_ProfileHint" xml:space="preserve">
-    <value>辊形曲线段、预览与校验</value>
-  </data>
-  <data name="Menu_RecordsHint" xml:space="preserve">
-    <value>历史记录、曲线与报表</value>
-  </data>
-  <data name="Menu_StepsHint" xml:space="preserve">
-    <value>开始 → 工序 → 结束，每道参数与程序步骤默认值</value>
-  </data>
-  <data name="Nav_AreaMenu" xml:space="preserve">
-    <value>页面菜单</value>
-  </data>
-  <data name="Nav_BackToHome" xml:space="preserve">
-    <value>返回主页</value>
   </data>
   <data name="Nav_BackToPageFormat" xml:space="preserve">
     <value>返回 {0}</value>
   </data>
-  <data name="Nav_BreadcrumbSeparator" xml:space="preserve">
-    <value> › </value>
-  </data>
   <data name="Shell_Modified" xml:space="preserve">
     <value>已修改</value>
   </data>
-  <data name="Shell_OpenAreaMenu" xml:space="preserve">
-    <value>页面菜单：底部软键换成各页面（F8 同效，再按一次收回）；Ctrl+1…7 直达</value>
-  </data>
   <data name="Shell_ReadOnlyRunning" xml:space="preserve">
     <value>运行中 · 只读</value>
-  </data>
-  <data name="SubView_TagMonitor" xml:space="preserve">
-    <value>变量监视</value>
   </data>
   <data name="Choice_speedVariationTarget_off" xml:space="preserve">
     <value>关闭</value>
@@ -1357,9 +1213,6 @@
   <data name="Manual_CommandSentFormat" xml:space="preserve">
     <value>{0} · 已发出</value>
   </data>
-  <data name="Manual_ConfirmAgain" xml:space="preserve">
-    <value>再按一次</value>
-  </data>
   <data name="Option_hasContactDetection" xml:space="preserve">
     <value>砂轮接触检测</value>
   </data>
@@ -1429,12 +1282,6 @@
   <data name="Alarm_StepEndedEarly" xml:space="preserve">
     <value>当前工序已提前结束</value>
   </data>
-  <data name="Auto_JumpToStep" xml:space="preserve">
-    <value>跳到此工序</value>
-  </data>
-  <data name="Fn_ConfirmAgain" xml:space="preserve">
-    <value>再按一次确认</value>
-  </data>
   <data name="Auto_CurveNoTraceYet" xml:space="preserve">
     <value>本支辊还没有采到数据</value>
   </data>
@@ -1470,9 +1317,6 @@
   </data>
   <data name="Report_PreviewHeader" xml:space="preserve">
     <value>报表预览</value>
-  </data>
-  <data name="Report_PrintButton" xml:space="preserve">
-    <value>打印</value>
   </data>
   <data name="Report_JobMissing" xml:space="preserve">
     <value>这条记录追溯不到对应的作业，无法出表</value>
@@ -1573,14 +1417,8 @@
   <data name="WheelChange_Header" xml:space="preserve">
     <value>换砂轮向导</value>
   </data>
-  <data name="WheelChange_Next" xml:space="preserve">
-    <value>下一步</value>
-  </data>
   <data name="WheelChange_Skip" xml:space="preserve">
     <value>不修正，继续</value>
-  </data>
-  <data name="WheelChange_Cancel" xml:space="preserve">
-    <value>放弃</value>
   </data>
   <data name="WheelChange_ExpectedDiameter" xml:space="preserve">
     <value>预期辊直径 (mm)</value>
@@ -1741,15 +1579,6 @@
   <data name="Records_CurveNoData" xml:space="preserve">
     <value>这支辊没有这项数据</value>
   </data>
-  <data name="SubView_RollLedger" xml:space="preserve">
-    <value>轧辊台账</value>
-  </data>
-  <data name="Records_LedgerHeader" xml:space="preserve">
-    <value>轧辊台账</value>
-  </data>
-  <data name="Records_LedgerEmpty" xml:space="preserve">
-    <value>还没有辊件档案</value>
-  </data>
   <data name="Records_DailySummaryFormat" xml:space="preserve">
     <value>本日：开 {0} 支，合格 {1} 支，合格率 {2}，累计 {3} h</value>
   </data>
@@ -1774,26 +1603,11 @@
   <data name="Ledger_LastGround" xml:space="preserve">
     <value>最近一次</value>
   </data>
-  <data name="SubView_MachineConfig" xml:space="preserve">
-    <value>机床配置</value>
-  </data>
-  <data name="SubView_TagMapping" xml:space="preserve">
-    <value>变量映射</value>
-  </data>
-  <data name="SubView_AuditLog" xml:space="preserve">
-    <value>标定审计</value>
-  </data>
   <data name="Diag_InspectorHeader" xml:space="preserve">
     <value>只读查看</value>
   </data>
-  <data name="Diag_AuditHeader" xml:space="preserve">
-    <value>标定审计：每一项最后一次是谁改的</value>
-  </data>
   <data name="Diag_NoRunLog" xml:space="preserve">
     <value>日志目录里还没有日志文件</value>
-  </data>
-  <data name="Diag_AuditEntryFormat" xml:space="preserve">
-    <value>{0} · {1}</value>
   </data>
   <data name="Diag_SnapshotExported" xml:space="preserve">
     <value>诊断快照已导出</value>
@@ -1846,9 +1660,6 @@
   <data name="Action_ReferencePoint" xml:space="preserve">
     <value>回参考点</value>
   </data>
-  <data name="Manual_HmiReset" xml:space="preserve">
-    <value>上位机报警已清空</value>
-  </data>
   <data name="Alarm_CycleStartRequested" xml:space="preserve">
     <value>已请求循环启动</value>
   </data>
@@ -1857,12 +1668,6 @@
   </data>
   <data name="Nav_ShortcutFormat" xml:space="preserve">
     <value>Ctrl+{0}</value>
-  </data>
-  <data name="Nav_ShortcutBadgeHint" xml:space="preserve">
-    <value>按 Ctrl+1…7 可直接切到对应页面，不用打开页面菜单</value>
-  </data>
-  <data name="SubView_RunLog" xml:space="preserve">
-    <value>运行日志</value>
   </data>
   <data name="Records_NoteLabel" xml:space="preserve">
     <value>备注</value>
@@ -2062,9 +1867,6 @@
   <data name="Profile_PointValue" xml:space="preserve">
     <value>直径偏差（µm）</value>
   </data>
-  <data name="Profile_ImportReference" xml:space="preserve">
-    <value>导入对照线</value>
-  </data>
   <data name="Profile_LegendSelected" xml:space="preserve">
     <value>当前段</value>
   </data>
@@ -2097,9 +1899,6 @@
   </data>
   <data name="Profile_Issue_SymmetryType" xml:space="preserve">
     <value>对称编辑：含本身不对称的段（CVC），请先关掉对称</value>
-  </data>
-  <data name="Ledger_New" xml:space="preserve">
-    <value>登记新辊</value>
   </data>
   <data name="Ledger_Save" xml:space="preserve">
     <value>保存</value>
@@ -2172,15 +1971,6 @@
   </data>
   <data name="Fn_Job" xml:space="preserve">
     <value>作业</value>
-  </data>
-  <data name="Fn_PreviousStep" xml:space="preserve">
-    <value>上一步</value>
-  </data>
-  <data name="Fn_NextStep" xml:space="preserve">
-    <value>下一步</value>
-  </data>
-  <data name="Fn_RegisterRoll" xml:space="preserve">
-    <value>新登记轧辊</value>
   </data>
   <data name="Fn_NewProgram" xml:space="preserve">
     <value>新建程序</value>
@@ -2292,9 +2082,6 @@
   </data>
   <data name="Program_SaveBeforeUse" xml:space="preserve">
     <value>先把程序存进库里，作业用的是库里那一支</value>
-  </data>
-  <data name="Fn_NewJob" xml:space="preserve">
-    <value>新作业</value>
   </data>
   <data name="Profile_MirrorNotForRelief" xml:space="preserve">
     <value>点表、CVC 等可以镜像；锥度按所在半边自动朝向端面，不用镜像</value>
@@ -2710,23 +2497,11 @@
   <data name="SubView_Compensation" xml:space="preserve">
     <value>补偿</value>
   </data>
-  <data name="Vk_Curves" xml:space="preserve">
-    <value>曲线 ▸</value>
-  </data>
-  <data name="Vk_CurvesTitle" xml:space="preserve">
-    <value>选曲线</value>
-  </data>
-  <data name="Vk_Compensation" xml:space="preserve">
-    <value>补偿</value>
-  </data>
   <data name="Vk_SaveTuning" xml:space="preserve">
     <value>保存补偿设定</value>
   </data>
   <data name="Vk_ResetTuning" xml:space="preserve">
     <value>恢复配置值</value>
-  </data>
-  <data name="Vk_MeasurementRecords" xml:space="preserve">
-    <value>测量记录</value>
   </data>
   <data name="Comp_TuningHeader" xml:space="preserve">
     <value>上位机补偿设定</value>
@@ -2812,47 +2587,11 @@
   <data name="ChangeArea_tagMap" xml:space="preserve">
     <value>标签映射</value>
   </data>
-  <data name="ManualGroup_measuringArm" xml:space="preserve">
-    <value>测量臂</value>
-  </data>
-  <data name="ManualGroup_tailstock" xml:space="preserve">
-    <value>尾架套筒</value>
-  </data>
-  <data name="ManualGroup_headstock" xml:space="preserve">
-    <value>头架</value>
-  </data>
-  <data name="ManualGroup_softLanding" xml:space="preserve">
-    <value>软着陆</value>
-  </data>
-  <data name="ManualGroup_wheelCoolant" xml:space="preserve">
-    <value>砂轮冷却</value>
-  </data>
-  <data name="ManualGroup_measureCentring" xml:space="preserve">
-    <value>测量对中</value>
-  </data>
   <data name="Fn_AuxCycles" xml:space="preserve">
     <value>辅助循环 ▸</value>
   </data>
-  <data name="Vk_AuxCyclesTitle" xml:space="preserve">
-    <value>辅助循环</value>
-  </data>
-  <data name="Manual_StatusHeader" xml:space="preserve">
-    <value>状态（动作发出后在这里看结果）</value>
-  </data>
-  <data name="Manual_KeysHint" xml:space="preserve">
-    <value>动作在右侧竖键上（Shift+F1…F8）；红键要按两下。上位机只发请求，能不能动由 PLC 互锁决定。</value>
-  </data>
-  <data name="Manual_MeasureCentringHint" xml:space="preserve">
-    <value>测点与对中表在左边；采点、归档、记两端都在右侧竖键上。</value>
-  </data>
-  <data name="Vk_SaveConfig" xml:space="preserve">
-    <value>保存（备份原文件）</value>
-  </data>
   <data name="Vk_RestorePrevious" xml:space="preserve">
-    <value>恢复上一版</value>
-  </data>
-  <data name="Vk_DiscardConfig" xml:space="preserve">
-    <value>放弃改动</value>
+    <value>恢复上一版…</value>
   </data>
   <data name="Vk_OnlyMissing" xml:space="preserve">
     <value>只看缺失</value>
@@ -2861,7 +2600,7 @@
     <value>登记</value>
   </data>
   <data name="Vk_DeleteTag" xml:space="preserve">
-    <value>删除这一行</value>
+    <value>删除这一行…</value>
   </data>
   <data name="Vk_TestRead" xml:space="preserve">
     <value>试读</value>
@@ -3073,9 +2812,6 @@
   <data name="CfgField_maxWeightKg" xml:space="preserve">
     <value>最大重量</value>
   </data>
-  <data name="Diag_AuditCalibrationHeader" xml:space="preserve">
-    <value>标定值：每一项最后一次是谁改的</value>
-  </data>
   <data name="Diag_ChangeLogHeader" xml:space="preserve">
     <value>改动记录（补偿设定、机床配置、标签映射）</value>
   </data>
@@ -3147,5 +2883,929 @@
   </data>
   <data name="CalGroup_Other" xml:space="preserve">
     <value>其他</value>
+  </data>
+  <data name="Action_AsksFormat" xml:space="preserve">
+    <value>{0}…</value>
+  </data>
+  <data name="Action_WheelStop" xml:space="preserve">
+    <value>砂轮停止</value>
+  </data>
+  <data name="Alarm_ResetHmi" xml:space="preserve">
+    <value>上位机报警：在这里按"清除上位机报警…"清掉</value>
+  </data>
+  <data name="Alarm_ResetNc" xml:space="preserve">
+    <value>NC 报警：排除原因后按机床操作面板上的"复位"（RESET）</value>
+  </data>
+  <data name="Alarm_ResetPlc" xml:space="preserve">
+    <value>PLC 报警：排除原因后按按钮板上的"故障复位"</value>
+  </data>
+  <data name="Alarm_StepParametersUpdated" xml:space="preserve">
+    <value>参数矩阵改动已下发</value>
+  </data>
+  <data name="Alarm_StepUpdateNotArchived" xml:space="preserve">
+    <value>参数矩阵已下发，但改动记录没存进数据库</value>
+  </data>
+  <data name="Alarm_ValueOutOfRange" xml:space="preserve">
+    <value>值超出允许范围，没有写入机床</value>
+  </data>
+  <data name="Auto_AskCycleStart" xml:space="preserve">
+    <value>循环启动：按"✓ 确认"开始这支辊的自动磨削</value>
+  </data>
+  <data name="Auto_AskEndEarly" xml:space="preserve">
+    <value>提前结束当前这一道？按"✓ 确认"，NC 在这一道的结束处收尾</value>
+  </data>
+  <data name="Auto_AskJump" xml:space="preserve">
+    <value>跳到 {0}？按"✓ 确认"，NC 做完当前这一道后从那里继续</value>
+  </data>
+  <data name="Centring_AskClear" xml:space="preserve">
+    <value>清除两端的对中记录？</value>
+  </data>
+  <data name="Cfg_AskDeleteTag" xml:space="preserve">
+    <value>从标签映射里删除 {0}？（保存后才写进文件）</value>
+  </data>
+  <data name="Cfg_AskRestore" xml:space="preserve">
+    <value>把最近一份备份载入编辑区？现在编辑区里的改动会丢掉；按"✓ 保存…"才写回文件</value>
+  </data>
+  <data name="Cfg_AskSaveFormat" xml:space="preserve">
+    <value>把 {0} 处改动存进 {1}？原文件先备份到 config/backup，改动写入改动记录，重启上位机后生效</value>
+  </data>
+  <data name="Cfg_SaveOrDiscardFirst" xml:space="preserve">
+    <value>先保存或放弃这份文件的改动，再换到另一份</value>
+  </data>
+  <data name="Cfg_SelectMappedRow" xml:space="preserve">
+    <value>先选中一行已登记的标签</value>
+  </data>
+  <data name="Cfg_SelectMissingRow" xml:space="preserve">
+    <value>先选中一行缺映射的标签</value>
+  </data>
+  <data name="Channel_MachineOff" xml:space="preserve">
+    <value>机床未上电</value>
+  </data>
+  <data name="Channel_MachineOn" xml:space="preserve">
+    <value>机床已上电</value>
+  </data>
+  <data name="Channel_MachineOnUnknown" xml:space="preserve">
+    <value>上电 --</value>
+  </data>
+  <data name="Channel_NotReferenced" xml:space="preserve">
+    <value>未回参考点</value>
+  </data>
+  <data name="Channel_PendantFormat" xml:space="preserve">
+    <value>手持盒 {0} ×{1} · {2}</value>
+  </data>
+  <data name="Channel_PendantUnknown" xml:space="preserve">
+    <value>手持盒 --</value>
+  </data>
+  <data name="Channel_Referenced" xml:space="preserve">
+    <value>已回参考点</value>
+  </data>
+  <data name="Channel_ReferencedUnknown" xml:space="preserve">
+    <value>参考点 --</value>
+  </data>
+  <data name="Common_Sent" xml:space="preserve">
+    <value>已发出</value>
+  </data>
+  <data name="Comp_AskReset" xml:space="preserve">
+    <value>把补偿设定恢复成出厂值？</value>
+  </data>
+  <data name="Comp_AskSave" xml:space="preserve">
+    <value>保存补偿设定？下一支辊开始按新设定补偿</value>
+  </data>
+  <data name="Context_BodyLength" xml:space="preserve">
+    <value>辊身</value>
+  </data>
+  <data name="Context_Roll" xml:space="preserve">
+    <value>轧辊</value>
+  </data>
+  <data name="Diag_AlarmDetailHeader" xml:space="preserve">
+    <value>详情</value>
+  </data>
+  <data name="Diag_AlarmResetLabel" xml:space="preserve">
+    <value>消除方法</value>
+  </data>
+  <data name="Diag_AlarmsCleared" xml:space="preserve">
+    <value>上位机报警已清除</value>
+  </data>
+  <data name="Diag_AskClearAlarms" xml:space="preserve">
+    <value>清除上位机报警列表？机床（PLC、NC）报警由机床消，这里清了下个周期还会回来</value>
+  </data>
+  <data name="Diag_BackupHeader" xml:space="preserve">
+    <value>备份与恢复</value>
+  </data>
+  <data name="Diag_BackupNote" xml:space="preserve">
+    <value>竖键"备份"把 config/ 与 data/（配置、辊形、程序、记录）打成一个 zip，存到你选的位置（建议 U 盘）。机床在磨也可以备份，不影响磨削。</value>
+  </data>
+  <data name="Diag_RestoreNote" xml:space="preserve">
+    <value>恢复要停机做：关掉上位机，把备份包里的 config/ 与 data/ 解回安装目录，再启动。运行中不热换这些文件。</value>
+  </data>
+  <data name="Fb_Calculator" xml:space="preserve">
+    <value>▦ 计算</value>
+  </data>
+  <data name="Fb_CalculatorFailed" xml:space="preserve">
+    <value>打不开计算器</value>
+  </data>
+  <data name="Fb_Help" xml:space="preserve">
+    <value>i 帮助</value>
+  </data>
+  <data name="Fb_Keyboard" xml:space="preserve">
+    <value>⌨ 键盘</value>
+  </data>
+  <data name="Fb_KeyboardFailed" xml:space="preserve">
+    <value>打不开屏幕键盘</value>
+  </data>
+  <data name="Fb_NothingToRedo" xml:space="preserve">
+    <value>没有可以重做的</value>
+  </data>
+  <data name="Fb_NothingToUndo" xml:space="preserve">
+    <value>没有可以撤销的</value>
+  </data>
+  <data name="Fb_Redo" xml:space="preserve">
+    <value>↷ 重做</value>
+  </data>
+  <data name="Fb_Screenshot" xml:space="preserve">
+    <value>◉ 截屏</value>
+  </data>
+  <data name="Fb_ScreenshotFailed" xml:space="preserve">
+    <value>截屏没存成：{0}</value>
+  </data>
+  <data name="Fb_ScreenshotSaved" xml:space="preserve">
+    <value>截屏已存：{0}</value>
+  </data>
+  <data name="Fb_Undo" xml:space="preserve">
+    <value>↶ 撤销</value>
+  </data>
+  <data name="Fn_Alarms" xml:space="preserve">
+    <value>报警</value>
+  </data>
+  <data name="Fn_Calibration" xml:space="preserve">
+    <value>标定</value>
+  </data>
+  <data name="Fn_CalibrationAudit" xml:space="preserve">
+    <value>标定审计</value>
+  </data>
+  <data name="Fn_Compensation" xml:space="preserve">
+    <value>补偿</value>
+  </data>
+  <data name="Fn_Connection" xml:space="preserve">
+    <value>连接与接口</value>
+  </data>
+  <data name="Fn_CycleStart" xml:space="preserve">
+    <value>循环启动…</value>
+  </data>
+  <data name="Fn_GrindingRecords" xml:space="preserve">
+    <value>磨削记录</value>
+  </data>
+  <data name="Fn_ImportReference" xml:space="preserve">
+    <value>导入对照线</value>
+  </data>
+  <data name="Fn_JumpToStep" xml:space="preserve">
+    <value>跳到工序 ▸</value>
+  </data>
+  <data name="Fn_ManualGrinding" xml:space="preserve">
+    <value>手动磨削</value>
+  </data>
+  <data name="Fn_NextPage" xml:space="preserve">
+    <value>&gt;</value>
+  </data>
+  <data name="Fn_PageFormat" xml:space="preserve">
+    <value>{0}/{1}</value>
+  </data>
+  <data name="Fn_ShortcutFormat" xml:space="preserve">
+    <value>F{0}</value>
+  </data>
+  <data name="Fn_StatusOverview" xml:space="preserve">
+    <value>状态总览</value>
+  </data>
+  <data name="Fn_System" xml:space="preserve">
+    <value>系统</value>
+  </data>
+  <data name="Help_Confirmation_Title" xml:space="preserve">
+    <value>确认：问一句再做</value>
+  </data>
+  <data name="Help_Confirmation_Body" xml:space="preserve">
+    <value>会让机床动的请求（砂轮启动、拖板往复、定位、各轴归位、辅助循环、测量臂校准）、下发（作业、参数矩阵、给定、倍率）、删除和清空、保存补偿设定、恢复配置、配置保存，都先在对话行问一句。&#10;这时竖键 7 / 8 变成"✕ 取消 / ✓ 确认"：按 ✓ 或回车才做；按 ✕ 或 Esc 放弃；5 秒不答自动放弃。&#10;停止类（砂轮停止、拖板停止）、切换显示、冷却液开关不问。</value>
+  </data>
+  <data name="Help_Contents" xml:space="preserve">
+    <value>目录</value>
+  </data>
+  <data name="Help_Exit" xml:space="preserve">
+    <value>退出帮助</value>
+  </data>
+  <data name="Help_FullScreen" xml:space="preserve">
+    <value>全屏</value>
+  </data>
+  <data name="Help_Index" xml:space="preserve">
+    <value>索引</value>
+  </data>
+  <data name="Help_Intro" xml:space="preserve">
+    <value>按左边的"目录"或"索引"选一个条目，或按"搜索"输入关键字。帮助开着时表单照样可以填；按"退出帮助"或 Esc 回到简图。</value>
+  </data>
+  <data name="Help_Keypad_Title" xml:space="preserve">
+    <value>数字键盘</value>
+  </data>
+  <data name="Help_Keypad_Body" xml:space="preserve">
+    <value>点一下数值格选中它（青底，对话行写含义、单位、范围），再点一下弹出数字键盘。&#10;"↵ 输入"收下这个数并跳到下一格；超出范围不收，对话行说为什么。小数点一律是"."。&#10;会马上影响机床的值（给定、倍率、参数矩阵）输入后先标红，确认才写入。</value>
+  </data>
+  <data name="Help_ManualGrinding_Title" xml:space="preserve">
+    <value>手动磨削</value>
+  </data>
+  <data name="Help_ManualGrinding_Body" xml:space="preserve">
+    <value>上面是位置（X、X1、Z、U）和机构到位灯；中间是砂轮、头架、拖板三个窗；下面是沿辊身的位置图。&#10;给定和倍率：点格子改值，改完标红，按"✓ 确认"才写入；−5 / +5 键改倍率。头架启停和正反转在按钮板上。&#10;拖板往复：先填往复速度和行程（也可以点位置图取点），按"拖板往复…"确认启动；再按一次是停止，不问。&#10;定位 ▸：拖板到 Z、到辊身 ¼ / ½ / ¾、测量架到轧辊 / 归位、磨架退到安全位，每一项都要确认。&#10;手持盒选的轴和倍率显示在通道行上；点动用手持盒，不在屏幕上。</value>
+  </data>
+  <data name="Help_ProfileSegment_Title" xml:space="preserve">
+    <value>辊形段参数</value>
+  </data>
+  <data name="Help_ProfileSegment_Body" xml:space="preserve">
+    <value>辊形由一段段曲线顺接：每段有起点 Z（只有第一段填）、长度 L，后面各段的起点跟着前一段的终点走。&#10;凸度、锥度、CVC、正弦、点表各有自己的参数；点表可选插值方式（竖键"插值方式 ▸"）。&#10;对称编辑时只编头架一侧，尾架一侧自动镜像；锥度自己朝端面，不用勾镜像。&#10;边改边校验：段超出辊身、长度不成立会立刻标红，保存键变灰。</value>
+  </data>
+  <data name="Help_Search" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="Help_SoftKeys_Title" xml:space="preserve">
+    <value>软键</value>
+  </data>
+  <data name="Help_SoftKeys_Body" xml:space="preserve">
+    <value>下面一排横键选这一区的功能组（F1–F8，超过 8 个时按"&gt;"翻页）；右边一列竖键是这一组里的动作（Shift+F1–F8）。&#10;竖键第 8 格：子菜单里是"« 返回"，多于 8 个时是"≡▸"翻页；等确认或有改动时 7 / 8 是取消 / 确认。&#10;灰的键按下去不做事，对话行写为什么（缺标签、急停、权限不够、正在运行……）。&#10;区域菜单：F10 或右上的区域方块；左栏一点直达常用区域（Ctrl+1…7）。</value>
+  </data>
+  <data name="Help_StepParameters_Title" xml:space="preserve">
+    <value>工序参数</value>
+  </data>
+  <data name="Help_StepParameters_Body" xml:space="preserve">
+    <value>左边是工序序列，右边上面是这道工序的简图、下面是参数表单。光标落到哪个参数，简图上对应的量就亮，对话行写它的含义、单位和范围。&#10;竖键"插入工序 ▸"按类别选工序；"默认值"把这道工序恢复成默认参数（要确认）。&#10;余量分配和跨工序校验在保存时做，有错不能保存，也不能用于作业。</value>
+  </data>
+  <data name="Help_Title" xml:space="preserve">
+    <value>帮助</value>
+  </data>
+  <data name="Job_AskCancel" xml:space="preserve">
+    <value>取消这个作业、从第一步重来？已选的辊、辊形、程序都清掉</value>
+  </data>
+  <data name="Job_NextNeedsSelection" xml:space="preserve">
+    <value>这一步还没选好</value>
+  </data>
+  <data name="Job_NothingSelected" xml:space="preserve">
+    <value>还没选</value>
+  </data>
+  <data name="Job_ReviewCurveAxis" xml:space="preserve">
+    <value>直径量 µm</value>
+  </data>
+  <data name="Job_ReviewCurveHeader" xml:space="preserve">
+    <value>目标辊形（按作业长度）</value>
+  </data>
+  <data name="Key_EmergencyStop" xml:space="preserve">
+    <value>急停中，机床动作都不发</value>
+  </data>
+  <data name="Key_MissingTagFormat" xml:space="preserve">
+    <value>缺标签 {0}</value>
+  </data>
+  <data name="Key_NeedsRoleFormat" xml:space="preserve">
+    <value>要{0}权限</value>
+  </data>
+  <data name="Key_NotNow" xml:space="preserve">
+    <value>现在不能做</value>
+  </data>
+  <data name="Key_RunLocked" xml:space="preserve">
+    <value>自动循环在跑，这一页只读</value>
+  </data>
+  <data name="Keypad_Backspace" xml:space="preserve">
+    <value>⌫</value>
+  </data>
+  <data name="Keypad_Cancel" xml:space="preserve">
+    <value>✕ 取消</value>
+  </data>
+  <data name="Keypad_Clear" xml:space="preserve">
+    <value>清除</value>
+  </data>
+  <data name="Keypad_Enter" xml:space="preserve">
+    <value>↵ 输入</value>
+  </data>
+  <data name="Keypad_Error_Empty" xml:space="preserve">
+    <value>没有输入数字</value>
+  </data>
+  <data name="Keypad_Error_NotANumber" xml:space="preserve">
+    <value>这不是一个数</value>
+  </data>
+  <data name="Keypad_Error_BelowMinimum" xml:space="preserve">
+    <value>小于下限，没收下（{0}）</value>
+  </data>
+  <data name="Keypad_Error_AboveMaximum" xml:space="preserve">
+    <value>大于上限，没收下（{0}）</value>
+  </data>
+  <data name="Keypad_MaximumFormat" xml:space="preserve">
+    <value>≤ {0}</value>
+  </data>
+  <data name="Keypad_MinimumFormat" xml:space="preserve">
+    <value>≥ {0}</value>
+  </data>
+  <data name="Keypad_RangeFormat" xml:space="preserve">
+    <value>{0} … {1}</value>
+  </data>
+  <data name="Keypad_Sign" xml:space="preserve">
+    <value>±</value>
+  </data>
+  <data name="Language_Saved" xml:space="preserve">
+    <value>语言已改，重启上位机后生效</value>
+  </data>
+  <data name="Language_SwitchQuestion" xml:space="preserve">
+    <value>界面语言改成 {0}？重启上位机后生效</value>
+  </data>
+  <data name="Language_zhCN" xml:space="preserve">
+    <value>中文</value>
+  </data>
+  <data name="Language_enUS" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Lib_AskDelete" xml:space="preserve">
+    <value>删除"{0}"？删了不能恢复（已下发的作业不受影响）</value>
+  </data>
+  <data name="Lib_Copied" xml:space="preserve">
+    <value>已复制为"{0}"</value>
+  </data>
+  <data name="Lib_CopyTitle" xml:space="preserve">
+    <value>复制为</value>
+  </data>
+  <data name="Lib_Deleted" xml:space="preserve">
+    <value>已删除"{0}"</value>
+  </data>
+  <data name="Lib_ExportedFormat" xml:space="preserve">
+    <value>已导出 {0} 条到 {1}</value>
+  </data>
+  <data name="Lib_FileFilter" xml:space="preserve">
+    <value>辊形与程序交换文件|*.rgxlib</value>
+  </data>
+  <data name="Lib_ImportedFormat" xml:space="preserve">
+    <value>已导入辊形 {0} 条、程序 {1} 条（重名的加了"(2)"）</value>
+  </data>
+  <data name="Lib_Jobs" xml:space="preserve">
+    <value>作业</value>
+  </data>
+  <data name="Lib_Ledger" xml:space="preserve">
+    <value>轧辊台账</value>
+  </data>
+  <data name="Lib_NothingSelected" xml:space="preserve">
+    <value>先选中一条</value>
+  </data>
+  <data name="Lib_PreviewBodyLength" xml:space="preserve">
+    <value>辊身长 mm</value>
+  </data>
+  <data name="Lib_PreviewHeader" xml:space="preserve">
+    <value>预览</value>
+  </data>
+  <data name="Lib_PreviewJob" xml:space="preserve">
+    <value>作业</value>
+  </data>
+  <data name="Lib_PreviewSegments" xml:space="preserve">
+    <value>段数</value>
+  </data>
+  <data name="Lib_PreviewStepFormat" xml:space="preserve">
+    <value>工序</value>
+  </data>
+  <data name="Lib_ProfileDetailFormat" xml:space="preserve">
+    <value>{0} 段 · {1} mm</value>
+  </data>
+  <data name="Lib_Profiles" xml:space="preserve">
+    <value>辊形库</value>
+  </data>
+  <data name="Lib_ProgramDetailFormat" xml:space="preserve">
+    <value>{0} 道工序</value>
+  </data>
+  <data name="Lib_Programs" xml:space="preserve">
+    <value>程序库</value>
+  </data>
+  <data name="Lib_RenameTitle" xml:space="preserve">
+    <value>改名为</value>
+  </data>
+  <data name="Lib_Renamed" xml:space="preserve">
+    <value>已改名为"{0}"</value>
+  </data>
+  <data name="Lib_TitleFormat" xml:space="preserve">
+    <value>{0} · {1} 条</value>
+  </data>
+  <data name="Lib_Usb" xml:space="preserve">
+    <value>U 盘</value>
+  </data>
+  <data name="Lib_UsbHelp" xml:space="preserve">
+    <value>把选中的辊形或程序导出成一个 .rgxlib 文件（竖键"导出到 U 盘"），或把整个库一次导出（"全部导出"）；在另一台机上"从 U 盘导入"。导入时同名的不覆盖，自动在名字后加"(2)"。</value>
+  </data>
+  <data name="MG_ArmLowered" xml:space="preserve">
+    <value>放下</value>
+  </data>
+  <data name="MG_ArmRaised" xml:space="preserve">
+    <value>抬起</value>
+  </data>
+  <data name="MG_ArmStateFormat" xml:space="preserve">
+    <value>外 A {0} · 内 B {1}</value>
+  </data>
+  <data name="MG_ArmsHome" xml:space="preserve">
+    <value>测量架归位…</value>
+  </data>
+  <data name="MG_ArmsToRoll" xml:space="preserve">
+    <value>测量架到轧辊…</value>
+  </data>
+  <data name="MG_AskCarriageFormat" xml:space="preserve">
+    <value>拖板往复 {0} → {1} mm，{2} mm/min。按"✓ 确认"启动</value>
+  </data>
+  <data name="MG_AskPositionFormat" xml:space="preserve">
+    <value>{0}（目标 {1}）？按"✓ 确认"开始定位</value>
+  </data>
+  <data name="MG_AskValueFormat" xml:space="preserve">
+    <value>{0} {1} → {2} {3}。按"✓ 确认"写入</value>
+  </data>
+  <data name="MG_CarriageHeader" xml:space="preserve">
+    <value>拖板</value>
+  </data>
+  <data name="MG_CarriageRunning" xml:space="preserve">
+    <value>● 往复中</value>
+  </data>
+  <data name="MG_CarriageStart" xml:space="preserve">
+    <value>拖板往复…</value>
+  </data>
+  <data name="MG_CarriageStartName" xml:space="preserve">
+    <value>拖板往复</value>
+  </data>
+  <data name="MG_CarriageStop" xml:space="preserve">
+    <value>拖板停止</value>
+  </data>
+  <data name="MG_CarriageStopped" xml:space="preserve">
+    <value>停</value>
+  </data>
+  <data name="MG_ContextNoRoll" xml:space="preserve">
+    <value>没有装辊的作业</value>
+  </data>
+  <data name="MG_DiameterStep" xml:space="preserve">
+    <value>与上一点差</value>
+  </data>
+  <data name="MG_FeedOverride" xml:space="preserve">
+    <value>进给倍率</value>
+  </data>
+  <data name="MG_GrindingCurrent" xml:space="preserve">
+    <value>磨削电流 A</value>
+  </data>
+  <data name="MG_HeadstockAssist" xml:space="preserve">
+    <value>带启动装置</value>
+  </data>
+  <data name="MG_HeadstockHeader" xml:space="preserve">
+    <value>头架</value>
+  </data>
+  <data name="MG_HeadstockOnPanel" xml:space="preserve">
+    <value>启停、正反转：按钮板</value>
+  </data>
+  <data name="MG_HeadstockOverride" xml:space="preserve">
+    <value>头架倍率</value>
+  </data>
+  <data name="MG_HeadstockSetpoint" xml:space="preserve">
+    <value>头架给定</value>
+  </data>
+  <data name="MG_InfeedSafe" xml:space="preserve">
+    <value>磨架退到安全位…</value>
+  </data>
+  <data name="MG_MeasureHeader" xml:space="preserve">
+    <value>测量</value>
+  </data>
+  <data name="MG_MechanismHeader" xml:space="preserve">
+    <value>机构</value>
+  </data>
+  <data name="MG_NeedsConfigX1Home" xml:space="preserve">
+    <value>machine.json 没配测量架归位位置（thresholds.positionX1HomeMm）</value>
+  </data>
+  <data name="MG_NeedsConfigX1Roll" xml:space="preserve">
+    <value>machine.json 没配测量架到轧辊位置（thresholds.positionX1AtRollMm）</value>
+  </data>
+  <data name="MG_NeedsConfigXSafe" xml:space="preserve">
+    <value>machine.json 没配磨架安全位（thresholds.positionXSafeMm）</value>
+  </data>
+  <data name="MG_NeedsRoll" xml:space="preserve">
+    <value>要先有装辊的作业（知道辊身在哪）</value>
+  </data>
+  <data name="MG_NoTarget" xml:space="preserve">
+    <value>先在位置图上点一处，或填"定位目标 Z"</value>
+  </data>
+  <data name="MG_PendantLegend" xml:space="preserve">
+    <value>点动用手持盒</value>
+  </data>
+  <data name="MG_Position" xml:space="preserve">
+    <value>定位 ▸</value>
+  </data>
+  <data name="MG_PositionHeader" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="MG_PositionTarget" xml:space="preserve">
+    <value>定位目标 Z</value>
+  </data>
+  <data name="MG_PositionTitle" xml:space="preserve">
+    <value>定位</value>
+  </data>
+  <data name="MG_StripHeader" xml:space="preserve">
+    <value>沿辊身的位置（点一处 = 定位目标）</value>
+  </data>
+  <data name="MG_StrokeEnd" xml:space="preserve">
+    <value>行程终点</value>
+  </data>
+  <data name="MG_StrokeInvalid" xml:space="preserve">
+    <value>先填往复速度和行程（终点要大于起点）</value>
+  </data>
+  <data name="MG_StrokeStart" xml:space="preserve">
+    <value>行程起点</value>
+  </data>
+  <data name="MG_SyncDiff" xml:space="preserve">
+    <value>Z1 − Z2 同步差</value>
+  </data>
+  <data name="MG_TargetPickedFormat" xml:space="preserve">
+    <value>定位目标 Z = {0}</value>
+  </data>
+  <data name="MG_ToHalf" xml:space="preserve">
+    <value>到辊身 ½…</value>
+  </data>
+  <data name="MG_ToQuarter" xml:space="preserve">
+    <value>到辊身 ¼…</value>
+  </data>
+  <data name="MG_ToThreeQuarter" xml:space="preserve">
+    <value>到辊身 ¾…</value>
+  </data>
+  <data name="MG_ToZ" xml:space="preserve">
+    <value>拖板到 Z…</value>
+  </data>
+  <data name="MG_TraverseSpeed" xml:space="preserve">
+    <value>往复速度</value>
+  </data>
+  <data name="MG_ValueWrittenFormat" xml:space="preserve">
+    <value>{0} 已写入</value>
+  </data>
+  <data name="MG_WheelHeader" xml:space="preserve">
+    <value>砂轮</value>
+  </data>
+  <data name="MG_WheelOverride" xml:space="preserve">
+    <value>砂轮倍率</value>
+  </data>
+  <data name="MG_WheelSetpoint" xml:space="preserve">
+    <value>砂轮给定</value>
+  </data>
+  <data name="MG_WheelSurfaceFormat" xml:space="preserve">
+    <value>{0} m/s · Ø {1}</value>
+  </data>
+  <data name="ManualPage_driver" xml:space="preserve">
+    <value>头架拨盘</value>
+  </data>
+  <data name="ManualPage_measureCentring" xml:space="preserve">
+    <value>测量对中</value>
+  </data>
+  <data name="ManualPage_measuringArm" xml:space="preserve">
+    <value>测量臂</value>
+  </data>
+  <data name="ManualPage_steadyRest" xml:space="preserve">
+    <value>托瓦</value>
+  </data>
+  <data name="ManualPage_tailstock" xml:space="preserve">
+    <value>尾架</value>
+  </data>
+  <data name="Manual_ActionsHint" xml:space="preserve">
+    <value>动作在右边竖键上；到位看状态灯</value>
+  </data>
+  <data name="Manual_AskFormat" xml:space="preserve">
+    <value>{0}？按"✓ 确认"发出</value>
+  </data>
+  <data name="Manual_CentringHeader" xml:space="preserve">
+    <value>对中比对</value>
+  </data>
+  <data name="Manual_CentringRule" xml:space="preserve">
+    <value>头架侧、尾架侧各记一次，看两端之差；差在公差内就装正了</value>
+  </data>
+  <data name="Manual_JobIdLabel" xml:space="preserve">
+    <value>作业号</value>
+  </data>
+  <data name="Manual_PointsAxis" xml:space="preserve">
+    <value>直径 mm</value>
+  </data>
+  <data name="Manual_PointsHeader" xml:space="preserve">
+    <value>测点</value>
+  </data>
+  <data name="Manual_PositionHeader" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="Measurement_AskClear" xml:space="preserve">
+    <value>清空已采的测点？</value>
+  </data>
+  <data name="Measurement_ColumnDiameter" xml:space="preserve">
+    <value>直径 mm</value>
+  </data>
+  <data name="Measurement_ColumnPosition" xml:space="preserve">
+    <value>Z mm</value>
+  </data>
+  <data name="Mode_Unknown" xml:space="preserve">
+    <value>--</value>
+  </data>
+  <data name="Nav_NeedsManufacturer" xml:space="preserve">
+    <value>调试区要制造商权限</value>
+  </data>
+  <data name="Nav_PathSeparator" xml:space="preserve">
+    <value> · </value>
+  </data>
+  <data name="Page_Commissioning" xml:space="preserve">
+    <value>调试</value>
+  </data>
+  <data name="Page_Library" xml:space="preserve">
+    <value>库</value>
+  </data>
+  <data name="Page_ManualGrinding" xml:space="preserve">
+    <value>手动磨削</value>
+  </data>
+  <data name="Page_Parameters" xml:space="preserve">
+    <value>参数</value>
+  </data>
+  <data name="Pendant_Axis1" xml:space="preserve">
+    <value>X</value>
+  </data>
+  <data name="Pendant_Axis2" xml:space="preserve">
+    <value>X1</value>
+  </data>
+  <data name="Pendant_Axis3" xml:space="preserve">
+    <value>Z</value>
+  </data>
+  <data name="Pendant_Axis4" xml:space="preserve">
+    <value>U</value>
+  </data>
+  <data name="Pendant_Axis5" xml:space="preserve">
+    <value>B</value>
+  </data>
+  <data name="Pendant_Disabled" xml:space="preserve">
+    <value>未使能</value>
+  </data>
+  <data name="Pendant_Enabled" xml:space="preserve">
+    <value>使能</value>
+  </data>
+  <data name="Profile_AskClear" xml:space="preserve">
+    <value>清空全部辊形段？</value>
+  </data>
+  <data name="Quick_Diagnostics" xml:space="preserve">
+    <value>诊断</value>
+  </data>
+  <data name="Quick_Library" xml:space="preserve">
+    <value>库</value>
+  </data>
+  <data name="Quick_Machine" xml:space="preserve">
+    <value>机床</value>
+  </data>
+  <data name="Quick_Parameters" xml:space="preserve">
+    <value>参数</value>
+  </data>
+  <data name="Quick_Profile" xml:space="preserve">
+    <value>辊形</value>
+  </data>
+  <data name="Quick_Records" xml:space="preserve">
+    <value>记录</value>
+  </data>
+  <data name="Quick_SideScreen" xml:space="preserve">
+    <value>侧屏</value>
+  </data>
+  <data name="Quick_Steps" xml:space="preserve">
+    <value>工艺</value>
+  </data>
+  <data name="Quick_Wheel" xml:space="preserve">
+    <value>砂轮</value>
+  </data>
+  <data name="Records_AskFinish" xml:space="preserve">
+    <value>把 {0} 的记录标记为完成？备注一并存下</value>
+  </data>
+  <data name="Records_ListHeader" xml:space="preserve">
+    <value>记录</value>
+  </data>
+  <data name="Records_QueryHint" xml:space="preserve">
+    <value>点日期弹月历；竖键 8"查询"，7"取消"</value>
+  </data>
+  <data name="Records_RangeMonth" xml:space="preserve">
+    <value>近 30 天</value>
+  </data>
+  <data name="Records_RangeToday" xml:space="preserve">
+    <value>今天</value>
+  </data>
+  <data name="Records_RangeWeek" xml:space="preserve">
+    <value>近 7 天</value>
+  </data>
+  <data name="Setpoint_HintFormat" xml:space="preserve">
+    <value>{0}（{1}），范围 {2} … {3}</value>
+  </data>
+  <data name="Settings_Reloaded" xml:space="preserve">
+    <value>已从数据库重新读取</value>
+  </data>
+  <data name="SignIn_PinFormat" xml:space="preserve">
+    <value>操作者用 4–8 位数字 PIN</value>
+  </data>
+  <data name="Steps_AskDefaults" xml:space="preserve">
+    <value>把这道工序的参数恢复成默认值？</value>
+  </data>
+  <data name="SubView_Query" xml:space="preserve">
+    <value>查询</value>
+  </data>
+  <data name="SubView_StatusOverview" xml:space="preserve">
+    <value>状态总览</value>
+  </data>
+  <data name="Sys_EditNote" xml:space="preserve">
+    <value>这些值在 config/hmi.json 与 machine.json 里改（机床配置组）；改完重启上位机生效。语言也可以按 Ctrl+L 切换。</value>
+  </data>
+  <data name="Sys_Header" xml:space="preserve">
+    <value>系统</value>
+  </data>
+  <data name="Sys_Language" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="Sys_Machine" xml:space="preserve">
+    <value>机床</value>
+  </data>
+  <data name="Sys_PanelActions" xml:space="preserve">
+    <value>按钮板上的动作</value>
+  </data>
+  <data name="Sys_QuickBar" xml:space="preserve">
+    <value>左栏条目</value>
+  </data>
+  <data name="Sys_RawHeader" xml:space="preserve">
+    <value>配置原文（只读）</value>
+  </data>
+  <data name="Sys_Refresh" xml:space="preserve">
+    <value>读取周期 · 界面刷新</value>
+  </data>
+  <data name="Sys_TagCount" xml:space="preserve">
+    <value>标签数</value>
+  </data>
+  <data name="Top_AlarmMoreFormat" xml:space="preserve">
+    <value>+{0}</value>
+  </data>
+  <data name="Top_EmergencyStop" xml:space="preserve">
+    <value>急停</value>
+  </data>
+  <data name="Vk_Backup" xml:space="preserve">
+    <value>备份</value>
+  </data>
+  <data name="Vk_Cancel" xml:space="preserve">
+    <value>✕ 取消</value>
+  </data>
+  <data name="Vk_CancelJob" xml:space="preserve">
+    <value>取消作业…</value>
+  </data>
+  <data name="Vk_ChangeLog" xml:space="preserve">
+    <value>改动记录</value>
+  </data>
+  <data name="Vk_ChangeWheel" xml:space="preserve">
+    <value>换砂轮 ▸</value>
+  </data>
+  <data name="Vk_ClearHmiAlarms" xml:space="preserve">
+    <value>清除上位机报警…</value>
+  </data>
+  <data name="Vk_Confirm" xml:space="preserve">
+    <value>✓ 确认</value>
+  </data>
+  <data name="Vk_ConfirmDownload" xml:space="preserve">
+    <value>✓ 下发</value>
+  </data>
+  <data name="Vk_Copy" xml:space="preserve">
+    <value>复制…</value>
+  </data>
+  <data name="Vk_Delete" xml:space="preserve">
+    <value>删除…</value>
+  </data>
+  <data name="Vk_DiscardEdits" xml:space="preserve">
+    <value>✕ 放弃改动</value>
+  </data>
+  <data name="Vk_DownloadEdits" xml:space="preserve">
+    <value>✓ 下发改动</value>
+  </data>
+  <data name="Vk_ExportAll" xml:space="preserve">
+    <value>全部导出</value>
+  </data>
+  <data name="Vk_ExportExcel" xml:space="preserve">
+    <value>导出 Excel</value>
+  </data>
+  <data name="Vk_ExportSnapshot" xml:space="preserve">
+    <value>导出故障快照</value>
+  </data>
+  <data name="Vk_ExportUsb" xml:space="preserve">
+    <value>导出到 U 盘</value>
+  </data>
+  <data name="Vk_FirstPage" xml:space="preserve">
+    <value>≡◂</value>
+  </data>
+  <data name="Vk_ImportUsb" xml:space="preserve">
+    <value>从 U 盘导入</value>
+  </data>
+  <data name="Vk_JumpTitle" xml:space="preserve">
+    <value>跳到工序</value>
+  </data>
+  <data name="Vk_JumpToFormat" xml:space="preserve">
+    <value>{0}…</value>
+  </data>
+  <data name="Vk_MarkFinished" xml:space="preserve">
+    <value>标记完成…</value>
+  </data>
+  <data name="Vk_New" xml:space="preserve">
+    <value>新建</value>
+  </data>
+  <data name="Vk_NewJob" xml:space="preserve">
+    <value>新作业</value>
+  </data>
+  <data name="Vk_NewRoll" xml:space="preserve">
+    <value>登记新辊</value>
+  </data>
+  <data name="Vk_NextPage" xml:space="preserve">
+    <value>≡▸</value>
+  </data>
+  <data name="Vk_NextStep" xml:space="preserve">
+    <value>下一步</value>
+  </data>
+  <data name="Vk_Open" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="Vk_OpenProfile" xml:space="preserve">
+    <value>打开辊形</value>
+  </data>
+  <data name="Vk_OpenProgram" xml:space="preserve">
+    <value>打开程序</value>
+  </data>
+  <data name="Vk_OpenRecord" xml:space="preserve">
+    <value>打开记录</value>
+  </data>
+  <data name="Vk_PreviousStep" xml:space="preserve">
+    <value>上一步</value>
+  </data>
+  <data name="Vk_Print" xml:space="preserve">
+    <value>打印</value>
+  </data>
+  <data name="Vk_PrintNow" xml:space="preserve">
+    <value>打印</value>
+  </data>
+  <data name="Vk_Query" xml:space="preserve">
+    <value>✓ 查询</value>
+  </data>
+  <data name="Vk_QueryAsk" xml:space="preserve">
+    <value>查询…</value>
+  </data>
+  <data name="Vk_RegisterRoll" xml:space="preserve">
+    <value>登记新辊</value>
+  </data>
+  <data name="Vk_RegisterWheel" xml:space="preserve">
+    <value>新砂轮登记</value>
+  </data>
+  <data name="Vk_Reload" xml:space="preserve">
+    <value>重新读取</value>
+  </data>
+  <data name="Vk_Rename" xml:space="preserve">
+    <value>改名…</value>
+  </data>
+  <data name="Vk_Save" xml:space="preserve">
+    <value>✓ 保存</value>
+  </data>
+  <data name="Vk_SaveAsk" xml:space="preserve">
+    <value>✓ 保存…</value>
+  </data>
+  <data name="Vk_SaveRoll" xml:space="preserve">
+    <value>保存这支辊</value>
+  </data>
+  <data name="Vk_UseForJob" xml:space="preserve">
+    <value>用于作业</value>
+  </data>
+  <data name="Vk_ViewMachineJson" xml:space="preserve">
+    <value>看 machine.json</value>
+  </data>
+  <data name="Vk_ViewTagMapJson" xml:space="preserve">
+    <value>看 tagmap.json</value>
+  </data>
+  <data name="Vk_WizardCancel" xml:space="preserve">
+    <value>放弃换砂轮…</value>
+  </data>
+  <data name="Vk_WizardNext" xml:space="preserve">
+    <value>下一步</value>
+  </data>
+  <data name="Vk_WizardSkip" xml:space="preserve">
+    <value>这一刀不作数</value>
+  </data>
+  <data name="WheelChange_AskCancel" xml:space="preserve">
+    <value>放弃换砂轮？已切成手动对刀的会切回原来的方式</value>
+  </data>
+  <data name="WheelChange_SkipOnlyAtVerify" xml:space="preserve">
+    <value>只有核对那一步能跳过修正</value>
+  </data>
+  <data name="Wheel_RegisterHint" xml:space="preserve">
+    <value>新砂轮到货：在"新砂轮直径"里填标称直径，按"✓ 保存"；装上后走"换砂轮 ▸"试磨反推真实直径</value>
+  </data>
+  <data name="Area_Machine" xml:space="preserve">
+    <value>机床</value>
+  </data>
+  <data name="Area_Profile" xml:space="preserve">
+    <value>辊形</value>
+  </data>
+  <data name="Area_Steps" xml:space="preserve">
+    <value>工艺程序</value>
+  </data>
+  <data name="Area_Library" xml:space="preserve">
+    <value>库</value>
+  </data>
+  <data name="Area_Parameters" xml:space="preserve">
+    <value>参数</value>
+  </data>
+  <data name="Area_Records" xml:space="preserve">
+    <value>记录</value>
+  </data>
+  <data name="Area_Diagnostics" xml:space="preserve">
+    <value>诊断</value>
+  </data>
+  <data name="Area_Commissioning" xml:space="preserve">
+    <value>调试</value>
   </data>
 </root>

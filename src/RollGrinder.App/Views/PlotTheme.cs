@@ -90,6 +90,9 @@ internal static class PlotTheme
         control.Refresh();
     }
 
+    /// <summary>曲线色位（最终稿 4.3），例如 Color.CurveMeasured。各页的同一种曲线用同一种颜色。</summary>
+    public static Color Curve(FrameworkElement owner, string key) => PaletteColor(owner, key);
+
     private static Color PaletteColor(FrameworkElement owner, string key)
     {
         // 设计器里或资源没加载上时找不到色位，退回黑色也比抛异常强：图照样画得出来。

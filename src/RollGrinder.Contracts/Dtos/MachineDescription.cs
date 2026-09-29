@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RollGrinder.Contracts.Dtos;
 
@@ -100,6 +102,14 @@ public sealed record WorkpieceLimits(
 /// <param name="AuxiliaryActionCodes">
 /// 辅助动作工序能挑的机构动作：动作键 → NC 程序认的动作号（问题 Q4）。少于两项时不提供辅助动作工序。
 /// </param>
+/// <param name="QuickBar">
+/// 界面左栏的快捷入口（界面最终稿 D2），按顺序最多 7 个：machine、profile、steps、wheel、library、records、diagnostics、parameters。
+/// 不写用默认。
+/// </param>
+/// <param name="PanelActions">
+/// 装在按钮板上的动作（界面最终稿 Q18）：cycleStart、feedHold。登记了的，屏幕上就不放这个键——停止类不依赖上位机。
+/// </param>
+/// <param name="ManualStrokeMarginMm">手动往复的默认行程在辊身两端各留多少（mm，界面最终稿 M8），不写按 60。</param>
 public sealed record MachineDescription(
     int SchemaVersion,
     string MachineId,
@@ -111,4 +121,21 @@ public sealed record MachineDescription(
     IReadOnlyDictionary<string, double> Thresholds,
     WorkpieceLimits Workpiece,
     IReadOnlyDictionary<string, int> StepTypeCodes,
-    IReadOnlyDictionary<string, int>? AuxiliaryActionCodes = null);
+    IReadOnlyDictionary<string, int>? AuxiliaryActionCodes = null,
+    IReadOnlyList<string>? QuickBar = null,
+    IReadOnlyList<string>? PanelActions = null,
+    double? ManualStrokeMarginMm = null)
+{
+    /// <summary>手动往复默认行程两端留量的缺省值（mm）。</summary>
+    public const double DefaultManualStrokeMarginMm = 60.0;
+
+    /// <summary>按钮板上的循环启动。</summary>
+    public const string PanelCycleStart = "cycleStart";
+
+    /// <summary>按钮板上的暂停（进给保持）。</summary>
+    public const string PanelFeedHold = "feedHold";
+
+    /// <summary>这个动作装在按钮板上（屏幕上不放键）。</summary>
+    public bool IsOnPanel(string action) =>
+        PanelActions?.Any(a => string.Equals(a, action, StringComparison.OrdinalIgnoreCase)) == true;
+}

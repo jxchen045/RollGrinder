@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Navigation;
 using RollGrinder.App.ViewModels;
 using RollGrinder.Core.Steps;
@@ -91,11 +92,11 @@ internal sealed class FullFlowSuite : ISelfTestSuite
         await h.StepAsync("Prepare", "BuildJob", async ctx =>
         {
             await JobWizard.EnterFromProgramAsync(h, ctx, SelfTestNames.FlowProgram);
-            await h.PressKeyAsync(ctx, "Fn_NewJob");
+            await JobWizard.NewJobAsync(h, ctx);
             await JobWizard.RegisterRollAsync(h, ctx, SelfTestNames.FlowRollId, 2000, 600, 600);
-            await h.PressKeyAsync(ctx, "Fn_NextStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_NextStep");
             await JobWizard.ChooseProfileAsync(h, ctx, SelfTestNames.ProfileA);
-            await h.PressKeyAsync(ctx, "Fn_NextStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_NextStep");
             job.SelectedProgram = job.Programs.FirstOrDefault(p => p.Name == SelfTestNames.FlowProgram);
             await h.SettleAsync(300);
             await JobWizard.NextUntilReviewAsync(h, ctx);
@@ -106,7 +107,7 @@ internal sealed class FullFlowSuite : ISelfTestSuite
 
         StepStatus download = await h.StepAsync("Run", "DownloadToNc", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_DownloadNc");
+            await h.PressVerticalKeyAsync(ctx, "Vk_ConfirmDownload");
             bool moved = await h.WaitUntilAsync(() => shell.CurrentPage.Key == PageKey.AutoGrinding, TimeSpan.FromSeconds(10));
             ctx.Check(moved, "a successful download should open the auto page, status " + job.StatusResourceKey
                 + (job.Violations.Count > 0 ? ", first violation " + job.Violations[0].ParameterText + " " + job.Violations[0].ReasonText : string.Empty));
@@ -149,49 +150,51 @@ internal sealed class FullFlowSuite : ISelfTestSuite
         {
             foreach (CurveKind kind in Enum.GetValues<CurveKind>())
             {
-                auto.SelectCurveCommand.Execute(kind);
+                await h.PressVerticalKeyAsync(ctx, "Curve_" + kind);
                 await h.SettleAsync(200);
                 ctx.Note(kind + (auto.CurveHasData ? "=data" : "=empty"));
                 h.TryScreenshot("auto-curve-" + kind);
             }
         });
 
-        await h.StepAsync("Run", "StartNeedsTwoPresses", async ctx =>
+        await h.StepAsync("Run", "CycleStartAsksFirst", async ctx =>
         {
-            // 正在磨时按启动，服务层可以直接拒绝（不进入"再按一次"）；两种结果都照实记下。
-            await h.PressKeyAsync(ctx, "Fn_Start");
-            if (h.IndexOfKey("Fn_ConfirmAgain") < 0)
+            // 循环启动在按钮板上时没有这个键（machine.json panelActions）；有的话按下去先问、这里取消。
+            if (h.IndexOfKey("Fn_CycleStart") < 0)
             {
-                ctx.Note("start refused without arming in the running state");
+                ctx.Skip("cycle start is on the operator panel");
+            }
+
+            await h.PressKeyAsync(ctx, "Fn_CycleStart");
+            if (!h.HasPendingConfirmation)
+            {
+                ctx.Note("refused while running: " + h.DialogLineText);
                 return;
             }
 
-            ctx.Note("armed: key relabelled 'confirm again'");
-            await h.PressKeyAsync(ctx, "Fn_ConfirmAgain");
-            ctx.Check(h.IndexOfKey("Fn_Start") >= 0, "second press should send and restore the label");
+            ctx.Note("asked: " + h.PendingQuestion);
+            await h.CancelConfirmationAsync();
         }, new StepOptions(Tolerant: true));
 
-        await h.StepAsync("Run", "FeedHoldAndCoolant", async ctx =>
+        await h.StepAsync("Run", "Coolant", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_Pause");
             await h.PressKeyAsync(ctx, "Fn_Coolant");
             await h.PressKeyAsync(ctx, "Fn_Coolant");
         }, new StepOptions(Tolerant: true));
 
         await h.StepAsync("Run", "EndEarlyConfirmationExpires", async ctx =>
         {
-            // 规范（手动动作规范.md）：危险动作第一下只预备，4 秒内不按第二下自动撤销。
-            // 这里只按一下，等过窗口，确认它自己撤销了——不真的提前结束这一道。
+            // 最终稿 D5：会让机床动的请求先问一句，5 秒不答自动取消。这里只按一下、不答，确认它自己撤销了。
             await h.PressKeyAsync(ctx, "Fn_EndEarly");
-            if (h.IndexOfKey("Fn_ConfirmAgain") < 0)
+            if (!h.HasPendingConfirmation)
             {
-                ctx.Note("end-early refused without arming in the current state");
+                ctx.Note("end-early refused in the current state: " + h.DialogLineText);
                 return;
             }
 
-            bool expired = await h.WaitUntilAsync(() => h.IndexOfKey("Fn_ConfirmAgain") < 0, TimeSpan.FromSeconds(6));
-            ctx.Check(expired, "an armed end-early should disarm by itself after the 4-second window");
-            ctx.Check(h.IndexOfKey("Fn_EndEarly") >= 0, "the key should be labelled 'end early' again");
+            bool expired = await h.WaitUntilAsync(() => !h.HasPendingConfirmation, ConfirmationService.Timeout + TimeSpan.FromSeconds(3));
+            ctx.Check(expired, "an unanswered end-early should cancel itself after the timeout");
+            ctx.Check(h.Shell.VerticalKeys[7].Kind != FunctionKeyKind.Confirm, "the confirm key should be gone again");
         }, new StepOptions(Tolerant: true));
 
         await h.StepAsync("Run", "GrindsToCompletion", async ctx =>
@@ -219,7 +222,8 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             ctx.Note(string.Join(" · ", auto.StatusBand.Lamps.Select(lamp => lamp.Label + " " + lamp.StateText)));
             ctx.Check(auto.StatusBand.Lamps.Any(lamp => !lamp.IsUnknown), "the simulator should light at least one mechanism lamp");
 
-            await h.PressVerticalKeyAsync(ctx, "Vk_Compensation");
+            await h.GoToAsync(PageKey.AutoGrinding, ctx);
+            await h.PressKeyAsync(ctx, "Fn_Compensation");
             ctx.Check(auto.ActiveSubViewKey == AutoGrindingViewModel.CompensationSubView, "the compensation view should open");
             bool measured = await h.WaitUntilAsync(() => auto.MeasurementConvergence.Count > 0, TimeSpan.FromSeconds(5));
             ctx.Check(measured, "the measurements of this roll should be listed with their distance to target");
@@ -304,7 +308,12 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             DateTimeOffset? finishedAt = row!.View.FinishedAtUtc;
             int prints = h.Interaction.Produced.Count;
             records.SelectedRecord = row;
-            await h.RunAsync(records.FinishSelectedCommand);
+            await h.PressVerticalKeyAsync(ctx, "Vk_MarkFinished");
+            if (h.HasPendingConfirmation)
+            {
+                await h.ConfirmAsync(ctx);
+            }
+
             ctx.Check(records.StatusResourceKey == "Records_AlreadyFinished", "pressing finish on a closed record should say so, status " + records.StatusResourceKey);
             await h.RunAsync(records.QueryCommand);
             RecordRowViewModel? again = records.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId);
@@ -323,9 +332,14 @@ internal sealed class FullFlowSuite : ISelfTestSuite
 
             await h.SettleAsync(300);
             var empty = new System.Collections.Generic.List<string>();
-            foreach (RecordCurveKind kind in Enum.GetValues<RecordCurveKind>())
+            await h.GoToAsync(PageKey.Records, ctx);
+            foreach ((RecordCurveKind kind, string key) in new[]
             {
-                records.SelectCurveCommand.Execute(kind);
+                (RecordCurveKind.BeforeAfterProfile, "Curve_BeforeAfter"), (RecordCurveKind.Deviation, "Curve_Error"),
+                (RecordCurveKind.Roundness, "Curve_Roundness"), (RecordCurveKind.CompensationConvergence, "Curve_Convergence"),
+            })
+            {
+                await h.PressVerticalKeyAsync(ctx, key);
                 await h.SettleAsync(300);
                 ctx.Note(kind + (records.CurveHasData ? "=data" : "=empty"));
                 h.TryScreenshot("flow-record-curve-" + kind);

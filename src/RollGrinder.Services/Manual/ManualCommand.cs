@@ -33,7 +33,7 @@ public enum ManualCommandKind
 /// 自动循环还挂着程序时是否禁用。这是**防呆**，不是安全功能——
 /// 真正的联锁在 PLC，上位机只是不去按那个按钮而已。
 /// </param>
-/// <param name="RequiresConfirmation">是否需要二次确认（会动大件、会松开辊子的动作）。</param>
+/// <param name="RequiresConfirmation">按下后先在对话行提问、竖键 7 / 8 确认才发（会动大件、会松开辊子、会跑循环的动作）。</param>
 public sealed record ManualCommandDescriptor(
     string Key,
     ManualCommandKind Kind,
@@ -85,7 +85,12 @@ public static class ManualCommandCatalog
         new ManualCommandDescriptor("innerArm.raise", ManualCommandKind.Pulse) { ResourceKey = "Action_InnerArmRaise" },
         new ManualCommandDescriptor("arms.toRoll", ManualCommandKind.Pulse) { ResourceKey = "Action_ArmsToRoll" },
         new ManualCommandDescriptor("arms.home", ManualCommandKind.Pulse) { ResourceKey = "Action_ArmsHome" },
-        new ManualCommandDescriptor("arms.calibrate", ManualCommandKind.Pulse) { ResourceKey = "Action_CalibrateArms" },
+
+        // 校测量臂会跑一段循环，先问一句（界面最终稿 5.4）。
+        new ManualCommandDescriptor("arms.calibrate", ManualCommandKind.Pulse, RequiresConfirmation: true)
+        {
+            ResourceKey = "Action_CalibrateArms",
+        },
 
         // 采样不写机床：直接走测量服务，把当前测头读数存成一个测点。
         new ManualCommandDescriptor("measurement.sample", ManualCommandKind.Local, RequiresIdleChannel: false)
@@ -104,14 +109,14 @@ public static class ManualCommandCatalog
     {
         new ManualCommandDescriptor("quill.extend", ManualCommandKind.Pulse) { ResourceKey = "Action_QuillExtend" },
 
-        // 套筒缩回 = 顶尖离开辊子端面，按两次。
+        // 套筒缩回 = 顶尖离开辊子端面，先问一句（竖键 7 / 8 确认）。
         new ManualCommandDescriptor("quill.retract", ManualCommandKind.Pulse, RequiresConfirmation: true)
         {
             ResourceKey = "Action_QuillRetract",
         },
         new ManualCommandDescriptor("tailstock.forward", ManualCommandKind.Pulse) { ResourceKey = "Action_TailstockForward" },
 
-        // 尾架后退 = 让几十吨的辊子失去一端支承，按两次。
+        // 尾架后退 = 让几十吨的辊子失去一端支承，先问一句（竖键 7 / 8 确认）。
         new ManualCommandDescriptor("tailstock.backward", ManualCommandKind.Pulse, RequiresConfirmation: true)
         {
             ResourceKey = "Action_TailstockBackward",
@@ -132,16 +137,19 @@ public static class ManualCommandCatalog
             ResourceKey = "Action_HeadstockReverse",
             MutuallyExclusiveWith = HeadstockForwardKey,
         },
-        new ManualCommandDescriptor("headstock.speedUp", ManualCommandKind.Pulse) { ResourceKey = "Action_HeadstockUp" },
-        new ManualCommandDescriptor("headstock.speedDown", ManualCommandKind.Pulse) { ResourceKey = "Action_HeadstockDown" },
         new ManualCommandDescriptor("driver.extend", ManualCommandKind.Pulse) { ResourceKey = "Action_DriverExtend" },
 
-        // 拨盘收回前轧辊必须已经停稳，按两次。
+        // 拨盘收回前轧辊必须已经停稳，先问一句（竖键 7 / 8 确认）。
         new ManualCommandDescriptor("driver.retract", ManualCommandKind.Pulse, RequiresConfirmation: true)
         {
             ResourceKey = "Action_DriverRetract",
         },
-        new ManualCommandDescriptor("u1Axis.zero", ManualCommandKind.Pulse) { ResourceKey = "Action_U1AxisZero" },
+
+        // U 轴归零会跑一段循环，先问一句（界面最终稿 5.4）。
+        new ManualCommandDescriptor("u1Axis.zero", ManualCommandKind.Pulse, RequiresConfirmation: true)
+        {
+            ResourceKey = "Action_U1AxisZero",
+        },
 
         // 软着陆两侧各一对升降（Q69.0–Q69.3），不是一个开关：
         // 两端不同步就是在掰辊子，所以两侧分开给，让操作工看着托瓦一侧一侧来。
@@ -167,10 +175,15 @@ public static class ManualCommandCatalog
         {
             ResourceKey = "Action_Coolant",
         },
-        new ManualCommandDescriptor("wheel.run", ManualCommandKind.Toggle) { ResourceKey = "Action_WheelStart" },
-        new ManualCommandDescriptor("wheel.measureDiameter", ManualCommandKind.Pulse) { ResourceKey = "Action_MeasureWheelDiameter" },
 
-        // 各轴归位会让整台机床动起来，按两次。
+        // 砂轮启动会让机床动，先问一句；停止不问（界面最终稿 M3）——停止方向由界面决定要不要问。
+        new ManualCommandDescriptor("wheel.run", ManualCommandKind.Toggle, RequiresConfirmation: true) { ResourceKey = "Action_WheelStart" },
+        new ManualCommandDescriptor("wheel.measureDiameter", ManualCommandKind.Pulse, RequiresConfirmation: true)
+        {
+            ResourceKey = "Action_MeasureWheelDiameter",
+        },
+
+        // 各轴归位会让整台机床动起来，先问一句（竖键 7 / 8 确认）。
         new ManualCommandDescriptor("axes.home", ManualCommandKind.Pulse, RequiresConfirmation: true)
         {
             ResourceKey = "Action_AllAxesHome",
@@ -190,7 +203,7 @@ public static class ManualCommandCatalog
     /// </summary>
     public static IReadOnlyList<ManualCommandDescriptor> Cycles { get; } = new[]
     {
-        // 会切削，所以要按两下。
+        // 会切削，所以先问一句。
         new ManualCommandDescriptor("cycle.manualGrinding", ManualCommandKind.Pulse, RequiresConfirmation: true)
         {
             ResourceKey = "Action_ManualGrinding",
@@ -203,7 +216,7 @@ public static class ManualCommandCatalog
         {
             ResourceKey = "Action_WheelDressCycle",
         },
-        new ManualCommandDescriptor("cycle.rollAlign", ManualCommandKind.Pulse)
+        new ManualCommandDescriptor("cycle.rollAlign", ManualCommandKind.Pulse, RequiresConfirmation: true)
         {
             ResourceKey = "Action_RollAlign",
         },

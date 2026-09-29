@@ -68,13 +68,6 @@
                                                    FontFamily="{StaticResource Font.Mono}" FontSize="16"
                                                    VerticalAlignment="Center"
                                                    Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
-                                        <!-- 跳到此工序：只在还没轮到、且机床在跑时才出现，免得多一个按不动的按钮。 -->
-                                        <Button DockPanel.Dock="Right" Content="{loc:Loc Auto_JumpToStep}"
-                                                Style="{StaticResource SecondaryButton}"
-                                                Height="34" Padding="10,0" FontSize="{StaticResource Size.Caption}" Margin="8,0,0,0"
-                                                VerticalAlignment="Center"
-                                                Command="{Binding JumpCommand}" CommandParameter="{Binding}"
-                                                Visibility="{Binding CanJumpHere, Converter={StaticResource BoolToVisibility}}" />
                                         <TextBlock Text="{Binding PassText}" DockPanel.Dock="Right"
                                                    FontFamily="{StaticResource Font.Mono}" FontSize="16"
                                                    VerticalAlignment="Center"
@@ -99,25 +92,10 @@
 
                 <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
                     <DockPanel>
-                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="52">
+                        <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                             <DockPanel>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Content="{loc:Loc Curve_Error}" Command="{Binding SelectCurveCommand}" CommandParameter="{x:Static vm:CurveKind.Error}"
-                                            Style="{StaticResource SegmentButton}" Margin="0,0,10,0"
-                                            ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=Error}" />
-                                    <Button Content="{loc:Loc Curve_Reference}" Command="{Binding SelectCurveCommand}" CommandParameter="{x:Static vm:CurveKind.Reference}"
-                                            Style="{StaticResource SegmentButton}" Margin="0,0,10,0"
-                                            ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=Reference}" />
-                                    <Button Content="{loc:Loc Curve_Roundness}" Command="{Binding SelectCurveCommand}" CommandParameter="{x:Static vm:CurveKind.Roundness}"
-                                            Style="{StaticResource SegmentButton}" Margin="0,0,10,0"
-                                            ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=Roundness}" />
-                                    <Button Content="{loc:Loc Curve_Eccentricity}" Command="{Binding SelectCurveCommand}" CommandParameter="{x:Static vm:CurveKind.Eccentricity}"
-                                            Style="{StaticResource SegmentButton}" Margin="0,0,10,0"
-                                            ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=Eccentricity}" />
-                                    <Button Content="{loc:Loc Curve_GrindingCurrent}" Command="{Binding SelectCurveCommand}" CommandParameter="{x:Static vm:CurveKind.GrindingCurrent}"
-                                            Style="{StaticResource SegmentButton}"
-                                            ctl:ButtonStates.IsSelected="{Binding SelectedCurve, Converter={StaticResource EnumEquals}, ConverterParameter=GrindingCurrent}" />
-                                </StackPanel>
+                                <!-- 看哪条曲线由竖键 1–5 选（最终稿 D3），标题写当前这条。 -->
+                                <TextBlock Text="{Binding CurveTitle}" Style="{StaticResource Text.CardTitle}" FontWeight="Bold" />
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding ToleranceText}" Style="{StaticResource Text.Label}" Margin="0,0,20,0" />
                                     <TextBlock Text="{Binding RmsText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
@@ -168,7 +146,7 @@
 
                         <!--
                             改参数不是实时通道：新值写进那一道工序的 R 参数，NC 在下一道次读取。
-                            改过还没下发的格子标红，与 RGI 的做法一致。
+                            改过还没下发的格子标红，与 RGI 的做法一致；竖键 7 / 8 换成"放弃改动 / 下发改动"（最终稿 5.2）。
                         -->
                         <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}"
                                 BorderThickness="0,1,0,0" Padding="14,10"
@@ -176,12 +154,6 @@
                             <DockPanel>
                                 <TextBlock Text="{loc:Loc Auto_MatrixPendingHint}" Style="{StaticResource Text.Label}"
                                            VerticalAlignment="Center" TextWrapping="Wrap" />
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <Button Content="{loc:Loc Auto_MatrixDiscard}" Command="{Binding DiscardMatrixEditsCommand}"
-                                            Style="{StaticResource SecondaryButton}" Height="50" Width="110" Margin="10,0,10,0" />
-                                    <Button Content="{loc:Loc Auto_MatrixSave}" Command="{Binding SaveMatrixCommand}"
-                                            Style="{StaticResource PrimaryButton}" Height="50" Width="130" />
-                                </StackPanel>
                             </DockPanel>
                         </Border>
 
@@ -234,7 +206,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
-                                                <Border Width="190" Height="40" Padding="10,0"
+                                                <Border Width="190" Height="48" Padding="10,0"
                                                         Background="{StaticResource Brush.Surface}"
                                                         BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,0,1,1">
                                                     <DockPanel VerticalAlignment="Center">
@@ -252,7 +224,7 @@
                                                     </ItemsControl.ItemsPanel>
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <Border Width="116" Height="40"
+                                                            <Border Width="116" Height="48"
                                                                     BorderBrush="{StaticResource Brush.Divider}"
                                                                     BorderThickness="0,0,1,1"
                                                                     Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
@@ -260,15 +232,17 @@
                                                                     <!-- 改不动的格子：只读文本 -->
                                                                     <TextBlock Text="{Binding Text}" Margin="8,0"
                                                                                FontFamily="{StaticResource Font.Mono}"
-                                                                               FontSize="16" VerticalAlignment="Center"
+                                                                               FontSize="{StaticResource Size.DataRow}" VerticalAlignment="Center"
                                                                                HorizontalAlignment="Right"
                                                                                Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}"
                                                                                Visibility="{Binding CanEdit, Converter={StaticResource InverseBoolVisibility}}" />
 
                                                                     <!-- 改得动的格子：就地编辑，改过标红 -->
                                                                     <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                                                             ctl:TouchInput.TapToEdit="True"
+                                                                             ctl:TouchInput.Caption="{Binding ParameterKey}"
                                                                              FontFamily="{StaticResource Font.Mono}"
-                                                                             FontSize="16" BorderThickness="0"
+                                                                             FontSize="{StaticResource Size.DataRow}" BorderThickness="0"
                                                                              Background="Transparent" Padding="8,0"
                                                                              VerticalContentAlignment="Center"
                                                                              HorizontalContentAlignment="Right"
@@ -280,7 +254,7 @@
                                                                                 <Style.Triggers>
                                                                                     <DataTrigger Binding="{Binding IsModified}" Value="True">
                                                                                         <Setter Property="Foreground"
-                                                                                                Value="{StaticResource Brush.WarningFill}" />
+                                                                                                Value="{StaticResource Brush.PendingValue}" />
                                                                                         <Setter Property="FontWeight" Value="Bold" />
                                                                                     </DataTrigger>
                                                                                 </Style.Triggers>
@@ -382,7 +356,24 @@
                     </DockPanel>
                 </Border>
             </Grid>
-            <!-- 补偿子视图（修改稿 3②、5.5）：盖住本页根部内容，导航槽显示"返回 自动磨削"。 -->
+            <!-- 状态总览（最终稿 F3，横键"状态总览"）：全部机构到位灯，灯亮 = 到位，虚框 = 读不到。 -->
+            <Border x:Name="StatusOverviewPanel" Grid.ColumnSpan="3" Style="{StaticResource Card}"
+                    Visibility="{Binding IsStatusOverviewOpen, Converter={StaticResource BoolToVisibility}}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                        <TextBlock Text="{loc:Loc SubView_StatusOverview}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding StatusBand.Overview}" ItemTemplate="{StaticResource StatusLampTemplate}" Margin="16">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="4" VerticalAlignment="Top" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+
+            <!-- 补偿子视图（最终稿 5.3）：盖住本页根部内容，竖键 8"« 返回"。 -->
             <Border x:Name="CompensationPanel" Grid.ColumnSpan="3" Background="{StaticResource Brush.Background}">
                 <Border.Style>
                     <Style TargetType="Border">

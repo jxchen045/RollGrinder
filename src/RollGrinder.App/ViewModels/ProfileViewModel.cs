@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Contracts;
@@ -138,20 +139,25 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
     private double committedBodyLengthMm;
 
+    private readonly JobDraft draft;
+
     public ProfileViewModel(
         RollProfileTypeRegistry profileTypes,
         MachineDescription machine,
         HmiSettings settings,
         IRollProfileRepository library,
+        JobDraft draft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
-        INavigator navigator)
-        : base(alarms, localizer, navigator)
+        INavigator navigator,
+        ShellInteraction interaction)
+        : base(alarms, localizer, navigator, interaction)
     {
         this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.library = library ?? throw new ArgumentNullException(nameof(library));
+        this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
         NamePrompt = new NamePromptViewModel(localizer);
 
         this.geometry = RollGeometry.FromDiameter(machine.Workpiece.MinBodyLengthMm, machine.Workpiece.MinDiameterMm);
@@ -172,20 +178,23 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             new FunctionKeyViewModel("Vk_CopySegment", CopySegmentCommand, localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_ChangeType", new RelayCommand(OpenChangeTypeMenu), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_Interpolation", this.interpolationMenuCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_ClearSegments", ClearSegmentsCommand, localizer, FunctionKeyKind.Danger, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_ClearSegments", new RelayCommand(() => Ask("Profile_AskClear", ClearSegments)), localizer, requiresEditable: true),
         });
 
         // 有错误时"保存""另存为"变灰。
         this.saveKeyCommand = new AsyncRelayCommand(() => SaveAsync(CancellationToken.None), () => !HasErrors);
-        SetFunctionKeys(new[]
+        // 横键（最终稿 5.7）：辊形库 · 保存 · 另存为… · 空 · 点表导入 · 生成点列 · 导入对照线 · 校验。
+        // 辊形库在库区（找东西只有一个地方）；要选文件的三个键对话框在视图里，这里只负责触发与收结果。
+        SetFunctionKeys(new FunctionKeyViewModel?[]
         {
-            new FunctionKeyViewModel("Fn_Save", this.saveKeyCommand, localizer, FunctionKeyKind.Primary, requiresEditable: true),
-            new FunctionKeyViewModel("Fn_SaveAs", SaveAsCommand, localizer, requiresEditable: true),
-            // 两个键都要选文件，对话框在视图里；这里只负责触发与收结果。
+            FunctionKeyViewModel.ForAction("Fn_ProfileLibrary", localizer, () => Navigator.GoToArea(AreaKey.Library, "profiles")),
+            new FunctionKeyViewModel("Fn_Save", this.saveKeyCommand, localizer, requiresEditable: true) { PreconditionResourceKey = "Profile_HasErrors" },
+            new FunctionKeyViewModel("Fn_SaveAs", SaveAsCommand, localizer, requiresEditable: true) { PreconditionResourceKey = "Profile_HasErrors" },
+            null,
             new FunctionKeyViewModel("Fn_ImportPoints", RequestImportPointsCommand, localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_GeneratePoints", RequestGeneratePointsCommand, localizer),
+            new FunctionKeyViewModel("Fn_ImportReference", RequestImportReferenceCommand, localizer),
             new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
-            new FunctionKeyViewModel("Fn_ProfileLibrary", OpenLibraryCommand, localizer),
         });
 
         RecomputeComposite();
@@ -198,7 +207,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
     public override string TitleResourceKey => "Page_Profile";
 
-    public override string MenuHintResourceKey => "Menu_ProfileHint";
+    /// <summary>黄色帮助：段参数（最终稿 F9）。</summary>
+    public override string? HelpTopicKey => "Help_ProfileSegment";
+
 
     /// <summary>编辑页：自动循环挂着程序时落只读锁，免得改了辊形以为机床会跟着变。</summary>
     public override bool LocksDuringRun => true;
@@ -934,16 +945,6 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     [ObservableProperty]
     private string? profileId;
 
-    /// <summary>库里现有的辊形，"打开"面板上列的就是这些。</summary>
-    public ObservableCollection<RollProfileSummary> LibraryEntries { get; } = new();
-
-    /// <summary>"打开"面板开着没有。</summary>
-    [ObservableProperty]
-    private bool isLibraryOpen;
-
-    [ObservableProperty]
-    private RollProfileSummary? selectedLibraryEntry;
-
     partial void OnProfileNameChanged(string value)
     {
         MarkDirty();
@@ -1097,49 +1098,15 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
     }
 
-    /// <summary>打开辊形库面板并刷新列表。</summary>
-    [RelayCommand]
-    private async Task OpenLibraryAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            IReadOnlyList<RollProfileSummary> entries =
-                await this.library.ListAsync(LibraryListLimit, cancellationToken).ConfigureAwait(true);
-
-            LibraryEntries.Clear();
-            foreach (RollProfileSummary entry in entries)
-            {
-                LibraryEntries.Add(entry);
-            }
-
-            SelectedLibraryEntry = LibraryEntries.FirstOrDefault();
-            IsLibraryOpen = true;
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    [RelayCommand]
-    private void CloseLibrary() => IsLibraryOpen = false;
-
     /// <summary>
-    /// 把选中的那条辊形调进编辑器。旧的叠加辊形按原合成曲线转成一段点表（形状不变），
-    /// 并标成"改过"——存一次，库里这条就换成新格式。
+    /// 把库里一条辊形调进编辑器（库区"打开"、作业向导"打开辊形"都走这里）。
+    /// 旧的叠加辊形按原合成曲线转成一段点表（形状不变），并标成"改过"——存一次，库里这条就换成新格式。
     /// </summary>
-    [RelayCommand]
-    private async Task LoadFromLibraryAsync(CancellationToken cancellationToken)
+    private async Task OpenFromLibraryAsync(string profileId, CancellationToken cancellationToken)
     {
-        if (SelectedLibraryEntry is null)
-        {
-            return;
-        }
-
         try
         {
-            RollProfileDefinition? definition = await this.library
-                .GetAsync(SelectedLibraryEntry.ProfileId, cancellationToken).ConfigureAwait(true);
+            RollProfileDefinition? definition = await this.library.GetAsync(profileId, cancellationToken).ConfigureAwait(true);
             if (definition is null)
             {
                 return;
@@ -1158,42 +1125,12 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             ProfileName = definition.Name;
             IsDirty = legacy;
             StatusResourceKey = legacy ? "Profile_LegacyConverted" : string.Empty;
-            IsLibraryOpen = false;
         }
         catch (DataStoreException ex)
         {
             Alarms.RaiseException(ex);
         }
     }
-
-    /// <summary>从库里删掉选中的那条。已经用过它的作业不受影响——作业存的是快照。</summary>
-    [RelayCommand]
-    private async Task DeleteFromLibraryAsync(CancellationToken cancellationToken)
-    {
-        if (SelectedLibraryEntry is null)
-        {
-            return;
-        }
-
-        try
-        {
-            await this.library.DeleteAsync(SelectedLibraryEntry.ProfileId, cancellationToken).ConfigureAwait(true);
-            if (string.Equals(ProfileId, SelectedLibraryEntry.ProfileId, StringComparison.Ordinal))
-            {
-                // 编辑器里还开着它：曲线留着，但它已经不在库里了，再存就是新的一条。
-                ProfileId = null;
-            }
-
-            await OpenLibraryAsync(cancellationToken).ConfigureAwait(true);
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
-
-    /// <summary>"打开"面板一次列多少条。</summary>
-    private const int LibraryListLimit = 200;
 
     /// <summary>新条目的标识。精确到毫秒：只到秒的话，一秒内另存两次会悄悄盖掉前一条。</summary>
     private static string NewProfileId() =>
@@ -1208,11 +1145,42 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         base.DiscardChanges();
     }
 
-    /// <summary>切到本页时记住当前状态，"放弃修改"才有东西可回。</summary>
+    /// <summary>
+    /// 切到本页时记住当前状态，"放弃修改"才有东西可回。
+    /// 从库区或作业向导"打开"过来的，先把那一条调进来。
+    /// </summary>
     public override void OnActivated()
     {
         this.committedComposite = this.composite;
         this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+        if (this.draft.ProfileToOpen is { } id)
+        {
+            this.draft.ProfileToOpen = null;
+            if (id == JobDraft.NewEntry)
+            {
+                StartNewProfile();
+            }
+            else
+            {
+                _ = RunGuardedAsync(token => OpenFromLibraryAsync(id, token), CancellationToken.None);
+            }
+        }
+    }
+
+    /// <summary>库的"新建"：一张空辊形（一段圆柱、最小设计长度、没名字、还没进库）。</summary>
+    private void StartNewProfile()
+    {
+        SetBodyLength(this.machine.Workpiece.MinBodyLengthMm);
+        SetSymmetricSilently(false);
+        this.startZMm = 0.0;
+        ReplaceSegments(new[] { new SequentialSegment(ProfileTypeKeys.Cylindrical, this.geometry.BodyLengthMm, ParameterSet.Empty) });
+        RecomputeComposite();
+        Rebuild(1);
+        ProfileId = null;
+        ProfileName = string.Empty;
+        this.committedComposite = this.composite;
+        this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+        IsDirty = false;
     }
 
     /// <summary>把一条整辊形放进段表（对称关掉，两端各自独立）。</summary>

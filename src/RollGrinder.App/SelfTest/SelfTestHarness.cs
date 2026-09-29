@@ -16,6 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Navigation;
 using RollGrinder.App.ViewModels;
 using RollGrinder.App.Views;
@@ -278,11 +279,13 @@ internal sealed partial class SelfTestHarness
         return condition();
     }
 
-    /// <summary>按第 n 个功能键（0 起，等同 F(n+1)）。异步命令会等它跑完。</summary>
-    public async Task PressKeyAsync(int index, TimeSpan? timeout = null)
+    /// <summary>外壳的对话行与待确认（最终稿 D5）。</summary>
+    public ShellInteraction ShellInteraction => Services.GetRequiredService<ShellInteraction>();
+
+    /// <summary>按一个软键（与点屏同一条路：灰键不执行、在对话行说原因）。异步命令会等它跑完。</summary>
+    public async Task PressAsync(FunctionKeyViewModel key, TimeSpan? timeout = null)
     {
-        FunctionKeyViewModel key = Shell.FunctionKeys[index];
-        Shell.PressFunctionKey(index);
+        Shell.PressKeyCommand.Execute(key);
         if (key.Command is IAsyncRelayCommand asyncCommand)
         {
             await WaitUntilAsync(() => !asyncCommand.IsRunning, timeout ?? TimeSpan.FromSeconds(20)).ConfigureAwait(true);
@@ -291,10 +294,14 @@ internal sealed partial class SelfTestHarness
         await SettleAsync().ConfigureAwait(true);
     }
 
-    /// <summary>右侧竖向软键里某个键的位置；没有返回 -1。</summary>
+    /// <summary>按第 n 个横键（0 起，等同 F(n+1)），按当前页的全部功能组算（跨横键分页）。</summary>
+    public Task PressKeyAsync(int index, TimeSpan? timeout = null) =>
+        PressAsync(Shell.CurrentPage.FunctionKeys[index], timeout);
+
+    /// <summary>右侧竖键里某个键的位置；没有返回 -1。</summary>
     public int IndexOfVerticalKey(string labelResourceKey)
     {
-        var keys = Shell.CurrentPage.VerticalKeys;
+        IReadOnlyList<FunctionKeyViewModel> keys = Shell.VerticalKeys;
         for (int i = 0; i < keys.Count; i++)
         {
             if (keys[i].LabelResourceKey == labelResourceKey)
@@ -306,48 +313,44 @@ internal sealed partial class SelfTestHarness
         return -1;
     }
 
-    /// <summary>这个竖向软键现在按得下去吗（与外壳的判断一致）。</summary>
+    /// <summary>这个竖键现在按得下去吗（与外壳的判断一致）。</summary>
     public bool IsVerticalKeyUsable(int index)
     {
-        var keys = Shell.CurrentPage.VerticalKeys;
-        return index >= 0 && index < keys.Count && keys[index].IsEnabled && keys[index].Command.CanExecute(null);
+        IReadOnlyList<FunctionKeyViewModel> keys = Shell.VerticalKeys;
+        return index >= 0 && index < keys.Count && keys[index].IsUsable;
     }
 
-    /// <summary>按标签资源键找到竖向软键并按下（等同 Shift+F(n+1)）；找不到或是灰的就断言失败。</summary>
-    public async Task PressVerticalKeyAsync(StepContext context, string labelResourceKey)
+    /// <summary>按标签资源键找到竖键并按下（等同 Shift+F(n+1)）；找不到或是灰的就断言失败。异步命令会等它跑完。</summary>
+    public async Task PressVerticalKeyAsync(StepContext context, string labelResourceKey, TimeSpan? timeout = null)
     {
         int index = IndexOfVerticalKey(labelResourceKey);
         context.Check(index >= 0, "vertical key " + labelResourceKey + " is not on the bar");
-        context.Check(IsVerticalKeyUsable(index), "vertical key " + labelResourceKey + " is disabled");
-        Shell.PressVerticalKey(index);
-        await SettleAsync().ConfigureAwait(true);
+        context.Check(IsVerticalKeyUsable(index), "vertical key " + labelResourceKey + " is unavailable: " + Shell.VerticalKeys[index].ReasonText);
+        await PressAsync(Shell.VerticalKeys[index], timeout).ConfigureAwait(true);
     }
 
-    /// <summary>按标签资源键找到功能键并按下；找不到或是灰的就断言失败。</summary>
+    /// <summary>按标签资源键找到横键并按下；找不到或是灰的就断言失败。</summary>
     public async Task PressKeyAsync(StepContext context, string labelResourceKey, TimeSpan? timeout = null)
     {
         int index = IndexOfKey(labelResourceKey);
         context.Check(index >= 0, "function key " + labelResourceKey + " is not on the bar");
-        context.Check(IsKeyUsable(index), "function key " + labelResourceKey + " is disabled");
+        context.Check(IsKeyUsable(index), "function key " + labelResourceKey + " is unavailable: " + Shell.CurrentPage.FunctionKeys[index].ReasonText);
         await PressKeyAsync(index, timeout).ConfigureAwait(true);
     }
 
     /// <summary>
-    /// 这个键现在按得下去吗——和外壳按键时的判断一样：既没被锁（运行中只读、不可用），命令本身也可执行。
-    /// 界面上两者任一不满足，键都是灰的。只看 <see cref="FunctionKeyViewModel.IsEnabled"/> 会把
-    /// "命令不可执行"的灰键当成能按。
+    /// 这个横键现在按得下去吗——和外壳按键时的判断一样（锁、权限、急停、阻断原因、命令可执行）。
     /// </summary>
     public bool IsKeyUsable(int index) =>
-        index >= 0 && index < Shell.FunctionKeys.Count
-        && Shell.FunctionKeys[index].IsEnabled
-        && Shell.FunctionKeys[index].Command.CanExecute(null);
+        index >= 0 && index < Shell.CurrentPage.FunctionKeys.Count && Shell.CurrentPage.FunctionKeys[index].IsUsable;
 
-    /// <summary>功能条上某个键的位置；没有返回 -1。</summary>
+    /// <summary>当前页横键（功能组）里某个键的位置；没有返回 -1。</summary>
     public int IndexOfKey(string labelResourceKey)
     {
-        for (int i = 0; i < Shell.FunctionKeys.Count; i++)
+        var keys = Shell.CurrentPage.FunctionKeys;
+        for (int i = 0; i < keys.Count; i++)
         {
-            if (Shell.FunctionKeys[i].LabelResourceKey == labelResourceKey)
+            if (keys[i].LabelResourceKey == labelResourceKey)
             {
                 return i;
             }
@@ -356,11 +359,36 @@ internal sealed partial class SelfTestHarness
         return -1;
     }
 
-    /// <summary>导航槽（第 8 键）当前的标签资源键。</summary>
-    public string NavigationKeyLabel => Shell.FunctionKeys[PageViewModelBase.PageFunctionKeyCount].LabelResourceKey;
+    /// <summary>有没有一件等着确认的事（对话行在问、竖键 7 / 8 是取消 / 确认）。</summary>
+    public bool HasPendingConfirmation => ShellInteraction.Confirmations.Pending is not null;
 
-    /// <summary>按导航槽（F8）。</summary>
-    public Task PressNavigationKeyAsync() => PressKeyAsync(PageViewModelBase.PageFunctionKeyCount);
+    /// <summary>对话行正在问的那句话。</summary>
+    public string PendingQuestion => ShellInteraction.Confirmations.Pending?.Question ?? string.Empty;
+
+    /// <summary>按"✓ 确认"（竖键 8 / 回车）：断言确实有事在等确认，并等它做完。</summary>
+    public async Task ConfirmAsync(StepContext context)
+    {
+        context.Check(HasPendingConfirmation, "expected a pending confirmation");
+        await ShellInteraction.Confirmations.ConfirmAsync().ConfigureAwait(true);
+        await SettleAsync(300).ConfigureAwait(true);
+    }
+
+    /// <summary>按"✕ 取消"（竖键 7 / Esc）。</summary>
+    public async Task CancelConfirmationAsync()
+    {
+        ShellInteraction.Confirmations.Cancel();
+        await SettleAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>对话行现在写的字。</summary>
+    public string DialogLineText => ShellInteraction.DialogLine.Text;
+
+    /// <summary>"« 返回"（路径条左端 / Esc 的最后一级）。</summary>
+    public async Task BackAsync()
+    {
+        Shell.BackCommand.Execute(null);
+        await SettleAsync().ConfigureAwait(true);
+    }
 
     /// <summary>用执行异步命令的方式调一个页面命令，并等它跑完。</summary>
     public async Task RunAsync(System.Windows.Input.ICommand command, object? parameter = null)
@@ -378,12 +406,12 @@ internal sealed partial class SelfTestHarness
     }
 
     /// <summary>
-    /// 切到某个区域，走 Ctrl+n 的入口。遇到"未保存"确认框就放弃修改离开，并在备注里记一笔。
+    /// 切到某个画面（可带功能组），走导航器——和左栏、区域菜单、页面里的跳转同一条路。
+    /// 遇到"未保存"确认框就放弃修改离开，并在备注里记一笔。
     /// </summary>
-    public async Task GoToAsync(PageKey area, StepContext? context = null)
+    public async Task GoToAsync(PageKey page, StepContext? context = null, string? groupKey = null)
     {
-        AreaMenuItemViewModel item = Shell.AreaMenuItems.First(i => i.Key == area);
-        item.Command.Execute(null);
+        Services.GetRequiredService<INavigator>().GoTo(page, groupKey);
         await SettleAsync().ConfigureAwait(true);
 
         if (Shell.IsLeaveConfirmOpen)
@@ -396,6 +424,7 @@ internal sealed partial class SelfTestHarness
     /// <summary>把界面收拾回"页面根部、没有浮层"的干净状态，让下一个用例不受上一个影响。</summary>
     public async Task RecoverAsync()
     {
+        ShellInteraction.Confirmations.Cancel();
         if (Shell.IsLeaveConfirmOpen)
         {
             Shell.CancelLeaveCommand.Execute(null);
@@ -406,33 +435,23 @@ internal sealed partial class SelfTestHarness
             Shell.CloseUserAdminCommand.Execute(null);
         }
 
-        if (Shell.IsAreaMenuOpen)
+        Shell.IsUserMenuOpen = false;
+        Shell.Keypad.Close();
+        Shell.Help.Close();
+        Shell.CloseAreaMenuCommand.Execute(null);
+
+        // 起名字的框（另存为、复制、重命名）：按"取消"收掉，不存。
+        foreach (PageViewModelBase page in Services.GetServices<PageViewModelBase>())
         {
-            Shell.CloseAreaMenuCommand.Execute(null);
+            page.TryDismissPrompt();
         }
 
-        StepsViewModel steps = Page<StepsViewModel>();
-        if (steps.IsProgramLibraryOpen)
-        {
-            steps.CloseProgramLibraryCommand.Execute(null);
-        }
-
-        ProfileViewModel profile = Page<ProfileViewModel>();
-        if (profile.IsLibraryOpen)
-        {
-            profile.CloseLibraryCommand.Execute(null);
-        }
-
-        // 起名字的框（另存为、保存撞名）：按"取消"收掉，不存。
-        steps.TryDismissPrompt();
-        profile.TryDismissPrompt();
-
-        // 竖键停在子菜单里：收回根层，下一个用例从页面的编辑动作开始。
+        // 竖键停在子菜单里：收回根层，下一个用例从页面的根层开始。
         Shell.CurrentPage.ResetVerticalMenu();
 
         for (int i = 0; i < 3 && Shell.CurrentPage.ActiveSubViewKey is not null; i++)
         {
-            await PressNavigationKeyAsync().ConfigureAwait(true);
+            await BackAsync().ConfigureAwait(true);
         }
 
         await SettleAsync().ConfigureAwait(true);
@@ -677,7 +696,6 @@ internal sealed partial class SelfTestHarness
             }
 
             CheckPair(issues, label, "normal", button.Foreground, button.Background, Controls.ContrastMath.NormalText);
-            CheckPair(issues, label, "hover", button.Foreground, Controls.ButtonStates.GetHoverBackground(button), Controls.ContrastMath.NormalText);
             CheckPair(issues, label, "pressed", button.Foreground, Controls.ButtonStates.GetPressedBackground(button), Controls.ContrastMath.NormalText);
         }
 
@@ -818,31 +836,10 @@ internal sealed partial class SelfTestHarness
     {
         try
         {
-            if (Window.Content is not FrameworkElement root || root.ActualWidth < 1 || root.ActualHeight < 1)
-            {
-                return null;
-            }
-
-            var bitmap = new RenderTargetBitmap(
-                (int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32);
-
-            // 先铺窗口底色再画内容。RenderTargetBitmap 只画元素本身，窗口背景不在里面，
-            // 透明的缝隙存成 JPEG 会变成黑块——第二轮截图里那些"黑条"就是这么来的，屏幕上并没有。
-            var backdrop = new DrawingVisual();
-            using (DrawingContext dc = backdrop.RenderOpen())
-            {
-                dc.DrawRectangle(Window.Background ?? Brushes.White, null, new Rect(0, 0, bitmap.Width, bitmap.Height));
-            }
-
-            bitmap.Render(backdrop);
-            bitmap.Render(root);
-
-            var encoder = new JpegBitmapEncoder { QualityLevel = 75 };
-            encoder.Frames.Add(BitmapFrame.Create(bitmap));
             string fileName = Sanitize(name) + ".jpg";
-            using FileStream stream = File.Create(Path.Combine(this.screenshotDirectory, fileName));
-            encoder.Save(stream);
-            return "screenshots/" + fileName;
+            return Controls.WindowCapture.Save(Window, Path.Combine(this.screenshotDirectory, fileName))
+                ? "screenshots/" + fileName
+                : null;
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException)
         {

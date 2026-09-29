@@ -10,11 +10,10 @@ using Xunit;
 namespace RollGrinder.Integration.Tests;
 
 /// <summary>
-/// 每一种按钮样式在常态、悬停、按下、禁用四种状态下字都看得清。
+/// 每一种按钮样式在常态、按下、禁用三种状态下字都看得清（触摸屏没有悬停，界面最终稿去掉了悬停态）。
 ///
-/// 曾经共用模板把所有按钮悬停改浅灰、按下改浅蓝：白字的主按钮 / 启动 / 危险 / 导航槽一悬停，
-/// 对比度只剩约 1.1:1。这里把 Controls.xaml 里每个按钮样式沿 BasedOn 链展开，
-/// 颜色经 Palette.Light.xaml 解析成色值，逐对核算。
+/// 曾经共用模板把所有按钮按下改浅蓝：白字的主按钮 / 启动 / 危险一按，对比度只剩约 1.1:1。
+/// 这里把 Controls.xaml 里每个按钮样式沿 BasedOn 链展开，颜色经 Palette.Light.xaml 解析成色值，逐对核算。
 /// </summary>
 public sealed class ButtonContrastTests
 {
@@ -40,11 +39,12 @@ public sealed class ButtonContrastTests
 
             string fg = Color("Foreground");
             Check(name, "normal", fg, Color("Background"), ContrastMath.NormalText, problems);
-            Check(name, "hover", fg, Color("ctl:ButtonStates.HoverBackground"), ContrastMath.NormalText, problems);
             Check(name, "pressed", fg, Color("ctl:ButtonStates.PressedBackground"), ContrastMath.NormalText, problems);
         }
 
-        keyed.Should().ContainKeys("SecondaryButton", "PrimaryButton", "StartButton", "DangerButton", "NavigationButton");
+        keyed.Should().ContainKeys(
+            "SecondaryButton", "PrimaryButton", "StartButton", "DangerButton", "NavigationButton",
+            "SoftKeyButton", "CancelKeyButton", "ConfirmKeyButton", "HelpKeyButton", "AreaMenuKeyButton", "AreaMenuKeyCurrentButton");
         checkedVariants.Should().BeGreaterThan(keyed.Count, "样式触发器（选中、保持型动作点亮、待确认）的变体也要核算");
         problems.Should().BeEmpty();
     }
@@ -59,29 +59,29 @@ public sealed class ButtonContrastTests
     }
 
     [Fact]
-    public void Alarm_banner_text_is_readable_on_every_severity_fill()
+    public void Title_row_alarm_and_emergency_stop_are_readable()
     {
-        // 报警条底色随级别变（信息 / 警告 / 错误，见 SeverityToBrushConverter），
-        // 上面每一行字在三种底色上都要够 4.5:1——第四轮现场自检查出报警号浅蓝字在警告底上只有 3.9:1。
+        // 界面最终稿 4.2：报警号与文字红字写在标题行上；急停时整条标题行变红、白字"急停"。
         IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
-        XDocument shell = XDocument.Load(Path.Combine(RepositoryLayout.Root, "src", "RollGrinder.App", "Views", "ShellWindow.xaml"));
-        XElement banner = shell.Descendants(Wpf + "Border")
-            .Single(b => ((string?)b.Attribute("Background"))?.Contains("SeverityToBrush", StringComparison.Ordinal) == true);
-        string[] textBrushes = banner.Descendants(Wpf + "TextBlock")
-            .Select(t => (string?)t.Attribute("Foreground") ?? string.Empty)
-            .Select(f => f["{StaticResource ".Length..^1].Trim())
-            .Distinct()
-            .ToArray();
+        ContrastMath.Ratio(brushes["Brush.Alarm"], brushes["Brush.TitleRow"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
+        ContrastMath.Ratio(brushes["Brush.OnAccent"], brushes["Brush.Alarm"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
 
-        textBrushes.Should().NotBeEmpty();
-        foreach (string text in textBrushes)
-        {
-            foreach (string fill in new[] { "Brush.AccentDark", "Brush.WarningFill", "Brush.CurrentStep" })
-            {
-                ContrastMath.Ratio(brushes[text], brushes[fill]).Should().BeGreaterThanOrEqualTo(
-                    ContrastMath.NormalText, $"{text} on {fill}");
-            }
-        }
+        XDocument shell = XDocument.Load(Path.Combine(RepositoryLayout.Root, "src", "RollGrinder.App", "Views", "ShellWindow.xaml"));
+        XElement alarm = shell.Descendants(Wpf + "Button").Single(b => (string?)b.Attribute(X + "Name") == "AlarmButton");
+        alarm.Descendants(Wpf + "TextBlock")
+            .Select(t => (string?)t.Attribute("Foreground"))
+            .Should().OnlyContain(f => f == "{StaticResource Brush.Alarm}", "alarm text on the title row is red");
+    }
+
+    [Fact]
+    public void Soft_key_states_are_readable()
+    {
+        // 选中（青底 Active）、待写入（红字）、焦点格（FocusField）都要看得清。
+        IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
+        ContrastMath.Ratio(brushes["Brush.OnAccent"], brushes["Brush.Active"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
+        ContrastMath.Ratio(brushes["Brush.PendingValue"], brushes["Brush.Surface"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
+        ContrastMath.Ratio(brushes["Brush.TextPrimary"], brushes["Brush.FocusField"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
+        ContrastMath.Ratio(brushes["Brush.OnAccent"], brushes["Brush.ChannelRow"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
     }
 
     [Fact]

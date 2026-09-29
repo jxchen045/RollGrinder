@@ -9,14 +9,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Composition;
 using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Data;
+using RollGrinder.Data.Model;
 using RollGrinder.Nc;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Audit;
 using RollGrinder.Services.Calibration;
 using RollGrinder.Services.Diagnostics;
 using RollGrinder.Services.Monitoring;
@@ -64,12 +67,39 @@ public sealed partial class DiagnosticRowViewModel : ObservableObject
 /// <summary>机床能力一项：按 machine.json 的选件显示已配置/未配置。</summary>
 public sealed record CapabilityRow(string Label, string StateText, bool IsConfigured);
 
+/// <summary>改动记录里的一行（诊断 › 改动记录）。</summary>
+public sealed record ChangeLogRowViewModel(string TimeText, string ByText, string AreaText, string Item, string OldText, string NewText);
+
 /// <summary>
-/// 诊断。版面见 docs/design/B-Diag-诊断.html。
-/// 这一页只如实显示：拿不到的量写"未配置"，不做假。
+/// 诊断区（界面最终稿 5.12）：横键 报警 · 变量监视 · 改动记录 · 运行日志 · 空 · 连接与接口 · 备份与恢复。
+/// 这一区只如实显示：拿不到的量写"未配置"，不做假。标题行的报警点一下就到"报警"组。
+/// 机床配置与标签映射的编辑在调试区（<see cref="CommissioningViewModel"/>）。
 /// </summary>
 public sealed partial class DiagnosticsViewModel : PageViewModelBase
 {
+    /// <summary>横键"报警"（标题行报警点进来的就是它）。</summary>
+    public const string AlarmsGroup = "alarms";
+
+    /// <summary>横键"变量监视"。</summary>
+    public const string TagMonitorGroup = "tagMonitor";
+
+    /// <summary>横键"改动记录"（补偿页竖键"改动记录"也打开它）。</summary>
+    public const string AuditGroup = "audit";
+
+    /// <summary>横键"运行日志"。</summary>
+    public const string RunLogGroup = "runLog";
+
+    /// <summary>横键"连接与接口"。</summary>
+    public const string ConnectionGroup = "connection";
+
+    /// <summary>横键"备份与恢复"。</summary>
+    public const string BackupGroup = "backup";
+
+    private readonly Dictionary<string, FunctionKeyViewModel> groupKeys = new(StringComparer.Ordinal);
+    private readonly IReadOnlyList<FunctionKeyViewModel?> alarmKeys;
+    private readonly IReadOnlyList<FunctionKeyViewModel?> reloadKeys;
+    private readonly IReadOnlyList<FunctionKeyViewModel?> backupKeys;
+    private readonly IChangeLog changeLog;
     private readonly IMachineMonitor monitor;
     private readonly MachineDescription machine;
     private readonly ITagMap tagMap;
@@ -103,13 +133,11 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         IStringLocalizer localizer,
         ICalibrationService calibration,
         IDiagnosticsExportService exports,
-        ConfigDocumentStore configStore,
-        RollGrinder.Services.Audit.IChangeLog changeLog,
-        IMachineGateway gateway,
-        RollGrinder.Services.Session.IUserSession userSession,
+        IChangeLog changeLog,
         IAlarmSink alarms,
-        INavigator navigator)
-        : base(alarms, localizer, navigator)
+        INavigator navigator,
+        ShellInteraction interaction)
+        : base(alarms, localizer, navigator, interaction)
     {
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
@@ -119,7 +147,7 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         this.options = options ?? throw new ArgumentNullException(nameof(options));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.exports = exports ?? throw new ArgumentNullException(nameof(exports));
-        InitializeConfigEditor(configStore, changeLog, gateway, userSession);
+        this.changeLog = changeLog ?? throw new ArgumentNullException(nameof(changeLog));
 
         this.connection = new DiagnosticRowViewModel("Diag_Connection", localizer);
         this.snapshotAge = new DiagnosticRowViewModel("Diag_SnapshotAge", localizer);
@@ -150,52 +178,130 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
                 localizer[option.Value ? "Common_Configured" : "Common_NotConfigured"],
                 option.Value)));
 
-        SetFunctionKeys(new[]
+        foreach ((string group, string label) in new[]
         {
-            // 导出诊断快照要挑一个文件路径，对话框在视图里；这个键只负责触发。
-            new FunctionKeyViewModel("Fn_ExportSnapshot", RequestSnapshotExportCommand, localizer, FunctionKeyKind.Primary),
-            new FunctionKeyViewModel("Fn_RunLog", OpenRunLogCommand, localizer),
-            // 二级子视图：打开后导航槽变成"返回 诊断"。
-            FunctionKeyViewModel.ForAction("Fn_TagMonitor", localizer, () => Navigator.OpenSubView(TagMonitorSubView)),
-            new FunctionKeyViewModel("Fn_MachineConfig", OpenMachineConfigCommand, localizer),
-            new FunctionKeyViewModel("Fn_TagMapping", OpenTagMappingCommand, localizer),
-            new FunctionKeyViewModel("Fn_AuditLog", OpenAuditLogCommand, localizer),
-            new FunctionKeyViewModel("Fn_BackupRestore", RequestBackupCommand, localizer),
+            (AlarmsGroup, "Fn_Alarms"), (TagMonitorGroup, "Fn_TagMonitor"), (AuditGroup, "Fn_AuditLog"), (RunLogGroup, "Fn_RunLog"),
+            (ConnectionGroup, "Fn_Connection"), (BackupGroup, "Fn_BackupRestore"),
+        })
+        {
+            string target = group;
+            this.groupKeys[group] = FunctionKeyViewModel.ForAction(label, localizer, () => ShowGroup(target));
+        }
+
+        SetFunctionKeys(new FunctionKeyViewModel?[]
+        {
+            this.groupKeys[AlarmsGroup], this.groupKeys[TagMonitorGroup], this.groupKeys[AuditGroup], this.groupKeys[RunLogGroup],
+            null, this.groupKeys[ConnectionGroup], this.groupKeys[BackupGroup],
         });
+
+        this.alarmKeys = new FunctionKeyViewModel?[]
+        {
+            new FunctionKeyViewModel("Vk_ClearHmiAlarms", new RelayCommand(AskClearHmiAlarms), localizer, FunctionKeyKind.Danger),
+            // 导出故障快照要挑一个文件路径，对话框在视图里；这个键只负责触发。
+            new FunctionKeyViewModel("Vk_ExportSnapshot", RequestSnapshotExportCommand, localizer),
+        };
+        this.reloadKeys = new FunctionKeyViewModel?[]
+        {
+            new FunctionKeyViewModel("Vk_Reload", new AsyncRelayCommand(() => ReloadGroupAsync(CancellationToken.None)), localizer),
+        };
+        this.backupKeys = new FunctionKeyViewModel?[]
+        {
+            new FunctionKeyViewModel("Vk_Backup", RequestBackupCommand, localizer, FunctionKeyKind.Primary),
+            new FunctionKeyViewModel("Vk_ExportSnapshot", RequestSnapshotExportCommand, localizer),
+        };
+
+        ShowGroup(AlarmsGroup);
+    }
+
+    /// <summary>当前是哪一组。</summary>
+    [ObservableProperty]
+    private string group = AlarmsGroup;
+
+    public override bool ShowGroup(string groupKey)
+    {
+        if (!this.groupKeys.TryGetValue(groupKey, out FunctionKeyViewModel? key))
+        {
+            return false;
+        }
+
+        Group = groupKey;
+        MarkActiveFunctionKey(key);
+        SetVerticalKeys(groupKey switch
+        {
+            AlarmsGroup => this.alarmKeys,
+            AuditGroup or RunLogGroup => this.reloadKeys,
+            BackupGroup => this.backupKeys,
+            _ => Array.Empty<FunctionKeyViewModel?>(),
+        });
+        _ = ReloadGroupAsync(CancellationToken.None);
+        return true;
+    }
+
+    private Task ReloadGroupAsync(CancellationToken cancellationToken) => Group switch
+    {
+        AuditGroup => RunGuardedAsync(LoadChangeLogAsync, cancellationToken),
+        RunLogGroup => LoadRunLogAsync(cancellationToken),
+        _ => Task.CompletedTask,
+    };
+
+    /// <summary>选中的报警：右边写详情与消除方法。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AlarmResetText), nameof(HasSelectedAlarm))]
+    private AlarmRowViewModel? selectedAlarm;
+
+    public bool HasSelectedAlarm => SelectedAlarm is not null;
+
+    /// <summary>选中报警怎么消：PLC 报警按按钮板"故障复位"，NC 报警按"复位"，上位机报警在这里清除。</summary>
+    public string AlarmResetText => SelectedAlarm is null ? string.Empty : Localizer[ResetResourceKey(SelectedAlarm.Code)];
+
+    /// <summary>按报警号认来源、决定怎么消（纯函数，单测覆盖）。</summary>
+    public static string ResetResourceKey(int code) => code switch
+    {
+        >= AlarmCodes.RangeStart and <= AlarmCodes.RangeEnd => "Alarm_ResetHmi",
+        >= 500000 => "Alarm_ResetPlc",
+        AlarmCodes.Unspecified => "Alarm_ResetHmi",
+        _ => "Alarm_ResetNc",
+    };
+
+    /// <summary>竖键"清除上位机报警…"：只清上位机自己的；机床报警由机床消，这里清掉它下个周期又会回来。</summary>
+    private void AskClearHmiAlarms() => Ask("Diag_AskClearAlarms", () =>
+    {
+        this.alarmLog.Clear();
+        this.lastShownAlarmId = -1;
+        RefreshEvents();
+        Say("Diag_AlarmsCleared");
+    });
+
+    /// <summary>改动记录（新的在前）。</summary>
+    public ObservableCollection<ChangeLogRowViewModel> ChangeLogRows { get; } = new();
+
+    /// <summary>改动记录（补偿设定、机床配置、标签映射、标定）。</summary>
+    private async Task LoadChangeLogAsync(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<ChangeLogEntry> entries = await this.changeLog.ListAsync(200, cancellationToken).ConfigureAwait(true);
+        ChangeLogRows.Clear();
+        foreach (ChangeLogEntry entry in entries)
+        {
+            ChangeLogRows.Add(new ChangeLogRowViewModel(
+                entry.ChangedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                entry.ChangedBy,
+                Localizer["ChangeArea_" + entry.Area],
+                entry.Item,
+                entry.OldValue ?? "--",
+                entry.NewValue ?? "--"));
+        }
     }
 
     public override PageKey Key => PageKey.Diagnostics;
 
     public override string TitleResourceKey => "Page_Diagnostics";
 
-    public override string MenuHintResourceKey => "Menu_DiagnosticsHint";
+    /// <summary>离线也开放：连不上机床时，正是要到这里看报警、连接、运行日志和做备份的时候。</summary>
+    public override bool WorksOffline => true;
 
-    /// <summary>变量监视子视图的资源键，同时用作面包屑文案。</summary>
-    public const string TagMonitorSubView = "SubView_TagMonitor";
-
-    /// <summary>机床配置子视图。</summary>
-    public const string MachineConfigSubView = "SubView_MachineConfig";
-
-    /// <summary>运行日志子视图：与机床配置共用检视面板，但面包屑要说清楚看的是什么。</summary>
-    public const string RunLogSubView = "SubView_RunLog";
-
-    /// <summary>变量映射子视图。</summary>
-    public const string TagMappingSubView = "SubView_TagMapping";
-
-    /// <summary>标定审计子视图。</summary>
-    public const string AuditLogSubView = "SubView_AuditLog";
-
-    /// <summary>
-    /// 只读的文本视图：机床配置、变量映射、运行日志都摆在这里。
-    ///
-    /// 只显示不编辑：这三样东西改错了机床就动不了，改它们得开文件——
-    /// 界面上能看见是为了现场能对着电话把值念给人听，不是为了在这里改。
-    /// </summary>
+    /// <summary>运行日志的末尾几百行。</summary>
     [ObservableProperty]
     private string inspectorText = string.Empty;
-
-    /// <summary>标定审计的行：每一项最后一次是谁改的。</summary>
-    public ObservableCollection<LabelValueViewModel> AuditRows { get; } = new();
 
     /// <summary>界面要导出诊断快照时触发；路径由视图选。</summary>
     public event EventHandler? SnapshotExportRequested;
@@ -226,44 +332,14 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
     private void RequestBackup() => BackupRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>运行日志：日志目录里最新的那一个文件。</summary>
-    [RelayCommand]
-    private Task OpenRunLogAsync(CancellationToken cancellationToken) =>
+    private Task LoadRunLogAsync(CancellationToken cancellationToken) =>
         RunGuardedAsync(async token =>
         {
             string? newest = NewestLogFile(this.options.LogDirectory);
-            if (newest is null)
-            {
-                InspectorText = Localizer["Diag_NoRunLog"];
-            }
-            else
-            {
+            InspectorText = newest is null
+                ? Localizer["Diag_NoRunLog"]
                 // 只看末尾：日志一天能长到几十兆，全读进来界面就卡住了。
-                InspectorText = await TailAsync(newest, RunLogTailLines, token).ConfigureAwait(true);
-            }
-
-            Navigator.OpenSubView(RunLogSubView);
-        }, cancellationToken);
-
-    /// <summary>标定审计：每一项最后一次是谁在什么时候改的。</summary>
-    [RelayCommand]
-    private Task OpenAuditLogAsync(CancellationToken cancellationToken) =>
-        RunGuardedAsync(async token =>
-        {
-            AuditRows.Clear();
-            foreach (CalibrationAudit entry in await this.calibration
-                .LoadAuditAsync(token).ConfigureAwait(true))
-            {
-                AuditRows.Add(new LabelValueViewModel(
-                    "Parameter_" + entry.ParameterKey,
-                    Localizer.Format(
-                        "Diag_AuditEntryFormat",
-                        entry.ChangedBy,
-                        entry.ChangedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)),
-                    Localizer));
-            }
-
-            await LoadChangeLogAsync(token).ConfigureAwait(true);
-            Navigator.OpenSubView(AuditLogSubView);
+                : await TailAsync(newest, RunLogTailLines, token).ConfigureAwait(true);
         }, cancellationToken);
 
     /// <summary>运行日志一次看多少行。</summary>
@@ -320,7 +396,7 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
 
     public ObservableCollection<AlarmRowViewModel> Events { get; } = new();
 
-    /// <summary>变量监视子视图的行。只在子视图打开时刷新。</summary>
+    /// <summary>变量监视的行。只在这一组开着时刷新。</summary>
     public ObservableCollection<TagMonitorRowViewModel> TagMonitorRows { get; } = new();
 
     /// <summary>tagmap 缺失的必需变量；为空表示契约校验通过。</summary>
@@ -400,13 +476,9 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
 
         RefreshEvents();
 
-        if (ActiveSubViewKey == TagMonitorSubView)
+        if (Group == TagMonitorGroup)
         {
             RefreshTagMonitor(snapshot);
-        }
-        else if (ActiveSubViewKey == TagMappingSubView)
-        {
-            RefreshTagValues(snapshot);
         }
     }
 
@@ -439,6 +511,7 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         if (entries.Count == 0)
         {
             Events.Clear();
+            SelectedAlarm = null;
             this.lastShownAlarmId = -1;
             return;
         }
@@ -449,11 +522,14 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         }
 
         this.lastShownAlarmId = entries[0].Id;
+        long? keep = SelectedAlarm?.Id;
         Events.Clear();
         foreach (AlarmEntry entry in entries)
         {
             Events.Add(new AlarmRowViewModel(entry, Localizer));
         }
+
+        SelectedAlarm = Events.FirstOrDefault(row => row.Id == keep) ?? Events.FirstOrDefault();
     }
 
     private string OptionLabel(string optionKey)

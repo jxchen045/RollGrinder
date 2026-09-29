@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Services.Alarms;
@@ -19,24 +20,32 @@ namespace RollGrinder.App.ViewModels;
 public sealed record ContextItem(string LabelResourceKey, string Value, bool IsMonospaced = false);
 
 /// <summary>
-/// 一个一级页面。外壳负责画顶栏、页面菜单与底部功能条，
-/// 页面负责给出标题、上下文与前 7 个功能键——第 8 个是导航槽，页面碰不到。
+/// 一个画面（最终稿 4.1、4.4）。外壳负责画左栏、标题行、路径条、对话行与两排软键；
+/// 画面给出标题、上下文、横键（功能组，一页 8 个，多了分页）与竖键（这一组里的操作）。
+///
+/// 竖键第 7 / 8 格的规则由这里统一执行：有待确认的事时是"✕ 取消 / ✓ 确认"（全局，<see cref="ShellInteraction"/>），
+/// 否则画面有待提交的改动时是它给的一对（<see cref="SetCommitPair"/>），否则是菜单自己的（返回、翻页或普通键）。
+/// 按不了的键留在原位变灰，原因写进 <see cref="FunctionKeyViewModel.DisabledReason"/>，外壳在对话行说出来。
 /// </summary>
 public abstract partial class PageViewModelBase : ViewModelBase
 {
-    /// <summary>页面自己能占的功能键数量；第 8 个恒为导航槽。</summary>
-    public const int PageFunctionKeyCount = 7;
+    /// <summary>横键一页的格数。</summary>
+    public const int HorizontalKeyCount = SoftKeyRow<FunctionKeyViewModel>.SlotCount;
 
     /// <summary>右侧竖向软键的格数。</summary>
     public const int VerticalKeyCount = SoftKeyMenu<FunctionKeyViewModel>.SlotCount;
 
     private readonly SoftKeyMenu<FunctionKeyViewModel> verticalMenu = new();
+    private FunctionKeyViewModel? commitCancel;
+    private FunctionKeyViewModel? commitConfirm;
 
-    protected PageViewModelBase(IAlarmSink alarms, IStringLocalizer localizer, INavigator navigator)
+    protected PageViewModelBase(IAlarmSink alarms, IStringLocalizer localizer, INavigator navigator, ShellInteraction interaction)
         : base(alarms)
     {
         Localizer = localizer ?? throw new ArgumentNullException(nameof(localizer));
         Navigator = navigator ?? throw new ArgumentNullException(nameof(navigator));
+        Interaction = interaction ?? throw new ArgumentNullException(nameof(interaction));
+        Interaction.Confirmations.Changed += (_, _) => RefreshVerticalKeys();
         RefreshVerticalKeys();
     }
 
@@ -48,28 +57,31 @@ public abstract partial class PageViewModelBase : ViewModelBase
 
     protected INavigator Navigator { get; }
 
-    /// <summary>页面标识。</summary>
+    /// <summary>确认与对话行。</summary>
+    protected ShellInteraction Interaction { get; }
+
+    /// <summary>画面标识。</summary>
     public abstract PageKey Key { get; }
 
-    /// <summary>页面标题的资源键。</summary>
+    /// <summary>画面所在的区域。</summary>
+    public AreaKey Area => AreaCatalog.AreaOf(Key);
+
+    /// <summary>画面标题的资源键。</summary>
     public abstract string TitleResourceKey { get; }
 
-    /// <summary>页面标题。</summary>
+    /// <summary>画面标题。</summary>
     public string Title => Localizer[TitleResourceKey];
 
-    /// <summary>页面菜单里这一页的悬停说明：一句话说明这页有什么，避免靠猜。</summary>
-    public virtual string MenuHintResourceKey => TitleResourceKey;
+    /// <summary>黄色帮助（最终稿 F9）里本画面的条目资源键前缀；null 表示本画面没有专门的帮助，用目录。</summary>
+    public virtual string? HelpTopicKey => null;
 
-    /// <summary>顶栏上显示的上下文。</summary>
+    /// <summary>路径条 / 窗口标题上的上下文（例如"轧辊 R-2026-001"）。</summary>
     public ObservableCollection<ContextItem> ContextItems { get; } = new();
 
-    /// <summary>本页的功能键，最多 7 个。</summary>
+    /// <summary>本画面的横键（功能组）。空位用 <see cref="FunctionKeyViewModel.Empty"/>；多于 8 个外壳分页。</summary>
     public ObservableCollection<FunctionKeyViewModel> FunctionKeys { get; } = new();
 
-    /// <summary>
-    /// 右侧 8 个竖向软键（修改稿原则 1）：本页的编辑动作，带"▸"的打开一层子菜单，子菜单第 8 格是"返回"。
-    /// 恒为 8 格，外壳照着画，空位是灰的。键盘上是 Shift+F1…F8。
-    /// </summary>
+    /// <summary>右侧 8 个竖向软键，恒为 8 格，外壳照着画。键盘上是 Shift+F1…F8。</summary>
     public ObservableCollection<FunctionKeyViewModel> VerticalKeys { get; } = new();
 
     /// <summary>当前子菜单的标题（例如"插入段"）；在根层为空。</summary>
@@ -83,7 +95,6 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// 没有机床时这一页还用不用得了。
     ///
     /// 默认 false——一页要在离线模式下开放，得有人确认它真的不碰机床。
-    /// 编程、辊形、记录、设置是 true：它们只和数据库与配置打交道。
     /// </summary>
     public virtual bool WorksOffline => false;
 
@@ -104,10 +115,14 @@ public abstract partial class PageViewModelBase : ViewModelBase
     [NotifyPropertyChangedFor(nameof(RoleLockText))]
     private bool isRoleLocked;
 
+    /// <summary>急停中：会让机床动的键一律变灰（最终稿 4.7）。</summary>
+    [ObservableProperty]
+    private bool isEmergencyStopped;
+
     /// <summary>改本页的内容要哪项权限；null 表示本页没有要按权限锁的编辑内容。</summary>
     public virtual Permission? EditPermission => null;
 
-    /// <summary>顶栏"只读"标记上的字：要哪一级才能改。</summary>
+    /// <summary>路径条上的"只读"标记：要哪一级才能改。</summary>
     public string RoleLockText => EditPermission is { } permission
         ? Localizer.Format("Shell_ReadOnlyRoleFormat", Localizer["Role_" + PermissionPolicy.MinimumRole(permission)])
         : string.Empty;
@@ -118,7 +133,7 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// <summary>当前登录有没有这项权限。</summary>
     public bool Can(Permission permission) => this.grants(permission);
 
-    /// <summary>当前打开的二级子视图资源键；null 表示停在本页根部。</summary>
+    /// <summary>当前打开的子功能资源键；null 表示停在画面根部。</summary>
     [ObservableProperty]
     private string? activeSubViewKey;
 
@@ -132,13 +147,35 @@ public abstract partial class PageViewModelBase : ViewModelBase
     public virtual void DiscardChanges() => IsDirty = false;
 
     /// <summary>
-    /// 本页有没有开着一个要先答完的框（例如另存为的命名框）。开着的时候外壳不响应功能键，
+    /// 本页有没有开着一个要先答完的框（例如另存为的命名框）。开着的时候外壳不响应横键，
     /// 免得框还没答完又按出别的动作。
     /// </summary>
     public virtual bool HasModalPrompt => false;
 
-    /// <summary>Esc：本页有开着的框就收掉并返回 true；没有返回 false，外壳再按"退一级"处理。</summary>
+    /// <summary>Esc：本页有开着的框就收掉并返回 true；没有返回 false，外壳再按"返回"处理。</summary>
     public virtual bool TryDismissPrompt() => false;
+
+    /// <summary>
+    /// 打开一个功能组（对应本画面的一个横键，例如参数区的"砂轮"）。左栏的"砂轮"入口用它。
+    /// 不认识的组返回 false。
+    /// </summary>
+    public virtual bool ShowGroup(string groupKey) => false;
+
+    /// <summary>功能键块"↶ 撤销"：本画面有没有可撤销的改动。</summary>
+    public virtual bool CanUndo => false;
+
+    /// <summary>功能键块"↷ 重做"。</summary>
+    public virtual bool CanRedo => false;
+
+    /// <summary>撤销一步。</summary>
+    public virtual void Undo()
+    {
+    }
+
+    /// <summary>重做一步。</summary>
+    public virtual void Redo()
+    {
+    }
 
     /// <summary>切到本页时调用。</summary>
     public virtual void OnActivated()
@@ -172,41 +209,65 @@ public abstract partial class PageViewModelBase : ViewModelBase
         OnAccessChanged();
     }
 
+    /// <summary>外壳按急停状态推进来。</summary>
+    public void ApplyEmergencyStop(bool stopped) => IsEmergencyStopped = stopped;
+
     /// <summary>权限变了。页面里有按权限显示的东西（例如只有制造商能改的格子）就在这里刷新。</summary>
     protected virtual void OnAccessChanged()
     {
     }
 
-    /// <summary>登记功能键。多于 7 个直接抛——设计稿就是 8 格，超了应该在编译期之外立刻暴露。</summary>
-    protected void SetFunctionKeys(IEnumerable<FunctionKeyViewModel> keys)
+    /// <summary>登记横键（功能组）。null 是占位空键（最终稿里"空"的那格）。</summary>
+    protected void SetFunctionKeys(IEnumerable<FunctionKeyViewModel?> keys)
     {
         ArgumentNullException.ThrowIfNull(keys);
         FunctionKeys.Clear();
-        foreach (FunctionKeyViewModel key in keys)
+        foreach (FunctionKeyViewModel? key in keys)
         {
-            FunctionKeys.Add(key);
-        }
-
-        if (FunctionKeys.Count > PageFunctionKeyCount)
-        {
-            throw new InvalidOperationException(
-                $"Page {Key} declares {FunctionKeys.Count} function keys; at most {PageFunctionKeyCount} fit beside the navigation key.");
+            FunctionKeys.Add(key ?? FunctionKeyViewModel.Empty(Localizer));
         }
 
         ApplyKeyEnablement();
     }
 
-    /// <summary>登记竖向软键的根层（最多 8 个）。子菜单一并收掉。</summary>
-    protected void SetVerticalKeys(IEnumerable<FunctionKeyViewModel> keys)
+    /// <summary>把某个横键标成"正显示着"（青底），其余取消。null 全部取消。</summary>
+    protected void MarkActiveFunctionKey(FunctionKeyViewModel? active)
+    {
+        foreach (FunctionKeyViewModel key in FunctionKeys)
+        {
+            key.IsActive = ReferenceEquals(key, active);
+        }
+    }
+
+    /// <summary>
+    /// 登记竖向软键的根层。null 是占位空键；多于 8 个分页（每页 7 个，第 8 格翻页）。子菜单一并收掉。
+    /// </summary>
+    protected void SetVerticalKeys(IEnumerable<FunctionKeyViewModel?> keys)
     {
         this.verticalMenu.SetRoot(keys);
         RefreshVerticalKeys();
     }
 
     /// <summary>打开一层竖键子菜单（最多 7 项，第 8 格外壳自动放"返回"）。</summary>
-    protected void OpenVerticalMenu(string titleResourceKey, IEnumerable<FunctionKeyViewModel> items)
+    protected void OpenVerticalMenu(string titleResourceKey, IEnumerable<FunctionKeyViewModel?> items)
     {
         this.verticalMenu.Open(titleResourceKey, items);
+        RefreshVerticalKeys();
+    }
+
+    /// <summary>
+    /// 画面有待提交的改动（参数矩阵改了、标定值改了……）：竖键 7 / 8 换成这一对（"✕ 放弃改动 / ✓ 保存"）。
+    /// 传 null 收回。待确认的事优先于它。
+    /// </summary>
+    protected void SetCommitPair(FunctionKeyViewModel? cancel, FunctionKeyViewModel? confirm)
+    {
+        if (ReferenceEquals(this.commitCancel, cancel) && ReferenceEquals(this.commitConfirm, confirm))
+        {
+            return;
+        }
+
+        this.commitCancel = cancel;
+        this.commitConfirm = confirm;
         RefreshVerticalKeys();
     }
 
@@ -238,7 +299,7 @@ public abstract partial class PageViewModelBase : ViewModelBase
         };
     }
 
-    /// <summary>竖键退一层。在根层返回 false（Esc 就交给外壳去退页面）。</summary>
+    /// <summary>竖键退一层。在根层返回 false（Esc 就交给外壳去退）。</summary>
     public bool CloseVerticalMenu()
     {
         if (!this.verticalMenu.Back())
@@ -262,25 +323,69 @@ public abstract partial class PageViewModelBase : ViewModelBase
         RefreshVerticalKeys();
     }
 
+    /// <summary>
+    /// 问一句再做（最终稿 D5）：对话行写出问题，竖键 7 / 8 换成取消 / 确认，5 秒不答自动取消。
+    /// </summary>
+    protected void Ask(string questionResourceKey, Func<Task> action, params object?[] arguments) =>
+        Interaction.Ask(Localizer.Format(questionResourceKey, arguments), action);
+
+    /// <summary>同步动作的便捷重载。</summary>
+    protected void Ask(string questionResourceKey, Action action, params object?[] arguments) =>
+        Interaction.Ask(Localizer.Format(questionResourceKey, arguments), action);
+
+    /// <summary>对话行：一条消息（3 秒后消失）。</summary>
+    protected void Say(string resourceKey, params object?[] arguments) =>
+        Interaction.Say(Localizer.Format(resourceKey, arguments));
+
+    /// <summary>给一个键设阻断原因（null 解除），并立刻重算这个键。</summary>
+    protected void Block(FunctionKeyViewModel key, string? reason)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        key.Blocker = reason;
+        Gate(key);
+    }
+
     private void RefreshVerticalKeys()
     {
+        IReadOnlyList<SoftKeySlot<FunctionKeyViewModel>> slots = this.verticalMenu.Slots;
+        if (Interaction.Confirmations.Pending is { } pending)
+        {
+            slots = SoftKeyMenu<FunctionKeyViewModel>.WithCommitPair(
+                slots,
+                new FunctionKeyViewModel(pending.CancelLabelKey, new RelayCommand(() => Interaction.Confirmations.Cancel()), Localizer, FunctionKeyKind.Cancel),
+                new FunctionKeyViewModel(pending.ConfirmLabelKey, new AsyncRelayCommand(() => Interaction.Confirmations.ConfirmAsync()), Localizer, FunctionKeyKind.Confirm));
+        }
+        else
+        {
+            slots = SoftKeyMenu<FunctionKeyViewModel>.WithCommitPair(slots, this.commitCancel, this.commitConfirm);
+        }
+
         VerticalKeys.Clear();
         int index = 0;
-        foreach (SoftKeySlot<FunctionKeyViewModel> slot in this.verticalMenu.Slots)
+        foreach (SoftKeySlot<FunctionKeyViewModel> slot in slots)
         {
             index++;
-            FunctionKeyViewModel key = slot.IsBack
-                ? new FunctionKeyViewModel("Vk_Back", new RelayCommand(() => CloseVerticalMenu()), Localizer, FunctionKeyKind.Navigation)
-                : slot.Key ?? new FunctionKeyViewModel("Fn_Empty", new RelayCommand(() => { }, () => false), Localizer)
-                {
-                    IsEnabled = false,
-                };
-            key.ShortcutText = Localizer.Format("Vk_ShortcutFormat", index);
+            FunctionKeyViewModel key = slot.Kind switch
+            {
+                SoftKeySlotKind.Back => new FunctionKeyViewModel("Vk_Back", new RelayCommand(() => CloseVerticalMenu()), Localizer, FunctionKeyKind.Navigation),
+                SoftKeySlotKind.NextPage => new FunctionKeyViewModel("Vk_NextPage", new RelayCommand(NextVerticalPage), Localizer, FunctionKeyKind.Navigation),
+                SoftKeySlotKind.FirstPage => new FunctionKeyViewModel("Vk_FirstPage", new RelayCommand(NextVerticalPage), Localizer, FunctionKeyKind.Navigation),
+                _ => slot.Key ?? FunctionKeyViewModel.Empty(Localizer),
+            };
+            key.ShortcutText = key.IsPlaceholder ? null : Localizer.Format("Vk_ShortcutFormat", index);
             VerticalKeys.Add(key);
         }
 
         VerticalMenuTitle = this.verticalMenu.TitleKey is { } titleKey ? Localizer[titleKey] : string.Empty;
         ApplyKeyEnablement();
+    }
+
+    private void NextVerticalPage()
+    {
+        if (this.verticalMenu.NextPage())
+        {
+            RefreshVerticalKeys();
+        }
     }
 
     /// <summary>标记本页有未保存的修改。</summary>
@@ -291,28 +396,85 @@ public abstract partial class PageViewModelBase : ViewModelBase
 
     partial void OnIsReadOnlyChanged(bool value) => ApplyKeyEnablement();
 
+    partial void OnIsEmergencyStoppedChanged(bool value) => ApplyKeyEnablement();
+
     private void ApplyKeyEnablement()
     {
         foreach (FunctionKeyViewModel key in FunctionKeys)
         {
-            key.IsEnabled = IsKeyAllowed(key);
+            Gate(key);
         }
 
         foreach (FunctionKeyViewModel key in VerticalKeys)
         {
-            if (key.LabelResourceKey != "Fn_Empty")
-            {
-                key.IsEnabled = IsKeyAllowed(key);
-            }
+            Gate(key);
+        }
+
+        if (this.commitCancel is not null)
+        {
+            Gate(this.commitCancel);
+        }
+
+        if (this.commitConfirm is not null)
+        {
+            Gate(this.commitConfirm);
         }
     }
 
+    private void Gate(FunctionKeyViewModel key)
+    {
+        if (key.IsPlaceholder)
+        {
+            key.IsEnabled = false;
+            key.DisabledReason = null;
+            return;
+        }
+
+        key.DisabledReason = LockReason(key);
+        key.IsEnabled = key.DisabledReason is null;
+    }
+
     /// <summary>
-    /// 键自己点名了权限的，按那项权限（运行锁照样管改数据的键）；没点名的，改数据的键跟着本页的只读走。
+    /// 键为什么按不了（null = 能按）。先看页面给的阻断（缺标签、前置条件），再看急停，
+    /// 然后是权限：键自己点名了权限的按那项权限（运行锁照样管改数据的键）；没点名的，改数据的键跟着本页的只读走。
     /// </summary>
-    private bool IsKeyAllowed(FunctionKeyViewModel key) => key.RequiredPermission is { } permission
-        ? Can(permission) && !(key.RequiresEditable && IsRunLocked)
-        : !(key.RequiresEditable && IsReadOnly);
+    private string? LockReason(FunctionKeyViewModel key)
+    {
+        if (key.Blocker is { Length: > 0 } blocker)
+        {
+            return blocker;
+        }
+
+        if (IsEmergencyStopped && key.IsMachineCommand)
+        {
+            return Localizer["Key_EmergencyStop"];
+        }
+
+        if (key.RequiredPermission is { } permission)
+        {
+            if (!Can(permission))
+            {
+                return NeedsRole(permission);
+            }
+
+            return key.RequiresEditable && IsRunLocked ? Localizer["Key_RunLocked"] : null;
+        }
+
+        if (!key.RequiresEditable)
+        {
+            return null;
+        }
+
+        if (IsRunLocked)
+        {
+            return Localizer["Key_RunLocked"];
+        }
+
+        return IsRoleLocked && EditPermission is { } edit ? NeedsRole(edit) : null;
+    }
+
+    private string NeedsRole(Permission permission) =>
+        Localizer.Format("Key_NeedsRoleFormat", Localizer["Role_" + PermissionPolicy.MinimumRole(permission)]);
 
     /// <summary>页面里按权限变化的键（例如补偿子视图里只有制造商能按的"保存"）改完权限后重算一遍。</summary>
     protected void RefreshKeyEnablement() => ApplyKeyEnablement();

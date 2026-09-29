@@ -3,479 +3,64 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              xmlns:ctl="clr-namespace:RollGrinder.App.Controls">
+    <!--
+        诊断区（界面最终稿 5.12）：横键 报警 · 变量监视 · 改动记录 · 运行日志 · 空 · 连接与接口 · 备份与恢复，
+        一次只摆当前组的窗。机床配置、标签映射的编辑在调试区。
+    -->
     <Grid>
-        <Grid.Resources>
-            <!-- 子视图开着时盖住本页根部内容；导航槽这时显示"返回 诊断"。 -->
-            <Style x:Key="TagMonitorPanel" TargetType="Border" BasedOn="{StaticResource Card}">
-                <Setter Property="Visibility" Value="Collapsed" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_TagMonitor">
-                        <Setter Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- 只读文本视图：运行日志（只看末尾几百行）。 -->
-            <Style x:Key="InspectorPanel" TargetType="Border" BasedOn="{StaticResource Card}">
-                <Setter Property="Visibility" Value="Collapsed" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_RunLog">
-                        <Setter Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <Style x:Key="AuditPanel" TargetType="Border" BasedOn="{StaticResource Card}">
-                <Setter Property="Visibility" Value="Collapsed" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_AuditLog">
-                        <Setter Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-            <!-- 机床配置编辑（修改稿 5.8）：按分组的表单。 -->
-            <Style x:Key="MachineConfigPanel" TargetType="Border" BasedOn="{StaticResource Card}">
-                <Setter Property="Visibility" Value="Collapsed" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_MachineConfig">
-                        <Setter Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- 标签映射编辑（修改稿 5.8）：表格 + 选中行的编辑区。 -->
-            <Style x:Key="TagMappingPanel" TargetType="Border" BasedOn="{StaticResource Card}">
-                <Setter Property="Visibility" Value="Collapsed" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ActiveSubViewKey}" Value="SubView_TagMapping">
-                        <Setter Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- 表单里的一格：名字与单位、输入（文字 / 勾选 / 分段键），不成立时下面一行红字。 -->
-            <DataTemplate x:Key="ConfigFieldTemplate">
-                <Border Style="{StaticResource ParameterCell}" IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
-                    <StackPanel>
+        <!-- 报警：左表右详情；底下写三类报警各用什么键消。 -->
+        <Grid Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=alarms}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="520" />
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                         <DockPanel>
-                            <TextBlock DockPanel.Dock="Right" Text="{Binding UnitText}" Style="{StaticResource Text.Label}" />
-                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" TextTrimming="CharacterEllipsis"
-                                       ToolTip="{Binding Path}" />
+                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Text.Label}" VerticalAlignment="Center"
+                                       Text="{Binding Events.Count, StringFormat={}{0}}" />
+                            <TextBlock Text="{loc:Loc Diag_EventsHeader}" Style="{StaticResource Text.CardTitle}" />
                         </DockPanel>
-                        <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" Margin="0,4,0,0"
-                                 Visibility="{Binding IsTextual, Converter={StaticResource BoolToVisibility}}" />
-                        <CheckBox IsChecked="{Binding IsChecked}" Margin="0,8,0,0"
-                                  Visibility="{Binding IsFlag, Converter={StaticResource BoolToVisibility}}" />
-                        <ItemsControl ItemsSource="{Binding Choices}" Margin="0,4,0,0"
-                                      Visibility="{Binding IsChoice, Converter={StaticResource BoolToVisibility}}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Rows="1" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
-                                            Style="{StaticResource SegmentButton}" Height="40" Padding="2,0"
-                                            ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <TextBlock Text="{Binding IssueText}" Foreground="{StaticResource Brush.CurrentStep}" TextWrapping="Wrap"
-                                   FontSize="{StaticResource Size.Caption}" Margin="0,4,0,0"
-                                   Visibility="{Binding HasIssue, Converter={StaticResource BoolToVisibility}}" />
-                    </StackPanel>
-                </Border>
-            </DataTemplate>
-        </Grid.Resources>
-
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="520" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-
-        <StackPanel Grid.Column="0" Margin="0,0,12,0">
-            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Diag_ConnectionHeader}" Style="{StaticResource Text.CardTitle}" />
-                    </Border>
-                    <ItemsControl ItemsSource="{Binding ConnectionRows}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource DataRowBorder}">
-                                    <DockPanel>
-                                        <TextBlock Text="{Binding Label}" FontSize="17" VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
-                                                   HorizontalAlignment="Right" VerticalAlignment="Center">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsGood}" Value="True">
-                                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsBad}" Value="True">
-                                                            <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </DockPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </DockPanel>
-            </Border>
-
-            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Diag_CompensationHeader}" Style="{StaticResource Text.CardTitle}" />
-                    </Border>
-                    <ItemsControl ItemsSource="{Binding CompensationRows}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource DataRowBorder}">
-                                    <DockPanel>
-                                        <TextBlock Text="{Binding Label}" FontSize="17" VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
-                                                   HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                    </DockPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </DockPanel>
-            </Border>
-
-            <Border Style="{StaticResource Card}">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Diag_ContractHeader}" Style="{StaticResource Text.CardTitle}" />
-                    </Border>
-                    <StackPanel Margin="16,12">
-                        <TextBlock Text="{Binding TagMapCheckText}" FontSize="17" Margin="0,0,0,8">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding TagMapIsValid}" Value="True">
-                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <ItemsControl ItemsSource="{Binding MissingTags}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding}" FontFamily="{StaticResource Font.Mono}" FontSize="15"
-                                               Foreground="{StaticResource Brush.CurrentStep}" Margin="0,0,0,4" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </DockPanel>
-            </Border>
-        </StackPanel>
-
-        <Grid Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
-            <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Diag_DegradationHeader}" Style="{StaticResource Text.CardTitle}" />
-                    </Border>
-                    <UniformGrid Columns="3" Margin="12">
-                        <Border Margin="4" Padding="16,12" Background="{StaticResource Brush.Accent}">
-                            <StackPanel>
-                                <TextBlock Text="{loc:Loc Degradation_Full}" FontSize="19" Foreground="{StaticResource Brush.OnAccent}"
-                                           HorizontalAlignment="Center" />
-                                <TextBlock Text="{loc:Loc Degradation_FullDetail}" FontSize="15"
-                                           Foreground="{StaticResource Brush.OnAccentMuted}" HorizontalAlignment="Center" Margin="0,4,0,0" />
-                            </StackPanel>
-                        </Border>
-                        <Border Margin="4" Padding="16,12" Background="{StaticResource Brush.Surface}"
-                                BorderBrush="{StaticResource Brush.ButtonBorder}" BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock Text="{loc:Loc Degradation_NoRealtime}" FontSize="19" HorizontalAlignment="Center" />
-                                <TextBlock Text="{loc:Loc Degradation_NoRealtimeDetail}" Style="{StaticResource Text.Label}"
-                                           HorizontalAlignment="Center" Margin="0,4,0,0" />
-                            </StackPanel>
-                        </Border>
-                        <Border Margin="4" Padding="16,12" Background="{StaticResource Brush.Surface}"
-                                BorderBrush="{StaticResource Brush.ButtonBorder}" BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock Text="{loc:Loc Degradation_FeedForwardOnly}" FontSize="19" HorizontalAlignment="Center" />
-                                <TextBlock Text="{loc:Loc Degradation_FeedForwardOnlyDetail}" Style="{StaticResource Text.Label}"
-                                           HorizontalAlignment="Center" Margin="0,4,0,0" />
-                            </StackPanel>
-                        </Border>
-                    </UniformGrid>
-                </DockPanel>
-            </Border>
-
-            <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,12">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Diag_EventsHeader}" Style="{StaticResource Text.CardTitle}" />
                     </Border>
                     <Border DockPanel.Dock="Bottom" Padding="14,10">
                         <TextBlock Text="{Binding AlarmRangeNoteText}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" />
                     </Border>
-                    <DataGrid ItemsSource="{Binding Events}" Style="{StaticResource DataTable}">
+                    <DataGrid ItemsSource="{Binding Events}" SelectedItem="{Binding SelectedAlarm}" Style="{StaticResource DataTable}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{loc:Loc Alarm_TimeColumn}" Binding="{Binding TimeText}" Width="180" />
+                            <DataGridTextColumn Header="{loc:Loc Alarm_TimeColumn}" Binding="{Binding TimeText}" Width="220" />
                             <DataGridTextColumn Header="{loc:Loc Diag_AlarmCodeColumn}" Binding="{Binding CodeText}" Width="120" />
                             <DataGridTextColumn Header="{loc:Loc Alarm_MessageColumn}" Binding="{Binding Message}" Width="*" />
-                            <DataGridTextColumn Header="{loc:Loc Alarm_SeverityColumn}" Binding="{Binding SeverityText}" Width="100" />
+                            <DataGridTextColumn Header="{loc:Loc Alarm_SeverityColumn}" Binding="{Binding SeverityText}" Width="110" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
             </Border>
-
-            <Border Grid.Row="2" Style="{StaticResource Card}">
+            <Border Grid.Column="1" Style="{StaticResource Card}">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Diag_CapabilityHeader}" Style="{StaticResource Text.CardTitle}" />
+                        <TextBlock Style="{StaticResource Text.CardTitle}">
+                            <Run Text="{Binding SelectedAlarm.CodeText, Mode=OneWay}" />
+                            <Run Text="{loc:Loc Diag_AlarmDetailHeader}" />
+                        </TextBlock>
                     </Border>
-                    <ItemsControl ItemsSource="{Binding Capabilities}" Background="{StaticResource Brush.GridLine}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="4" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource ParameterCell}">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
-                                        <TextBlock Text="{Binding StateText}" FontSize="19" Margin="0,4,0,0">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsConfigured}" Value="True">
-                                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <StackPanel Margin="16,12" Visibility="{Binding HasSelectedAlarm, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding SelectedAlarm.Message}" Style="{StaticResource Text.Body}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding SelectedAlarm.TimeText}" Style="{StaticResource Text.Label}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding SelectedAlarm.SeverityText}" Style="{StaticResource Text.Label}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding SelectedAlarm.Detail}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" Margin="0,12,0,0"
+                                   Visibility="{Binding SelectedAlarm.Detail, Converter={StaticResource TextToVisibility}}" />
+                        <TextBlock Text="{loc:Loc Diag_AlarmResetLabel}" Style="{StaticResource Text.Label}" Margin="0,16,0,0" />
+                        <TextBlock Text="{Binding AlarmResetText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                    </StackPanel>
                 </DockPanel>
             </Border>
         </Grid>
 
-        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource InspectorPanel}">
+        <!-- 变量监视 -->
+        <Border Style="{StaticResource Card}" Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=tagMonitor}">
             <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="52">
-                    <TextBlock Text="{loc:Loc Diag_InspectorHeader}" Style="{StaticResource Text.CardTitle}"
-                               VerticalAlignment="Center" />
-                </Border>
-                <TextBox Text="{Binding InspectorText, Mode=OneWay}" IsReadOnly="True"
-                         FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}" Margin="12"
-                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                         BorderThickness="0" Background="{StaticResource Brush.Surface}"
-                         TextWrapping="NoWrap" />
-            </DockPanel>
-        </Border>
-
-        <Border x:Name="MachineConfigEditor" Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource MachineConfigPanel}">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Right" Text="{Binding ConfigStatusText}" FontSize="16" VerticalAlignment="Center"
-                                   Foreground="{StaticResource Brush.TextSecondary}" />
-                        <TextBlock Text="{loc:Loc Cfg_MachineHeader}" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center" />
-                    </DockPanel>
-                </Border>
-                <StackPanel DockPanel.Dock="Top" Margin="16,8,16,0">
-                    <TextBlock Text="{loc:Loc Cfg_RestartNote}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" />
-                    <TextBlock Text="{loc:Loc Cfg_ManufacturerOnly}" Style="{StaticResource Text.Label}" TextWrapping="Wrap"
-                               Visibility="{Binding CanEditMachineConfig, Converter={StaticResource InverseBoolVisibility}}" />
-                    <ItemsControl ItemsSource="{Binding ConfigIssues}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}" Foreground="{StaticResource Brush.CurrentStep}" TextWrapping="Wrap" FontSize="16" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8">
-                    <ItemsControl ItemsSource="{Binding MachineGroups}" IsEnabled="{Binding CanEditMachineConfig}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Margin="8,4,8,12">
-                                    <TextBlock Text="{Binding Title}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,6" />
-                                    <ItemsControl ItemsSource="{Binding Fields}" ItemTemplate="{StaticResource ConfigFieldTemplate}"
-                                                  Background="{StaticResource Brush.GridLine}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Columns="4" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </DockPanel>
-        </Border>
-
-        <Border x:Name="TagMappingEditor" Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource TagMappingPanel}">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Right" Text="{Binding ConfigStatusText}" FontSize="16" VerticalAlignment="Center"
-                                   Foreground="{StaticResource Brush.TextSecondary}" TextTrimming="CharacterEllipsis" MaxWidth="900" />
-                        <TextBlock Text="{loc:Loc Cfg_TagMapHeader}" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center" />
-                    </DockPanel>
-                </Border>
-                <DockPanel DockPanel.Dock="Top" Margin="16,8">
-                    <TextBlock Text="{loc:Loc Cfg_Search}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <CheckBox DockPanel.Dock="Right" Content="{loc:Loc Cfg_OnlyMissing}" IsChecked="{Binding ShowMissingTagsOnly}"
-                              VerticalAlignment="Center" Margin="16,0,0,0" />
-                    <TextBox x:Name="TagSearchBox" Text="{Binding TagSearchText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" />
-                </DockPanel>
-
-                <!-- 选中那一行：地址、类型、方向、单位、说明。只有制造商能改；还没登记的先按"登记"。 -->
-                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="16,10">
-                    <Grid IsEnabled="{Binding CanEditTagMap}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                            <TextBlock Text="{Binding SelectedTag.Key}" Style="{StaticResource Text.CardTitle}" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{loc:Loc Cfg_TagAddress}" Style="{StaticResource Text.Label}" Margin="0,6,0,0" />
-                            <TextBox Text="{Binding SelectedTag.Address, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
-                                     IsEnabled="{Binding SelectedTag.IsMissing, Converter={StaticResource InverseBool}}" />
-                            <TextBlock Text="{Binding SelectedTag.IssueText}" Foreground="{StaticResource Brush.CurrentStep}" FontSize="16" TextWrapping="Wrap" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Margin="0,0,12,0">
-                            <TextBlock Text="{loc:Loc Cfg_TagDataType}" Style="{StaticResource Text.Label}" />
-                            <ItemsControl ItemsSource="{Binding TagDataTypeChoices}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Rows="1" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
-                                                Style="{StaticResource SegmentButton}" Height="40" Padding="2,0"
-                                                ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Text="{loc:Loc Cfg_TagAccess}" Style="{StaticResource Text.Label}" Margin="0,6,0,0" />
-                            <ItemsControl ItemsSource="{Binding TagAccessChoices}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Rows="1" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
-                                                Style="{StaticResource SegmentButton}" Height="40" Padding="2,0"
-                                                ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" IsEnabled="{Binding SelectedTag.IsMissing, Converter={StaticResource InverseBool}}">
-                            <TextBlock Text="{loc:Loc Cfg_TagUnit}" Style="{StaticResource Text.Label}" />
-                            <TextBox Text="{Binding SelectedTag.Unit, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" />
-                            <TextBlock Text="{loc:Loc Cfg_TagDescription}" Style="{StaticResource Text.Label}" Margin="0,6,0,0" />
-                            <TextBox Text="{Binding SelectedTag.Description, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" />
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
-                <DataGrid x:Name="TagMapGrid" ItemsSource="{Binding VisibleTags}" SelectedItem="{Binding SelectedTag}" Style="{StaticResource DataTable}"
-                          AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" FontSize="15" Margin="8,0,8,8">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="{loc:Loc Cfg_TagKey}" Binding="{Binding Key}" Width="2*" />
-                        <DataGridTextColumn Header="{loc:Loc Cfg_TagAddress}" Binding="{Binding Address}" Width="2*" />
-                        <DataGridTextColumn Header="{loc:Loc Cfg_TagDataType}" Binding="{Binding DataType}" Width="*" />
-                        <DataGridTextColumn Header="{loc:Loc Cfg_TagAccess}" Binding="{Binding Access}" Width="*" />
-                        <DataGridTextColumn Header="{loc:Loc Cfg_TagValue}" Binding="{Binding ValueText}" Width="*" />
-                        <DataGridTextColumn Header="{loc:Loc Cfg_TagQuality}" Binding="{Binding QualityText}" Width="0.7*" />
-                        <DataGridTextColumn Header="{loc:Loc Cfg_TagIssue}" Binding="{Binding IssueText}" Width="1.5*" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </DockPanel>
-        </Border>
-
-        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource AuditPanel}">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}" Height="52">
-                    <TextBlock Text="{loc:Loc Diag_AuditHeader}" Style="{StaticResource Text.CardTitle}"
-                               VerticalAlignment="Center" />
-                </Border>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="460" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-
-                    <!-- 标定值：每一项最后一次是谁改的 -->
-                    <DockPanel Grid.Column="0">
-                        <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Diag_AuditCalibrationHeader}" Style="{StaticResource Text.Label}" Margin="16,10,16,0" />
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding AuditRows}" Margin="16,12">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <DockPanel Margin="0,0,0,10">
-                                            <TextBlock Text="{Binding Label}" FontSize="16" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}"
-                                                       FontSize="15" HorizontalAlignment="Right"
-                                                       Foreground="{StaticResource Brush.TextSecondary}" />
-                                        </DockPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </DockPanel>
-
-                    <!-- 改动记录：补偿设定、机床配置、标签映射，每次改动一行（全部历史） -->
-                    <DockPanel Grid.Column="1">
-                        <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Diag_ChangeLogHeader}" Style="{StaticResource Text.Label}" Margin="8,10,16,0" />
-                        <DataGrid ItemsSource="{Binding ChangeLogRows}" Style="{StaticResource DataTable}" Margin="8,8,12,12"
-                                  AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" FontSize="15">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="{loc:Loc Comp_ColumnTime}" Binding="{Binding TimeText}" Width="1.3*" />
-                                <DataGridTextColumn Header="{loc:Loc Diag_ChangeBy}" Binding="{Binding ByText}" Width="0.8*" />
-                                <DataGridTextColumn Header="{loc:Loc Diag_ChangeArea}" Binding="{Binding AreaText}" Width="*" />
-                                <DataGridTextColumn Header="{loc:Loc Diag_ChangeItem}" Binding="{Binding Item}" Width="2*" />
-                                <DataGridTextColumn Header="{loc:Loc Diag_ChangeOld}" Binding="{Binding OldText}" Width="*" />
-                                <DataGridTextColumn Header="{loc:Loc Diag_ChangeNew}" Binding="{Binding NewText}" Width="*" />
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </DockPanel>
-                </Grid>
-            </DockPanel>
-        </Border>
-
-        <Border Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource TagMonitorPanel}">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                     <TextBlock Text="{loc:Loc Diag_TagMonitorTitle}" Style="{StaticResource Text.CardTitle}" />
                 </Border>
 
@@ -530,6 +115,223 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- 改动记录：补偿设定、机床配置、标签映射、标定，每次改动一行 -->
+        <Border Style="{StaticResource Card}" Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=audit}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                    <TextBlock Text="{loc:Loc Diag_ChangeLogHeader}" Style="{StaticResource Text.CardTitle}" />
+                </Border>
+                        <DataGrid ItemsSource="{Binding ChangeLogRows}" Style="{StaticResource DataTable}" Margin="8"
+                                  AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" FontSize="{StaticResource Size.Caption}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="{loc:Loc Comp_ColumnTime}" Binding="{Binding TimeText}" Width="1.3*" />
+                                <DataGridTextColumn Header="{loc:Loc Diag_ChangeBy}" Binding="{Binding ByText}" Width="0.8*" />
+                                <DataGridTextColumn Header="{loc:Loc Diag_ChangeArea}" Binding="{Binding AreaText}" Width="*" />
+                                <DataGridTextColumn Header="{loc:Loc Diag_ChangeItem}" Binding="{Binding Item}" Width="2*" />
+                                <DataGridTextColumn Header="{loc:Loc Diag_ChangeOld}" Binding="{Binding OldText}" Width="*" />
+                                <DataGridTextColumn Header="{loc:Loc Diag_ChangeNew}" Binding="{Binding NewText}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+            </DockPanel>
+        </Border>
+
+        <!-- 运行日志：只看末尾几百行 -->
+        <Border Style="{StaticResource Card}" Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=runLog}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                    <TextBlock Text="{loc:Loc Diag_InspectorHeader}" Style="{StaticResource Text.CardTitle}"
+                               VerticalAlignment="Center" />
+                </Border>
+                <TextBox Text="{Binding InspectorText, Mode=OneWay}" IsReadOnly="True"
+                         FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}" Margin="12"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         BorderThickness="0" Background="{StaticResource Brush.Surface}"
+                         TextWrapping="NoWrap" />
+            </DockPanel>
+        </Border>
+
+        <!-- 连接与接口：连接、补偿接口、契约校验、降级、机床能力 -->
+        <Grid Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=connection}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="520" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Diag_ConnectionHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding ConnectionRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource DataRowBorder}">
+                                    <DockPanel>
+                                        <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Body}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Body}"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsGood}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsBad}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Diag_CompensationHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding CompensationRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource DataRowBorder}">
+                                    <DockPanel>
+                                        <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Body}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Body}"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Diag_ContractHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <StackPanel Margin="16,12">
+                        <TextBlock Text="{Binding TagMapCheckText}" FontSize="{StaticResource Size.Body}" Margin="0,0,0,8">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TagMapIsValid}" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <ItemsControl ItemsSource="{Binding MissingTags}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
+                                               Foreground="{StaticResource Brush.CurrentStep}" Margin="0,0,0,4" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </StackPanel>
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+            <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Diag_DegradationHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <UniformGrid Columns="3" Margin="12">
+                        <Border Margin="4" Padding="16,12" Background="{StaticResource Brush.Accent}">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Loc Degradation_Full}" FontSize="{StaticResource Size.Body}" Foreground="{StaticResource Brush.OnAccent}"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="{loc:Loc Degradation_FullDetail}" FontSize="{StaticResource Size.Caption}"
+                                           Foreground="{StaticResource Brush.OnAccentMuted}" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Margin="4" Padding="16,12" Background="{StaticResource Brush.Surface}"
+                                BorderBrush="{StaticResource Brush.ButtonBorder}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Loc Degradation_NoRealtime}" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
+                                <TextBlock Text="{loc:Loc Degradation_NoRealtimeDetail}" Style="{StaticResource Text.Label}"
+                                           HorizontalAlignment="Center" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Margin="4" Padding="16,12" Background="{StaticResource Brush.Surface}"
+                                BorderBrush="{StaticResource Brush.ButtonBorder}" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Loc Degradation_FeedForwardOnly}" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
+                                <TextBlock Text="{loc:Loc Degradation_FeedForwardOnlyDetail}" Style="{StaticResource Text.Label}"
+                                           HorizontalAlignment="Center" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                </DockPanel>
+            </Border>
+            <Border Grid.Row="1" Style="{StaticResource Card}" VerticalAlignment="Top">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Diag_CapabilityHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding Capabilities}" Background="{StaticResource Brush.GridLine}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource ParameterCell}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
+                                        <TextBlock Text="{Binding StateText}" FontSize="{StaticResource Size.Body}" Margin="0,4,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsConfigured}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+            </Grid>
+        </Grid>
+
+        <!-- 备份与恢复：竖键 1 备份、2 导出故障快照。恢复是停机时把备份包解回 config/ 与 data/，不在运行中做。 -->
+        <Border Style="{StaticResource Card}" Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=backup}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                    <TextBlock Text="{loc:Loc Diag_BackupHeader}" Style="{StaticResource Text.CardTitle}" />
+                </Border>
+                <StackPanel Margin="24,16" MaxWidth="1000" HorizontalAlignment="Left">
+                    <TextBlock Text="{loc:Loc Diag_BackupNote}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                    <TextBlock Text="{loc:Loc Diag_RestoreNote}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" Margin="0,16,0,0" />
+                </StackPanel>
             </DockPanel>
         </Border>
     </Grid>

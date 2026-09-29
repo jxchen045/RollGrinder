@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Contracts;
@@ -146,22 +147,13 @@ public sealed class MatrixRowViewModel
 /// <summary>工序序列里的一行。</summary>
 public sealed partial class SequenceRowViewModel : ObservableObject
 {
-    public SequenceRowViewModel(
-        int order, string displayName, string durationText, System.Windows.Input.ICommand jumpCommand)
+    public SequenceRowViewModel(int order, string displayName, string durationText)
     {
         OrderText = order.ToString("00", CultureInfo.InvariantCulture);
         Order = order;
         DisplayName = displayName;
         DurationText = durationText;
-        JumpCommand = jumpCommand ?? throw new ArgumentNullException(nameof(jumpCommand));
     }
-
-    /// <summary>"跳到此工序"。只在还没轮到的行上点得动。</summary>
-    public System.Windows.Input.ICommand JumpCommand { get; }
-
-    /// <summary>这一行能不能跳过去：只许往前，且机床得在跑。</summary>
-    [ObservableProperty]
-    private bool canJumpHere;
 
     public int Order { get; }
 
@@ -225,9 +217,6 @@ internal enum StepFlowAction
 /// </summary>
 public sealed partial class AutoGrindingViewModel : PageViewModelBase
 {
-    /// <summary>流程动作第二下的等待窗口。与手动页的危险动作取同一个数。</summary>
-    private static readonly TimeSpan FlowConfirmationWindow = TimeSpan.FromSeconds(4.0);
-
     private readonly IMachineMonitor monitor;
     private readonly MachineDescription machine;
     private readonly HmiSettings settings;
@@ -254,21 +243,17 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly LiveValueViewModel grindingCurrent;
     private readonly LiveValueViewModel currentPass;
 
-    private readonly FunctionKeyViewModel cycleStartKey;
-    private readonly FunctionKeyViewModel skipStepKey;
+    private readonly FunctionKeyViewModel compensationKey;
+    private readonly FunctionKeyViewModel overviewKey;
+    private readonly FunctionKeyViewModel jumpKey;
     private readonly FunctionKeyViewModel endEarlyKey;
+    private readonly FunctionKeyViewModel coolantKey;
+    private readonly FunctionKeyViewModel discardMatrixKey;
+    private readonly FunctionKeyViewModel downloadMatrixKey;
+    private readonly Dictionary<CurveKind, FunctionKeyViewModel> curveKeys = new();
 
     private GrindingJob? activeJob;
     private IReadOnlyList<GrindingStepPlan> activePlans = Array.Empty<GrindingStepPlan>();
-
-    /// <summary>正等第二下确认的是哪一个流程动作；null 表示没有。</summary>
-    private StepFlowAction? pendingFlowAction;
-
-    /// <summary>第二下的截止时刻；过了就自动撤销。</summary>
-    private DateTimeOffset flowConfirmDeadlineUtc;
-
-    /// <summary>"跳到此工序"点的是哪一道（<see cref="StepFlowAction.Jump"/> 时有值）。</summary>
-    private int pendingJumpTargetOrder;
 
     public AutoGrindingViewModel(
         IMachineMonitor monitor,
@@ -290,8 +275,9 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         IStrokeCompensationLog strokeCompensationLog,
         IStringLocalizer localizer,
         IAlarmSink alarms,
-        INavigator navigator)
-        : base(alarms, localizer, navigator)
+        INavigator navigator,
+        ShellInteraction interaction)
+        : base(alarms, localizer, navigator, interaction)
     {
         this.measurementNotifications = measurementNotifications ?? throw new ArgumentNullException(nameof(measurementNotifications));
         this.seenMeasurementVersion = measurementNotifications.Version;
@@ -330,33 +316,163 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         calibration.Changed += (_, _) => OnUiThread(RefreshTolerance);
         InitializeCompensation(compensationTuning, strokeCompensationLog);
 
-        SetFunctionKeys(new[]
+        // 横键 = 功能组（最终稿 5.2）：补偿 · 磨削记录 · 状态总览 · 工序跳转… · 提前结束… · 空 · 作业 · 冷却液。
+        // 循环启动、暂停在按钮板上（machine.json panelActions），屏幕上不放——停止类不依赖上位机（C4、C7）。
+        // 按钮板没装的现场才把它们放回来：启动占"空"那一格，暂停排到第二页。
+        this.compensationKey = FunctionKeyViewModel.ForAction("Fn_Compensation", localizer, ToggleCompensation);
+        this.overviewKey = FunctionKeyViewModel.ForAction("Fn_StatusOverview", localizer, ToggleStatusOverview);
+        this.jumpKey = new FunctionKeyViewModel("Fn_JumpToStep", new RelayCommand(OpenJumpMenu), localizer)
         {
-            // 启动与保持都是**请求**：上位机不在使能链里，能不能动由 PLC 说了算。
-            // 启动会让机床动起来，所以按两下；保持是往安全那一侧走，按一下就发。
-            this.cycleStartKey = new FunctionKeyViewModel(
-                "Fn_Start", RequestCycleStartCommand, localizer, FunctionKeyKind.Start),
-            new FunctionKeyViewModel("Fn_Pause", RequestFeedHoldCommand, localizer),
-            this.skipStepKey = new FunctionKeyViewModel(
-                "Fn_SkipStep", SkipStepCommand, localizer, FunctionKeyKind.Danger),
-            this.endEarlyKey = new FunctionKeyViewModel(
-                "Fn_EndEarly", EndStepEarlyCommand, localizer, FunctionKeyKind.Danger),
-            // 冷却水就是手动页那一个动作，换个地方按——磨着磨着要开关冷却水，
-            // 不该为此切到手动页去。
-            new FunctionKeyViewModel("Fn_Coolant", ToggleCoolantCommand, localizer),
-            // 作业：选辊、辊形、程序，核对后下发。派过去，导航槽会显示"返回 自动磨削"。
-            // （以前这里是"补偿设置"，跳到工序页——第一轮甲方测试 3②：补偿不该跑到工序里去。）
-            FunctionKeyViewModel.ForAction(
-                "Fn_Job", localizer, () => Navigator.StartTask(PageKey.Job, PageKey.AutoGrinding)),
-            FunctionKeyViewModel.ForAction("Fn_Records", localizer, () => Navigator.GoToArea(PageKey.Records)),
-        });
+            IsMachineCommand = true,
+            RequiredPermission = Permission.RunMachine,
+        };
+        this.endEarlyKey = new FunctionKeyViewModel("Fn_EndEarly", EndStepEarlyCommand, localizer)
+        {
+            IsMachineCommand = true,
+            RequiredPermission = Permission.RunMachine,
+        };
+        this.coolantKey = new FunctionKeyViewModel("Fn_Coolant", ToggleCoolantCommand, localizer)
+        {
+            RequiredPermission = Permission.RunMachine,
+        };
+
+        var functionKeys = new List<FunctionKeyViewModel?>
+        {
+            this.compensationKey,
+            FunctionKeyViewModel.ForAction("Fn_GrindingRecords", localizer, () => Navigator.StartTask(PageKey.Records, PageKey.AutoGrinding)),
+            this.overviewKey,
+            this.jumpKey,
+            this.endEarlyKey,
+            machine.IsOnPanel(MachineDescription.PanelCycleStart)
+                ? null
+                : new FunctionKeyViewModel("Fn_CycleStart", RequestCycleStartCommand, localizer, FunctionKeyKind.Start)
+                {
+                    IsMachineCommand = true,
+                    RequiredPermission = Permission.RunMachine,
+                },
+            FunctionKeyViewModel.ForAction("Fn_Job", localizer, () => Navigator.GoTo(PageKey.Job)),
+            this.coolantKey,
+        };
+        if (!machine.IsOnPanel(MachineDescription.PanelFeedHold))
+        {
+            functionKeys.Add(new FunctionKeyViewModel("Fn_Pause", RequestFeedHoldCommand, localizer)
+            {
+                RequiredPermission = Permission.RunMachine,
+            });
+        }
+
+        SetFunctionKeys(functionKeys);
+
+        // 参数矩阵改了：竖键 7 / 8 = 放弃改动 / 下发改动（最终稿 5.2）。下发就是确认，不再多问一句。
+        this.discardMatrixKey = new FunctionKeyViewModel("Vk_DiscardEdits", DiscardMatrixEditsCommand, localizer, FunctionKeyKind.Cancel);
+        this.downloadMatrixKey = new FunctionKeyViewModel("Vk_DownloadEdits", SaveMatrixCommand, localizer, FunctionKeyKind.Confirm)
+        {
+            IsMachineCommand = true,
+            RequiredPermission = Permission.RunMachine,
+        };
+        foreach (CurveKind kind in Enum.GetValues<CurveKind>())
+        {
+            CurveKind chosen = kind;
+            this.curveKeys[kind] = FunctionKeyViewModel.ForAction("Curve_" + kind, localizer, () => SelectCurve(chosen));
+        }
+
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ActiveSubViewKey))
+            {
+                ApplyVerticalKeys();
+            }
+        };
+        ApplyVerticalKeys();
     }
+
+    /// <summary>状态总览子功能（最终稿 F3）：全部机构到位灯。</summary>
+    public const string StatusOverviewSubView = "SubView_StatusOverview";
+
+    /// <summary>状态总览开着没有。</summary>
+    public bool IsStatusOverviewOpen => ActiveSubViewKey == StatusOverviewSubView;
+
+    /// <summary>
+    /// 竖键随子功能换（最终稿 5.2、5.3）：基本画面是 5 条曲线；补偿里是保存 / 恢复 / 改动记录 / 返回；
+    /// 状态总览里只有返回。
+    /// </summary>
+    private void ApplyVerticalKeys()
+    {
+        this.compensationKey.IsActive = IsCompensationOpen;
+        this.overviewKey.IsActive = IsStatusOverviewOpen;
+        OnPropertyChanged(nameof(IsStatusOverviewOpen));
+
+        if (IsCompensationOpen)
+        {
+            SetVerticalKeys(new FunctionKeyViewModel?[]
+            {
+                new FunctionKeyViewModel("Vk_SaveTuning", this.saveTuningCommand, Localizer)
+                {
+                    RequiredPermission = Permission.EditCompensation,
+                },
+                new FunctionKeyViewModel("Vk_ResetTuning", this.resetTuningCommand, Localizer)
+                {
+                    RequiredPermission = Permission.EditCompensation,
+                },
+                FunctionKeyViewModel.ForAction("Vk_ChangeLog", Localizer, () => Navigator.GoToArea(AreaKey.Diagnostics, "audit")),
+                null, null, null, null,
+                BackKey(),
+            });
+            return;
+        }
+
+        if (IsStatusOverviewOpen)
+        {
+            SetVerticalKeys(new FunctionKeyViewModel?[] { null, null, null, null, null, null, null, BackKey() });
+            return;
+        }
+
+        SetVerticalKeys(this.curveKeys.Values);
+        MarkSelectedCurve();
+    }
+
+    private FunctionKeyViewModel BackKey() =>
+        new("Vk_Back", new RelayCommand(Navigator.CloseSubView), Localizer, FunctionKeyKind.Navigation);
+
+    private void MarkSelectedCurve()
+    {
+        foreach ((CurveKind kind, FunctionKeyViewModel key) in this.curveKeys)
+        {
+            key.IsActive = kind == SelectedCurve;
+        }
+    }
+
+    private void ToggleCompensation()
+    {
+        if (IsCompensationOpen)
+        {
+            Navigator.CloseSubView();
+        }
+        else
+        {
+            OpenCompensation();
+        }
+    }
+
+    private void ToggleStatusOverview()
+    {
+        if (IsStatusOverviewOpen)
+        {
+            Navigator.CloseSubView();
+        }
+        else
+        {
+            Navigator.OpenSubView(StatusOverviewSubView);
+        }
+    }
+
+    partial void OnHasPendingEditsChanged(bool value) =>
+        SetCommitPair(value ? this.discardMatrixKey : null, value ? this.downloadMatrixKey : null);
 
     public override PageKey Key => PageKey.AutoGrinding;
 
     public override string TitleResourceKey => "Page_AutoGrinding";
 
-    public override string MenuHintResourceKey => "Menu_AutoGrindingHint";
 
     /// <summary>左栏：工序序列。</summary>
     public ObservableCollection<SequenceRowViewModel> Sequence { get; } = new();
@@ -434,6 +550,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             if (!result.Succeeded)
             {
                 MatrixMessage = Describe(result);
+                Interaction.Fail(MatrixMessage);
                 return;
             }
 
@@ -445,6 +562,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             BuildMatrix(edited);
             UpdateMatrixState(this.currentStepOrder);
             MatrixMessage = Localizer["Auto_MatrixSaved"];
+            Interaction.Say(MatrixMessage);
         }
         catch (GatewayException ex)
         {
@@ -551,7 +669,38 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     public event EventHandler? CurveChanged;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CurveTitle))]
     private CurveKind selectedCurve = CurveKind.Error;
+
+    /// <summary>曲线窗标题：现在看的是哪一条（由竖键 1–5 选）。</summary>
+    public string CurveTitle => Localizer["Curve_" + SelectedCurve];
+
+    /// <summary>砂轮当前 Z 位置（辊身坐标，mm）；读不到为 null。误差曲线上画成橙色竖线（最终稿 D4）。</summary>
+    public double? WheelPositionMm { get; private set; }
+
+    /// <summary>砂轮位置挪了（超过 1 mm 才报，免得每拍重画）。</summary>
+    public event EventHandler? WheelPositionChanged;
+
+    private void UpdateWheelPosition(MachineStateSnapshot snapshot)
+    {
+        double? z = null;
+        foreach (AxisDescription axis in this.machine.Axes)
+        {
+            if (axis.IsPresent && string.Equals(axis.Role, MachineAxisRoles.Carriage, StringComparison.Ordinal))
+            {
+                z = snapshot.GetNumberOrNull(MachineTagKeys.AxisActualPositionMm(axis.Name));
+                break;
+            }
+        }
+
+        if (z is null == WheelPositionMm is null && (z is null || Math.Abs(z.Value - WheelPositionMm!.Value) < 1.0))
+        {
+            return;
+        }
+
+        WheelPositionMm = z;
+        WheelPositionChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     [ObservableProperty]
     private string measuredDiameterText = "--";
@@ -639,7 +788,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         UpdateSequence(snapshot);
         UpdateCompensation(snapshot);
         TickCompensation();
-        UpdateStepFlow(nowUtc);
+        UpdateStepFlow();
+        UpdateWheelPosition(snapshot);
         RefreshAfterNewMeasurement();
     }
 
@@ -665,46 +815,44 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     }
 
     /// <summary>
-    /// 每一拍刷新流程控制：能不能按、待确认的到没到点。
-    /// 全按机床的当前快照算，不缓存判断——工序一变，按钮跟着变。
+    /// 每一拍刷新流程键能不能按：全按机床的当前快照算，不缓存判断——工序一变，键跟着变。
+    /// 按不了的留在原位变灰，点它时对话行说原因（服务给的那句）。
     /// </summary>
-    private void UpdateStepFlow(DateTimeOffset nowUtc)
+    private void UpdateStepFlow()
     {
-        // 到点没按第二下就撤销：免得一分钟后误触被当成确认。
-        if (this.pendingFlowAction is not null && nowUtc > this.flowConfirmDeadlineUtc)
-        {
-            CancelFlowConfirmation();
-        }
-
-        bool canEndEarly = this.activeJob is not null && this.stepFlow.CanEndStepEarly(this.activeJob).Succeeded;
-        this.endEarlyKey.IsEnabled = canEndEarly;
-        this.skipStepKey.IsEnabled = this.activeJob is not null
-            && this.stepFlow.CanJumpTo(this.activeJob, CurrentStepOrder() + 1).Succeeded;
-
-        foreach (SequenceRowViewModel row in Sequence)
-        {
-            row.CanJumpHere = this.activeJob is not null
-                && this.stepFlow.CanJumpTo(this.activeJob, row.Order).Succeeded;
-        }
+        Block(this.endEarlyKey, FlowBlocker(this.activeJob is null
+            ? null
+            : this.stepFlow.CanEndStepEarly(this.activeJob)));
+        Block(this.jumpKey, FlowBlocker(this.activeJob is null
+            ? null
+            : UpcomingSteps().Any()
+                ? StepFlowResult.Sent
+                : this.stepFlow.CanJumpTo(this.activeJob, CurrentStepOrder() + 1)));
+        this.coolantKey.IsActive = this.monitor.Current.GetNumberOrNull(MachineTagKeys.ManualCommandState(CoolantKey)) is { } on && on != 0;
     }
 
-    /// <summary>
-    /// 跳过当前工序：跳到下一道。
-    ///
-    /// 和手动页的危险动作一样要按两下——按错一下就少磨一道工序，
-    /// 而少磨的那一道再也补不回来（余量已经按计划分配掉了）。
-    /// </summary>
-    [RelayCommand]
-    private Task SkipStepAsync(CancellationToken cancellationToken) =>
-        RequestFlowAsync(StepFlowAction.Jump, CurrentStepOrder() + 1, cancellationToken);
-
-    /// <summary>跳到指定的某一道工序（工序序列里每行一个）。</summary>
-    [RelayCommand]
-    private Task JumpToStepAsync(SequenceRowViewModel row)
+    private string? FlowBlocker(StepFlowResult? result) => result switch
     {
-        ArgumentNullException.ThrowIfNull(row);
-        return RequestFlowAsync(StepFlowAction.Jump, row.Order, CancellationToken.None);
-    }
+        null => Localizer["Auto_NoActiveJob"],
+        { Succeeded: true } => null,
+        { MessageResourceKey: { } key } => Localizer[key],
+        _ => Localizer["Key_NotNow"],
+    };
+
+    /// <summary>还能跳过去的工序（最多 7 道，竖键子菜单放得下）。</summary>
+    private IEnumerable<SequenceRowViewModel> UpcomingSteps() => this.activeJob is null
+        ? Enumerable.Empty<SequenceRowViewModel>()
+        : Sequence.Where(row => this.stepFlow.CanJumpTo(this.activeJob, row.Order).Succeeded)
+            .Take(SoftKeyMenu<FunctionKeyViewModel>.SubMenuCapacity);
+
+    /// <summary>"工序跳转…"：竖键列出后面能跳到的工序，选一道再确认（取代工序序列里每行一个的"跳到此工序"）。</summary>
+    private void OpenJumpMenu() => OpenVerticalMenu(
+        "Vk_JumpTitle",
+        UpcomingSteps().Select(row => MenuChoice(
+            "Vk_JumpToFormat",
+            () => _ = RequestFlowAsync(StepFlowAction.Jump, row.Order, CancellationToken.None),
+            requiresEditable: false,
+            labelArgument: row.OrderText + " " + row.DisplayName)));
 
     /// <summary>当前工序提前结束，进入下一道。</summary>
     [RelayCommand]
@@ -712,18 +860,17 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         RequestFlowAsync(StepFlowAction.EndEarly, 0, cancellationToken);
 
     /// <summary>
-    /// 流程动作的两段式：第一下只是把按钮改成"再按一次"，第二下才真发。
-    /// 中途按了别的流程键，前一个待确认的自动撤销——只留一个红按钮。
+    /// 流程动作（跳转、提前结束、循环启动）：先问服务能不能做，能做才在对话行提问，
+    /// 竖键 7 / 8 取消 / 确认，5 秒不答作废（最终稿 D5，取代"再按一次确认"）。
     /// </summary>
     private async Task RequestFlowAsync(StepFlowAction action, int targetOrder, CancellationToken cancellationToken)
     {
         if (this.activeJob is null)
         {
-            Alarms.Raise(AlarmSeverity.Warning, "Auto_NoActiveJob", detail: null, code: AlarmCodes.Unspecified);
+            Interaction.Refuse(Localizer["Auto_NoActiveJob"]);
             return;
         }
 
-        // 先问服务能不能做：不能做就别让人按第二下，直接说为什么。
         // 循环启动是个例外——想启动的时候本来就还没在跑，没有"当前工序"可查。
         StepFlowResult permission = action switch
         {
@@ -736,23 +883,27 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         };
         if (!permission.Succeeded)
         {
-            CancelFlowConfirmation();
-            Alarms.Raise(AlarmSeverity.Warning, permission.MessageResourceKey!, detail: null, code: AlarmCodes.Unspecified);
+            Interaction.Refuse(Localizer[permission.MessageResourceKey!]);
             return;
         }
 
-        bool isSameRequest = this.pendingFlowAction == action
-            && (action != StepFlowAction.Jump || this.pendingJumpTargetOrder == targetOrder);
-        if (!isSameRequest)
+        string question = action switch
         {
-            BeginFlowConfirmation(action, targetOrder);
-            return;
-        }
+            StepFlowAction.Jump => Localizer.Format(
+                "Auto_AskJump",
+                Sequence.FirstOrDefault(row => row.Order == targetOrder) is { } row ? row.OrderText + " " + row.DisplayName : targetOrder.ToString(CultureInfo.CurrentCulture)),
+            StepFlowAction.EndEarly => Localizer["Auto_AskEndEarly"],
+            _ => Localizer["Auto_AskCycleStart"],
+        };
 
-        CancelFlowConfirmation();
+        Interaction.Ask(question, () => SendFlowAsync(action, targetOrder, cancellationToken));
+        await Task.CompletedTask.ConfigureAwait(true);
+    }
 
+    private Task SendFlowAsync(StepFlowAction action, int targetOrder, CancellationToken cancellationToken)
+    {
         string requestedBy = this.userSession.CurrentUser?.UserName ?? string.Empty;
-        await RunGuardedAsync(async token =>
+        return RunGuardedAsync(async token =>
         {
             StepFlowResult result = action switch
             {
@@ -764,51 +915,29 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                     .RequestCycleStartAsync(requestedBy, token).ConfigureAwait(true),
             };
 
-            if (!result.Succeeded)
+            if (result.Succeeded)
+            {
+                Say("Common_Sent");
+            }
+            else
             {
                 Alarms.Raise(
                     AlarmSeverity.Warning, result.MessageResourceKey!, detail: null, code: AlarmCodes.Unspecified);
             }
-        }, cancellationToken).ConfigureAwait(true);
-    }
-
-    private void BeginFlowConfirmation(StepFlowAction action, int targetOrder)
-    {
-        this.pendingFlowAction = action;
-        this.pendingJumpTargetOrder = targetOrder;
-        this.flowConfirmDeadlineUtc = DateTimeOffset.UtcNow + FlowConfirmationWindow;
-        UpdateFlowKeyLabels();
-    }
-
-    private void CancelFlowConfirmation()
-    {
-        this.pendingFlowAction = null;
-        this.pendingJumpTargetOrder = 0;
-        this.flowConfirmDeadlineUtc = default;
-        UpdateFlowKeyLabels();
-    }
-
-    private void UpdateFlowKeyLabels()
-    {
-        this.cycleStartKey.LabelResourceKey =
-            this.pendingFlowAction == StepFlowAction.CycleStart ? "Fn_ConfirmAgain" : "Fn_Start";
-        this.skipStepKey.LabelResourceKey =
-            this.pendingFlowAction == StepFlowAction.Jump ? "Fn_ConfirmAgain" : "Fn_SkipStep";
-        this.endEarlyKey.LabelResourceKey =
-            this.pendingFlowAction == StepFlowAction.EndEarly ? "Fn_ConfirmAgain" : "Fn_EndEarly";
+        }, cancellationToken);
     }
 
     private int CurrentStepOrder() =>
         (int)(this.monitor.Current.GetNumberOrNull(MachineTagKeys.JobCurrentStepOrder) ?? 0);
 
     /// <summary>
-    /// 请 NC 启动循环。会让机床动起来，所以与跳转、提前结束一样按两下。
+    /// 请 NC 启动循环（只在按钮板没装循环启动的现场出现）。会让机床动起来，要确认。
     /// </summary>
     [RelayCommand]
     private Task RequestCycleStartAsync(CancellationToken cancellationToken) =>
         RequestFlowAsync(StepFlowAction.CycleStart, 0, cancellationToken);
 
-    /// <summary>请 NC 进给保持。往安全那一侧走，不必按两下。</summary>
+    /// <summary>请 NC 进给保持（只在按钮板没装暂停的现场出现）。往安全那一侧走，不问。</summary>
     [RelayCommand]
     private Task RequestFeedHoldAsync(CancellationToken cancellationToken) =>
         RunGuardedAsync(async token =>
@@ -852,6 +981,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private void SelectCurve(CurveKind kind)
     {
         SelectedCurve = kind;
+        MarkSelectedCurve();
         _ = RunGuardedAsync(RefreshCurveAsync, CancellationToken.None);
     }
 
@@ -1019,8 +1149,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 Localizer["StepType_" + step.StepTypeKey],
                 duration > TimeSpan.Zero
                     ? Localizer.Format("Auto_StepDurationFormat", (int)duration.TotalMinutes)
-                    : string.Empty,
-                JumpToStepCommand));
+                    : string.Empty));
         }
 
         // 换了一支辊：之前那支收来的圆度/偏心/电流轨迹与这支无关，清掉重收。

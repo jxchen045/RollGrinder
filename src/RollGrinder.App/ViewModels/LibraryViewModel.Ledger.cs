@@ -14,16 +14,13 @@ using RollGrinder.Services.Records;
 namespace RollGrinder.App.ViewModels;
 
 /// <summary>
-/// 磨削记录 › 轧辊台账（阶段 1，修改稿 5.1）：辊号、类型、辊身长度、公称直径、当前直径、材质、
+/// 库 › 轧辊台账（界面最终稿 5.9，原在磨削记录里）：辊号、类型、辊身长度、公称直径、当前直径、材质、
 /// 重量与磨削履历都在这里登记、修改。尺寸属于轧辊本身——作业只是选一支台账里的辊。
 /// </summary>
-public sealed partial class RecordsViewModel
+public sealed partial class LibraryViewModel
 {
     /// <summary>磨削履历一次列多少条。</summary>
     private const int HistoryLimit = 50;
-
-    private readonly IRollLedgerService ledgerService;
-    private readonly JobDraft jobDraft;
 
     /// <summary>这张新表是作业页派来登记的：存好后把辊号递回作业页。</summary>
     private bool registeringForJob;
@@ -135,6 +132,9 @@ public sealed partial class RecordsViewModel
     [RelayCommand]
     private void SetLedgerKind(RollKind kind) => LedgerKind = kind;
 
+    /// <summary>台账里选中的那支辊的标识（竖键"用于作业"用）。</summary>
+    private string? SelectedLedgerRollId => IsNewLedgerRoll ? null : SelectedLedgerRow?.RollId;
+
     /// <summary>校验并存；存不进去就把原因逐条列在表下面。</summary>
     [RelayCommand]
     private Task SaveLedgerRollAsync(CancellationToken cancellationToken) =>
@@ -145,6 +145,7 @@ public sealed partial class RecordsViewModel
             if (roll is null)
             {
                 LedgerProblems.Add(Localizer["Ledger_Problem_NotANumber"]);
+                Interaction.Fail(Localizer["Ledger_Problem_NotANumber"]);
                 return;
             }
 
@@ -156,10 +157,11 @@ public sealed partial class RecordsViewModel
                     LedgerProblems.Add(DescribeLedgerProblem(problem));
                 }
 
+                Interaction.Fail(string.Join(" · ", LedgerProblems));
                 return;
             }
 
-            StatusResourceKey = "Ledger_Saved";
+            Say("Ledger_Saved");
             if (this.registeringForJob)
             {
                 this.jobDraft.RegisteredRollId = roll.RollId.Trim();

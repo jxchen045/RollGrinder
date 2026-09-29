@@ -16,6 +16,7 @@ using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Manual;
 using RollGrinder.Services.Records;
 
 namespace RollGrinder.App.SelfTest;
@@ -55,6 +56,41 @@ internal static class SelfTestNames
         }
 
         return !prompt.IsOpen;
+    }
+
+    /// <summary>到库区某一组，等列表载完，选中名为 <paramref name="name"/> 的一条。没有返回 false。</summary>
+    public static async Task<bool> SelectAsync(SelfTestHarness h, string group, string name)
+    {
+        LibraryViewModel library = h.Page<LibraryViewModel>();
+        await h.GoToAsync(PageKey.Library, groupKey: group);
+        if (!await h.WaitUntilAsync(() => library.Entries.Any(e => e.Name == name), TimeSpan.FromSeconds(5)))
+        {
+            return false;
+        }
+
+        library.SelectedEntry = library.Entries.First(e => e.Name == name);
+        await h.SettleAsync();
+        return true;
+    }
+
+    /// <summary>从库区打开一条（竖键"打开"），到辊形区 / 工艺区编辑；等它载完。</summary>
+    public static async Task OpenFromLibraryAsync(SelfTestHarness h, StepContext ctx, string group, string name)
+    {
+        ctx.Check(await SelectAsync(h, group, name), name + " should be listed in the library");
+        await h.PressVerticalKeyAsync(ctx, "Vk_Open");
+        await h.SettleAsync(400);
+        PageKey expected = group == LibraryViewModel.ProfilesGroup ? PageKey.Profile : PageKey.Steps;
+        ctx.Check(h.Shell.CurrentPage.Key == expected, "'open' should go to " + expected);
+    }
+
+    /// <summary>从库区删一条（竖键"删除这一条…"，问一句、确认）。</summary>
+    public static async Task DeleteFromLibraryAsync(SelfTestHarness h, StepContext ctx, string group, string name)
+    {
+        ctx.Check(await SelectAsync(h, group, name), name + " should be listed in the library");
+        await h.PressVerticalKeyAsync(ctx, "Vk_Delete");
+        await h.ConfirmAsync(ctx);
+        LibraryViewModel library = h.Page<LibraryViewModel>();
+        ctx.Check(await h.WaitUntilAsync(() => library.Entries.All(e => e.Name != name), TimeSpan.FromSeconds(5)), name + " should disappear");
     }
 }
 
@@ -153,7 +189,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
             await h.SettleAsync(50);
             ctx.Check(page.HasErrors && page.Issues.Any(i => i.IsError), "a segment past the design length must show an error at once");
             ctx.Check(page.SelectedSegment?.HasError == true, "the offending segment should be marked");
-            ctx.Check(!h.Shell.FunctionKeys[saveKey].Command.CanExecute(null), "save must be disabled while there are errors");
+            ctx.Check(!h.IsKeyUsable(saveKey), "save must be unavailable while there are errors");
             ctx.Check(!page.SaveAsCommand.CanExecute(null), "save-as must be disabled while there are errors");
             h.TryScreenshot("profile-live-errors");
 
@@ -165,7 +201,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
             page.SegmentLengthText = originalLength;
             await h.SettleAsync(50);
             ctx.Check(!page.HasErrors, "restoring the length should clear the error: " + Issues(page));
-            ctx.Check(h.Shell.FunctionKeys[saveKey].Command.CanExecute(null), "save should be enabled again");
+            ctx.Check(h.IsKeyUsable(saveKey), "save should be available again");
 
             string designLength = page.BodyLengthMmText;
             page.BodyLengthMmText = "1";
@@ -285,12 +321,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
             await h.RunAsync(page.NamePrompt.ConfirmCommand);
             ctx.Check(!page.NamePrompt.IsOpen, "a free name should be stored and close the box, error: " + page.NamePrompt.ErrorText);
             ctx.Check(!page.IsDirty && page.ProfileId is not null, "save-as should store and clear the dirty flag");
-            await h.RunAsync(page.OpenLibraryCommand);
-            ctx.Check(page.IsLibraryOpen, "library panel should open");
-            h.TryScreenshot("profile-library");
-            page.SelectedLibraryEntry = page.LibraryEntries.FirstOrDefault(e => e.Name == SelfTestNames.ProfileA);
-            ctx.Check(page.SelectedLibraryEntry is not null, "saved profile should be listed");
-            await h.RunAsync(page.LoadFromLibraryCommand);
+            await SelfTestNames.OpenFromLibraryAsync(h, ctx, LibraryViewModel.ProfilesGroup, SelfTestNames.ProfileA);
             ctx.Check(page.Segments.Count == segments, Invariant($"reloaded profile should have {segments} segments, has {page.Segments.Count}"));
             ctx.Check(!page.IsDirty, "a freshly loaded profile is clean");
         }, StepOptions.Expect("Profile_Saved"));
@@ -323,9 +354,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
                     "P-SELFTEST-OLD", SelfTestNames.OldProfile, 2000.0, old, DateTimeOffset.UtcNow),
                 System.Threading.CancellationToken.None);
 
-            await h.RunAsync(page.OpenLibraryCommand);
-            page.SelectedLibraryEntry = page.LibraryEntries.First(e => e.Name == SelfTestNames.OldProfile);
-            await h.RunAsync(page.LoadFromLibraryCommand);
+            await SelfTestNames.OpenFromLibraryAsync(h, ctx, LibraryViewModel.ProfilesGroup, SelfTestNames.OldProfile);
             ctx.Check(page.StatusResourceKey == "Profile_LegacyConverted", "the operator should be told it was converted");
             ctx.Check(page.Composite?.Segments.Count == 1 && page.Composite.Segments[0].ProfileTypeKey == ProfileTypeKeys.PointTable,
                 "an old profile should open as one point table");
@@ -337,17 +366,11 @@ internal sealed class ProfileSuite : ISelfTestSuite
         {
             ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveAsCommand, page.NamePrompt, SelfTestNames.ProfileB),
                 "save-as B should go through, error: " + page.NamePrompt.ErrorText);
-            await h.RunAsync(page.OpenLibraryCommand);
-            page.SelectedLibraryEntry = page.LibraryEntries.First(e => e.Name == SelfTestNames.ProfileB);
-            await h.RunAsync(page.DeleteFromLibraryCommand);
-            ctx.Check(page.LibraryEntries.All(e => e.Name != SelfTestNames.ProfileB), "deleted profile should disappear");
-            ctx.Check(page.LibraryEntries.Any(e => e.Name == SelfTestNames.ProfileA), "the other profile must stay");
-            await h.RunAsync(page.CloseLibraryCommand);
+            await SelfTestNames.DeleteFromLibraryAsync(h, ctx, LibraryViewModel.ProfilesGroup, SelfTestNames.ProfileB);
+            ctx.Check(h.Page<LibraryViewModel>().Entries.Any(e => e.Name == SelfTestNames.ProfileA), "the other profile must stay");
 
             // 把 A 调回编辑器，后面工序页要从库里选它。
-            await h.RunAsync(page.OpenLibraryCommand);
-            page.SelectedLibraryEntry = page.LibraryEntries.First(e => e.Name == SelfTestNames.ProfileA);
-            await h.RunAsync(page.LoadFromLibraryCommand);
+            await SelfTestNames.OpenFromLibraryAsync(h, ctx, LibraryViewModel.ProfilesGroup, SelfTestNames.ProfileA);
         }, StepOptions.Expect("Profile_Saved"));
 
         string? generated = null;
@@ -731,11 +754,9 @@ internal sealed class StepsSuite : ISelfTestSuite
             ctx.Check(page.Steps.Count == 2, "a new program keeps only start and end");
             ctx.Check(page.ProgramId is null && string.IsNullOrEmpty(page.ProgramName), "a new program must not keep the old program's identity");
             await h.PressKeyAsync(ctx, "Fn_ProgramLibrary");
-            ctx.Check(page.IsProgramLibraryOpen, "program library should open");
+            ctx.Check(h.Shell.CurrentPage.Key == PageKey.Library, "'program library' should open the library area");
             h.TryScreenshot("steps-program-library");
-            page.SelectedProgramEntry = page.ProgramLibraryEntries.FirstOrDefault(p => p.Name == SelfTestNames.ProgramA);
-            ctx.Check(page.SelectedProgramEntry is not null, "saved program should be listed");
-            await h.RunAsync(page.LoadProgramCommand);
+            await SelfTestNames.OpenFromLibraryAsync(h, ctx, LibraryViewModel.ProgramsGroup, SelfTestNames.ProgramA);
             ctx.Check(page.Steps.Count == steps, Invariant($"loaded program should have {steps} steps, has {page.Steps.Count}"));
             ctx.Check(!page.IsDirty, "a freshly loaded program is clean");
         }, StepOptions.Expect("Program_Saved"));
@@ -744,11 +765,8 @@ internal sealed class StepsSuite : ISelfTestSuite
         {
             ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveProgramAsCommand, page.NamePrompt, SelfTestNames.ProgramB),
                 "save-as B should go through, error: " + page.NamePrompt.ErrorText);
-            await h.RunAsync(page.OpenProgramLibraryCommand);
-            page.SelectedProgramEntry = page.ProgramLibraryEntries.First(p => p.Name == SelfTestNames.ProgramB);
-            await h.RunAsync(page.DeleteProgramCommand);
-            ctx.Check(page.ProgramLibraryEntries.All(p => p.Name != SelfTestNames.ProgramB), "deleted program should disappear");
-            await h.RunAsync(page.CloseProgramLibraryCommand);
+            await SelfTestNames.DeleteFromLibraryAsync(h, ctx, LibraryViewModel.ProgramsGroup, SelfTestNames.ProgramB);
+            await h.GoToAsync(PageKey.Steps, ctx);
         }, StepOptions.Expect("Program_Saved"));
 
         page.DiscardChanges();
@@ -758,18 +776,20 @@ internal sealed class StepsSuite : ISelfTestSuite
 }
 
 /// <summary>设置：标定值的改/存/重载；换砂轮向导走完五步，再走一次中途取消。</summary>
-internal sealed class SettingsSuite : ISelfTestSuite
+internal sealed class ParametersSuite : ISelfTestSuite
 {
-    public string Name => "Settings";
+    public string Name => "Parameters";
 
     public async Task RunAsync(SelfTestHarness h)
     {
-        SettingsViewModel page = h.Page<SettingsViewModel>();
+        ParametersViewModel page = h.Page<ParametersViewModel>();
         bool offline = h.Services.GetRequiredService<RollGrinder.Contracts.IAppOptions>().IsOffline;
-        await h.GoToAsync(PageKey.Settings);
+        await h.GoToAsync(PageKey.Parameters, groupKey: ParametersViewModel.CalibrationGroup);
 
         await h.StepAsync("Calibration", "ValuesListed", ctx =>
         {
+            ctx.Check(page.IsCalibrationGroup, "the 'calibration' group should be shown");
+            ctx.Check(page.CalibrationGroups.Count >= 5, "calibration values should be grouped by part");
             ctx.Check(page.Values.Count > 0, "calibration values should be listed");
             ctx.Check(page.CanEdit, "a manufacturer account should be able to edit calibration");
             ctx.Note(Invariant($"{page.Values.Count} values"));
@@ -790,9 +810,12 @@ internal sealed class SettingsSuite : ISelfTestSuite
             row.Text = edited;
             await h.SettleAsync();
             ctx.Check(page.IsDirty, "editing a value should mark the page dirty");
-            await h.PressKeyAsync(ctx, "Fn_SaveSettings");
+            ctx.Check(h.Shell.VerticalKeys[6].LabelResourceKey == "Vk_DiscardEdits" && h.Shell.VerticalKeys[7].LabelResourceKey == "Vk_Save",
+                "vertical keys 7 / 8 should become 'discard / save' while dirty");
+            await h.PressVerticalKeyAsync(ctx, "Vk_Save");
             ctx.Check(!page.IsDirty, "save should clear the dirty flag");
-            await h.PressKeyAsync(ctx, "Fn_ReloadSettings");
+            ctx.Check(h.IndexOfVerticalKey("Vk_Save") < 0, "the commit pair should go away after saving");
+            await h.PressVerticalKeyAsync(ctx, "Vk_Reload");
             ParameterRowViewModel reloaded = page.Values.First(r => r.Key == row.Key);
             ctx.Check(
                 double.Parse(reloaded.Text, NumberStyles.Float, CultureInfo.CurrentCulture) == double.Parse(edited, NumberStyles.Float, CultureInfo.CurrentCulture),
@@ -800,11 +823,21 @@ internal sealed class SettingsSuite : ISelfTestSuite
             ctx.Note(row.Key + ": " + value.ToString(CultureInfo.InvariantCulture) + " -> " + edited);
         }, StepOptions.Expect("*"));
 
+        await h.StepAsync("Audit", "AuditGroupListsChanges", async ctx =>
+        {
+            await h.PressKeyAsync(ctx, "Fn_CalibrationAudit");
+            await h.SettleAsync(300);
+            ctx.Check(page.IsAuditGroup, "the audit group should be shown");
+            ctx.Check(page.Audit.Count > 0, "the calibration value saved above should be in the audit");
+        });
+
         string[] machineWrites = offline ? new[] { "*" } : Array.Empty<string>();
         await h.StepAsync("WheelChange", "FullWizard", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_NewWheel");
-            ctx.Check(page.ActiveSubViewKey == SettingsViewModel.WheelChangeSubView, "wheel change wizard should open");
+            await h.PressKeyAsync(ctx, "Fn_Wheel");
+            await h.PressVerticalKeyAsync(ctx, "Vk_ChangeWheel");
+            ctx.Check(page.ActiveSubViewKey == ParametersViewModel.WheelChangeSubView, "wheel change wizard should open");
+            ctx.Check(h.IndexOfVerticalKey("Vk_WizardNext") == 0, "the wizard's 'next' should be vertical key 1");
             ctx.Check(page.WheelChangeStage == WheelChangeStage.EnterNewWheel, "wizard should start at 'enter new wheel'");
             h.TryScreenshot("wheel-1-enter");
 
@@ -816,7 +849,8 @@ internal sealed class SettingsSuite : ISelfTestSuite
             if (offline && page.WheelChangeStage == WheelChangeStage.SwitchToManualTouch)
             {
                 ctx.Note("offline: switching touch mode needs the machine, wizard stays at stage 2 as designed");
-                await h.RunAsync(page.CancelWheelChangeCommand);
+                await h.PressVerticalKeyAsync(ctx, "Vk_WizardCancel");
+                await h.ConfirmAsync(ctx);
                 return;
             }
 
@@ -832,21 +866,23 @@ internal sealed class SettingsSuite : ISelfTestSuite
             await h.RunAsync(page.WheelChangeNextCommand);
             await h.RunAsync(page.WheelChangeNextCommand);
             ctx.Check(page.ActiveSubViewKey is null, "wizard should close when done");
-            ctx.Check(page.StatusResourceKey == "WheelChange_Done", "status should say done, is " + page.StatusResourceKey);
+            ctx.Check(h.IndexOfVerticalKey("Vk_ChangeWheel") == 0, "the wheel group's keys should be back");
+            ctx.Note("done: " + h.DialogLineText);
         }, new StepOptions(ExpectedAlarms: machineWrites));
 
         await h.StepAsync("Wheel", "DataDressingAndHistory", async ctx =>
         {
-            // 砂轮页（修改稿 5.7）：砂轮数据、修整参数各配简图，光标所在参数亮起、说明行写全；换砂轮记进记录。
-            await h.PressKeyAsync(ctx, "Fn_Wheel");
-            ctx.Check(page.ActiveSubViewKey == SettingsViewModel.WheelSubView, "the wheel sub view should open");
+            // 砂轮（最终稿 5.10）：砂轮数据、修整参数各配简图，每一格的说明行（对话行）写全；换砂轮记进记录。
+            await h.GoToAsync(PageKey.Parameters, ctx, ParametersViewModel.WheelGroup);
+            ctx.Check(page.IsWheelGroup, "the wheel group should be shown");
             ctx.Check(page.WheelRows.Count == 3 && page.DressRows.Count == 4, "wheel data and dressing rows should be listed");
             foreach (ParameterRowViewModel row in page.WheelRows.Concat(page.DressRows))
             {
-                page.FocusedWheelKey = row.Key;
-                ctx.Check(page.WheelHelpText.Length > 0 && !page.WheelHelpText.Contains('!'),
-                    row.Key + " has an incomplete help line: " + page.WheelHelpText);
+                ctx.Check(row.HintText.Length > 0 && !row.HintText.Contains('!'), row.Key + " has an incomplete hint: " + row.HintText);
             }
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_RegisterWheel");
+            ctx.Check(page.FocusedWheelKey == RollGrinder.Core.Calibration.CalibrationKeys.NewWheelDiameterMm, "'register new wheel' should point at the new-wheel diameter");
 
             page.FocusedWheelKey = RollGrinder.Core.Calibration.CalibrationKeys.DressInfeedRadiusMicrometer;
             await h.WaitUntilAsync(() => page.WheelHistory.Count > 0, TimeSpan.FromSeconds(5));
@@ -858,16 +894,16 @@ internal sealed class SettingsSuite : ISelfTestSuite
             }
 
             h.TryScreenshot("wheel-page");
-            await h.PressNavigationKeyAsync();
-            ctx.Check(page.ActiveSubViewKey is null, "the navigation key should close the wheel sub view");
         });
 
         await h.StepAsync("WheelChange", "CancelHalfway", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_NewWheel");
+            await h.PressVerticalKeyAsync(ctx, "Vk_ChangeWheel");
             page.NewWheelDiameterText = "880";
-            await h.RunAsync(page.WheelChangeNextCommand);
-            await h.RunAsync(page.CancelWheelChangeCommand);
+            await h.PressVerticalKeyAsync(ctx, "Vk_WizardNext");
+            await h.PressVerticalKeyAsync(ctx, "Vk_WizardCancel");
+            ctx.Check(h.HasPendingConfirmation, "giving up the wheel change should ask first");
+            await h.ConfirmAsync(ctx);
             ctx.Check(page.ActiveSubViewKey is null, "cancel should close the wizard");
         }, new StepOptions(ExpectedAlarms: machineWrites));
     }
@@ -875,7 +911,10 @@ internal sealed class SettingsSuite : ISelfTestSuite
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 }
 
-/// <summary>手动与辅助：每个动作按钮（要确认的按两下）、测量取点与保存、对中、HMI 复位、跳诊断。</summary>
+/// <summary>
+/// 手动动作页（最终稿 5.4、5.5）：测量臂、尾架、头架拨盘、托瓦、测量对中、辅助循环——每页的横键切过去，
+/// 竖键上的动作一个一个按（要确认的：对话行问、按"✓ 确认"）；测点采集与归档、对中比对。
+/// </summary>
 internal sealed class ManualSuite : ISelfTestSuite
 {
     public string Name => "Manual";
@@ -883,157 +922,266 @@ internal sealed class ManualSuite : ISelfTestSuite
     public async Task RunAsync(SelfTestHarness h)
     {
         ManualViewModel page = h.Page<ManualViewModel>();
-        await h.GoToAsync(PageKey.Manual);
+        await h.GoToAsync(PageKey.Manual, groupKey: ManualPageLayout.Pages[0].Key);
 
-        await h.StepAsync("Page", "LiveValues", ctx =>
+        await h.StepAsync("Page", "GroupsAndReadouts", ctx =>
         {
-            ctx.Check(page.AxisValues.Count > 0, "axis values should be listed");
-            ctx.Note(Invariant($"axes={page.AxisValues.Count}, spindles={page.SpindleValues.Count}"));
+            ctx.Check(page.Groups.Count == ManualPageLayout.Pages.Count + 1, "every manual page plus 'auxiliary cycles' should be a group");
+            ctx.Check(page.Groups.All(group => group.VerticalKeys.Count <= PageViewModelBase.VerticalKeyCount), "a page holds at most 8 vertical keys");
+            ctx.Note(string.Join(", ", page.Groups.Select(group => group.Key + ":" + group.Axes.Count + " axes")));
             return Task.CompletedTask;
         }, StepOptions.Shot);
 
-        // 手动页分 6 页（修改稿 5.6）：每页一个功能键，页里的动作一个一个在竖键上按。
         foreach (ManualGroupViewModel group in page.Groups.ToList())
         {
+            string label = group.Key == MachineAreaKeys.Cycles ? "Fn_AuxCycles" : "ManualPage_" + group.Key;
             await h.StepAsync("Groups", group.Key, async ctx =>
             {
-                await h.PressKeyAsync(ctx, "ManualGroup_" + group.Key);
-                ctx.Check(page.SelectedGroup == group, "the page key should switch to " + group.Key);
-                ctx.Check(group.VerticalKeys.Count is > 0 and <= 8, Invariant($"a page holds 1–8 vertical keys, has {group.VerticalKeys.Count}"));
-                ctx.Check(h.Shell.CurrentPage.VerticalKeys.Take(group.VerticalKeys.Count)
-                        .Select(k => k.LabelResourceKey).SequenceEqual(group.VerticalKeys.Select(k => k.LabelResourceKey)),
-                    "the vertical bar should show this page's actions");
+                if (h.Shell.CurrentPage.Key != PageKey.Manual)
+                {
+                    await h.GoToAsync(PageKey.Manual, ctx, group.Key);
+                }
+
+                await h.PressKeyAsync(ctx, label);
+                ctx.Check(page.SelectedGroup == group, "the horizontal key should switch to " + group.Key);
+                ctx.Check(h.Shell.VerticalKeys.Take(group.VerticalKeys.Count)
+                        .Zip(group.VerticalKeys, (shown, own) => own is null ? shown.IsPlaceholder : ReferenceEquals(shown, own))
+                        .All(same => same),
+                    "the vertical bar should show this page's actions in place");
                 ctx.Note(string.Join(", ", group.Lamps.Select(l => l.Label + "=" + l.StateText)));
             }, StepOptions.Shot);
 
-            foreach (MachineActionViewModel action in group.Actions)
+            if (group.Key == ManualPageLayout.MeasureAndCentringKey)
             {
-                await h.StepAsync("Actions_" + group.Key, action.Descriptor.Key, async ctx =>
+                continue;
+            }
+
+            for (int index = 0; index < group.VerticalKeys.Count; index++)
+            {
+                FunctionKeyViewModel? key = group.VerticalKeys[index];
+                if (key is null)
                 {
-                    await PressActionOnVerticalKeyAsync(h, ctx, page, action);
-                });
+                    continue;
+                }
+
+                int slot = index;
+                await h.StepAsync("Actions_" + group.Key, Invariant($"V{slot + 1}_{key.Label}"), async ctx =>
+                {
+                    await h.GoToAsync(PageKey.Manual, ctx, group.Key);
+                    await PressActionAsync(h, ctx, key);
+                }, new StepOptions(Tolerant: true));
             }
         }
 
         await h.StepAsync("Status", "QuillLampFollowsTheCommand", async ctx =>
         {
+            await h.GoToAsync(PageKey.Manual, ctx, "tailstock");
             ManualGroupViewModel tailstock = page.Groups.First(g => g.Key == "tailstock");
-            await h.PressKeyAsync(ctx, "ManualGroup_tailstock");
             StatusLampViewModel quill = tailstock.Lamps.First(l => l.LabelResourceKey == "Status_quill");
-            MachineActionViewModel extend = tailstock.Actions.First(a => a.Descriptor.Key == "quill.extend");
-            if (!extend.IsEnabled)
+            FunctionKeyViewModel? extend = FindAction(h, tailstock, "quill.extend");
+            if (extend is null || !extend.IsUsable)
             {
-                ctx.Skip("quill.extend cannot be pressed in the current machine state");
+                ctx.Skip("quill.extend cannot be pressed now: " + extend?.ReasonText);
             }
 
-            await PressActionOnVerticalKeyAsync(h, ctx, page, extend);
+            await PressActionAsync(h, ctx, extend!);
             await h.SettleAsync(600);
             if (quill.IsUnknown)
             {
-                ctx.Skip("the quill status bit is not mapped (Q7 address not given yet)");
+                ctx.Skip("the quill status bit is not mapped");
             }
 
             ctx.Check(quill.IsOn, "after 'quill extend' the quill lamp should be on, is " + quill.StateText);
         }, StepOptions.Shot);
 
-        await h.StepAsync("Keys", "AuxiliaryCyclesMenu", async ctx =>
-        {
-            await h.PressKeyAsync(ctx, "Fn_AuxCycles");
-            foreach (MachineActionViewModel cycle in page.CycleActions)
-            {
-                ctx.Check(h.IndexOfVerticalKey(cycle.Descriptor.ResourceKey) >= 0, cycle.Descriptor.Key + " should be in the cycles menu");
-            }
-
-            ctx.Check(h.IndexOfVerticalKey("Fn_HmiReset") >= 0, "HMI reset should be in the cycles menu");
-            h.TryScreenshot("manual-aux-cycles");
-        });
-
-        foreach (MachineActionViewModel action in page.CycleActions.ToList())
-        {
-            await h.StepAsync("Actions_Cycles", action.Descriptor.Key, async ctx =>
-            {
-                await PressActionOnVerticalKeyAsync(h, ctx, page, action);
-            });
-        }
-
         await h.StepAsync("Measurement", "CaptureSaveClear", async ctx =>
         {
-            // 前面按过的"测量采样"动作也会取一个点：先清空，再数自己取的。
-            await h.RunAsync(page.ClearPointsCommand);
+            await h.GoToAsync(PageKey.Manual, ctx, ManualPageLayout.MeasureAndCentringKey);
+            ctx.Check(page.IsCentring, "the measure-and-centring page should be shown");
+            await h.PressVerticalKeyAsync(ctx, "Measurement_ClearButton");
+            if (h.HasPendingConfirmation)
+            {
+                await h.ConfirmAsync(ctx);
+            }
+
             for (int i = 0; i < 3; i++)
             {
-                await h.RunAsync(page.CapturePointCommand);
+                await h.PressVerticalKeyAsync(ctx, "Measurement_CaptureButton");
             }
 
             ctx.Check(page.Points.Count == 3, Invariant($"3 captured points expected, got {page.Points.Count}"));
             h.TryScreenshot("manual-points");
-            await h.RunAsync(page.SaveMeasurementCommand);
+            await h.PressVerticalKeyAsync(ctx, "Measurement_SaveButton");
             ctx.Note("save status=" + page.StatusResourceKey);
-            await h.RunAsync(page.ClearPointsCommand);
+            await h.PressVerticalKeyAsync(ctx, "Measurement_ClearButton");
+            ctx.Check(h.HasPendingConfirmation, "clearing the points should ask first");
+            await h.ConfirmAsync(ctx);
             ctx.Check(page.Points.Count == 0, "clear should remove points");
         }, StepOptions.Expect("*"));
 
         await h.StepAsync("Centring", "HeadTailClear", async ctx =>
         {
-            await h.RunAsync(page.CaptureHeadCommand);
-            await h.RunAsync(page.CaptureTailCommand);
-            ctx.Note("mounting deviation=" + page.MountingDeviationText + ", hint=" + page.AlignmentHintText);
+            await h.PressVerticalKeyAsync(ctx, "Centring_CaptureHead");
+            await h.PressVerticalKeyAsync(ctx, "Centring_CaptureTail");
+            ctx.Note("difference=" + page.CentringDifferenceText + ", hint=" + page.AlignmentHintText);
             h.TryScreenshot("manual-centring");
-            await h.RunAsync(page.ClearCentringCommand);
-        });
+            await h.PressVerticalKeyAsync(ctx, "Centring_ClearButton");
+            await h.ConfirmAsync(ctx);
+        }, new StepOptions(Tolerant: true));
+    }
 
-        await h.StepAsync("Keys", "HmiResetClearsAlarms", async ctx =>
-        {
-            h.Services.GetRequiredService<IAlarmSink>().Raise(AlarmSeverity.Information, "Banner_NoAlarm", "self-test marker");
-            if (h.IndexOfVerticalKey("Fn_HmiReset") < 0)
-            {
-                await h.PressKeyAsync(ctx, "Fn_AuxCycles");
-            }
-
-            await h.PressVerticalKeyAsync(ctx, "Fn_HmiReset");
-            ctx.Check(h.Services.GetRequiredService<IAlarmLog>().Snapshot().Count == 0, "HMI reset should clear the alarm list");
-            h.Shell.PressEscape();
-            await h.SettleAsync();
-        });
+    /// <summary>按手动目录的动作键在某一页的竖键里找到它（标签可能带"…"或换成停止，按命令对象认）。</summary>
+    internal static FunctionKeyViewModel? FindAction(SelfTestHarness h, ManualGroupViewModel group, string actionKey)
+    {
+        ManualCommandDescriptor descriptor = ManualCommandCatalog.All.Single(command => command.Key == actionKey);
+        IStringLocalizer localizer = h.Services.GetRequiredService<IStringLocalizer>();
+        return group.VerticalKeys.FirstOrDefault(key => key is not null
+            && (key.LabelResourceKey == descriptor.ResourceKey || key.LabelArgument == localizer[descriptor.ResourceKey]));
     }
 
     /// <summary>
-    /// 在竖键上按一个动作：按不了就跳过（缺映射、机床在忙）；要按两下的，第一下之后键上换成"再按一次"，在同一格再按。
+    /// 按一个动作竖键：按不了就跳过（缺映射、机床在忙、急停——原因在对话行）；问了一句就按"✓ 确认"。
     /// </summary>
-    private static async Task PressActionOnVerticalKeyAsync(
-        SelfTestHarness h, StepContext ctx, ManualViewModel page, MachineActionViewModel action)
+    internal static async Task PressActionAsync(SelfTestHarness h, StepContext ctx, FunctionKeyViewModel key)
     {
-        int index = h.IndexOfVerticalKey(action.Descriptor.ResourceKey);
-        ctx.Check(index >= 0, "vertical key for " + action.Descriptor.Key + " should be on the bar");
-        if (index < 0)
+        if (!key.IsUsable)
         {
-            return;
+            ctx.Skip("unavailable: " + key.ReasonText);
         }
 
-        if (!action.IsEnabled || !h.IsVerticalKeyUsable(index))
+        await h.PressAsync(key);
+        if (h.HasPendingConfirmation)
         {
-            ctx.Skip(action.IsMapped ? "not allowed in the current machine state" : "not mapped in tagmap");
+            ctx.Note("asked: " + h.PendingQuestion);
+            await h.ConfirmAsync(ctx);
         }
 
-        h.Shell.PressVerticalKey(index);
-        await h.SettleAsync();
-        if (action.IsAwaitingConfirmation)
-        {
-            ctx.Check(h.Shell.CurrentPage.VerticalKeys[index].LabelResourceKey == "Manual_ConfirmAgain",
-                "the armed key should say 'press again'");
-            ctx.Note("asked for confirmation, pressed again");
-            h.Shell.PressVerticalKey(index);
-            await h.SettleAsync();
-        }
-
-        ctx.Check(!action.IsAwaitingConfirmation, "action should not stay armed after the second press");
-        ctx.Note("feedback: " + page.LastActionText);
+        ctx.Check(!h.HasPendingConfirmation, "nothing should stay pending after confirming");
+        ctx.Note("dialog: " + h.DialogLineText);
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 }
 
-/// <summary>磨削记录：查询、打开、12 项指标、4 条曲线、日/月汇总、辊件台账、磨前/磨后报表预览与打印、导出。</summary>
+/// <summary>
+/// 手动磨削（最终稿 5.1）：给定与倍率先标红、问一句、确认才写，取消恢复原值；往复行程；位置图取点；
+/// 竖键动作（砂轮启动、冷却液、带启动装置、定位 ▸、各轴归位……）。
+/// </summary>
+internal sealed class ManualGrindingSuite : ISelfTestSuite
+{
+    public string Name => "ManualGrinding";
+
+    public async Task RunAsync(SelfTestHarness h)
+    {
+        ManualGrindingViewModel page = h.Page<ManualGrindingViewModel>();
+        await h.GoToAsync(PageKey.ManualGrinding);
+
+        await h.StepAsync("Page", "WindowsAndKeys", ctx =>
+        {
+            ctx.Check(page.Axes.Count > 0, "the position window should list axes");
+            ctx.Check(page.Mechanism.Count > 0, "the mechanism window should list lamps");
+            ctx.Check(h.Shell.VerticalKeys.Count == PageViewModelBase.VerticalKeyCount, "the vertical bar keeps 8 slots");
+            ctx.Note("wheel " + page.WheelSurfaceText + ", headstock " + page.HeadstockSpeedText + ", carriage " + page.CarriageStateText);
+            return Task.CompletedTask;
+        }, StepOptions.Shot);
+
+        await h.StepAsync("Setpoint", "OverrideCancelReverts", async ctx =>
+        {
+            SetpointViewModel feed = page.FeedOverride;
+            string before = feed.Text;
+            feed.StepDownCommand.Execute(null);
+            await h.SettleAsync();
+            if (!h.HasPendingConfirmation)
+            {
+                ctx.Skip("the override is not mapped: " + h.DialogLineText);
+            }
+
+            ctx.Check(feed.IsPending, "a changed override should be marked red until confirmed");
+            await h.CancelConfirmationAsync();
+            ctx.Check(!feed.IsPending && feed.Text == before, "cancel should restore the written value");
+        });
+
+        await h.StepAsync("Setpoint", "OverrideConfirmWrites", async ctx =>
+        {
+            SetpointViewModel feed = page.FeedOverride;
+            feed.StepDownCommand.Execute(null);
+            await h.SettleAsync();
+            if (!h.HasPendingConfirmation)
+            {
+                ctx.Skip("the override is not mapped: " + h.DialogLineText);
+            }
+
+            string asked = feed.Text;
+            await h.ConfirmAsync(ctx);
+            ctx.Check(!feed.IsPending, "after confirming the value is no longer pending");
+            ctx.Note("feed override " + asked + " written: " + h.DialogLineText);
+            feed.StepUpCommand.Execute(null);
+            await h.SettleAsync();
+            if (h.HasPendingConfirmation)
+            {
+                await h.ConfirmAsync(ctx);
+            }
+        }, new StepOptions(Tolerant: true));
+
+        await h.StepAsync("Stroke", "PickTargetAndStrokeValues", async ctx =>
+        {
+            page.PickPositionTarget(1234.56);
+            await h.SettleAsync();
+            ctx.Check(page.PositionTarget.Text == "1234.6", "picking on the strip should fill the target, got " + page.PositionTarget.Text);
+            page.StrokeStart.Text = "100.0";
+            page.StrokeEnd.Text = "1900.0";
+            await h.SettleAsync();
+            ctx.Check(!page.StrokeStart.IsPending && !page.StrokeEnd.IsPending, "stroke values do not write the machine, so they are never pending");
+            ctx.Check(!h.HasPendingConfirmation, "stroke values do not ask");
+        });
+
+        for (int index = 0; index < page.VerticalKeys.Count; index++)
+        {
+            FunctionKeyViewModel key = page.VerticalKeys[index];
+            if (key.IsPlaceholder || key.Kind == FunctionKeyKind.Navigation)
+            {
+                continue;
+            }
+
+            int slot = index;
+            await h.StepAsync("Keys", Invariant($"V{slot + 1}_{key.Label}"), async ctx =>
+            {
+                await h.GoToAsync(PageKey.ManualGrinding, ctx);
+                page.ResetVerticalMenu();
+                FunctionKeyViewModel current = page.VerticalKeys[slot];
+                if (current.LabelResourceKey == "MG_Position")
+                {
+                    await h.PressAsync(current);
+                    ctx.Check(page.VerticalMenuTitle.Length > 0, "'position ▸' should open its sub menu");
+                    h.TryScreenshot("manual-grinding-position");
+                    ctx.Note(string.Join(" | ", page.VerticalKeys.Where(k => !k.IsPlaceholder).Select(k => k.Label + (k.IsUsable ? string.Empty : " (" + k.ReasonText + ")"))));
+                    page.ResetVerticalMenu();
+                    return;
+                }
+
+                await ManualSuite.PressActionAsync(h, ctx, current);
+                if (current.LabelResourceKey is "Action_WheelStop" or "MG_CarriageStop")
+                {
+                    // 刚启动的砂轮 / 拖板停下来（停止不问）。
+                    await h.PressAsync(current);
+                }
+            }, new StepOptions(Tolerant: true));
+        }
+
+        await h.StepAsync("Keys", "HelpTopicIsManualGrinding", async ctx =>
+        {
+            await h.RunAsync(h.Shell.ToggleHelpCommand);
+            ctx.Check(h.Shell.Help.TopicTitle == h.Services.GetRequiredService<IStringLocalizer>()["Help_ManualGrinding_Title"],
+                "help on this page should open the manual grinding topic");
+            h.Shell.Help.Close();
+            await h.SettleAsync();
+        });
+    }
+
+    private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
+}
+
+/// <summary>磨削记录（最终稿 5.11）：查询…、打开、12 项指标、竖键 1–4 选曲线、日 / 月汇总、磨前 / 磨后报表预览与打印、导出。</summary>
 internal sealed class RecordsSuite : ISelfTestSuite
 {
     public string Name => "Records";
@@ -1041,14 +1189,18 @@ internal sealed class RecordsSuite : ISelfTestSuite
     public async Task RunAsync(SelfTestHarness h)
     {
         RecordsViewModel page = h.Page<RecordsViewModel>();
-        IStringLocalizer localizer = h.Services.GetRequiredService<IStringLocalizer>();
         await h.GoToAsync(PageKey.Records);
 
         await h.StepAsync("Query", "LastThirtyDays", async ctx =>
         {
-            page.FromDate = DateTime.Today.AddDays(-30);
-            page.ToDate = DateTime.Today;
-            await h.RunAsync(page.QueryCommand);
+            await h.PressVerticalKeyAsync(ctx, "Vk_QueryAsk");
+            ctx.Check(page.IsQueryOpen, "'query…' should open the query panel");
+            ctx.Check(h.Shell.VerticalKeys[7].LabelResourceKey == "Vk_Query", "vertical key 8 should read 'query'");
+            page.SetRangeCommand.Execute("30");
+            h.TryScreenshot("records-query");
+            await h.PressVerticalKeyAsync(ctx, "Vk_Query");
+            await h.SettleAsync(300);
+            ctx.Check(!page.IsQueryOpen, "querying should close the panel");
             ctx.Note(Invariant($"{page.Records.Count} records"));
         }, StepOptions.Shot);
 
@@ -1063,39 +1215,162 @@ internal sealed class RecordsSuite : ISelfTestSuite
             page.SelectedRecord = page.Records.FirstOrDefault(r => r.RollCode == SelfTestNames.FlowRollId) ?? page.Records[0];
             await h.SettleAsync(300);
             ctx.Check(page.Metrics.Count >= 12, Invariant($"12 metrics expected, got {page.Metrics.Count}"));
-            foreach (RecordCurveKind kind in Enum.GetValues<RecordCurveKind>())
+            foreach (string key in new[] { "Curve_BeforeAfter", "Curve_Error", "Curve_Roundness", "Curve_Convergence" })
             {
-                page.SelectCurveCommand.Execute(kind);
+                await h.PressVerticalKeyAsync(ctx, key);
                 await h.SettleAsync(200);
-                ctx.Note(kind + (page.CurveHasData ? "=data" : "=empty"));
-                h.TryScreenshot("records-curve-" + kind);
+                ctx.Check(h.Shell.VerticalKeys[h.IndexOfVerticalKey(key)].IsActive, key + " should be marked as shown");
+                ctx.Note(key + (page.CurveHasData ? "=data" : "=empty") + " · " + page.CurveTitle);
+                h.TryScreenshot("records-" + key);
             }
         });
 
         await h.StepAsync("Summary", "DailyAndMonthly", async ctx =>
         {
             await h.PressKeyAsync(ctx, "Fn_DailyReport");
-            ctx.Note("daily: " + page.SummaryText);
+            ctx.Note("daily: " + page.SummaryLineText);
             await h.PressKeyAsync(ctx, "Fn_MonthlyReport");
-            ctx.Note("monthly: " + page.SummaryText);
-            ctx.Check(page.SummaryText.Length > 0, "summary should produce text");
+            ctx.Note("monthly: " + page.SummaryLineText);
+            ctx.Check(page.SummaryLineText.Length > 0, "summary should produce text");
         });
 
-        await h.StepAsync("Ledger", "OpenAndClose", async ctx =>
+        foreach ((string key, bool vertical, string name) in new[] { ("Fn_PreGrindReport", false, "PreGrind"), ("Vk_Print", true, "PostGrind") })
         {
-            await h.PressKeyAsync(ctx, "Fn_RollLedger");
-            ctx.Check(page.ActiveSubViewKey is not null, "ledger sub view should open");
-            ctx.Note(Invariant($"{page.Ledger.Count} rolls, {page.SummaryLineText}"));
-            h.TryScreenshot("records-ledger");
-            await h.PressNavigationKeyAsync();
+            await h.StepAsync("Report", name + "PreviewAndPrint", async ctx =>
+            {
+                if (!hasRecords)
+                {
+                    ctx.Skip("no record to report on");
+                }
+
+                await h.RecoverAsync();
+                if (vertical)
+                {
+                    await h.PressVerticalKeyAsync(ctx, key);
+                }
+                else
+                {
+                    await h.PressKeyAsync(ctx, key);
+                }
+
+                ctx.Check(page.Report is not null, "a report should be composed");
+                ctx.Check(page.ActiveSubViewKey == RecordsViewModel.ReportSubView, "report preview should open as a sub view");
+                h.TryScreenshot("records-report-" + name);
+                int before = h.Interaction.Produced.Count;
+                await h.PressVerticalKeyAsync(ctx, "Vk_PrintNow");
+                ctx.Check(h.Interaction.Produced.Count == before + 1, "printing should produce one document");
+                ctx.Note("printed " + Path.GetFileName(h.Interaction.LastProduced));
+                await h.BackAsync();
+            });
+        }
+
+        await h.StepAsync("Export", "Csv", async ctx =>
+        {
+            await h.RecoverAsync();
+            await h.PressVerticalKeyAsync(ctx, "Vk_ExportExcel");
+            string? file = h.Interaction.LastProduced;
+            ctx.Check(file is not null && File.Exists(file) && file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase), "a CSV export should be written");
+            ctx.Note(Invariant($"{Path.GetFileName(file)} lines={File.ReadAllLines(file!).Length}"));
         });
+    }
+
+    private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
+}
+
+/// <summary>
+/// 库（最终稿 5.9）：辊形库、程序库、作业、轧辊台账、U 盘。条目的新建、打开、复制、重命名、删除（问一句），
+/// 导出到 U 盘再导入（撞名加"(2)"），台账登记与编辑、重号拒绝。
+/// </summary>
+internal sealed class LibrarySuite : ISelfTestSuite
+{
+    public string Name => "Library";
+
+    public async Task RunAsync(SelfTestHarness h)
+    {
+        LibraryViewModel page = h.Page<LibraryViewModel>();
+
+        foreach (string group in new[] { LibraryViewModel.ProfilesGroup, LibraryViewModel.ProgramsGroup, LibraryViewModel.JobsGroup })
+        {
+            await h.StepAsync("Groups", group, async ctx =>
+            {
+                await h.GoToAsync(PageKey.Library, ctx, group);
+                ctx.Check(page.Group == group && page.IsListGroup, "the group key should show the " + group + " list");
+                await h.WaitUntilAsync(() => !page.IsBusy, TimeSpan.FromSeconds(5));
+                if (page.Entries.Count > 0)
+                {
+                    page.SelectedEntry = page.Entries[0];
+                    await h.SettleAsync(200);
+                    ctx.Note(Invariant($"{page.Entries.Count} entries, preview rows {page.PreviewRows.Count}, curve points {page.PreviewCurve.Count}"));
+                }
+
+                h.TryScreenshot("library-" + group);
+            }, StepOptions.Shot);
+        }
+
+        await h.StepAsync("Entries", "CopyRenameDelete", async ctx =>
+        {
+            if (!await SelfTestNames.SelectAsync(h, LibraryViewModel.ProfilesGroup, SelfTestNames.ProfileA))
+            {
+                ctx.Skip("profile A was not saved by the profile suite");
+            }
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_Copy");
+            ctx.Check(page.NamePrompt.IsOpen, "copy should ask for the new name");
+            page.NamePrompt.Name = SelfTestNames.ProfileB;
+            await h.RunAsync(page.NamePrompt.ConfirmCommand);
+            if (page.NamePrompt.IsOpen && page.NamePrompt.CanOverwrite)
+            {
+                await h.RunAsync(page.NamePrompt.OverwriteCommand);
+            }
+
+            ctx.Check(await h.WaitUntilAsync(() => page.Entries.Any(e => e.Name == SelfTestNames.ProfileB), TimeSpan.FromSeconds(5)),
+                "the copy should be listed");
+
+            page.SelectedEntry = page.Entries.First(e => e.Name == SelfTestNames.ProfileB);
+            await h.PressVerticalKeyAsync(ctx, "Vk_Rename");
+            page.NamePrompt.Name = SelfTestNames.ProfileB + " R";
+            await h.RunAsync(page.NamePrompt.ConfirmCommand);
+            ctx.Check(await h.WaitUntilAsync(() => page.Entries.Any(e => e.Name == SelfTestNames.ProfileB + " R"), TimeSpan.FromSeconds(5)),
+                "the renamed entry should be listed");
+
+            page.SelectedEntry = page.Entries.First(e => e.Name == SelfTestNames.ProfileB + " R");
+            await h.PressVerticalKeyAsync(ctx, "Vk_Delete");
+            ctx.Check(h.HasPendingConfirmation, "delete should ask first");
+            await h.ConfirmAsync(ctx);
+            ctx.Check(await h.WaitUntilAsync(() => page.Entries.All(e => e.Name != SelfTestNames.ProfileB + " R"), TimeSpan.FromSeconds(5)),
+                "the deleted entry should disappear");
+            ctx.Check(page.Entries.Any(e => e.Name == SelfTestNames.ProfileA), "the other profile must stay");
+        });
+
+        await h.StepAsync("Usb", "ExportAndImportRenamesClashes", async ctx =>
+        {
+            if (!await SelfTestNames.SelectAsync(h, LibraryViewModel.ProfilesGroup, SelfTestNames.ProfileA))
+            {
+                ctx.Skip("profile A was not saved by the profile suite");
+            }
+
+            int produced = h.Interaction.Produced.Count;
+            await h.PressVerticalKeyAsync(ctx, "Vk_ExportUsb");
+            ctx.Check(await h.WaitUntilAsync(() => h.Interaction.Produced.Count > produced, TimeSpan.FromSeconds(5)), "an exchange file should be written");
+            string file = h.Interaction.LastProduced!;
+            ctx.Check(File.Exists(file) && file.EndsWith(RollGrinder.Data.LibraryExchangeFile.Extension, StringComparison.OrdinalIgnoreCase),
+                "the exchange file should carry the " + RollGrinder.Data.LibraryExchangeFile.Extension + " extension");
+
+            int before = page.Entries.Count;
+            h.Interaction.OpenAnswers.Enqueue(file);
+            await h.PressVerticalKeyAsync(ctx, "Vk_ImportUsb");
+            ctx.Check(await h.WaitUntilAsync(() => page.Entries.Count == before + 1, TimeSpan.FromSeconds(5)), "the imported profile should be added");
+            LibraryEntryViewModel? imported = page.Entries.FirstOrDefault(e => e.Name == SelfTestNames.ProfileA + " (2)");
+            ctx.Check(imported is not null, "a clashing name should get a '(2)' suffix");
+            page.SelectedEntry = imported;
+            await h.PressVerticalKeyAsync(ctx, "Vk_Delete");
+            await h.ConfirmAsync(ctx);
+        }, StepOptions.Expect("*"));
 
         await h.StepAsync("Ledger", "RegisterEditAndRefuseDuplicate", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_RollLedger");
-
-            // 登记一支新辊：尺寸、类型、当前直径、重量都在台账里填。
-            await h.RunAsync(page.NewLedgerRollCommand);
+            await h.GoToAsync(PageKey.Library, ctx, LibraryViewModel.LedgerGroup);
+            await h.PressVerticalKeyAsync(ctx, "Vk_NewRoll");
             ctx.Check(page.IsNewLedgerRoll && page.LedgerRollId.Length == 0, "a new roll starts from an empty form");
             page.LedgerRollId = SelfTestNames.LedgerRollId;
             page.SetLedgerKindCommand.Execute(RollGrinder.Data.Model.RollKind.BackupRoll);
@@ -1106,63 +1381,30 @@ internal sealed class RecordsSuite : ISelfTestSuite
             page.LedgerHeadBoxWeightText = "2500";
             page.LedgerTailBoxWeightText = "2400";
             ctx.Check(page.LedgerTotalWeightText.Length > 2, "the total lift weight should be summed");
-            await h.RunAsync(page.SaveLedgerRollCommand);
+            await h.PressVerticalKeyAsync(ctx, "Vk_SaveRoll");
             ctx.Check(page.LedgerProblems.Count == 0, "a valid roll should be saved: " + string.Join(" | ", page.LedgerProblems));
             ctx.Check(page.SelectedLedgerRow?.RollId == SelfTestNames.LedgerRollId && !page.IsNewLedgerRoll,
                 "the saved roll should be selected for editing");
-            h.TryScreenshot("records-ledger-edit");
+            h.TryScreenshot("library-ledger-edit");
 
-            // 改当前直径：同一支辊，不算重号。
             page.LedgerCurrentDiameterText = "1180";
-            await h.RunAsync(page.SaveLedgerRollCommand);
+            await h.PressVerticalKeyAsync(ctx, "Vk_SaveRoll");
             ctx.Check(page.LedgerProblems.Count == 0 && page.SelectedLedgerRow?.CurrentDiameterText.StartsWith("1180", StringComparison.Ordinal) == true,
                 "editing an existing roll should be saved");
 
-            // 再登记一支同号的：拒绝并说明。
-            await h.RunAsync(page.NewLedgerRollCommand);
+            await h.PressVerticalKeyAsync(ctx, "Vk_NewRoll");
             page.LedgerRollId = SelfTestNames.LedgerRollId;
             page.LedgerBodyLengthText = "2000";
             page.LedgerDiameterText = "650";
-            await h.RunAsync(page.SaveLedgerRollCommand);
+            await h.PressVerticalKeyAsync(ctx, "Vk_SaveRoll");
             ctx.Check(page.LedgerProblems.Count == 1, "a duplicate roll number must be refused with its reason");
-            await h.PressNavigationKeyAsync();
-        });
-
-        foreach ((string key, string name) in new[] { ("Fn_PreGrindReport", "PreGrind"), ("Fn_Print", "PostGrind") })
-        {
-            await h.StepAsync("Report", name + "PreviewAndPrint", async ctx =>
-            {
-                if (!hasRecords)
-                {
-                    ctx.Skip("no record to report on");
-                }
-
-                await h.PressKeyAsync(ctx, key);
-                ctx.Check(page.Report is not null, "a report should be composed");
-                ctx.Check(page.ActiveSubViewKey is not null, "report preview should open as a sub view");
-                h.TryScreenshot("records-report-" + name);
-                int before = h.Interaction.Produced.Count;
-                bool clicked = await h.ClickButtonAsync(localizer["Report_PrintButton"]);
-                ctx.Check(clicked, "print button should be on the preview");
-                ctx.Check(h.Interaction.Produced.Count == before + 1, "printing should produce one document");
-                ctx.Note("printed " + Path.GetFileName(h.Interaction.LastProduced));
-                await h.PressNavigationKeyAsync();
-            });
-        }
-
-        await h.StepAsync("Export", "Csv", async ctx =>
-        {
-            await h.PressKeyAsync(ctx, "Fn_ExportExcel");
-            string? file = h.Interaction.LastProduced;
-            ctx.Check(file is not null && File.Exists(file) && file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase), "a CSV export should be written");
-            ctx.Note(Invariant($"{Path.GetFileName(file)} lines={File.ReadAllLines(file!).Length}"));
         });
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 }
 
-/// <summary>诊断：连接与映射检查、四个子视图、运行日志、快照导出、整机备份（检查 zip 内容）。</summary>
+/// <summary>诊断（最终稿 5.12）：七个横键组都渲染；报警详情与消除方法；清除上位机报警…（问一句）；改动记录；运行日志；导出快照；整机备份。</summary>
 internal sealed class DiagnosticsSuite : ISelfTestSuite
 {
     public string Name => "Diagnostics";
@@ -1170,32 +1412,87 @@ internal sealed class DiagnosticsSuite : ISelfTestSuite
     public async Task RunAsync(SelfTestHarness h)
     {
         DiagnosticsViewModel page = h.Page<DiagnosticsViewModel>();
-        await h.GoToAsync(PageKey.Diagnostics);
 
-        await h.StepAsync("Page", "ConnectionAndTagMap", ctx =>
+        await h.StepAsync("Connection", "ConnectionAndTagMap", async ctx =>
         {
+            await h.GoToAsync(PageKey.Diagnostics, ctx, DiagnosticsViewModel.ConnectionGroup);
             ctx.Check(page.ConnectionRows.Count > 0, "connection rows should be listed");
             ctx.Note("tagmap: " + page.TagMapCheckText + Invariant($", missing={page.MissingTags.Count}, degradation={page.DegradationLevel}"));
             ctx.Check(page.TagMapIsValid, "the sample tagmap should be complete: missing " + string.Join(", ", page.MissingTags.Take(5)));
-            return Task.CompletedTask;
         }, StepOptions.Shot);
 
-        foreach (string key in new[] { "Fn_TagMonitor", "Fn_MachineConfig", "Fn_TagMapping", "Fn_AuditLog", "Fn_RunLog" })
+        await h.StepAsync("Alarms", "DetailAndClearAsks", async ctx =>
         {
-            await h.StepAsync("SubViews", key, async ctx =>
+            h.Services.GetRequiredService<IAlarmSink>().Raise(AlarmSeverity.Warning, "Alarm_ValueOutOfRange", "self-test marker");
+            await h.GoToAsync(PageKey.Diagnostics, ctx, DiagnosticsViewModel.AlarmsGroup);
+            await h.SettleAsync(300);
+            ctx.Check(page.Events.Count > 0 && page.SelectedAlarm is not null, "the alarm list should show the marker, selected");
+            ctx.Check(page.AlarmResetText.Length > 0, "the detail should say how to clear it");
+            h.TryScreenshot("diag-alarms");
+            await h.PressVerticalKeyAsync(ctx, "Vk_ClearHmiAlarms");
+            ctx.Check(h.HasPendingConfirmation, "clearing HMI alarms should ask first");
+            await h.ConfirmAsync(ctx);
+            ctx.Check(h.Services.GetRequiredService<IAlarmLog>().Snapshot().Count == 0, "confirming should clear the alarm list");
+        }, StepOptions.Expect("*"));
+
+        foreach (string group in new[] { DiagnosticsViewModel.TagMonitorGroup, DiagnosticsViewModel.AuditGroup, DiagnosticsViewModel.RunLogGroup })
+        {
+            await h.StepAsync("Groups", group, async ctx =>
             {
-                await h.PressKeyAsync(ctx, key);
-                ctx.Note("sub view=" + (page.ActiveSubViewKey ?? "none") + Invariant($", monitorRows={page.TagMonitorRows.Count}, auditRows={page.AuditRows.Count}, inspectorChars={page.InspectorText.Length}"));
-                h.TryScreenshot("diag-" + key);
-                await h.RecoverAsync();
+                await h.GoToAsync(PageKey.Diagnostics, ctx, group);
+                await h.SettleAsync(400);
+                ctx.Check(page.Group == group, "the group should switch to " + group);
+                ctx.Note(Invariant($"monitorRows={page.TagMonitorRows.Count}, changeLog={page.ChangeLogRows.Count}, logChars={page.InspectorText.Length}"));
+                h.TryScreenshot("diag-" + group);
             });
         }
 
-        // 机床配置编辑（修改稿 5.8）：改错了就地标红、存不进去；改对了保存，原文件先备份、写改动记录；再恢复上一版存回去。
+        await h.StepAsync("Export", "Snapshot", async ctx =>
+        {
+            await h.GoToAsync(PageKey.Diagnostics, ctx, DiagnosticsViewModel.AlarmsGroup);
+            await h.PressVerticalKeyAsync(ctx, "Vk_ExportSnapshot");
+            string? file = h.Interaction.LastProduced;
+            ctx.Check(file is not null && File.Exists(file) && new FileInfo(file).Length > 0, "a snapshot file should be written");
+            ctx.Note(Invariant($"{Path.GetFileName(file)} {new FileInfo(file!).Length} bytes"));
+        });
+
+        await h.StepAsync("Export", "Backup", async ctx =>
+        {
+            await h.GoToAsync(PageKey.Diagnostics, ctx, DiagnosticsViewModel.BackupGroup);
+            await h.PressVerticalKeyAsync(ctx, "Vk_Backup", TimeSpan.FromSeconds(60));
+            await h.WaitUntilAsync(() => h.Interaction.LastProduced?.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) == true, TimeSpan.FromSeconds(60));
+            string? file = h.Interaction.LastProduced;
+            ctx.Check(file is not null && File.Exists(file), "a backup zip should be written");
+            using ZipArchive zip = ZipFile.OpenRead(file!);
+            ctx.Check(zip.Entries.Count > 0, "backup should not be empty");
+            ctx.Note(Invariant($"{Path.GetFileName(file)} entries={zip.Entries.Count}: ") + string.Join(", ", zip.Entries.Take(8).Select(e => e.FullName)));
+        }, new StepOptions(TimeoutSeconds: 90));
+    }
+
+    private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
+}
+
+/// <summary>
+/// 调试（最终稿 5.13，制造商）：机床配置改错就地标红、存不进去；改对了"✓ 保存…"问一句，原文件先备份、写改动记录；
+/// "恢复上一版…"再存回去。标签映射搜索、只看缺失、试读。系统组只读。
+/// </summary>
+internal sealed class CommissioningSuite : ISelfTestSuite
+{
+    public string Name => "Commissioning";
+
+    public async Task RunAsync(SelfTestHarness h)
+    {
+        CommissioningViewModel page = h.Page<CommissioningViewModel>();
+
         await h.StepAsync("ConfigEditor", "MachineConfigEditSaveRestore", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_MachineConfig");
-            ctx.Check(page.ActiveSubViewKey == DiagnosticsViewModel.MachineConfigSubView, "the machine config editor should open");
+            await h.GoToAsync(PageKey.Commissioning, ctx, CommissioningViewModel.MachineConfigGroup);
+            if (h.Shell.CurrentPage.Key != PageKey.Commissioning)
+            {
+                ctx.Skip("commissioning is not reachable for this user");
+            }
+
+            await h.WaitUntilAsync(() => page.MachineGroups.Count > 0, TimeSpan.FromSeconds(5));
             ctx.Check(page.MachineGroups.Count >= 5, Invariant($"the form should be grouped, has {page.MachineGroups.Count} groups"));
             ctx.Check(page.ConfigIssueCount == 0, "the sample machine.json should be clean: " + string.Join(" | ", page.ConfigIssues));
 
@@ -1213,29 +1510,34 @@ internal sealed class DiagnosticsSuite : ISelfTestSuite
             await h.SettleAsync(50);
             ctx.Check(!weight.HasIssue && page.ConfigIssueCount == 0, "a valid weight should clear the error");
             ctx.Check(page.IsDirty, "an edited config should count as unsaved");
+            ctx.Check(h.Shell.VerticalKeys[7].LabelResourceKey == "Vk_SaveAsk", "vertical key 8 should become 'save…' while dirty");
             int backupsBefore = h.Services.GetRequiredService<ConfigDocumentStore>().ListBackups(ConfigFileKind.Machine).Count;
-            await h.PressVerticalKeyAsync(ctx, "Vk_SaveConfig");
-            await h.SettleAsync(300);
-            ctx.Check(!page.IsDirty, "saving should clear the unsaved mark: " + page.ConfigStatusText);
+            await h.PressVerticalKeyAsync(ctx, "Vk_SaveAsk");
+            await h.ConfirmAsync(ctx);
+            ctx.Check(!page.IsDirty, "saving should clear the unsaved mark: " + h.DialogLineText);
             ctx.Check(h.Services.GetRequiredService<ConfigDocumentStore>().ListBackups(ConfigFileKind.Machine).Count == backupsBefore + 1,
                 "the old file should have been backed up");
-            ctx.Note(page.ConfigStatusText);
+            ctx.Note(h.DialogLineText);
 
             await h.PressVerticalKeyAsync(ctx, "Vk_RestorePrevious");
-            await h.SettleAsync(300);
+            await h.ConfirmAsync(ctx);
             ConfigFieldViewModel restored = page.MachineGroups.SelectMany(g => g.Fields).First(f => f.Path == "workpiece.maxWeightKg");
             ctx.Check(restored.Text == original, "the previous version should be loaded into the editor, weight is " + restored.Text);
-            await h.PressVerticalKeyAsync(ctx, "Vk_SaveConfig");
-            await h.SettleAsync(300);
+            await h.PressVerticalKeyAsync(ctx, "Vk_SaveAsk");
+            await h.ConfirmAsync(ctx);
             ctx.Check(!page.IsDirty, "the restored version should be saved back");
             h.TryScreenshot("config-machine");
-            await h.RecoverAsync();
         }, StepOptions.Expect("*"));
 
         await h.StepAsync("ConfigEditor", "TagMapSearchMissingTestRead", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_TagMapping");
-            ctx.Check(page.ActiveSubViewKey == DiagnosticsViewModel.TagMappingSubView, "the tag map editor should open");
+            await h.GoToAsync(PageKey.Commissioning, ctx, CommissioningViewModel.TagMappingGroup);
+            if (h.Shell.CurrentPage.Key != PageKey.Commissioning)
+            {
+                ctx.Skip("commissioning is not reachable for this user");
+            }
+
+            await h.WaitUntilAsync(() => page.VisibleTags.Count > 0, TimeSpan.FromSeconds(5));
             ctx.Check(page.VisibleTags.Count > 50, Invariant($"the sample map should be listed, has {page.VisibleTags.Count} rows"));
             ctx.Check(page.ConfigIssueCount == 0, "the sample tagmap.json should be clean: " + page.ConfigStatusText);
 
@@ -1258,29 +1560,24 @@ internal sealed class DiagnosticsSuite : ISelfTestSuite
             ctx.Check(page.SelectedTag is not null, "the channel state should be in the map");
             await h.PressVerticalKeyAsync(ctx, "Vk_TestRead");
             await h.SettleAsync(200);
-            ctx.Note("test read: " + page.ConfigStatusText);
-            ctx.Check(page.ConfigStatusText.Length > 0, "the test read should say what came back");
+            ctx.Note("test read: " + h.DialogLineText);
+            ctx.Check(h.DialogLineText.Length > 0, "the test read should say what came back");
             h.TryScreenshot("config-tagmap");
-            await h.RecoverAsync();
         }, StepOptions.Expect("*"));
 
-        await h.StepAsync("Export", "Snapshot", async ctx =>
+        await h.StepAsync("System", "ReadOnlyRowsAndRawView", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_ExportSnapshot");
-            string? file = h.Interaction.LastProduced;
-            ctx.Check(file is not null && File.Exists(file) && new FileInfo(file).Length > 0, "a snapshot file should be written");
-            ctx.Note(Invariant($"{Path.GetFileName(file)} {new FileInfo(file!).Length} bytes"));
-        });
+            await h.GoToAsync(PageKey.Commissioning, ctx, CommissioningViewModel.SystemGroup);
+            if (h.Shell.CurrentPage.Key != PageKey.Commissioning)
+            {
+                ctx.Skip("commissioning is not reachable for this user");
+            }
 
-        await h.StepAsync("Export", "Backup", async ctx =>
-        {
-            await h.PressKeyAsync(ctx, "Fn_BackupRestore", TimeSpan.FromSeconds(60));
-            string? file = h.Interaction.LastProduced;
-            ctx.Check(file is not null && File.Exists(file), "a backup zip should be written");
-            using ZipArchive zip = ZipFile.OpenRead(file!);
-            ctx.Check(zip.Entries.Count > 0, "backup should not be empty");
-            ctx.Note(Invariant($"{Path.GetFileName(file)} entries={zip.Entries.Count}: ") + string.Join(", ", zip.Entries.Take(8).Select(e => e.FullName)));
-        }, new StepOptions(TimeoutSeconds: 90));
+            ctx.Check(page.SystemRows.Count >= 5, "the system group should list language, refresh, quick bar …");
+            await h.PressVerticalKeyAsync(ctx, "Vk_ViewMachineJson");
+            ctx.Check(await h.WaitUntilAsync(() => page.InspectorText.Length > 0, TimeSpan.FromSeconds(5)), "the raw machine.json should be shown");
+            h.TryScreenshot("commissioning-system");
+        });
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);

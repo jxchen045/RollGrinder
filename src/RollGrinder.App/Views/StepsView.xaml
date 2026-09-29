@@ -228,51 +228,6 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- 程序库 -->
-        <Border Grid.ColumnSpan="2" Background="#CC101418"
-                Visibility="{Binding IsProgramLibraryOpen, Converter={StaticResource BoolToVisibility}}">
-            <Border Style="{StaticResource Card}" Width="720" Height="520"
-                    HorizontalAlignment="Center" VerticalAlignment="Center">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Program_Library}" Style="{StaticResource Text.CardTitle}" />
-                    </Border>
-                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
-                                HorizontalAlignment="Right" Margin="14">
-                        <Button Content="{loc:Loc Program_LibraryOpen}" Command="{Binding LoadProgramCommand}"
-                                Style="{StaticResource PrimaryButton}" Height="52" Width="110" Margin="0,0,10,0" />
-                        <Button Content="{loc:Loc Program_LibraryDelete}" Command="{Binding DeleteProgramCommand}"
-                                Style="{StaticResource SecondaryButton}" Height="52" Width="110" Margin="0,0,10,0" />
-                        <Button Content="{loc:Loc Program_LibraryClose}" Command="{Binding CloseProgramLibraryCommand}"
-                                Style="{StaticResource SecondaryButton}" Height="52" Width="110" />
-                    </StackPanel>
-                    <TextBlock Text="{loc:Loc Program_LibraryEmpty}"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Label}">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ProgramLibraryEntries.Count}" Value="0">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <DataGrid ItemsSource="{Binding ProgramLibraryEntries}" SelectedItem="{Binding SelectedProgramEntry}"
-                              AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
-                              Margin="14,8" FontSize="16" RowHeight="44">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="{loc:Loc Program_ColumnName}" Binding="{Binding Name}" Width="*" />
-                            <DataGridTextColumn Header="{loc:Loc Program_ColumnSteps}" Binding="{Binding StepCount}" Width="90" />
-                            <DataGridTextColumn Header="{loc:Loc Program_ColumnModified}"
-                                                Binding="{Binding ModifiedAtUtc, StringFormat=yyyy-MM-dd HH:mm}" Width="170" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </DockPanel>
-            </Border>
-        </Border>
-
         <!-- 另存为的命名框：盖在最上面。 -->
         <views:NamePromptOverlay Grid.ColumnSpan="2" DataContext="{Binding NamePrompt}" />
 </Grid>

@@ -195,16 +195,17 @@ public sealed class ManualCommandTests
     [Fact]
     public void The_catalogue_matches_the_machines_io()
     {
-        // 按 MK84160 电气原理图核对后的三组**按钮**：8 + 4 + 15 = 27。
+        // 按 MK84160 电气原理图核对后的三组**按钮**：8 + 4 + 13 = 25。
         // 尾架那一组从 6 减到 4——图纸上只有前进/后退，没有夹紧/放松；
-        // 其他那一组从 12 加到 15——头架拆成正转/反转，软着陆拆成两侧各一对升降。
+        // 其他那一组 13 个——头架拆成正转/反转（在按钮板上）、托瓦两侧各一对升降；
+        // 头架升速/降速去掉了，调速改成手动磨削页的给定（界面最终稿 F2）。
         ManualCommandCatalog.MeasuringArm.Should().HaveCount(8);
         ManualCommandCatalog.Tailstock.Should().HaveCount(4);
-        ManualCommandCatalog.Other.Should().HaveCount(15);
+        ManualCommandCatalog.Other.Should().HaveCount(13);
         // 外加五个辅助循环。它们不进按钮矩阵——是"跑一段程序"而不是"动一下某个
         // 机构"，所以挂在功能键上，但走的是同一套脉冲与门禁，也归 All 管。
         ManualCommandCatalog.Cycles.Should().HaveCount(5);
-        ManualCommandCatalog.All.Should().HaveCount(32);
+        ManualCommandCatalog.All.Should().HaveCount(30);
 
         ManualCommandCatalog.All.Select(command => command.Key).Should().OnlyHaveUniqueItems();
     }
@@ -298,7 +299,7 @@ public sealed class ManualCommandTests
     }
 
     [Fact]
-    public void Dangerous_actions_ask_twice()
+    public void Machine_moving_and_dangerous_actions_ask_first()
     {
         string[] confirmed = ManualCommandCatalog.All
             .Where(command => command.RequiresConfirmation)
@@ -307,12 +308,15 @@ public sealed class ManualCommandTests
 
         confirmed.Should().BeEquivalentTo(new[]
         {
-            // 会让辊子失去支承、或者会把辊子落到托瓦上的动作。
+            // 会让辊子失去支承、或者会把辊子落到托瓦上的动作（保留原来的确认）。
             "quill.retract", "tailstock.backward", "driver.retract",
-            "softLanding.headstock.down", "softLanding.tailstock.down", "axes.home",
+            "softLanding.headstock.down", "softLanding.tailstock.down",
 
-            // 会切削或让各轴走全行程的循环。辊对中只是测量，不必按两下。
-            "cycle.manualGrinding", "cycle.calibrateDatum", "cycle.wheelDress", "cycle.referencePoint",
+            // 最终稿 D5：会让机床动的请求都先问一句——砂轮启动、各轴归位、测量臂校准、U1 置零、测砂轮直径。
+            "wheel.run", "axes.home", "arms.calibrate", "u1Axis.zero", "wheel.measureDiameter",
+
+            // 辅助循环全要确认（最终稿 4.5）。
+            "cycle.manualGrinding", "cycle.calibrateDatum", "cycle.wheelDress", "cycle.rollAlign", "cycle.referencePoint",
         });
     }
 

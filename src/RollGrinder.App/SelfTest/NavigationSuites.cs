@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.App.ViewModels;
@@ -10,8 +11,9 @@ using RollGrinder.App.ViewModels;
 namespace RollGrinder.App.SelfTest;
 
 /// <summary>
-/// 导航：每个区域一键直达并渲染、页面菜单（软键条变身）的开/选/收、导航槽的四种角色、
-/// 任务跳转与返回（"补偿设置"那条路）、子视图、脏页离开确认、Esc。
+/// 导航与交互（界面最终稿 4.x）：左栏一键直达每个区域并渲染；区域菜单（F10 / 区域方块）开、选、收；
+/// 路径条"« 返回"的三种角色（收菜单、收子视图、任务跳转返回）；脏页离开确认；
+/// "问一句再做"的确认 / 取消 / 超时；灰键按下去在对话行说原因；数字键盘；黄色帮助。
 /// </summary>
 internal sealed class NavigationSuite : ISelfTestSuite
 {
@@ -20,131 +22,119 @@ internal sealed class NavigationSuite : ISelfTestSuite
     public async Task RunAsync(SelfTestHarness h)
     {
         ShellViewModel shell = h.Shell;
-        IStringLocalizer localizer = h.Services.GetRequiredService<IStringLocalizer>();
         PageKey home = shell.CurrentPage.Key;
-        List<AreaMenuItemViewModel> available = shell.AreaMenuItems.Where(i => i.IsAvailable).ToList();
 
-        foreach (AreaMenuItemViewModel item in shell.AreaMenuItems)
+        foreach (QuickBarItemViewModel item in shell.QuickBarItems.ToList())
         {
-            string step = "CtrlN_" + item.ShortcutNumber.ToString(CultureInfo.InvariantCulture) + "_" + item.Key;
+            string step = "Quick_" + item.ShortcutNumber.ToString(CultureInfo.InvariantCulture) + "_" + item.Entry.Id;
             if (!item.IsAvailable)
             {
-                await h.StepAsync("DirectJump", step, ctx =>
+                await h.StepAsync("QuickBar", step, async ctx =>
                 {
-                    ctx.Check(!item.Command.CanExecute(null), "an unavailable area must refuse Ctrl+n");
-                    ctx.Note("unavailable offline, refused as designed");
-                    return Task.CompletedTask;
+                    PageKey before = shell.CurrentPage.Key;
+                    shell.PressQuickBar(item.ShortcutNumber - 1);
+                    await h.SettleAsync();
+                    ctx.Check(shell.CurrentPage.Key == before, "an unavailable entry must not navigate");
+                    ctx.Check(h.DialogLineText.Length > 0, "an unavailable entry must say why on the dialog line");
+                    ctx.Note("unavailable: " + item.UnavailableReason);
                 });
                 continue;
             }
 
-            await h.StepAsync("DirectJump", step, async ctx =>
+            await h.StepAsync("QuickBar", step, async ctx =>
             {
-                await h.GoToAsync(item.Key, ctx);
-                ctx.Check(shell.CurrentPage.Key == item.Key, "expected page " + item.Key + ", got " + shell.CurrentPage.Key);
-                string expectedShortcut = localizer.Format("Nav_ShortcutFormat", item.ShortcutNumber);
-                ctx.Check(shell.CurrentAreaShortcutText == expectedShortcut, "shortcut badge should read " + expectedShortcut);
-                ctx.Check(shell.BreadcrumbText.Length > 0, "breadcrumb should not be empty");
+                shell.PressQuickBar(item.ShortcutNumber - 1);
+                await h.SettleAsync();
+                if (shell.IsLeaveConfirmOpen)
+                {
+                    await h.RunAsync(shell.DiscardAndLeaveCommand);
+                }
+
+                ctx.Check(shell.CurrentPage.Area == item.Entry.Area, "expected area " + item.Entry.Area + ", got " + shell.CurrentPage.Area);
+                ctx.Check(item.IsCurrent, "the pressed entry should be marked current");
+                ctx.Check(shell.PathText.Length > 0, "path bar should not be empty");
+                ctx.Check(shell.CurrentPage.FunctionKeys.Count <= 16, "horizontal keys should fit in two pages");
                 IReadOnlyList<string> missing = h.FindMissingResources();
                 ctx.Check(missing.Count == 0, "missing resources on page: " + string.Join(", ", missing));
-                ctx.Note("breadcrumb=" + shell.BreadcrumbText);
+                ctx.Note("path=" + shell.PathText);
                 WarnClipped(h, ctx);
             }, StepOptions.Shot);
         }
 
-        await h.StepAsync("AreaMenu", "OpenFromHomeWithF8", async ctx =>
+        await h.StepAsync("AreaMenu", "OpenWithAreaTile", async ctx =>
         {
             await h.GoToAsync(home, ctx);
-            ctx.Check(h.NavigationKeyLabel == "Nav_AreaMenu", "on the home root F8 should read 'page menu', got " + h.NavigationKeyLabel);
-            await h.PressNavigationKeyAsync();
-            ctx.Check(shell.IsAreaMenuOpen, "F8 on home should open the page menu");
-            ctx.Check(!shell.IsOverlayOpen, "the page menu must not be a blocking overlay");
-            ctx.Check(h.NavigationKeyLabel == "Menu_Cancel", "in menu state F8 should read 'cancel'");
-            int areaKeys = shell.FunctionKeys.Count(k => k.Kind is FunctionKeyKind.AreaMenu or FunctionKeyKind.AreaMenuCurrent);
-            ctx.Check(areaKeys == shell.AreaMenuItems.Count, "one soft key per area expected, got " + areaKeys);
-            ctx.Check(shell.FunctionKeys.Count(k => k.Kind == FunctionKeyKind.AreaMenuCurrent) == 1, "exactly one key should be marked current");
-            ctx.Check(shell.FunctionKeys.Take(areaKeys).All(k => !string.IsNullOrEmpty(k.ShortcutText)), "every area key should show its Ctrl+n");
+            await h.RunAsync(shell.ToggleAreaMenuCommand);
+            ctx.Check(shell.IsAreaMenuOpen, "the area tile / F10 should open the area menu");
+            ctx.Check(!shell.IsOverlayOpen, "the area menu must not be a blocking overlay");
+            int areaKeys = shell.HorizontalKeys.Count(k => k.Kind is FunctionKeyKind.AreaMenu or FunctionKeyKind.AreaMenuCurrent);
+            ctx.Check(areaKeys is >= 1 and <= 8, "one horizontal key per area expected, got " + areaKeys);
+            ctx.Check(shell.HorizontalKeys.Count(k => k.Kind == FunctionKeyKind.AreaMenuCurrent) == 1, "exactly one area key should be marked current");
         }, StepOptions.Shot);
 
-        await h.StepAsync("AreaMenu", "CancelWithF8", async ctx =>
-        {
-            await h.PressNavigationKeyAsync();
-            ctx.Check(!shell.IsAreaMenuOpen, "F8 in menu state should close the menu");
-            ctx.Check(shell.CurrentPage.Key == home, "cancel must not change page");
-            ctx.Check(shell.FunctionKeys.All(k => k.Kind is not (FunctionKeyKind.AreaMenu or FunctionKeyKind.AreaMenuCurrent)), "page keys should be back");
-        });
-
-        await h.StepAsync("AreaMenu", "ToggleWithMenuButton", async ctx =>
+        await h.StepAsync("AreaMenu", "ToggleCloses", async ctx =>
         {
             await h.RunAsync(shell.ToggleAreaMenuCommand);
-            ctx.Check(shell.IsAreaMenuOpen, "menu button should open the menu");
-            await h.RunAsync(shell.ToggleAreaMenuCommand);
-            ctx.Check(!shell.IsAreaMenuOpen, "second press should close it");
+            ctx.Check(!shell.IsAreaMenuOpen, "a second press should close the menu");
+            ctx.Check(shell.CurrentPage.Key == home, "closing must not change page");
+            ctx.Check(shell.HorizontalKeys.All(k => k.Kind is not (FunctionKeyKind.AreaMenu or FunctionKeyKind.AreaMenuCurrent)), "page keys should be back");
         });
 
         await h.StepAsync("AreaMenu", "EscapeCloses", async ctx =>
         {
-            await h.RunAsync(shell.OpenAreaMenuCommand);
+            await h.RunAsync(shell.ToggleAreaMenuCommand);
             shell.PressEscape();
             await h.SettleAsync();
             ctx.Check(!shell.IsAreaMenuOpen, "Esc should close the menu");
             ctx.Check(shell.CurrentPage.Key == home, "Esc on the menu must not also go back a level");
         });
 
-        AreaMenuItemViewModel? target = available.FirstOrDefault(i => i.Key != home);
-        if (target is not null)
+        await h.StepAsync("AreaMenu", "PickRecordsWithAreaKey", async ctx =>
         {
-            await h.StepAsync("AreaMenu", "PickAreaWithFunctionKey", async ctx =>
-            {
-                await h.RunAsync(shell.OpenAreaMenuCommand);
-                await h.PressKeyAsync(target.ShortcutNumber - 1);
-                ctx.Check(shell.CurrentPage.Key == target.Key, "F" + target.ShortcutNumber + " in menu state should open " + target.Key);
-                ctx.Check(!shell.IsAreaMenuOpen, "menu should close after picking");
-                ctx.Check(h.NavigationKeyLabel == "Nav_BackToHome", "on a sub page F8 should read 'back to home'");
-            });
+            await h.RunAsync(shell.ToggleAreaMenuCommand);
+            FunctionKeyViewModel? records = shell.HorizontalKeys.FirstOrDefault(k => k.LabelResourceKey == AreaCatalog.TitleKey(AreaKey.Records));
+            ctx.Check(records is not null, "the area menu should list Records");
+            await h.PressAsync(records!);
+            ctx.Check(shell.CurrentPage.Area == AreaKey.Records, "the Records area key should open the records area");
+            ctx.Check(!shell.IsAreaMenuOpen, "the menu should close after picking");
+        });
 
-            await h.StepAsync("NavigationKey", "BackToHome", async ctx =>
-            {
-                await h.PressNavigationKeyAsync();
-                ctx.Check(shell.CurrentPage.Key == home, "F8 on a sub page should return home");
-            });
-
-            await h.StepAsync("NavigationKey", "EscapeGoesBack", async ctx =>
-            {
-                await h.GoToAsync(target.Key, ctx);
-                shell.PressEscape();
-                await h.SettleAsync();
-                ctx.Check(shell.CurrentPage.Key == home, "Esc on a sub page root should go home");
-            });
-        }
-
-        // 任务跳转：自动磨削 →「作业」→ 作业页，导航槽送回。离线时自动页进不去，改走记录页的子视图。
-        if (available.Any(i => i.Key == PageKey.AutoGrinding))
+        await h.StepAsync("AreaMenu", "CommissioningNeedsManufacturer", async ctx =>
         {
-            await h.StepAsync("TaskJump", "JobAndBack", async ctx =>
-            {
-                await h.GoToAsync(PageKey.AutoGrinding, ctx);
-                await h.PressKeyAsync(ctx, "Fn_Job");
-                ctx.Check(shell.CurrentPage.Key == PageKey.Job, "'job' should open the job page");
-                ctx.Check(h.NavigationKeyLabel == "Nav_BackToPageFormat", "F8 should read 'back to <origin>'");
-                ctx.Note("nav key=" + shell.FunctionKeys[PageViewModelBase.PageFunctionKeyCount].Label);
-                await h.PressNavigationKeyAsync();
-                ctx.Check(shell.CurrentPage.Key == PageKey.AutoGrinding, "F8 should return to the auto page");
-            }, StepOptions.Shot);
-        }
+            await h.RunAsync(shell.ToggleAreaMenuCommand);
+            FunctionKeyViewModel? commissioning = shell.HorizontalKeys.FirstOrDefault(k => k.LabelResourceKey == AreaCatalog.TitleKey(AreaKey.Commissioning));
+            ctx.Check(commissioning is not null, "the area menu should list Commissioning (it is menu-only)");
+            ctx.Check(shell.QuickBarItems.All(item => item.Entry.Area != AreaKey.Commissioning), "Commissioning must not be on the quick bar");
+            ctx.Note("commissioning usable=" + commissioning!.IsUsable);
+            await h.RunAsync(shell.CloseAreaMenuCommand);
+        });
 
-        PageKey subViewPage = available.Any(i => i.Key == PageKey.Diagnostics) ? PageKey.Diagnostics : PageKey.Records;
-        string subViewKey = subViewPage == PageKey.Diagnostics ? "Fn_TagMonitor" : "Fn_RollLedger";
-        await h.StepAsync("SubView", "OpenAndCloseWithF8", async ctx =>
+        // 任务跳转：自动磨削 →「作业」→ 作业页，"« 返回"送回。离线时自动页进不去就跳过。
+        await h.StepAsync("TaskJump", "RecordsFromAutoAndBack", async ctx =>
         {
-            await h.GoToAsync(subViewPage, ctx);
-            await h.PressKeyAsync(ctx, subViewKey);
-            ctx.Check(shell.CurrentPage.ActiveSubViewKey is not null, subViewKey + " should open a sub view");
-            ctx.Check(h.NavigationKeyLabel == "Nav_BackToPageFormat", "F8 should read 'back to <page>' inside a sub view");
-            h.TryScreenshot("subview-" + subViewPage);
-            await h.PressNavigationKeyAsync();
-            ctx.Check(shell.CurrentPage.ActiveSubViewKey is null, "F8 should close the sub view");
-            ctx.Check(shell.CurrentPage.Key == subViewPage, "closing a sub view must not leave the page");
+            await h.GoToAsync(PageKey.AutoGrinding, ctx);
+            if (shell.CurrentPage.Key != PageKey.AutoGrinding)
+            {
+                ctx.Skip("the auto page is not reachable (offline)");
+            }
+
+            await h.PressKeyAsync(ctx, "Fn_GrindingRecords");
+            ctx.Check(shell.CurrentPage.Key == PageKey.Records, "'grinding records' should open the records page");
+            ctx.Check(shell.BackText.Length > 0, "the path bar should offer '« back'");
+            await h.BackAsync();
+            ctx.Check(shell.CurrentPage.Key == PageKey.AutoGrinding, "'« back' should return to the auto page");
+        }, StepOptions.Shot);
+
+        await h.StepAsync("SubView", "OpenAndCloseWithBack", async ctx =>
+        {
+            await h.GoToAsync(PageKey.Records, ctx);
+            await h.PressVerticalKeyAsync(ctx, "Vk_QueryAsk");
+            ctx.Check(shell.CurrentPage.ActiveSubViewKey is not null, "'query…' should open a sub view");
+            ctx.Check(shell.BackText.Length > 0, "the path bar should offer '« back' inside a sub view");
+            h.TryScreenshot("subview-records-query");
+            await h.BackAsync();
+            ctx.Check(shell.CurrentPage.ActiveSubViewKey is null, "'« back' should close the sub view");
+            ctx.Check(shell.CurrentPage.Key == PageKey.Records, "closing a sub view must not leave the page");
         });
 
         await h.StepAsync("LeaveConfirm", "DirtyPageAsksBeforeLeaving", async ctx =>
@@ -153,7 +143,7 @@ internal sealed class NavigationSuite : ISelfTestSuite
             ProfileViewModel profile = h.Page<ProfileViewModel>();
             await h.RunAsync(profile.InsertSegmentCommand);
             ctx.Check(profile.IsDirty, "adding a segment should mark the profile page dirty");
-            shell.AreaMenuItems.First(i => i.Key == PageKey.Records).Command.Execute(null);
+            h.Services.GetRequiredService<INavigator>().GoTo(PageKey.Records);
             await h.SettleAsync();
             ctx.Check(shell.IsLeaveConfirmOpen, "leaving a dirty page should ask first");
             ctx.Check(h.IsShownOnScreen("LeaveConfirmOverlay"), "the leave-confirm dialog must actually be visible on screen");
@@ -166,12 +156,82 @@ internal sealed class NavigationSuite : ISelfTestSuite
         {
             ProfileViewModel profile = h.Page<ProfileViewModel>();
             int segmentsBefore = profile.Segments.Count;
-            shell.AreaMenuItems.First(i => i.Key == PageKey.Records).Command.Execute(null);
+            h.Services.GetRequiredService<INavigator>().GoTo(PageKey.Records);
             await h.SettleAsync();
             await h.RunAsync(shell.DiscardAndLeaveCommand);
             ctx.Check(shell.CurrentPage.Key == PageKey.Records, "discard should leave");
             ctx.Check(!profile.IsDirty, "discard should clear the dirty flag");
             ctx.Check(profile.Segments.Count == segmentsBefore - 1, Invariant($"discard should really remove the new segment ({segmentsBefore} -> {profile.Segments.Count})"));
+        });
+
+        await h.StepAsync("Confirmation", "CancelExpireAndConfirm", async ctx =>
+        {
+            ShellInteraction interaction = h.ShellInteraction;
+            int ran = 0;
+            interaction.Ask("self-test question", () => ran++);
+            await h.SettleAsync();
+            ctx.Check(h.HasPendingConfirmation, "Ask should leave a pending confirmation");
+            ctx.Check(shell.VerticalKeys.Count == PageViewModelBase.VerticalKeyCount, "the vertical bar must keep 8 slots");
+            ctx.Check(shell.VerticalKeys[6].Kind == FunctionKeyKind.Cancel && shell.VerticalKeys[7].Kind == FunctionKeyKind.Confirm,
+                "vertical keys 7 / 8 should become cancel / confirm");
+            ctx.Check(h.DialogLineText == "self-test question", "the dialog line should show the question");
+            shell.PressEscape();
+            await h.SettleAsync();
+            ctx.Check(!h.HasPendingConfirmation && ran == 0, "Esc should cancel without running");
+
+            interaction.Ask("self-test question", () => ran++);
+            bool expired = await h.WaitUntilAsync(() => !h.HasPendingConfirmation, ConfirmationService.Timeout + System.TimeSpan.FromSeconds(3));
+            ctx.Check(expired && ran == 0, "an unanswered question should expire without running");
+
+            interaction.Ask("self-test question", () => ran++);
+            ctx.Check(shell.PressEnter(), "Enter should confirm a pending question");
+            await h.SettleAsync();
+            ctx.Check(ran == 1, "confirm should run the action exactly once");
+        });
+
+        await h.StepAsync("SoftKeys", "UnavailableKeySaysWhy", async ctx =>
+        {
+            await h.GoToAsync(PageKey.Library, ctx, LibraryViewModel.ProgramsGroup);
+            LibraryViewModel library = h.Page<LibraryViewModel>();
+            library.SelectedEntry = null;
+            await h.SettleAsync();
+            int open = h.IndexOfVerticalKey("Vk_Open");
+            ctx.Check(open >= 0, "'open' should be on the vertical bar");
+            ctx.Check(!h.IsVerticalKeyUsable(open), "'open' with nothing selected should be unavailable");
+            shell.PressVerticalKey(open);
+            await h.SettleAsync();
+            ctx.Check(h.DialogLineText.Length > 0, "pressing an unavailable key must say why on the dialog line");
+            ctx.Note("reason=" + h.DialogLineText);
+        });
+
+        await h.StepAsync("Keypad", "RangeCheckedAndCommitted", async ctx =>
+        {
+            string? accepted = null;
+            shell.Keypad.Open("self-test", "10", 0, 100, 1, text =>
+            {
+                accepted = text;
+                return true;
+            });
+            ctx.Check(shell.Keypad.IsOpen, "the keypad should open");
+            shell.Keypad.Text = "250";
+            ctx.Check(!shell.Keypad.Enter() && accepted is null, "an out-of-range value must be refused");
+            shell.Keypad.Text = "42.5";
+            ctx.Check(shell.Keypad.Enter() && accepted == "42.5", "an in-range value should be committed");
+            ctx.Check(!shell.Keypad.IsOpen, "the keypad should close after committing");
+            await h.SettleAsync();
+        });
+
+        await h.StepAsync("Help", "OpenAndClose", async ctx =>
+        {
+            await h.GoToAsync(PageKey.Steps, ctx);
+            await h.RunAsync(shell.ToggleHelpCommand);
+            ctx.Check(shell.Help.IsOpen, "'i help' should open the yellow help");
+            ctx.Check(shell.Help.TopicTitle.Length > 0 && !shell.Help.TopicTitle.StartsWith('!'), "help should show a topic");
+            ctx.Check(ReferenceEquals(shell.VerticalKeys, shell.Help.Keys), "the vertical bar should switch to help keys");
+            h.TryScreenshot("help-steps");
+            shell.PressEscape();
+            await h.SettleAsync();
+            ctx.Check(!shell.Help.IsOpen, "Esc should close help");
         });
 
         await h.GoToAsync(home);
@@ -212,16 +272,20 @@ internal sealed class NavigationSuite : ISelfTestSuite
 }
 
 /// <summary>
-/// 逐页逐键巡检：每一页在默认状态下把 7 个功能键挨个按一遍（危险键另有专门用例）。
+/// 逐页逐键巡检：每一页在默认状态下把横键（功能组）和根层竖键挨个按一遍（危险键另有专门用例）。
 /// 要求：不崩、没有界面异常、没有"未预期的错误"；业务校验类报警算预期内。
-/// 按下去开了子视图就截图再用 F8 关掉；跳到别的页就记下来再回来。
+/// 按下去问了一句就取消；开了子视图就截图再"« 返回"；跳到别的页就记下来再回来。
 /// </summary>
 internal sealed class PageSweepSuite : ISelfTestSuite
 {
-    /// <summary>按一下就会让机床动、或会清掉报警的键：交给专门的用例按两下、在对的时机按。</summary>
+    /// <summary>
+    /// 不在巡检里按的键：会让机床动的都先问一句（巡检会取消），这里只剩按下去就直接写机床的开关类，
+    /// 以及文件对话框（自检里没人去点）。
+    /// </summary>
     private static readonly HashSet<string> Excluded = new(System.StringComparer.Ordinal)
     {
-        "Fn_Start", "Fn_SkipStep", "Fn_EndEarly", "Fn_ConfirmAgain", "Fn_HmiReset", "Fn_DownloadNc", "Fn_Empty",
+        "Fn_Empty", "Fn_Coolant", "Fn_Pause", "Vk_ExportUsb", "Vk_ImportUsb", "Vk_ExportAll", "Vk_Print", "Vk_ExportExcel",
+        "Vk_Backup", "Vk_ExportSnapshot", "Vk_TestRead",
     };
 
     public string Name => "PageSweep";
@@ -229,45 +293,23 @@ internal sealed class PageSweepSuite : ISelfTestSuite
     public async Task RunAsync(SelfTestHarness h)
     {
         ShellViewModel shell = h.Shell;
-        foreach (AreaMenuItemViewModel area in shell.AreaMenuItems.Where(i => i.IsAvailable).ToList())
+        foreach (PageKey page in AvailablePages(h))
         {
-            await h.GoToAsync(area.Key);
+            await h.GoToAsync(page);
             await h.RecoverAsync();
 
-            for (int index = 0; index < PageViewModelBase.PageFunctionKeyCount; index++)
+            int horizontalCount = shell.CurrentPage.FunctionKeys.Count;
+            for (int index = 0; index < horizontalCount; index++)
             {
-                if (shell.CurrentPage.Key != area.Key)
-                {
-                    await h.GoToAsync(area.Key);
-                }
+                await SweepAsync(h, page, "H", () => index < shell.CurrentPage.FunctionKeys.Count ? shell.CurrentPage.FunctionKeys[index] : null, index);
+            }
 
-                FunctionKeyViewModel key = shell.FunctionKeys[index];
-                string label = key.LabelResourceKey;
-                if (Excluded.Contains(label))
-                {
-                    continue;
-                }
-
-                int keyIndex = index;
-                await h.StepAsync(area.Key.ToString(), Invariant($"F{keyIndex + 1}_{label}"), async ctx =>
-                {
-                    if (!h.IsKeyUsable(keyIndex))
-                    {
-                        ctx.Skip("key is disabled in the default state");
-                    }
-
-                    await h.PressKeyAsync(keyIndex);
-                    ctx.Note(Describe(h, area.Key));
-
-                    if (shell.CurrentPage.ActiveSubViewKey is not null || shell.IsLeaveConfirmOpen
-                        || shell.CurrentPage.Key != area.Key || PageOverlayOpen(h))
-                    {
-                        h.TryScreenshot(Invariant($"sweep-{area.Key}-F{keyIndex + 1}-{label}"));
-                    }
-
-                    await ReturnToAsync(h, area.Key, ctx);
-                    ctx.Check(shell.CurrentPage.Key == area.Key, "could not return to " + area.Key);
-                }, new StepOptions(Tolerant: true));
+            await h.GoToAsync(page);
+            await h.RecoverAsync();
+            int verticalCount = shell.CurrentPage.VerticalKeys.Count;
+            for (int index = 0; index < verticalCount; index++)
+            {
+                await SweepAsync(h, page, "V", () => index < shell.VerticalKeys.Count ? shell.VerticalKeys[index] : null, index);
             }
 
             // 页面被按"脏"了就放弃，保证下一页从干净状态开始。
@@ -276,6 +318,58 @@ internal sealed class PageSweepSuite : ISelfTestSuite
                 shell.CurrentPage.DiscardChanges();
             }
         }
+    }
+
+    /// <summary>自检这台机能进的画面（离线时进不去的不算），每个画面一次。</summary>
+    internal static IReadOnlyList<PageKey> AvailablePages(SelfTestHarness h) =>
+        h.Services.GetServices<PageViewModelBase>()
+            .Where(page => !h.Shell.IsOffline || page.WorksOffline)
+            .Where(page => page.Key != PageKey.Commissioning || RollGrinder.Services.Session.UserSessionPermissionExtensions.Can(h.Services.GetRequiredService<RollGrinder.Services.Session.IUserSession>(), RollGrinder.Services.Session.Permission.EditMachineConfig))
+            .Select(page => page.Key)
+            .OrderBy(key => key)
+            .ToList();
+
+    private static async Task SweepAsync(SelfTestHarness h, PageKey page, string bar, System.Func<FunctionKeyViewModel?> keyAt, int index)
+    {
+        ShellViewModel shell = h.Shell;
+        if (shell.CurrentPage.Key != page)
+        {
+            await h.GoToAsync(page);
+        }
+
+        FunctionKeyViewModel? key = keyAt();
+        if (key is null || key.IsPlaceholder || key.Kind is FunctionKeyKind.Navigation or FunctionKeyKind.Cancel or FunctionKeyKind.Confirm
+            || Excluded.Contains(key.LabelResourceKey))
+        {
+            return;
+        }
+
+        string label = key.LabelResourceKey;
+        await h.StepAsync(page.ToString(), Invariant($"{bar}{index + 1}_{label}"), async ctx =>
+        {
+            if (!key.IsUsable)
+            {
+                ctx.Skip("key is unavailable in the default state: " + key.ReasonText);
+            }
+
+            await h.PressAsync(key);
+            if (h.HasPendingConfirmation)
+            {
+                ctx.Note("asked: " + h.PendingQuestion);
+                await h.CancelConfirmationAsync();
+            }
+
+            ctx.Note(Describe(h, page));
+
+            if (shell.CurrentPage.ActiveSubViewKey is not null || shell.IsLeaveConfirmOpen
+                || shell.CurrentPage.Key != page || shell.CurrentPage.HasModalPrompt)
+            {
+                h.TryScreenshot(Invariant($"sweep-{page}-{bar}{index + 1}-{label}"));
+            }
+
+            await ReturnToAsync(h, page, ctx);
+            ctx.Check(shell.CurrentPage.Key == page, "could not return to " + page);
+        }, new StepOptions(Tolerant: true));
     }
 
     private static string Describe(SelfTestHarness h, PageKey origin)
@@ -297,9 +391,9 @@ internal sealed class PageSweepSuite : ISelfTestSuite
             parts.Add("leave-confirm");
         }
 
-        if (PageOverlayOpen(h))
+        if (shell.CurrentPage.HasModalPrompt)
         {
-            parts.Add("page panel open");
+            parts.Add("prompt open");
         }
 
         if (shell.CurrentPage.IsDirty)
@@ -310,12 +404,6 @@ internal sealed class PageSweepSuite : ISelfTestSuite
         return parts.Count == 0 ? "no navigation" : string.Join(", ", parts);
     }
 
-    private static bool PageOverlayOpen(SelfTestHarness h) =>
-        h.Page<StepsViewModel>().IsProgramLibraryOpen
-        || h.Page<ProfileViewModel>().IsLibraryOpen
-        || h.Page<StepsViewModel>().NamePrompt.IsOpen
-        || h.Page<ProfileViewModel>().NamePrompt.IsOpen;
-
     private static async Task ReturnToAsync(SelfTestHarness h, PageKey origin, StepContext ctx)
     {
         ShellViewModel shell = h.Shell;
@@ -324,11 +412,11 @@ internal sealed class PageSweepSuite : ISelfTestSuite
             await h.RunAsync(shell.CancelLeaveCommand);
         }
 
-        if (shell.CurrentPage.Key != origin && h.NavigationKeyLabel == "Nav_BackToPageFormat")
+        if (shell.CurrentPage.Key != origin && shell.BackText.Length > 0 && shell.CurrentPage.ActiveSubViewKey is null)
         {
-            // 任务跳转：用导航槽回去，顺带验证它真的回到发起页。
-            await h.PressNavigationKeyAsync();
-            ctx.Note("returned with F8");
+            // 任务跳转：用"« 返回"回去，顺带验证它真的回到发起页。
+            await h.BackAsync();
+            ctx.Note("returned with « back");
         }
 
         await h.RecoverAsync();
@@ -347,11 +435,25 @@ internal sealed class PageSweepSuite : ISelfTestSuite
 /// </summary>
 internal sealed class RenderSuite : ISelfTestSuite
 {
+    /// <summary>每个画面要渲染的功能组（横键）与子视图入口（竖键）。</summary>
+    private static readonly Dictionary<PageKey, string[]> Groups = new()
+    {
+        [PageKey.Library] = new[] { LibraryViewModel.ProfilesGroup, LibraryViewModel.ProgramsGroup, LibraryViewModel.JobsGroup, LibraryViewModel.LedgerGroup, LibraryViewModel.UsbGroup },
+        [PageKey.Parameters] = new[] { ParametersViewModel.WheelGroup, ParametersViewModel.CalibrationGroup, ParametersViewModel.AuditGroup },
+        [PageKey.Diagnostics] = new[]
+        {
+            DiagnosticsViewModel.AlarmsGroup, DiagnosticsViewModel.TagMonitorGroup, DiagnosticsViewModel.AuditGroup,
+            DiagnosticsViewModel.RunLogGroup, DiagnosticsViewModel.ConnectionGroup, DiagnosticsViewModel.BackupGroup,
+        },
+        [PageKey.Commissioning] = new[] { CommissioningViewModel.MachineConfigGroup, CommissioningViewModel.TagMappingGroup, CommissioningViewModel.SystemGroup },
+        [PageKey.Manual] = MachineAreaKeys.Order.Where(o => MachineAreaKeys.PageOf(o.Group) == PageKey.Manual).Select(o => o.Group).ToArray(),
+    };
+
     private static readonly Dictionary<PageKey, string[]> SubViewKeys = new()
     {
-        [PageKey.Records] = new[] { "Fn_RollLedger" },
-        [PageKey.Diagnostics] = new[] { "Fn_TagMonitor", "Fn_MachineConfig", "Fn_TagMapping", "Fn_AuditLog" },
-        [PageKey.Settings] = new[] { "Fn_NewWheel" },
+        [PageKey.Records] = new[] { "Vk_QueryAsk" },
+        [PageKey.Parameters] = new[] { "Vk_ChangeWheel" },
+        [PageKey.AutoGrinding] = new[] { "Fn_Compensation", "Fn_StatusOverview" },
     };
 
     public string Name => "Render";
@@ -359,35 +461,58 @@ internal sealed class RenderSuite : ISelfTestSuite
     public async Task RunAsync(SelfTestHarness h)
     {
         ShellViewModel shell = h.Shell;
-        foreach (AreaMenuItemViewModel area in shell.AreaMenuItems.Where(i => i.IsAvailable).ToList())
+        foreach (PageKey page in PageSweepSuite.AvailablePages(h))
         {
-            await h.StepAsync(area.Key.ToString(), "PageRoot", async ctx =>
+            await h.StepAsync(page.ToString(), "PageRoot", async ctx =>
             {
-                await h.GoToAsync(area.Key, ctx);
+                await h.GoToAsync(page, ctx);
                 CheckTexts(h, ctx);
             }, StepOptions.Shot);
 
-            await h.StepAsync(area.Key.ToString(), "PageMenuState", async ctx =>
+            await h.StepAsync(page.ToString(), "AreaMenuState", async ctx =>
             {
-                await h.RunAsync(shell.OpenAreaMenuCommand);
+                await h.RunAsync(shell.ToggleAreaMenuCommand);
                 CheckTexts(h, ctx);
-                h.TryScreenshot("render-menu-" + area.Key);
+                h.TryScreenshot("render-menu-" + page);
                 await h.RunAsync(shell.CloseAreaMenuCommand);
             });
 
-            if (!SubViewKeys.TryGetValue(area.Key, out string[]? keys))
+            await h.StepAsync(page.ToString(), "HelpState", async ctx =>
             {
-                continue;
+                await h.RunAsync(shell.ToggleHelpCommand);
+                CheckTexts(h, ctx);
+                h.TryScreenshot("render-help-" + page);
+                shell.Help.Close();
+                await h.SettleAsync();
+            });
+
+            foreach (string group in Groups.TryGetValue(page, out string[]? groups) ? groups : System.Array.Empty<string>())
+            {
+                await h.StepAsync(page.ToString(), "Group_" + group, async ctx =>
+                {
+                    await h.GoToAsync(page, ctx, group);
+                    CheckTexts(h, ctx);
+                    h.TryScreenshot("render-" + page + "-" + group);
+                }, new StepOptions(Tolerant: true));
             }
 
-            foreach (string key in keys)
+            foreach (string key in SubViewKeys.TryGetValue(page, out string[]? keys) ? keys : System.Array.Empty<string>())
             {
-                await h.StepAsync(area.Key.ToString(), "SubView_" + key, async ctx =>
+                await h.StepAsync(page.ToString(), "SubView_" + key, async ctx =>
                 {
-                    await h.PressKeyAsync(ctx, key);
+                    await h.GoToAsync(page, ctx);
+                    if (h.IndexOfKey(key) >= 0)
+                    {
+                        await h.PressKeyAsync(ctx, key);
+                    }
+                    else
+                    {
+                        await h.PressVerticalKeyAsync(ctx, key);
+                    }
+
                     ctx.Check(shell.CurrentPage.ActiveSubViewKey is not null, key + " should open a sub view");
                     CheckTexts(h, ctx);
-                    h.TryScreenshot("render-" + area.Key + "-" + key);
+                    h.TryScreenshot("render-" + page + "-" + key);
                     await h.RecoverAsync();
                 }, new StepOptions(Tolerant: true));
             }

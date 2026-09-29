@@ -22,7 +22,12 @@
          App 是 net8.0-windows 目标，测试工程不能引用它。 -->
     <Compile Include="..\..\src\RollGrinder.App\Navigation\PageKey.cs" Link="Navigation\PageKey.cs" />
     <Compile Include="..\..\src\RollGrinder.App\Navigation\NavigationModel.cs" Link="Navigation\NavigationModel.cs" />
-    <Compile Include="..\..\src\RollGrinder.App\Navigation\AreaMenuLayout.cs" Link="Navigation\AreaMenuLayout.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\Navigation\AreaCatalog.cs" Link="Navigation\AreaCatalog.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\Navigation\QuickBar.cs" Link="Navigation\QuickBar.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\Interaction\ConfirmationService.cs" Link="Interaction\ConfirmationService.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\Interaction\DialogLineModel.cs" Link="Interaction\DialogLineModel.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\Interaction\NumericEntry.cs" Link="Interaction\NumericEntry.cs" />
+    <Compile Include="..\..\src\RollGrinder.App\Interaction\LongPressDetector.cs" Link="Interaction\LongPressDetector.cs" />
     <Compile Include="..\..\src\RollGrinder.App\Navigation\SoftKeyMenu.cs" Link="Navigation\SoftKeyMenu.cs" />
     <Compile Include="..\..\src\RollGrinder.App\Diagnostics\ExceptionStormDetector.cs" Link="Diagnostics\ExceptionStormDetector.cs" />
     <Compile Include="..\..\src\RollGrinder.App\SelfTest\SelfTestOptions.cs" Link="SelfTest\SelfTestOptions.cs" />

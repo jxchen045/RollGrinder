@@ -1,59 +1,91 @@
 <!--
-  方案B 浅色高对比。色值取自 docs/design/配色与字号规范.png 与各设计稿。
-  换方案（A 深色工业 / C 中性灰）只需替换本文件：色位键名三套通用。
+  配色（界面最终稿 4.3，对齐 SINUMERIK ONE Operate）：青色只表示焦点 / 当前；
+  绿 = 运行、开、到位；黄 = 中断、警告、未就绪；红 = 报警、急停、错误；灰 = 关；虚框 = 读不到。
+
+  与最终稿取色的两处偏差，都是为了字看得清（ButtonContrastTests 逐对核算，白字 ≥ 4.5:1）：
+  - "当前"青 #0199C8 上的白字只有 3.3:1，白字底色用同色相加深的 #007FA8（4.6:1）；
+  - 通道行 #6D7F8D 上的白字只有 4.1:1，改用 #617381（4.9:1）。
+  浅色当前格 #67C2DF、选中行 #A9DCEC 配深字，照最终稿。
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-  <!-- 语义色位（三套配色通用的键名） -->
-  <Color x:Key="Color.Background">#E9ECF0</Color>
+  <!-- 语义色位 -->
+  <Color x:Key="Color.Background">#EBF0F6</Color>
   <Color x:Key="Color.Surface">#FFFFFF</Color>
-  <Color x:Key="Color.Divider">#C5CAD2</Color>
+  <Color x:Key="Color.Divider">#A7B1BA</Color>
   <Color x:Key="Color.Accent">#15507F</Color>
   <Color x:Key="Color.CurrentStep">#B3241C</Color>
   <Color x:Key="Color.NextStep">#F6D24A</Color>
   <Color x:Key="Color.Normal">#1F7A4D</Color>
 
-  <!-- 方案B 的派生色位 -->
+  <!-- 外壳（最终稿 4.1、4.3） -->
+  <Color x:Key="Color.Active">#007FA8</Color>
+  <Color x:Key="Color.ActivePressed">#006A8C</Color>
+  <Color x:Key="Color.FocusField">#67C2DF</Color>
+  <Color x:Key="Color.SelectedRow">#A9DCEC</Color>
+  <Color x:Key="Color.WindowHeader">#C6CBD1</Color>
+  <Color x:Key="Color.TitleRow">#E6EBF1</Color>
+  <Color x:Key="Color.LeftBar">#1B2228</Color>
+  <Color x:Key="Color.LeftBarKey">#404C58</Color>
+  <Color x:Key="Color.Tile">#3D5466</Color>
+  <Color x:Key="Color.PathBar">#A7B1BA</Color>
+  <Color x:Key="Color.ChannelRow">#617381</Color>
+  <Color x:Key="Color.Key">#DDE1EA</Color>
+  <Color x:Key="Color.KeyPressed">#C6CBD1</Color>
+  <Color x:Key="Color.Cancel">#8E1B1B</Color>
+  <Color x:Key="Color.CancelPressed">#741515</Color>
+  <Color x:Key="Color.Confirm">#37703D</Color>
+  <Color x:Key="Color.ConfirmPressed">#2B5A30</Color>
+  <Color x:Key="Color.Question">#F4E3A1</Color>
+  <Color x:Key="Color.Help">#F9EEAE</Color>
+  <Color x:Key="Color.HelpKey">#F5CF2E</Color>
+  <Color x:Key="Color.HelpKeyPressed">#E0B815</Color>
+  <Color x:Key="Color.HelpBorder">#EED32E</Color>
+  <Color x:Key="Color.Alarm">#C4161C</Color>
+  <Color x:Key="Color.PendingValue">#B3241C</Color>
+
+  <!-- 曲线（最终稿 4.3）：各页统一 -->
+  <Color x:Key="Color.CurveTarget">#15507F</Color>
+  <Color x:Key="Color.CurveMeasured">#B3241C</Color>
+  <Color x:Key="Color.CurveTolerance">#9AA0A6</Color>
+  <Color x:Key="Color.CurveToleranceBand">#E6ECF1</Color>
+  <Color x:Key="Color.CurveBefore">#7A8591</Color>
+  <Color x:Key="Color.CurveSegmentBoundary">#8D97A3</Color>
+  <Color x:Key="Color.CurveReference">#8A5A00</Color>
+  <Color x:Key="Color.CurveWheel">#E8891A</Color>
+  <Color x:Key="Color.CurveCompensation">#1F5FA8</Color>
+
+  <!-- 派生色位 -->
   <Color x:Key="Color.AccentDark">#0F4370</Color>
-  <Color x:Key="Color.HeaderFill">#F3F5F8</Color>
-  <Color x:Key="Color.GridLine">#D8DDE4</Color>
-  <Color x:Key="Color.TextPrimary">#16191E</Color>
-  <Color x:Key="Color.TextSecondary">#4A5461</Color>
-  <Color x:Key="Color.TextMuted">#5A6470</Color>
+  <Color x:Key="Color.HeaderFill">#C6CBD1</Color>
+  <Color x:Key="Color.GridLine">#D1D7DE</Color>
+  <Color x:Key="Color.TextPrimary">#141A1F</Color>
+  <Color x:Key="Color.TextSecondary">#36414B</Color>
+  <Color x:Key="Color.TextMuted">#38434E</Color>
   <Color x:Key="Color.OnAccent">#FFFFFF</Color>
   <Color x:Key="Color.OnAccentMuted">#B9D4EA</Color>
   <Color x:Key="Color.ButtonBorder">#8C95A1</Color>
-  <Color x:Key="Color.FunctionBar">#DDE2E8</Color>
+  <Color x:Key="Color.FunctionBar">#A7B1BA</Color>
   <Color x:Key="Color.NormalFill">#E2F2E9</Color>
-  <Color x:Key="Color.SelectionFill">#E3EDF6</Color>
+  <Color x:Key="Color.SelectionFill">#A9DCEC</Color>
   <Color x:Key="Color.RowAlternate">#F3F7FA</Color>
   <Color x:Key="Color.PlotBackground">#FBFCFD</Color>
   <Color x:Key="Color.PlotGridMinor">#E4E8ED</Color>
   <Color x:Key="Color.Reference">#8D97A3</Color>
   <Color x:Key="Color.WarningFill">#8A5A00</Color>
 
-  <!--
-    按钮的悬停 / 按下 / 禁用色。实心按钮一律往深里走（白字对比度只升不降），
-    浅色按钮往浅蓝里走（深字对比度仍在 13:1 以上）。禁用是中性灰底灰字，不再用半透明：
-    红键半透明会变成像"警告"的粉色。对比度由 ButtonContrastTests 逐对核算：文字 ≥ 4.5:1，禁用文字 ≥ 3:1，描边 ≥ 3:1。
-  -->
-  <Color x:Key="Color.SurfaceHover">#E8EEF4</Color>
+  <!-- 按下与禁用。触摸屏没有悬停（最终稿 4.6：去掉全部悬停效果），只有按下。 -->
   <Color x:Key="Color.SurfacePressed">#D3E1EE</Color>
-  <Color x:Key="Color.AccentHover">#0F4370</Color>
   <Color x:Key="Color.AccentPressed">#0A3357</Color>
-  <Color x:Key="Color.AccentDarkHover">#0A3357</Color>
   <Color x:Key="Color.AccentDarkPressed">#072640</Color>
-  <Color x:Key="Color.NormalHover">#19663F</Color>
   <Color x:Key="Color.NormalPressed">#125131</Color>
-  <Color x:Key="Color.CurrentStepHover">#971E17</Color>
   <Color x:Key="Color.CurrentStepPressed">#7B1812</Color>
-  <Color x:Key="Color.SelectionHover">#D3E1EE</Color>
-  <Color x:Key="Color.SelectionPressed">#C3D6E8</Color>
-  <Color x:Key="Color.DisabledFill">#ECEEF1</Color>
-  <Color x:Key="Color.DisabledText">#6B7581</Color>
-  <Color x:Key="Color.DisabledBorder">#D3D8DE</Color>
-  <Color x:Key="Color.FocusRing">#16191E</Color>
+  <Color x:Key="Color.SelectionPressed">#8FCBDF</Color>
+  <Color x:Key="Color.DisabledFill">#DDE1EA</Color>
+  <Color x:Key="Color.DisabledText">#66707C</Color>
+  <Color x:Key="Color.DisabledBorder">#C6CBD1</Color>
+  <Color x:Key="Color.FocusRing">#141A1F</Color>
 
   <SolidColorBrush x:Key="Brush.Background" Color="{StaticResource Color.Background}" />
   <SolidColorBrush x:Key="Brush.Surface" Color="{StaticResource Color.Surface}" />
@@ -79,24 +111,43 @@
   <SolidColorBrush x:Key="Brush.PlotGridMinor" Color="{StaticResource Color.PlotGridMinor}" />
   <SolidColorBrush x:Key="Brush.Reference" Color="{StaticResource Color.Reference}" />
   <SolidColorBrush x:Key="Brush.WarningFill" Color="{StaticResource Color.WarningFill}" />
-  <SolidColorBrush x:Key="Brush.SurfaceHover" Color="{StaticResource Color.SurfaceHover}" />
   <SolidColorBrush x:Key="Brush.SurfacePressed" Color="{StaticResource Color.SurfacePressed}" />
-  <SolidColorBrush x:Key="Brush.AccentHover" Color="{StaticResource Color.AccentHover}" />
   <SolidColorBrush x:Key="Brush.AccentPressed" Color="{StaticResource Color.AccentPressed}" />
-  <SolidColorBrush x:Key="Brush.AccentDarkHover" Color="{StaticResource Color.AccentDarkHover}" />
   <SolidColorBrush x:Key="Brush.AccentDarkPressed" Color="{StaticResource Color.AccentDarkPressed}" />
-  <SolidColorBrush x:Key="Brush.NormalHover" Color="{StaticResource Color.NormalHover}" />
   <SolidColorBrush x:Key="Brush.NormalPressed" Color="{StaticResource Color.NormalPressed}" />
-  <SolidColorBrush x:Key="Brush.CurrentStepHover" Color="{StaticResource Color.CurrentStepHover}" />
   <SolidColorBrush x:Key="Brush.CurrentStepPressed" Color="{StaticResource Color.CurrentStepPressed}" />
-  <SolidColorBrush x:Key="Brush.SelectionHover" Color="{StaticResource Color.SelectionHover}" />
   <SolidColorBrush x:Key="Brush.SelectionPressed" Color="{StaticResource Color.SelectionPressed}" />
   <SolidColorBrush x:Key="Brush.DisabledFill" Color="{StaticResource Color.DisabledFill}" />
   <SolidColorBrush x:Key="Brush.DisabledText" Color="{StaticResource Color.DisabledText}" />
   <SolidColorBrush x:Key="Brush.DisabledBorder" Color="{StaticResource Color.DisabledBorder}" />
   <SolidColorBrush x:Key="Brush.FocusRing" Color="{StaticResource Color.FocusRing}" />
-  <SolidColorBrush x:Key="Brush.StepIdle" Color="{StaticResource Color.HeaderFill}" />
+  <SolidColorBrush x:Key="Brush.StepIdle" Color="{StaticResource Color.Key}" />
   <SolidColorBrush x:Key="Brush.OnCurrentStep" Color="#FFFFFF" />
   <SolidColorBrush x:Key="Brush.OnNextStep" Color="#3A2F00" />
+
+  <SolidColorBrush x:Key="Brush.Active" Color="{StaticResource Color.Active}" />
+  <SolidColorBrush x:Key="Brush.ActivePressed" Color="{StaticResource Color.ActivePressed}" />
+  <SolidColorBrush x:Key="Brush.FocusField" Color="{StaticResource Color.FocusField}" />
+  <SolidColorBrush x:Key="Brush.SelectedRow" Color="{StaticResource Color.SelectedRow}" />
+  <SolidColorBrush x:Key="Brush.WindowHeader" Color="{StaticResource Color.WindowHeader}" />
+  <SolidColorBrush x:Key="Brush.TitleRow" Color="{StaticResource Color.TitleRow}" />
+  <SolidColorBrush x:Key="Brush.LeftBar" Color="{StaticResource Color.LeftBar}" />
+  <SolidColorBrush x:Key="Brush.LeftBarKey" Color="{StaticResource Color.LeftBarKey}" />
+  <SolidColorBrush x:Key="Brush.Tile" Color="{StaticResource Color.Tile}" />
+  <SolidColorBrush x:Key="Brush.PathBar" Color="{StaticResource Color.PathBar}" />
+  <SolidColorBrush x:Key="Brush.ChannelRow" Color="{StaticResource Color.ChannelRow}" />
+  <SolidColorBrush x:Key="Brush.Key" Color="{StaticResource Color.Key}" />
+  <SolidColorBrush x:Key="Brush.KeyPressed" Color="{StaticResource Color.KeyPressed}" />
+  <SolidColorBrush x:Key="Brush.Cancel" Color="{StaticResource Color.Cancel}" />
+  <SolidColorBrush x:Key="Brush.CancelPressed" Color="{StaticResource Color.CancelPressed}" />
+  <SolidColorBrush x:Key="Brush.Confirm" Color="{StaticResource Color.Confirm}" />
+  <SolidColorBrush x:Key="Brush.ConfirmPressed" Color="{StaticResource Color.ConfirmPressed}" />
+  <SolidColorBrush x:Key="Brush.Question" Color="{StaticResource Color.Question}" />
+  <SolidColorBrush x:Key="Brush.Help" Color="{StaticResource Color.Help}" />
+  <SolidColorBrush x:Key="Brush.HelpKey" Color="{StaticResource Color.HelpKey}" />
+  <SolidColorBrush x:Key="Brush.HelpKeyPressed" Color="{StaticResource Color.HelpKeyPressed}" />
+  <SolidColorBrush x:Key="Brush.HelpBorder" Color="{StaticResource Color.HelpBorder}" />
+  <SolidColorBrush x:Key="Brush.Alarm" Color="{StaticResource Color.Alarm}" />
+  <SolidColorBrush x:Key="Brush.PendingValue" Color="{StaticResource Color.PendingValue}" />
 
 </ResourceDictionary>

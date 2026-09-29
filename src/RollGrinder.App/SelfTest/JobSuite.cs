@@ -25,10 +25,8 @@ internal static class JobWizard
         await h.GoToAsync(PageKey.Steps, ctx);
         if (steps.ProgramName != programName || steps.ProgramId is null || steps.IsDirty)
         {
-            await h.RunAsync(steps.OpenProgramLibraryCommand);
-            steps.SelectedProgramEntry = steps.ProgramLibraryEntries.FirstOrDefault(p => p.Name == programName);
-            ctx.Check(steps.SelectedProgramEntry is not null, "program '" + programName + "' should be in the library");
-            await h.RunAsync(steps.LoadProgramCommand);
+            steps.DiscardChanges();
+            await SelfTestNames.OpenFromLibraryAsync(h, ctx, LibraryViewModel.ProgramsGroup, programName);
         }
 
         await h.PressKeyAsync(ctx, "Fn_UseForJob");
@@ -37,16 +35,26 @@ internal static class JobWizard
         ctx.Check(job.SelectedProgram?.Name == programName, "the program should be carried into the job");
     }
 
-    /// <summary>在作业页按"新登记轧辊"，去台账填表、存，按导航槽回作业页；回来时这支辊应已选上。</summary>
+    /// <summary>竖键"取消作业…"：问一句、确认，作业页回到第一步、清空选择。</summary>
+    public static async Task NewJobAsync(SelfTestHarness h, StepContext ctx)
+    {
+        await h.PressVerticalKeyAsync(ctx, "Vk_CancelJob");
+        if (h.HasPendingConfirmation)
+        {
+            await h.ConfirmAsync(ctx);
+        }
+    }
+
+    /// <summary>在作业页按"登记新辊"，去库区台账填表、存，按"« 返回"回作业页；回来时这支辊应已选上。</summary>
     public static async Task RegisterRollAsync(
         SelfTestHarness h, StepContext ctx, string rollId, double bodyLengthMm, double diameterMm, double currentDiameterMm)
     {
         JobViewModel job = h.Page<JobViewModel>();
-        RecordsViewModel records = h.Page<RecordsViewModel>();
-        await h.PressKeyAsync(ctx, "Fn_RegisterRoll");
-        ctx.Check(h.Shell.CurrentPage.Key == PageKey.Records, "'register roll' should open the roll ledger");
+        LibraryViewModel records = h.Page<LibraryViewModel>();
+        await h.PressVerticalKeyAsync(ctx, "Vk_RegisterRoll");
+        ctx.Check(h.Shell.CurrentPage.Key == PageKey.Library, "'register roll' should open the roll ledger in the library");
         bool formReady = await h.WaitUntilAsync(
-            () => records.ActiveSubViewKey == RecordsViewModel.LedgerSubView && records.IsNewLedgerRoll, TimeSpan.FromSeconds(10));
+            () => records.IsLedgerGroup && records.IsNewLedgerRoll, TimeSpan.FromSeconds(10));
         ctx.Check(formReady, "the ledger should open on an empty form");
 
         records.LedgerRollId = rollId;
@@ -54,7 +62,7 @@ internal static class JobWizard
         records.LedgerBodyLengthText = Format(bodyLengthMm);
         records.LedgerDiameterText = Format(diameterMm);
         records.LedgerCurrentDiameterText = Format(currentDiameterMm);
-        await h.RunAsync(records.SaveLedgerRollCommand);
+        await h.PressVerticalKeyAsync(ctx, "Vk_SaveRoll");
         bool alreadyThere = records.LedgerProblems.Count > 0;
         if (alreadyThere)
         {
@@ -65,14 +73,14 @@ internal static class JobWizard
         h.TryScreenshot("job-register-roll");
         for (int i = 0; i < 3 && h.Shell.CurrentPage.Key != PageKey.Job; i++)
         {
-            await h.PressNavigationKeyAsync();
+            await h.BackAsync();
             if (h.Shell.IsLeaveConfirmOpen)
             {
                 await h.RunAsync(h.Shell.DiscardAndLeaveCommand);
             }
         }
 
-        ctx.Check(h.Shell.CurrentPage.Key == PageKey.Job, "the navigation key should lead back to the job page");
+        ctx.Check(h.Shell.CurrentPage.Key == PageKey.Job, "'« back' should lead back to the job page");
         await job.Loading;
         if (alreadyThere)
         {
@@ -99,12 +107,12 @@ internal static class JobWizard
         ctx.Note("length: " + job.LengthCheckText);
         if (job.LengthMismatch)
         {
-            ctx.Check(!IsKeyEnabled(h, "Fn_NextStep"), "with a length mismatch 'next' waits for a choice");
+            ctx.Check(!IsKeyEnabled(h, "Vk_NextStep"), "with a length mismatch 'next' waits for a choice");
             await h.RunAsync(job.ChooseFitCommand, ProfileFitMode.Stretch);
             ctx.Check(job.IsStretchChosen, "stretch should be chosen");
         }
 
-        ctx.Check(IsKeyEnabled(h, "Fn_NextStep"), "'next' should be enabled once the profile is settled");
+        ctx.Check(IsKeyEnabled(h, "Vk_NextStep"), "'next' should be enabled once the profile is settled");
         return job.LengthMismatch;
     }
 
@@ -115,7 +123,7 @@ internal static class JobWizard
         while (job.ActiveStep < JobViewModel.ReviewStep)
         {
             int before = job.ActiveStep;
-            await h.PressKeyAsync(ctx, "Fn_NextStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_NextStep");
             ctx.Check(job.ActiveStep == before + 1, "'next' should move from step " + before + ", is " + job.ActiveStep);
             if (job.ActiveStep == before)
             {
@@ -124,7 +132,7 @@ internal static class JobWizard
         }
     }
 
-    public static bool IsKeyEnabled(SelfTestHarness h, string key) => h.IsKeyUsable(h.IndexOfKey(key));
+    public static bool IsKeyEnabled(SelfTestHarness h, string key) => h.IsVerticalKeyUsable(h.IndexOfVerticalKey(key));
 
     private static string Format(double value) => value.ToString("0.###", CultureInfo.CurrentCulture);
 }
@@ -153,9 +161,9 @@ internal sealed class JobSuite : ISelfTestSuite
 
         await h.StepAsync("Wizard", "NewJobClearsRoll", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_NewJob");
+            await JobWizard.NewJobAsync(h, ctx);
             ctx.Check(job.ActiveStep == JobViewModel.RollStep && job.SelectedRoll is null, "a new job starts on step 1 with no roll");
-            ctx.Check(!JobWizard.IsKeyEnabled(h, "Fn_NextStep"), "'next' needs a roll");
+            ctx.Check(!JobWizard.IsKeyEnabled(h, "Vk_NextStep"), "'next' needs a roll");
         });
 
         await h.StepAsync("Wizard", "RegisterRollFromJob", async ctx =>
@@ -172,7 +180,7 @@ internal sealed class JobSuite : ISelfTestSuite
 
         await h.StepAsync("Wizard", "ProfileLengthCheck", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_NextStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_NextStep");
             bool mismatch = await JobWizard.ChooseProfileAsync(h, ctx, SelfTestNames.ProfileA);
             ctx.Check(mismatch, "a roll 100 mm shorter than the profile design should ask stretch or center");
             h.TryScreenshot("job-profile-fit");
@@ -180,7 +188,7 @@ internal sealed class JobSuite : ISelfTestSuite
 
         await h.StepAsync("Wizard", "ProgramAndOptions", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_NextStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_NextStep");
             ctx.Check(job.ActiveStep == JobViewModel.ProgramStep, "should be on the program step");
 
             // "新建作业"把带进来的程序也清掉了，这里重新选（和操作员一样在列表里点）。
@@ -189,7 +197,7 @@ internal sealed class JobSuite : ISelfTestSuite
             ctx.Check(job.SelectedProgram is not null, "program '" + SelfTestNames.ProgramA + "' should be offered on the program step");
             ctx.Check(job.ProgramSteps.Count >= 2, "the chosen program's steps should be listed");
             ctx.Note(job.ProgramSteps.Count + " steps, " + job.TotalDurationText);
-            await h.PressKeyAsync(ctx, "Fn_NextStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_NextStep");
             ctx.Check(job.ActiveStep == JobViewModel.OptionsStep, "should be on the options step");
             ctx.Check(job.ProgramOptions.Any(o => o.IsAvailable), "program options should be offered");
         });
@@ -206,9 +214,9 @@ internal sealed class JobSuite : ISelfTestSuite
 
         await h.StepAsync("Wizard", "PreviousStepGoesBack", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_PreviousStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_PreviousStep");
             ctx.Check(job.ActiveStep == JobViewModel.OptionsStep, "'previous' should go back one step");
-            await h.PressKeyAsync(ctx, "Fn_NextStep");
+            await h.PressVerticalKeyAsync(ctx, "Vk_NextStep");
             ctx.Check(job.ActiveStep == JobViewModel.ReviewStep, "and 'next' forward again");
         });
 
@@ -216,7 +224,7 @@ internal sealed class JobSuite : ISelfTestSuite
         {
             await h.StepAsync("Download", "RefusedWithoutMachine", async ctx =>
             {
-                await h.PressKeyAsync(ctx, "Fn_DownloadNc");
+                await h.PressVerticalKeyAsync(ctx, "Vk_ConfirmDownload");
                 ctx.Check(job.StatusResourceKey != "Job_HandedOver", "download must not claim success without a machine");
                 ctx.Check(h.Shell.CurrentPage.Key == PageKey.Job, "a refused download stays on the job page");
                 ctx.Note("status=" + job.StatusResourceKey);
@@ -225,8 +233,8 @@ internal sealed class JobSuite : ISelfTestSuite
 
         await h.StepAsync("Wizard", "BackToProgramPage", async ctx =>
         {
-            await h.PressNavigationKeyAsync();
-            ctx.Check(h.Shell.CurrentPage.Key == PageKey.Steps, "the navigation key should return to the program page");
+            await h.BackAsync();
+            ctx.Check(h.Shell.CurrentPage.Key == PageKey.Steps, "'« back' should return to the program page");
         });
     }
 }

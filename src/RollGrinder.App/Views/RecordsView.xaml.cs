@@ -38,6 +38,7 @@ public partial class RecordsView : UserControl
             this.viewModel.ReportChanged += OnReportChanged;
             this.viewModel.CurveChanged += OnCurveChanged;
             this.viewModel.ExportRequested += OnExportRequested;
+            this.viewModel.PrintRequested += OnPrintRequested;
         }
     }
 
@@ -50,6 +51,7 @@ public partial class RecordsView : UserControl
             this.viewModel.ReportChanged -= OnReportChanged;
             this.viewModel.CurveChanged -= OnCurveChanged;
             this.viewModel.ExportRequested -= OnExportRequested;
+            this.viewModel.PrintRequested -= OnPrintRequested;
         }
     }
 
@@ -68,7 +70,7 @@ public partial class RecordsView : UserControl
             return;
         }
 
-        RecordPlot.Plot.Add.HorizontalLine(0.0, 1f, Colors.Gray, LinePattern.Dotted);
+        RecordPlot.Plot.Add.HorizontalLine(0.0, 1f, PlotTheme.Curve(RecordPlot, "Color.CurveTolerance"), LinePattern.Dotted);
 
         for (int i = 0; i < curve.Series.Count; i++)
         {
@@ -94,11 +96,11 @@ public partial class RecordsView : UserControl
         RecordPlot.Refresh();
     }
 
-    /// <summary>一张图上最多两条线，两个颜色够用且分得开。</summary>
-    private static readonly Color[] SeriesColors =
+    /// <summary>一张图上最多两条线：第一条是实测 / 磨后（红），第二条是磨前 / 对照（灰蓝），与各页曲线色一致（最终稿 4.3）。</summary>
+    private Color[] SeriesColors => new[]
     {
-        Color.FromHex("#B3241C"),
-        Color.FromHex("#15507F"),
+        PlotTheme.Curve(RecordPlot, "Color.CurveMeasured"),
+        PlotTheme.Curve(RecordPlot, "Color.CurveBefore"),
     };
 
     private void OnReportChanged(object? sender, EventArgs e)
@@ -111,7 +113,7 @@ public partial class RecordsView : UserControl
     /// <summary>
     /// 打的就是预览里那一份文档——重新排一次版就可能与看到的不一样。
     /// </summary>
-    private void OnPrintClick(object sender, RoutedEventArgs e)
+    private void OnPrintRequested(object? sender, EventArgs e)
     {
         if (ReportPreview.Document is not FlowDocument document)
         {
@@ -125,10 +127,8 @@ public partial class RecordsView : UserControl
         InteractionScope.DocumentOutput.Print(document, title, askOperator: true);
     }
 
-    /// <summary>功能键上的"导出"与页面上的按钮走同一条路。</summary>
-    private void OnExportRequested(object? sender, EventArgs e) => OnExportClick(this, new RoutedEventArgs());
-
-    private async void OnExportClick(object sender, RoutedEventArgs e)
+    /// <summary>竖键"导出 Excel"：路径由这里的文件对话框选。</summary>
+    private async void OnExportRequested(object? sender, EventArgs e)
     {
         if (DataContext is not RecordsViewModel viewModel)
         {

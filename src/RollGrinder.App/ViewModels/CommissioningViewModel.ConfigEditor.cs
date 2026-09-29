@@ -23,21 +23,13 @@ using RollGrinder.Services.Session;
 
 namespace RollGrinder.App.ViewModels;
 
-/// <summary>改动记录里的一行（诊断页"审计"）。</summary>
-public sealed record ChangeLogRowViewModel(string TimeText, string ByText, string AreaText, string Item, string OldText, string NewText);
-
 /// <summary>
-/// 机床配置与标签映射的结构化编辑（修改稿 5④、5.8）：机床配置按分组表单，标签映射按表格（可搜索、只看缺失、单点试读）。
+/// 机床配置与标签映射的结构化编辑（调试区，最终稿 5.13）：机床配置按分组表单，标签映射按表格（可搜索、只看缺失、单点试读）。
 /// 所有人可看，只有制造商能改（Q9）；改动即校验，不成立存不进去；保存前自动备份原文件，每次改动写改动记录，
-/// 保存后提示"重启上位机后生效"；"恢复上一版"把最近一份备份载入编辑区，按保存才生效。
+/// 保存后提示"重启上位机后生效"；"恢复上一版…"把最近一份备份载入编辑区，按"✓ 保存…"才生效。
 /// </summary>
-public sealed partial class DiagnosticsViewModel
+public sealed partial class CommissioningViewModel
 {
-    private ConfigDocumentStore configStore = null!;
-    private IChangeLog changeLog = null!;
-    private IMachineGateway gateway = null!;
-    private IUserSession userSession = null!;
-
     private JsonObject? machineLoaded;
     private JsonObject? machineWorking;
     private JsonObject? tagLoaded;
@@ -60,9 +52,6 @@ public sealed partial class DiagnosticsViewModel
     /// <summary>选中那一行的读写方向（分段键）。</summary>
     public ObservableCollection<ParameterChoiceViewModel> TagAccessChoices { get; } = new();
 
-    /// <summary>改动记录（新的在前）。</summary>
-    public ObservableCollection<ChangeLogRowViewModel> ChangeLogRows { get; } = new();
-
     [ObservableProperty]
     private TagRowViewModel? selectedTag;
 
@@ -83,33 +72,12 @@ public sealed partial class DiagnosticsViewModel
 
     public bool CanEditTagMap => Can(Permission.EditTagMap);
 
-    private void InitializeConfigEditor(
-        ConfigDocumentStore store, IChangeLog log, IMachineGateway machineGateway, IUserSession session)
-    {
-        this.configStore = store ?? throw new ArgumentNullException(nameof(store));
-        this.changeLog = log ?? throw new ArgumentNullException(nameof(log));
-        this.gateway = machineGateway ?? throw new ArgumentNullException(nameof(machineGateway));
-        this.userSession = session ?? throw new ArgumentNullException(nameof(session));
-        PropertyChanged += OnConfigEditorPropertyChanged;
-    }
-
-    protected override void OnAccessChanged()
-    {
-        OnPropertyChanged(nameof(CanEditMachineConfig));
-        OnPropertyChanged(nameof(CanEditTagMap));
-    }
-
     private void OnConfigEditorPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
         {
-            case nameof(ActiveSubViewKey):
-                // 离开编辑子视图：竖键收掉（它们只对编辑区有意义）。
-                if (ActiveSubViewKey is not (MachineConfigSubView or TagMappingSubView))
-                {
-                    SetVerticalKeys(Array.Empty<FunctionKeyViewModel>());
-                }
-
+            case nameof(IsDirty):
+                RefreshCommitPair();
                 break;
             case nameof(TagSearchText):
             case nameof(ShowMissingTagsOnly):
@@ -117,24 +85,30 @@ public sealed partial class DiagnosticsViewModel
                 break;
             case nameof(SelectedTag):
                 BuildTagChoices();
+                foreach (FunctionKeyViewModel key in VerticalKeys)
+                {
+                    (key.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+                }
+
                 break;
         }
     }
 
     // ── 机床配置 ──────────────────────────────────────────────────────────────
 
-    /// <summary>机床配置：按分组的表单，不再是 JSON 原文。</summary>
-    [RelayCommand]
-    private Task OpenMachineConfigAsync(CancellationToken cancellationToken) =>
+    /// <summary>机床配置：按分组的表单，不再是 JSON 原文。编辑区里有没存的改动时不重读（切组回来改动还在）。</summary>
+    private Task LoadMachineConfigAsync(CancellationToken cancellationToken) =>
         RunGuardedAsync(async token =>
         {
+            if (this.machineLoaded is not null && IsDirty)
+            {
+                return;
+            }
+
             this.machineLoaded = await this.configStore.LoadAsync(ConfigFileKind.Machine, token).ConfigureAwait(true);
             this.machineWorking = (JsonObject)this.machineLoaded.DeepClone();
             BuildMachineGroups();
             RevalidateMachine();
-            ConfigStatusText = string.Empty;
-            Navigator.OpenSubView(MachineConfigSubView);
-            SetVerticalKeys(EditorKeys(ConfigFileKind.Machine));
         }, cancellationToken);
 
     private void BuildMachineGroups()
@@ -268,16 +242,18 @@ public sealed partial class DiagnosticsViewModel
     // ── 标签映射 ──────────────────────────────────────────────────────────────
 
     /// <summary>标签映射：表格，可搜索、只看缺失、单点试读。</summary>
-    [RelayCommand]
-    private Task OpenTagMappingAsync(CancellationToken cancellationToken) =>
+    private Task LoadTagMappingAsync(CancellationToken cancellationToken) =>
         RunGuardedAsync(async token =>
         {
+            if (this.tagLoaded is not null && IsDirty)
+            {
+                return;
+            }
+
             this.tagLoaded = await this.configStore.LoadAsync(ConfigFileKind.TagMap, token).ConfigureAwait(true);
             this.tagWorking = (JsonObject)this.tagLoaded.DeepClone();
             BuildTagRows();
             RevalidateTags();
-            Navigator.OpenSubView(TagMappingSubView);
-            SetVerticalKeys(EditorKeys(ConfigFileKind.TagMap));
         }, cancellationToken);
 
     private void BuildTagRows()
@@ -451,7 +427,7 @@ public sealed partial class DiagnosticsViewModel
 
         if (!this.tagMap.TryResolve(row.Key, out _))
         {
-            ConfigStatusText = Localizer.Format("Cfg_TestReadNotActiveFormat", row.Key);
+            Interaction.Refuse(Localizer.Format("Cfg_TestReadNotActiveFormat", row.Key));
             return;
         }
 
@@ -460,12 +436,12 @@ public sealed partial class DiagnosticsViewModel
             TagValue value = await this.gateway.ReadTagAsync(row.Key, cancellationToken).ConfigureAwait(true);
             row.ValueText = value.Raw?.ToString() ?? "--";
             row.QualityText = Localizer[value.IsGood ? "Cfg_QualityGood" : "Cfg_QualityBad"];
-            ConfigStatusText = Localizer.Format("Cfg_TestReadFormat", row.Key, row.ValueText, row.QualityText);
+            Say("Cfg_TestReadFormat", row.Key, row.ValueText, row.QualityText);
         }
         catch (GatewayException ex)
         {
             row.QualityText = Localizer["Cfg_QualityBad"];
-            ConfigStatusText = Localizer.Format("Cfg_TestReadFailedFormat", row.Key, ex.Message);
+            Interaction.Fail(Localizer.Format("Cfg_TestReadFailedFormat", row.Key, ex.Message));
         }
     }
 
@@ -484,38 +460,75 @@ public sealed partial class DiagnosticsViewModel
 
     // ── 两份共用：竖键、保存、恢复上一版 ─────────────────────────────────────
 
-    private IReadOnlyList<FunctionKeyViewModel> EditorKeys(ConfigFileKind kind)
+    /// <summary>
+    /// 竖键（最终稿 5.13）：标签映射 = 只看缺失、登记、删除这一行…、试读、空、恢复上一版…；
+    /// 机床配置只有"恢复上一版…"（第 6 格，与标签映射同位）。有改动时 7 / 8 = ✕ 放弃改动 / ✓ 保存…。
+    /// </summary>
+    private IReadOnlyList<FunctionKeyViewModel?> EditorKeys(ConfigFileKind kind)
     {
         Permission permission = kind == ConfigFileKind.Machine ? Permission.EditMachineConfig : Permission.EditTagMap;
-        var keys = new List<FunctionKeyViewModel>
+        var restore = new FunctionKeyViewModel(
+            "Vk_RestorePrevious",
+            new RelayCommand(() => Ask("Cfg_AskRestore", () => RestorePreviousAsync(kind, CancellationToken.None))),
+            Localizer)
         {
-            new("Vk_SaveConfig", new AsyncRelayCommand(() => SaveConfigAsync(kind, CancellationToken.None)), Localizer, FunctionKeyKind.Primary)
-            {
-                RequiredPermission = permission,
-            },
-            new("Vk_RestorePrevious", new AsyncRelayCommand(() => RestorePreviousAsync(kind, CancellationToken.None)), Localizer)
-            {
-                RequiredPermission = permission,
-            },
-            new("Vk_DiscardConfig", new RelayCommand(() => DiscardConfig(kind)), Localizer),
+            RequiredPermission = permission,
         };
 
-        if (kind == ConfigFileKind.TagMap)
+        if (kind == ConfigFileKind.Machine)
         {
-            keys.Add(new FunctionKeyViewModel("Vk_OnlyMissing", new RelayCommand(() => ShowMissingTagsOnly = !ShowMissingTagsOnly), Localizer));
-            keys.Add(new FunctionKeyViewModel("Vk_RegisterTag", new RelayCommand(RegisterSelectedTag), Localizer)
-            {
-                RequiredPermission = permission,
-            });
-            keys.Add(new FunctionKeyViewModel("Vk_DeleteTag", new RelayCommand(DeleteSelectedTag), Localizer, FunctionKeyKind.Danger)
-            {
-                RequiredPermission = permission,
-            });
-            keys.Add(new FunctionKeyViewModel(
-                "Vk_TestRead", new AsyncRelayCommand(() => TestReadSelectedTagAsync(CancellationToken.None)), Localizer));
+            return new FunctionKeyViewModel?[] { null, null, null, null, null, restore };
         }
 
-        return keys;
+        return new FunctionKeyViewModel?[]
+        {
+            new FunctionKeyViewModel("Vk_OnlyMissing", new RelayCommand(() => ShowMissingTagsOnly = !ShowMissingTagsOnly), Localizer),
+            new FunctionKeyViewModel("Vk_RegisterTag", new RelayCommand(RegisterSelectedTag, () => SelectedTag is { IsMissing: true }), Localizer)
+            {
+                RequiredPermission = permission,
+                PreconditionResourceKey = "Cfg_SelectMissingRow",
+            },
+            new FunctionKeyViewModel(
+                "Vk_DeleteTag",
+                new RelayCommand(
+                    () => Ask("Cfg_AskDeleteTag", DeleteSelectedTag, SelectedTag?.Key),
+                    () => SelectedTag is { IsMissing: false }),
+                Localizer,
+                FunctionKeyKind.Danger)
+            {
+                RequiredPermission = permission,
+                PreconditionResourceKey = "Cfg_SelectMappedRow",
+            },
+            new FunctionKeyViewModel(
+                "Vk_TestRead", new AsyncRelayCommand(() => TestReadSelectedTagAsync(CancellationToken.None), () => SelectedTag is not null), Localizer)
+            {
+                PreconditionResourceKey = "Lib_NothingSelected",
+            },
+            null,
+            restore,
+        };
+    }
+
+    /// <summary>当前组对应的文件（系统组没有）。</summary>
+    private ConfigFileKind? CurrentFile => Group switch
+    {
+        MachineConfigGroup => ConfigFileKind.Machine,
+        TagMappingGroup => ConfigFileKind.TagMap,
+        _ => null,
+    };
+
+    /// <summary>"✓ 保存…"：先把改了几处说出来，确认才写文件。</summary>
+    private void AskSaveConfig()
+    {
+        if (CurrentFile is not { } kind)
+        {
+            return;
+        }
+
+        JsonObject? working = kind == ConfigFileKind.Machine ? this.machineWorking : this.tagWorking;
+        JsonObject? loaded = kind == ConfigFileKind.Machine ? this.machineLoaded : this.tagLoaded;
+        int count = loaded is null ? 0 : ConfigDocumentStore.Diff(loaded, working).Count;
+        Ask("Cfg_AskSaveFormat", () => SaveConfigAsync(kind, CancellationToken.None), count, kind == ConfigFileKind.Machine ? "machine.json" : "tagmap.json");
     }
 
     private async Task SaveConfigAsync(ConfigFileKind kind, CancellationToken cancellationToken)
@@ -523,7 +536,7 @@ public sealed partial class DiagnosticsViewModel
         Permission permission = kind == ConfigFileKind.Machine ? Permission.EditMachineConfig : Permission.EditTagMap;
         if (!Can(permission))
         {
-            ConfigStatusText = Localizer["Cfg_NeedsManufacturer"];
+            Interaction.Refuse(Localizer["Cfg_NeedsManufacturer"]);
             return;
         }
 
@@ -531,14 +544,14 @@ public sealed partial class DiagnosticsViewModel
         JsonObject loaded = kind == ConfigFileKind.Machine ? this.machineLoaded! : this.tagLoaded!;
         if (ConfigIssueCount > 0 || ConfigDocumentStore.Validate(kind, working).Count > 0)
         {
-            ConfigStatusText = Localizer.Format("Cfg_IssueCountFormat", Math.Max(1, ConfigIssueCount));
+            Interaction.Refuse(Localizer.Format("Cfg_IssueCountFormat", Math.Max(1, ConfigIssueCount)));
             return;
         }
 
         IReadOnlyList<ConfigDiff> diffs = ConfigDocumentStore.Diff(loaded, working);
         if (diffs.Count == 0)
         {
-            ConfigStatusText = Localizer["Cfg_NoChanges"];
+            Say("Cfg_NoChanges");
             return;
         }
 
@@ -562,7 +575,7 @@ public sealed partial class DiagnosticsViewModel
             }
 
             UpdateConfigDirty();
-            ConfigStatusText = Localizer.Format("Cfg_SavedFormat", diffs.Count, Path.GetFileName(backup));
+            Say("Cfg_SavedFormat", diffs.Count, Path.GetFileName(backup));
         }, cancellationToken).ConfigureAwait(true);
     }
 
@@ -574,7 +587,7 @@ public sealed partial class DiagnosticsViewModel
             JsonObject? previous = await this.configStore.LoadLatestBackupAsync(kind, token).ConfigureAwait(true);
             if (previous is null)
             {
-                ConfigStatusText = Localizer["Cfg_NoBackup"];
+                Interaction.Refuse(Localizer["Cfg_NoBackup"]);
                 return;
             }
 
@@ -592,7 +605,7 @@ public sealed partial class DiagnosticsViewModel
             }
 
             UpdateConfigDirty();
-            ConfigStatusText = Localizer["Cfg_PreviousLoaded"];
+            Say("Cfg_PreviousLoaded");
         }, cancellationToken).ConfigureAwait(true);
     }
 
@@ -644,22 +657,6 @@ public sealed partial class DiagnosticsViewModel
             string reason = Localizer[issue.ReasonResourceKey];
             string where = issue.Path.Length == 0 ? string.Empty : issue.Path + "：";
             ConfigIssues.Add(issue.Detail is null ? where + reason : where + reason + " — " + issue.Detail);
-        }
-    }
-
-    /// <summary>改动记录（补偿设定、机床配置、标签映射），审计子视图里列出来。</summary>
-    private async Task LoadChangeLogAsync(CancellationToken cancellationToken)
-    {
-        ChangeLogRows.Clear();
-        foreach (ChangeLogEntry entry in await this.changeLog.ListAsync(200, cancellationToken).ConfigureAwait(true))
-        {
-            ChangeLogRows.Add(new ChangeLogRowViewModel(
-                entry.ChangedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                entry.ChangedBy,
-                Localizer["ChangeArea_" + entry.Area],
-                entry.Item,
-                entry.OldValue ?? "--",
-                entry.NewValue ?? "--"));
         }
     }
 

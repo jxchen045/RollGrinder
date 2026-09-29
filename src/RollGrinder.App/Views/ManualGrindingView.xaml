@@ -1,0 +1,201 @@
+<UserControl x:Class="RollGrinder.App.Views.ManualGrindingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:RollGrinder.App.Localization"
+             xmlns:ctl="clr-namespace:RollGrinder.App.Controls">
+    <!--
+        手动磨削（界面最终稿 5.1，机床区 JOG 基本画面）。
+        主角是位置窗（占 40% 宽，X / X1 / Z / U 每行 76 高、L1 54 px，手持盒选中的轴青底"◀"），
+        旁边是测量（直径 L1）与机构（全部到位灯）；下面三个驱动单元（实际值 L2，给定与倍率改了先标红、确认才写入）；
+        最下面是沿辊身的位置图，点图上一处 = 定位目标。
+    -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="110" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="4*" />
+                <ColumnDefinition Width="3*" />
+                <ColumnDefinition Width="3*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,6">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                        <TextBlock Text="{loc:Loc MG_PositionHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <DockPanel DockPanel.Dock="Bottom" Margin="14,4,14,8">
+                        <TextBlock Text="{loc:Loc MG_SyncDiff}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SyncDiffText}" Style="{StaticResource Text.DataRow}" Margin="10,0,0,0" />
+                        <TextBlock Text="{loc:Loc MG_PendantLegend}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right"
+                                   VerticalAlignment="Center" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding Axes}" ItemTemplate="{StaticResource AxisReadoutTemplate}" Margin="6" />
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,6,6">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <DockPanel>
+                            <TextBlock Text="{loc:Loc MG_MeasureHeader}" Style="{StaticResource Text.CardTitle}" />
+                            <TextBlock Text="{Binding ArmStateText}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right"
+                                       VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                    <StackPanel Margin="16,8">
+                        <TextBlock Text="{loc:Loc Manual_RollDiameter}" Style="{StaticResource Text.Label}" />
+                        <TextBlock Text="{Binding MeasuredDiameterText}" Style="{StaticResource Text.Measurement}" />
+                        <UniformGrid Columns="2" Margin="0,10,0,0">
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="{loc:Loc Live_ProbeA}" Style="{StaticResource Text.Label}" />
+                                <TextBlock Text="{Binding ProbeAText}" Style="{StaticResource Text.DataRow}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="{loc:Loc Live_ProbeB}" Style="{StaticResource Text.Label}" />
+                                <TextBlock Text="{Binding ProbeBText}" Style="{StaticResource Text.DataRow}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="{loc:Loc MG_DiameterStep}" Style="{StaticResource Text.Label}" />
+                                <TextBlock Text="{Binding DiameterStepText}" Style="{StaticResource Text.DataRow}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="{loc:Loc Manual_MountingDeviation}" Style="{StaticResource Text.Label}" />
+                                <TextBlock Text="{Binding MountingErrorText}" Style="{StaticResource Text.DataRow}" />
+                            </StackPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0,0,0,6">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc MG_MechanismHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding Mechanism}" ItemTemplate="{StaticResource StatusLampTemplate}" Margin="10">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="2" VerticalAlignment="Top" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- 三个驱动单元：实际值 L2；给定、倍率改了先标红，确认才写入。 -->
+        <Grid Grid.Row="1" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <DockPanel>
+                            <TextBlock Text="{loc:Loc MG_WheelHeader}" Style="{StaticResource Text.CardTitle}" />
+                            <ContentControl Content="{Binding WheelLamp}" ContentTemplate="{StaticResource StatusLampTemplate}"
+                                            HorizontalAlignment="Right" Height="40" />
+                        </DockPanel>
+                    </Border>
+                    <StackPanel Margin="14,8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding WheelSpeedText}" Style="{StaticResource Text.Secondary}" />
+                            <TextBlock Text="{loc:Loc Unit_RevolutionsPerMinute}" Style="{StaticResource Text.Label}" VerticalAlignment="Bottom" Margin="6,0,16,6" />
+                            <TextBlock Text="{Binding WheelSurfaceText}" Style="{StaticResource Text.Body}" VerticalAlignment="Bottom" Margin="0,0,0,6" />
+                        </StackPanel>
+                        <UniformGrid Columns="2" Margin="0,6,0,0">
+                            <ContentControl Content="{Binding WheelSetpoint}" ContentTemplate="{StaticResource SetpointTemplate}" Margin="0,0,8,0" />
+                            <ContentControl Content="{Binding WheelOverride}" ContentTemplate="{StaticResource SetpointTemplate}" />
+                        </UniformGrid>
+                        <DockPanel>
+                            <TextBlock Text="{loc:Loc MG_GrindingCurrent}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding GrindingCurrentText}" Style="{StaticResource Text.DataRow}" Margin="8,0,0,0" />
+                            <Border Height="16" Margin="10,0,0,0" Background="{StaticResource Brush.Key}">
+                                <Rectangle HorizontalAlignment="Left"
+                                           Width="{Binding GrindingCurrentFraction, Converter={StaticResource FractionToWidth}, ConverterParameter=300}">
+                                    <Rectangle.Style>
+                                        <Style TargetType="Rectangle">
+                                            <Setter Property="Fill" Value="{StaticResource Brush.Normal}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCurrentHigh}" Value="True">
+                                                    <Setter Property="Fill" Value="{StaticResource Brush.CurrentStep}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Rectangle.Style>
+                                </Rectangle>
+                            </Border>
+                        </DockPanel>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,6,0">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <DockPanel>
+                            <TextBlock Text="{loc:Loc MG_HeadstockHeader}" Style="{StaticResource Text.CardTitle}" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <ContentControl Content="{Binding HeadstockForwardLamp}" ContentTemplate="{StaticResource StatusLampTemplate}" Height="40" />
+                                <ContentControl Content="{Binding HeadstockReverseLamp}" ContentTemplate="{StaticResource StatusLampTemplate}" Height="40" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <StackPanel Margin="14,8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding HeadstockSpeedText}" Style="{StaticResource Text.Secondary}" />
+                            <TextBlock Text="{loc:Loc Unit_RevolutionsPerMinute}" Style="{StaticResource Text.Label}" VerticalAlignment="Bottom" Margin="6,0,0,6" />
+                        </StackPanel>
+                        <UniformGrid Columns="2" Margin="0,6,0,0">
+                            <ContentControl Content="{Binding HeadstockSetpoint}" ContentTemplate="{StaticResource SetpointTemplate}" Margin="0,0,8,0" />
+                            <ContentControl Content="{Binding HeadstockOverride}" ContentTemplate="{StaticResource SetpointTemplate}" />
+                        </UniformGrid>
+                        <TextBlock Text="{loc:Loc MG_HeadstockOnPanel}" Style="{StaticResource Text.Label}" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <DockPanel>
+                            <TextBlock Text="{loc:Loc MG_CarriageHeader}" Style="{StaticResource Text.CardTitle}" />
+                            <TextBlock Text="{Binding CarriageStateText}" Style="{StaticResource Text.Body}" FontWeight="Bold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                    <StackPanel Margin="14,8">
+                        <UniformGrid Columns="2">
+                            <ContentControl Content="{Binding TraverseSpeed}" ContentTemplate="{StaticResource SetpointTemplate}" Margin="0,0,8,0" />
+                            <ContentControl Content="{Binding FeedOverride}" ContentTemplate="{StaticResource SetpointTemplate}" />
+                            <ContentControl Content="{Binding StrokeStart}" ContentTemplate="{StaticResource SetpointTemplate}" Margin="0,0,8,0" />
+                            <ContentControl Content="{Binding StrokeEnd}" ContentTemplate="{StaticResource SetpointTemplate}" />
+                            <ContentControl Content="{Binding PositionTarget}" ContentTemplate="{StaticResource SetpointTemplate}" Margin="0,0,8,0" />
+                        </UniformGrid>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- 沿辊身的位置（Z，头架 → 尾架）：点图上一处 = 定位目标。 -->
+        <Border Grid.Row="2" Style="{StaticResource Card}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="{loc:Loc MG_StripHeader}" Style="{StaticResource Text.Label}" Margin="12,4,0,0" />
+                <ctl:RollBodyStrip x:Name="Strip"
+                                   TravelMm="{Binding CarriageTravelMm}"
+                                   BodyLengthMm="{Binding BodyLengthMm}"
+                                   CarriageZ="{Binding CarriageZ}"
+                                   StrokeStart="{Binding StrokeStart.Committed}"
+                                   StrokeEnd="{Binding StrokeEnd.Committed}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

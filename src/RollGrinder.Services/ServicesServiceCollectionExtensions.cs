@@ -59,6 +59,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<IMeasurementService, MeasurementService>();
         services.AddSingleton<ICentringService, CentringService>();
         services.AddSingleton<IManualCommandService, ManualCommandService>();
+        services.AddSingleton<IManualGrindingService, ManualGrindingService>();
         services.AddSingleton<ISurfaceTraceService, SurfaceTraceService>();
 
 

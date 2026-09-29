@@ -28,6 +28,15 @@ internal sealed class MachineJson
     public Dictionary<string, int>? StepTypeCodes { get; set; }
 
     public Dictionary<string, int>? AuxiliaryActionCodes { get; set; }
+
+    /// <summary>界面左栏的快捷入口（界面最终稿 D2）。</summary>
+    public List<string>? QuickBar { get; set; }
+
+    /// <summary>装在按钮板上的动作（cycleStart、feedHold）。</summary>
+    public List<string>? PanelActions { get; set; }
+
+    /// <summary>手动往复默认行程两端留量（mm）。</summary>
+    public double? ManualStrokeMarginMm { get; set; }
 }
 
 internal sealed class ControllerJson

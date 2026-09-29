@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
 using RollGrinder.Core.Time;
@@ -57,37 +59,141 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 {
     private readonly IRecordService recordService;
     private readonly IReportService reportService;
+    private readonly JobDraft jobDraft;
+    private readonly Dictionary<RecordCurveKind, FunctionKeyViewModel> curveKeys = new();
+    private readonly FunctionKeyViewModel recordsKey;
+    private readonly FunctionKeyViewModel cancelQueryKey;
+    private readonly FunctionKeyViewModel confirmQueryKey;
 
     public RecordsViewModel(
         IRecordService recordService,
         IReportService reportService,
-        IRollLedgerService ledgerService,
         JobDraft jobDraft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
-        INavigator navigator)
-        : base(alarms, localizer, navigator)
+        INavigator navigator,
+        ShellInteraction interaction)
+        : base(alarms, localizer, navigator, interaction)
     {
         this.recordService = recordService ?? throw new ArgumentNullException(nameof(recordService));
         this.reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
-        this.ledgerService = ledgerService ?? throw new ArgumentNullException(nameof(ledgerService));
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
 
         this.toDate = DateTime.Today;
         this.fromDate = DateTime.Today.AddDays(-7);
 
-        SetFunctionKeys(new[]
+        // 横键（最终稿 5.11）：磨削记录 · 磨前报表 · 空 · 日报 · 月报。轧辊台账挪去了库区。
+        this.recordsKey = FunctionKeyViewModel.ForAction("Fn_GrindingRecords", localizer, () => Navigator.CloseSubView());
+        SetFunctionKeys(new FunctionKeyViewModel?[]
         {
-            new FunctionKeyViewModel("Fn_OpenRecord", QueryCommand, localizer, FunctionKeyKind.Primary),
+            this.recordsKey,
             new FunctionKeyViewModel("Fn_PreGrindReport", PreviewPreGrindReportCommand, localizer),
+            null,
             new FunctionKeyViewModel("Fn_DailyReport", ShowDailySummaryCommand, localizer),
             new FunctionKeyViewModel("Fn_MonthlyReport", ShowMonthlySummaryCommand, localizer),
-
-            // 导出要挑一个文件路径，对话框在视图里；这个键只是把范围定好再交给它。
-            new FunctionKeyViewModel("Fn_ExportExcel", RequestExportCommand, localizer),
-            new FunctionKeyViewModel("Fn_Print", PreviewPostGrindReportCommand, localizer),
-            new FunctionKeyViewModel("Fn_RollLedger", OpenLedgerCommand, localizer),
         });
+        MarkActiveFunctionKey(this.recordsKey);
+
+        foreach ((RecordCurveKind kind, string label) in new[]
+        {
+            (RecordCurveKind.BeforeAfterProfile, "Curve_BeforeAfter"),
+            (RecordCurveKind.Deviation, "Curve_Error"),
+            (RecordCurveKind.Roundness, "Curve_Roundness"),
+            (RecordCurveKind.CompensationConvergence, "Curve_Convergence"),
+        })
+        {
+            RecordCurveKind chosen = kind;
+            this.curveKeys[kind] = FunctionKeyViewModel.ForAction(label, localizer, () => SelectCurve(chosen));
+        }
+
+        this.cancelQueryKey = new FunctionKeyViewModel("Vk_Cancel", new RelayCommand(() => Navigator.CloseSubView()), localizer, FunctionKeyKind.Cancel);
+        this.confirmQueryKey = new FunctionKeyViewModel("Vk_Query", new AsyncRelayCommand(RunQueryAsync), localizer, FunctionKeyKind.Confirm);
+
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ActiveSubViewKey))
+            {
+                ApplyVerticalKeys();
+            }
+        };
+        ApplyVerticalKeys();
+    }
+
+    /// <summary>查询子功能（竖键"查询…"）：起止日期，竖键 7 / 8 = 取消 / 查询。</summary>
+    public const string QuerySubView = "SubView_Query";
+
+    public bool IsQueryOpen => ActiveSubViewKey == QuerySubView;
+
+    /// <summary>
+    /// 竖键（最终稿 5.11）：1–4 选曲线（磨前 / 磨后、误差、圆度、补偿收敛，和自动页同一套"竖键选曲线"），
+    /// 5–8 查询…、标记完成…、打印、导出 Excel。报表预览里是"打印"和"« 返回"。
+    /// </summary>
+    private void ApplyVerticalKeys()
+    {
+        OnPropertyChanged(nameof(IsQueryOpen));
+        if (ActiveSubViewKey == ReportSubView)
+        {
+            SetCommitPair(null, null);
+            SetVerticalKeys(new FunctionKeyViewModel?[]
+            {
+                FunctionKeyViewModel.ForAction("Vk_PrintNow", Localizer, () => PrintRequested?.Invoke(this, EventArgs.Empty)),
+                null, null, null, null, null, null,
+                new FunctionKeyViewModel("Vk_Back", new RelayCommand(Navigator.CloseSubView), Localizer, FunctionKeyKind.Navigation),
+            });
+            return;
+        }
+
+        SetVerticalKeys(new FunctionKeyViewModel?[]
+        {
+            this.curveKeys[RecordCurveKind.BeforeAfterProfile],
+            this.curveKeys[RecordCurveKind.Deviation],
+            this.curveKeys[RecordCurveKind.Roundness],
+            this.curveKeys[RecordCurveKind.CompensationConvergence],
+            FunctionKeyViewModel.ForAction("Vk_QueryAsk", Localizer, () => Navigator.OpenSubView(QuerySubView)),
+            new FunctionKeyViewModel("Vk_MarkFinished", new RelayCommand(AskFinish), Localizer) { PreconditionResourceKey = "Records_NoSelection" },
+            new FunctionKeyViewModel("Vk_Print", PreviewPostGrindReportCommand, Localizer),
+            new FunctionKeyViewModel("Vk_ExportExcel", RequestExportCommand, Localizer),
+        });
+        MarkCurve();
+        SetCommitPair(IsQueryOpen ? this.cancelQueryKey : null, IsQueryOpen ? this.confirmQueryKey : null);
+    }
+
+    private void MarkCurve()
+    {
+        foreach ((RecordCurveKind kind, FunctionKeyViewModel key) in this.curveKeys)
+        {
+            key.IsActive = kind == SelectedCurve;
+        }
+    }
+
+    /// <summary>报表预览里按"打印"：排版在视图里，视图接这个事件去打。</summary>
+    public event EventHandler? PrintRequested;
+
+    private async Task RunQueryAsync()
+    {
+        Navigator.CloseSubView();
+        await QueryAsync(CancellationToken.None).ConfigureAwait(true);
+    }
+
+    /// <summary>标记完成…：问一句再收尾（备注一并存）。</summary>
+    private void AskFinish()
+    {
+        if (SelectedRecord is null)
+        {
+            Interaction.Refuse(Localizer["Records_NoSelection"]);
+            return;
+        }
+
+        Ask("Records_AskFinish", () => FinishSelectedAsync(CancellationToken.None), SelectedRecord.RollCode);
+    }
+
+    /// <summary>查询的快捷范围：今天、近 7 天、近 30 天。</summary>
+    [RelayCommand]
+    private void SetRange(string days)
+    {
+        int count = int.Parse(days, CultureInfo.InvariantCulture);
+        ToDate = DateTime.Today;
+        FromDate = DateTime.Today.AddDays(-(count - 1));
     }
 
     public override PageKey Key => PageKey.Records;
@@ -97,28 +203,8 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
     public override string TitleResourceKey => "Page_Records";
 
-    public override string MenuHintResourceKey => "Menu_RecordsHint";
 
-    public override void OnActivated()
-    {
-        if (this.jobDraft.RegisterNewRollRequested)
-        {
-            // 作业页派来登记一支新辊：直接开台账、给一张新表；存好后按导航槽回作业页就选上它。
-            this.jobDraft.RegisterNewRollRequested = false;
-            this.registeringForJob = true;
-            _ = RunGuardedAsync(
-                async token =>
-                {
-                    await ReloadLedgerAsync(null, token).ConfigureAwait(true);
-                    NewLedgerRoll();
-                    Navigator.OpenSubView(LedgerSubView);
-                },
-                CancellationToken.None);
-            return;
-        }
-
-        _ = QueryAsync(CancellationToken.None);
-    }
+    public override void OnActivated() => _ = QueryAsync(CancellationToken.None);
 
     public ObservableCollection<RecordRowViewModel> Records { get; } = new();
 
@@ -146,7 +232,14 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
     public string StatusText => string.IsNullOrEmpty(StatusResourceKey) ? string.Empty : Localizer[StatusResourceKey];
 
-    partial void OnStatusResourceKeyChanged(string value) => OnPropertyChanged(nameof(StatusText));
+    partial void OnStatusResourceKeyChanged(string value)
+    {
+        OnPropertyChanged(nameof(StatusText));
+        if (value.Length > 0)
+        {
+            Interaction.Say(Localizer[value]);
+        }
+    }
 
     partial void OnSelectedRecordChanged(RecordRowViewModel? value)
     {
@@ -239,12 +332,23 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     [ObservableProperty]
     private bool curveHasData;
 
-    [RelayCommand]
     private void SelectCurve(RecordCurveKind kind)
     {
         SelectedCurve = kind;
+        MarkCurve();
         RefreshCurve();
     }
+
+    /// <summary>曲线窗标题：现在看的是哪一条。</summary>
+    public string CurveTitle => Localizer[SelectedCurve switch
+    {
+        RecordCurveKind.Deviation => "Curve_Error",
+        RecordCurveKind.Roundness => "Curve_Roundness",
+        RecordCurveKind.CompensationConvergence => "Curve_Convergence",
+        _ => "Curve_BeforeAfter",
+    }];
+
+    partial void OnSelectedCurveChanged(RecordCurveKind value) => OnPropertyChanged(nameof(CurveTitle));
 
     private void RefreshCurve()
     {
@@ -294,10 +398,13 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
             StatusResourceKey = Records.Count == 0 ? "Records_Empty" : "Records_Loaded";
             SummaryText = Localizer.Format("Records_SummaryFormat", Records.Count);
-            SelectedRecord = Records.FirstOrDefault();
+
+            // 从自动页"磨削记录（本支辊）"或库 › 作业"打开"过来的：选中那一份。
+            string? wanted = this.jobDraft.RecordsJobId;
+            this.jobDraft.RecordsJobId = null;
+            SelectedRecord = Records.FirstOrDefault(row => wanted is not null && row.View.JobId == wanted) ?? Records.FirstOrDefault();
         }, cancellationToken);
 
-    [RelayCommand]
     private Task FinishSelectedAsync(CancellationToken cancellationToken) =>
         RunGuardedAsync(async token =>
         {
@@ -327,12 +434,6 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
     /// <summary>报表预览子视图的资源键，同时用作面包屑文案。</summary>
     public const string ReportSubView = "SubView_Report";
-
-    /// <summary>轧辊台账子视图的资源键。</summary>
-    public const string LedgerSubView = "SubView_RollLedger";
-
-    /// <summary>轧辊台账的行。</summary>
-    public ObservableCollection<RollLedgerRowViewModel> Ledger { get; } = new();
 
     /// <summary>日报 / 月报的那一行汇总。</summary>
     [ObservableProperty]
@@ -379,17 +480,6 @@ public sealed partial class RecordsViewModel : PageViewModelBase
                     ? rate.ToString("P1", CultureInfo.CurrentCulture)
                     : Dash,
                 summary.TotalDuration.TotalHours.ToString("F1", CultureInfo.CurrentCulture));
-        }, cancellationToken);
-
-    /// <summary>打开轧辊台账。</summary>
-    [RelayCommand]
-    private Task OpenLedgerAsync(CancellationToken cancellationToken) =>
-        RunGuardedAsync(async token =>
-        {
-            Ledger.Clear();
-            await ReloadLedgerAsync(null, token).ConfigureAwait(true);
-            StatusResourceKey = Ledger.Count == 0 ? "Records_LedgerEmpty" : string.Empty;
-            Navigator.OpenSubView(LedgerSubView);
         }, cancellationToken);
 
     /// <summary>导出：路径由视图上的文件对话框选。</summary>

@@ -115,19 +115,19 @@ internal sealed class SelfTestRunner
         yield return new PageSweepSuite();
         yield return new ProfileSuite();
         yield return new StepsSuite();
+        yield return new LibrarySuite();
         yield return new JobSuite();
-        yield return new SettingsSuite();
+        yield return new ParametersSuite();
         if (!offline)
         {
+            yield return new ManualGrindingSuite();
             yield return new ManualSuite();
             yield return new FullFlowSuite();
         }
 
         yield return new RecordsSuite();
-        if (!offline)
-        {
-            yield return new DiagnosticsSuite();
-        }
+        yield return new DiagnosticsSuite();
+        yield return new CommissioningSuite();
 
         yield return new PermissionSuite();
         yield return new SessionTailSuite();

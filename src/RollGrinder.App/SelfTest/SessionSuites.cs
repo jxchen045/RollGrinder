@@ -13,7 +13,7 @@ internal static class SelfTestAccounts
 {
     public const string AdminPassword = "SelfTest-Admin-1";
     public const string OperatorName = "selftest-op";
-    public const string OperatorPassword = "SelfTest-Op-1";
+    public const string OperatorPassword = "20260930";
 }
 
 /// <summary>登录：首次设口令、口令不一致、登录成功；用户管理：建、重置、删、删不掉最后一个制造商账号。</summary>
@@ -169,9 +169,10 @@ internal sealed class SessionTailSuite : ISelfTestSuite
         {
             await h.RunAsync(h.Shell.SignOutCommand);
             string before = h.Shell.CurrentPage.Key.ToString();
-            h.Shell.PressFunctionKey(7);
+            h.Shell.PressHorizontalKey(0);
+            h.Shell.PressQuickBar(1);
             await h.SettleAsync();
-            ctx.Check(h.Shell.CurrentPage.Key.ToString() == before, "the navigation key must do nothing while signed out");
+            ctx.Check(h.Shell.CurrentPage.Key.ToString() == before, "keys and the quick bar must do nothing while signed out");
             ctx.Check(h.Shell.IsSignInOpen, "sign-in overlay should be open");
         }, StepOptions.Shot);
     }
@@ -184,7 +185,7 @@ internal sealed class SessionTailSuite : ISelfTestSuite
 internal sealed class PermissionSuite : ISelfTestSuite
 {
     private const string OperatorName = "selftest-perm-op";
-    private const string OperatorPassword = "SelfTest-Perm-1";
+    private const string OperatorPassword = "4711";
 
     public string Name => "Permissions";
 
@@ -215,9 +216,9 @@ internal sealed class PermissionSuite : ISelfTestSuite
             StepsViewModel steps = h.Page<StepsViewModel>();
             ctx.Check(profile.IsRoleLocked && profile.IsReadOnly, "an operator must not edit profiles");
             ctx.Check(steps.IsRoleLocked && !steps.CanSave, "an operator must not edit programs");
-            ctx.Check(!h.Page<SettingsViewModel>().CanEdit, "an operator must not edit calibration");
+            ctx.Check(!h.Page<ParametersViewModel>().CanEdit, "an operator must not edit calibration");
             ctx.Check(!h.Page<AutoGrindingViewModel>().CanEditCompensation, "an operator must not edit the compensation tuning");
-            ctx.Check(!h.Page<DiagnosticsViewModel>().CanEditMachineConfig && !h.Page<DiagnosticsViewModel>().CanEditTagMap,
+            ctx.Check(!h.Page<CommissioningViewModel>().CanEditMachineConfig && !h.Page<CommissioningViewModel>().CanEditTagMap,
                 "an operator must not edit the machine config or tag map");
             ctx.Check(!shell.CanManageUsers, "an operator must not manage accounts");
             ctx.Check(!h.Page<JobViewModel>().IsRoleLocked, "an operator builds and downloads jobs");
@@ -236,7 +237,7 @@ internal sealed class PermissionSuite : ISelfTestSuite
             shell.SignInPassword = SelfTestAccounts.AdminPassword;
             await h.RunAsync(shell.SignInCommand);
             ctx.Check(shell.IsSignedIn, "the manufacturer should sign in again");
-            ctx.Check(!h.Page<ProfileViewModel>().IsRoleLocked && h.Page<DiagnosticsViewModel>().CanEditMachineConfig,
+            ctx.Check(!h.Page<ProfileViewModel>().IsRoleLocked && h.Page<CommissioningViewModel>().CanEditMachineConfig,
                 "the manufacturer may edit everything");
 
             await h.RunAsync(shell.OpenUserAdminCommand);

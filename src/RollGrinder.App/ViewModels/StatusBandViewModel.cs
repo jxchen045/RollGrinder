@@ -76,11 +76,12 @@ public sealed partial class StatusLampViewModel : ObservableObject
 /// <summary>状态带上的一格文字：方式、通道、程序、X、Z、转速。</summary>
 public sealed partial class StatusFieldViewModel : ObservableObject
 {
-    public StatusFieldViewModel(string labelResourceKey, IStringLocalizer localizer, bool isMonospaced = false)
+    public StatusFieldViewModel(string labelResourceKey, IStringLocalizer localizer, bool isMonospaced = false, bool isPrimary = false)
     {
         LabelResourceKey = labelResourceKey;
         Label = localizer[labelResourceKey];
         IsMonospaced = isMonospaced;
+        IsPrimary = isPrimary;
     }
 
     public string LabelResourceKey { get; }
@@ -88,6 +89,9 @@ public sealed partial class StatusFieldViewModel : ObservableObject
     public string Label { get; }
 
     public bool IsMonospaced { get; }
+
+    /// <summary>主读数（状态带的 X、Z）：L2 32 px。</summary>
+    public bool IsPrimary { get; }
 
     [ObservableProperty]
     private string valueText = "--";
@@ -117,8 +121,8 @@ public sealed class StatusBandViewModel
         this.mode = new StatusFieldViewModel("Band_Mode", localizer);
         this.channel = new StatusFieldViewModel("Band_Channel", localizer);
         this.program = new StatusFieldViewModel("Band_Program", localizer, isMonospaced: true);
-        this.x = new StatusFieldViewModel("Band_X", localizer, isMonospaced: true);
-        this.z = new StatusFieldViewModel("Band_Z", localizer, isMonospaced: true);
+        this.x = new StatusFieldViewModel("Band_X", localizer, isMonospaced: true, isPrimary: true);
+        this.z = new StatusFieldViewModel("Band_Z", localizer, isMonospaced: true, isPrimary: true);
         this.wheel = new StatusFieldViewModel("Band_WheelRpm", localizer, isMonospaced: true);
         this.headstock = new StatusFieldViewModel("Band_HeadstockRpm", localizer, isMonospaced: true);
         Fields = new ObservableCollection<StatusFieldViewModel>
@@ -138,11 +142,17 @@ public sealed class StatusBandViewModel
                 new[] { MachineStatusCatalog.OuterArm, MachineStatusCatalog.InnerArm },
                 localizer),
         };
+
+        Overview = new ObservableCollection<StatusLampViewModel>(
+            MachineStatusCatalog.All.Select(indicator => new StatusLampViewModel(indicator, localizer)));
     }
 
     public ObservableCollection<StatusFieldViewModel> Fields { get; }
 
     public ObservableCollection<StatusLampViewModel> Lamps { get; }
+
+    /// <summary>状态总览（最终稿 F3）：全部机构到位灯。</summary>
+    public ObservableCollection<StatusLampViewModel> Overview { get; }
 
     public void Update(MachineStateSnapshot snapshot)
     {
@@ -171,7 +181,7 @@ public sealed class StatusBandViewModel
         this.wheel.ValueText = Format(snapshot.GetNumberOrNull(MachineTagKeys.WheelSpeedRpm), "F0");
         this.headstock.ValueText = Format(Axis(snapshot, MachineAxisRoles.WorkpieceSpindle, speed: true), "F1");
 
-        foreach (StatusLampViewModel lamp in Lamps)
+        foreach (StatusLampViewModel lamp in Lamps.Concat(Overview))
         {
             lamp.Update(snapshot);
         }

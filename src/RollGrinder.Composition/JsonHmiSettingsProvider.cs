@@ -49,6 +49,35 @@ public static class JsonHmiSettingsProvider
         return settings;
     }
 
+    /// <summary>
+    /// 只改 hmi.json 里的界面语言（Ctrl+L，界面最终稿 4.6），其余字段与注释外的格式原样保留。
+    /// 重启上位机后生效：界面文字在载入时取定，换语言不该让一半字是中文一半是英文。
+    /// </summary>
+    public static async Task SaveCultureAsync(IAppOptions options, string culture, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentException.ThrowIfNullOrWhiteSpace(culture);
+
+        string path = Path.Combine(options.ConfigDirectory, FileName);
+        System.Text.Json.Nodes.JsonNode root;
+        try
+        {
+            string text = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
+            root = System.Text.Json.Nodes.JsonNode.Parse(
+                text,
+                documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })
+                ?? throw new GatewayException($"Configuration file '{path}' is empty.");
+        }
+        catch (JsonException ex)
+        {
+            throw new GatewayException($"Configuration file '{path}' is not valid JSON: {ex.Message}", ex);
+        }
+
+        root["culture"] = culture;
+        string updated = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(path, updated + Environment.NewLine, cancellationToken).ConfigureAwait(false);
+    }
+
     private static void Validate(HmiSettings settings, string path)
     {
         Require(settings.PollIntervalMs is >= 20 and <= 2000, path, nameof(settings.PollIntervalMs));
