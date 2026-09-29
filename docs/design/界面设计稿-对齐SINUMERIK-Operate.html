@@ -85,88 +85,124 @@
   .key { display: inline-block; font-size: 13px; font-weight: 500; padding: 0 8px; border: 1px solid var(--key-line); background: var(--key-bg); border-radius: 3px; white-space: nowrap; line-height: 1.8; }
 
   .co { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #10151A; color: #FFFFFF; font-size: 11px; font-weight: 700; font-style: normal; line-height: 1; flex: none; }
+  .flow { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin: 0 0 6px; }
+  .flow .st { border: 1px solid var(--line); background: var(--surface); padding: 1px 8px; font-size: 14px; white-space: nowrap; }
+  .flow .ar { color: var(--ink-3); }
+  .flow .pb { border-color: var(--danger); color: var(--danger); }
 
-  /* 画面样机：代表机床上的真实屏幕，固定浅色，不随本文深浅色切换 */
+  /* 画面样机：代表机床上的真实屏幕，固定浅色，不随本文深浅色切换；取色见第 8 节 */
   .scr {
-    --s-bg: #E4ECEF; --s-win: #ECF1F6; --s-winhd: #C5D2DA; --s-field: #FFFFFF; --s-ro: #D5DDE3;
-    --s-focus: #68C1DF; --s-acc: #0099C8; --s-sel: #A9DAEE; --s-lb: #414E59; --s-lb-key: #56636E;
-    --s-key: #DCE2EA; --s-gap: #A7B2BA; --s-dim: #8A96A1; --s-ok: #37703D; --s-no: #8E1B1B;
-    --s-ink: #141A1F; --s-ink2: #4A5864; --s-alarm: #C4161C; --s-hd: #EBEBED; --s-chan: #C9D5DD;
-    --s-cur: #E8891A; --s-run: #2E7D32; --s-q: #F4E3A1;
-    display: grid; grid-template-columns: 58px minmax(0, 1fr) 150px; grid-template-rows: 44px minmax(0, 1fr) 26px 54px;
+    --s-bg: #EBF0F6; --s-win: #EBF0F6; --s-winhd: #C6CBD1; --s-act: #0199C8; --s-field: #FFFFFF; --s-ro: #DDE2E7;
+    --s-focus: #67C2DF; --s-sel: #A9DCEC; --s-cur: #B5BEC3; --s-lb: #1B2228; --s-lb-key: #404C58; --s-tile: #3D5466;
+    --s-key: #DDE1EA; --s-gap: #A7B1BA; --s-dim: #8A96A1; --s-ok: #37703D; --s-no: #8E1B1B;
+    --s-ink: #141A1F; --s-ink2: #4A5864; --s-alarm: #C4161C; --s-hd: #E6EBF1; --s-path: #A7B1BA; --s-chan: #6D7F8D;
+    --s-orange: #E8891A; --s-run: #3FAE49; --s-q: #F4E3A1; --s-help: #F9EEAE; --s-helpkey: #F5CF2E; --s-side: #6D7F8D;
+    display: grid; grid-template-columns: 58px minmax(0, 1fr) 150px; grid-template-rows: 44px minmax(0, 1fr) 24px 54px;
     border: 2px solid #10151A; background: var(--s-bg); color: var(--s-ink); font-size: 12px; line-height: 1.4;
     min-width: 900px; margin: 0 0 8px; color-scheme: light;
   }
+  .scr.side { grid-template-columns: 190px 58px minmax(0, 1fr) 150px; }
+  .scr .sd { grid-row: 1 / -1; background: #F3F6F9; border-right: 1px solid var(--s-gap); display: flex; flex-direction: column; font-size: 11px; }
+  .scr .sd b { display: block; background: var(--s-side); color: #FFFFFF; padding: 3px 6px; font-weight: 500; letter-spacing: 0.04em; }
+  .scr .sd div { padding: 2px 6px 4px; }
   .scr .lb { grid-row: 1 / -1; background: var(--s-lb); display: flex; flex-direction: column; gap: 3px; padding: 4px 3px; }
-  .scr .lb span { color: #FFFFFF; text-align: center; font-size: 10.5px; padding: 4px 0 3px; line-height: 1.2; border-radius: 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  .scr .lb span { color: #FFFFFF; text-align: center; font-size: 10px; padding: 4px 0 3px; line-height: 1.2; border-radius: 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; border-bottom: 1px solid #2E3A44; }
   .scr .lb span i { font-style: normal; font-size: 16px; line-height: 1.1; }
-  .scr .lb span.on { background: var(--s-acc); }
-  .scr .lb .end { margin-top: auto; }
-  .scr .hd { grid-column: 2; display: flex; align-items: center; gap: 14px; padding: 0 10px; background: var(--s-hd); border-bottom: 1px solid var(--s-gap); white-space: nowrap; overflow: hidden; }
+  .scr .lb span.on { background: var(--s-act); }
+  .scr .lb .end { margin-top: auto; border-bottom: 0; }
+  .scr .hd { grid-row: 1; display: flex; align-items: center; gap: 14px; padding: 0 10px; background: var(--s-hd); white-space: nowrap; overflow: hidden; }
   .scr .hd .app { font-weight: 700; font-size: 13px; }
   .scr .hd .al { color: var(--s-alarm); font-weight: 700; }
   .scr .hd .ttl { color: var(--s-ink2); }
   .scr .hd .r { margin-left: auto; color: var(--s-ink2); text-align: right; font-size: 11px; line-height: 1.25; }
-  .scr .tl { grid-column: 3; grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; }
-  .scr .tl span { background: var(--s-lb-key); color: #FFFFFF; display: grid; place-items: center; font-weight: 700; font-size: 11px; line-height: 1.15; text-align: center; }
-  .scr .cen { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; min-width: 0; }
-  .scr .path { background: var(--s-acc); color: #FFFFFF; display: flex; justify-content: space-between; gap: 12px; padding: 3px 10px; font-weight: 700; white-space: nowrap; overflow: hidden; }
-  .scr .chan { background: var(--s-chan); display: flex; gap: 18px; padding: 2px 10px; white-space: nowrap; overflow: hidden; }
-  .scr .chan b.run { color: var(--s-run); }
-  .scr .wa { flex: 1; display: grid; gap: 4px; padding: 4px; min-height: 260px; }
+  .scr .tl { grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; }
+  .scr .tl span { background: var(--s-tile); color: #FFFFFF; display: grid; place-items: center; font-weight: 700; font-size: 11px; line-height: 1.15; text-align: center; }
+  .scr .cen { grid-row: 2; display: flex; flex-direction: column; min-width: 0; }
+  .scr .path { background: var(--s-path); color: var(--s-ink); display: flex; justify-content: space-between; gap: 12px; padding: 2px 10px; white-space: nowrap; overflow: hidden; min-height: 20px; }
+  .scr .path.act { background: var(--s-act); color: #FFFFFF; }
+  .scr .path .x { font-weight: 700; }
+  .scr .chan { background: var(--s-chan); color: #FFFFFF; display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; padding: 2px 10px; white-space: nowrap; overflow: hidden; }
+  .scr .chan > :last-child { text-align: right; }
+  .scr .chan .run { color: #9BE3A2; font-weight: 700; }
+  .scr .wa { flex: 1; display: grid; gap: 3px; padding: 3px; min-height: 250px; }
   .scr .win { background: var(--s-win); border: 1px solid var(--s-gap); min-width: 0; display: flex; flex-direction: column; }
-  .scr .win > h6 { margin: 0; background: var(--s-winhd); padding: 2px 8px; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
-  .scr .win > div { padding: 4px 8px; flex: 1; min-width: 0; }
-  .scr .rgt { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; gap: 3px; background: var(--s-gap); padding: 0 3px 3px; }
+  .scr .win > h6 { margin: 0; background: var(--s-winhd); padding: 2px 8px; font-size: 12px; font-weight: 500; display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
+  .scr .win.act > h6 { background: var(--s-act); color: #FFFFFF; }
+  .scr .win > div { padding: 3px 8px; flex: 1; min-width: 0; }
+  .scr .win .ft { flex: none; background: var(--s-cur); padding: 1px 8px; font-size: 11px; }
+  .scr .rgt { grid-row: 2; display: flex; flex-direction: column; gap: 3px; background: var(--s-gap); padding: 0 3px 3px; }
   .scr .fb { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; margin: 0 -3px; }
   .scr .fb span { background: var(--s-lb-key); color: #FFFFFF; text-align: center; padding: 3px 0; font-size: 11px; }
-  .scr .fb span.on { background: var(--s-key); color: var(--s-ink); }
-  .scr .fb span.dim { color: var(--s-dim); }
+  .scr .fb span.on { background: #8BABB8; color: var(--s-ink); }
+  .scr .fb span.dim { color: #7D8A95; }
   .scr .vk { flex: 1; display: grid; grid-template-rows: repeat(8, minmax(30px, 1fr)); gap: 3px; padding-top: 3px; }
   .scr .vk span, .scr .hk span { background: var(--s-key); display: grid; place-items: center; text-align: center; padding: 2px 3px; line-height: 1.2; }
-  .scr .vk span.on, .scr .hk span.on { background: var(--s-acc); color: #FFFFFF; }
+  .scr .vk span.on, .scr .hk span.on { background: var(--s-act); color: #FFFFFF; }
   .scr .vk span.no { background: var(--s-no); color: #FFFFFF; font-weight: 700; }
   .scr .vk span.ok { background: var(--s-ok); color: #FFFFFF; font-weight: 700; }
   .scr .vk span.dim, .scr .hk span.dim { color: var(--s-dim); }
-  .scr .dlg { grid-column: 2 / 4; grid-row: 3; background: var(--s-dlg, #A7B2BA); padding: 3px 10px; white-space: nowrap; overflow: hidden; }
+  .scr .vk.help span { background: var(--s-helpkey); }
+  .scr .dlg { grid-row: 3; background: var(--s-gap); padding: 3px 10px; white-space: nowrap; overflow: hidden; }
   .scr .dlg.q { background: var(--s-q); font-weight: 700; }
-  .scr .hk { grid-column: 2 / 4; grid-row: 4; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)) 150px; gap: 3px; background: var(--s-gap); padding: 3px; }
+  .scr .hk { grid-row: 4; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)) 150px; gap: 3px; background: var(--s-gap); padding: 3px; }
   .scr .hk .ext { display: grid; grid-template-columns: 1fr auto auto; gap: 2px; background: transparent; padding: 0; place-items: stretch; }
   .scr .hk .ext span { font-size: 16px; font-weight: 700; }
-  .scr .hk .ext span.pg { font-size: 11px; width: 24px; }
-  .scr .hk .ext span.pg { background: var(--s-lb-key); color: #FFFFFF; }
-  .scr .hk .ext span.pg.on { background: var(--s-acc); }
-  .scr .fm { display: grid; grid-template-columns: auto minmax(90px, 1fr) auto; gap: 3px 6px; align-items: center; }
+  .scr .hk .ext span.pg { font-size: 11px; width: 24px; background: var(--s-key); font-weight: 400; }
+  .scr .hk .ext span.pg.on { background: var(--s-tile); color: #FFFFFF; }
+  /* 列位置：普通样机 2 / 3 列，带侧屏的样机整体右移一列 */
+  .scr .hd, .scr .cen { grid-column: 2; }
+  .scr .tl, .scr .rgt { grid-column: 3; }
+  .scr .dlg, .scr .hk { grid-column: 2 / 4; }
+  .scr.side .lb { grid-column: 2; }
+  .scr.side .hd, .scr.side .cen { grid-column: 3; }
+  .scr.side .tl, .scr.side .rgt { grid-column: 4; }
+  .scr.side .dlg, .scr.side .hk { grid-column: 3 / 5; }
+  .scr .fm { display: grid; grid-template-columns: auto minmax(80px, 1fr) auto; gap: 3px 6px; align-items: center; }
   .scr .fm label { white-space: nowrap; }
   .scr .fm .v { background: var(--s-field); text-align: right; padding: 0 6px; font-family: var(--mono); white-space: nowrap; }
-  .scr .fm .v.ro { background: var(--s-ro); color: var(--s-ink2); }
   .scr .fm .v.fo { background: var(--s-focus); }
   .scr .fm .v.tg { text-align: center; font-family: var(--sans); }
+  .scr .fm .v.dd { text-align: center; font-family: var(--sans); }
+  .scr .fm .v.dd::after { content: " ▾"; color: var(--s-ink2); }
+  .scr .fm .ro { color: var(--s-ink2); text-align: right; font-family: var(--mono); }
   .scr .fm .u { color: var(--s-ink2); font-size: 11px; white-space: nowrap; }
-  .scr .fm .sp { grid-column: 1 / -1; height: 5px; }
+  .scr .fm .u.tg { background: var(--s-field); color: var(--s-ink); padding: 0 5px; }
+  .scr .fm .sp { grid-column: 1 / -1; height: 4px; }
+  .scr .fm .gh { grid-column: 1 / -1; color: var(--s-ink2); }
   .scr .pl { background: #FDFEFF; border: 1px solid var(--s-gap); display: flex; flex-direction: column; font-size: 11.5px; min-width: 0; }
   .scr .pl span { padding: 3px 6px; border-bottom: 1px solid #E1E7EC; white-space: nowrap; overflow: hidden; }
-  .scr .pl span.on { background: var(--s-sel); }
-  .scr .pl span.hd2 { font-weight: 700; }
-  .scr .gfx { border: 1px dashed var(--s-gap); background: #F3F6F8; display: grid; place-items: center; text-align: center; color: var(--s-ink2); min-height: 120px; padding: 6px; }
-  .scr .cur { color: var(--s-cur); font-weight: 700; }
-  .scr .av { display: grid; grid-template-columns: auto 1fr auto; gap: 0 14px; align-items: baseline; }
-  .scr .av b { font-size: 24px; font-weight: 600; }
-  .scr .av .n { font-family: var(--mono); font-size: 24px; font-weight: 600; text-align: right; }
-  .scr .av .s { font-size: 12px; font-weight: 400; color: var(--s-ink2); }
-  .scr .tfs { display: grid; grid-template-columns: 34px 1fr auto auto; gap: 1px 8px; align-items: center; }
-  .scr .tfs b { font-size: 20px; font-weight: 600; }
+  .scr .pl span.on { background: var(--s-focus); }
+  .scr .gfx { border: 1px dashed var(--s-gap); background: #F6F8FB; display: grid; place-items: center; text-align: center; color: var(--s-ink2); min-height: 110px; padding: 6px; }
+  .scr .or { color: var(--s-orange); font-weight: 700; }
+  .scr .av { display: grid; grid-template-columns: auto 1fr 1fr; gap: 0 12px; align-items: baseline; }
+  .scr .av b { font-size: 22px; font-weight: 500; }
+  .scr .av .n { font-family: var(--mono); font-size: 22px; font-weight: 500; text-align: right; }
+  .scr .av .n.s { font-size: 13px; }
+  .scr .av .h { font-size: 11px; color: var(--s-ink2); text-align: right; }
+  .scr .tfs { display: grid; grid-template-columns: 30px 1fr auto auto; gap: 0 8px; align-items: baseline; }
+  .scr .tfs b { font-size: 20px; font-weight: 500; }
   .scr .tfs .n { font-family: var(--mono); }
-  .scr .bar { grid-column: 2 / -1; height: 5px; background: #FFFFFF; border: 1px solid var(--s-gap); position: relative; }
-  .scr .bar i { position: absolute; inset: 0 auto 0 0; background: var(--s-acc); }
+  .scr .tfs .n.big { font-size: 18px; }
+  .scr .tfs .sub { grid-column: 2 / -1; font-size: 11px; color: var(--s-ink2); display: flex; justify-content: space-between; gap: 8px; }
+  .scr .bar { grid-column: 2 / -1; height: 5px; background: #FFFFFF; border: 1px solid var(--s-gap); position: relative; margin: 1px 0 3px; }
+  .scr .bar i { position: absolute; inset: 0 auto 0 0; background: var(--s-run); }
   .scr table { font-size: 11.5px; background: transparent; }
-  .scr th, .scr td { padding: 2px 6px; border: 0; border-bottom: 1px solid #D8E0E6; }
-  .scr th { background: transparent; color: var(--s-ink2); }
+  .scr th, .scr td { padding: 2px 6px; border: 0; border-bottom: 1px solid #D5DCE3; white-space: nowrap; }
+  .scr th { background: var(--s-winhd); color: var(--s-ink); font-weight: 500; }
   .scr tr.on td { background: var(--s-sel); }
+  .scr tr.cur td { background: var(--s-cur); }
+  .scr tr.grp td { background: #DCE1E6; color: var(--s-ink2); }
+  .scr tr.dk td { background: #5A6570; color: #FFFFFF; }
+  .scr td.go { text-align: right; }
+  .scr td.go::after { content: "→"; display: inline-block; border: 1px solid #FFFFFF; padding: 0 4px; margin-left: 6px; }
   .scr .lamp { display: inline-flex; align-items: center; gap: 4px; margin: 0 10px 3px 0; white-space: nowrap; }
   .scr .lamp::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #B7C0C8; border: 1px solid #7D8994; }
-  .scr .lamp.on::before { background: #3FAE49; border-color: #2E7D32; }
-  .scr .lamp.wait::before { background: #F2B632; border-color: #B7860B; }
+  .scr .lamp.on::before { background: var(--s-run); border-color: #2E7D32; }
+  .scr .help { background: var(--s-help); border: 2px solid #EED32E; padding: 6px 10px; }
+  .scr .help h6 { margin: 0 0 4px; font-size: 12.5px; text-decoration: underline; }
+  .scr .dd-list { background: #FFFFFF; border: 1px solid var(--s-gap); box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+  .scr .dd-list span { display: block; padding: 3px 8px; text-align: center; }
+  .scr .dd-list span.on { background: var(--s-focus); }
   .cap { font-size: 13px; color: var(--ink-3); margin: 0 0 20px; }
   footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
   @media (max-width: 560px) { h1 { font-size: 26px; } h2 { font-size: 21px; } }
@@ -190,64 +226,87 @@
     <ol>
       <li><a href="#s0">0 结论</a></li>
       <li><a href="#s1">1 调研</a></li>
-      <li class="sub"><a href="#s11">四张画面读出的</a></li>
-      <li class="sub"><a href="#s12">手册与资料</a></li>
+      <li class="sub"><a href="#s1a">手册逐节评估</a></li>
+      <li class="sub"><a href="#s1b">不适用的部分</a></li>
+      <li class="sub"><a href="#s1c">第 2 版要改的地方</a></li>
       <li><a href="#s2">2 现在的界面差在哪</a></li>
       <li><a href="#s3">3 设计规则</a></li>
       <li><a href="#s4">4 外壳</a></li>
-      <li><a href="#s5">5 区域</a></li>
+      <li><a href="#s5">5 区域与左栏</a></li>
       <li><a href="#s6">6 各区域设计稿</a></li>
       <li class="sub"><a href="#m">机床 · 自动</a></li>
       <li class="sub"><a href="#mj">机床 · 手动</a></li>
+      <li class="sub"><a href="#mc">机床 · 测量对中</a></li>
       <li class="sub"><a href="#p">程序</a></li>
       <li class="sub"><a href="#pm">程序管理</a></li>
-      <li class="sub"><a href="#oth">参数 · 记录 · 诊断 · 调试</a></li>
+      <li class="sub"><a href="#par">参数 · 砂轮</a></li>
+      <li class="sub"><a href="#oth">记录 · 诊断 · 调试</a></li>
+      <li class="sub"><a href="#hlp">帮助</a></li>
       <li><a href="#s7">7 输入、确认、手势</a></li>
       <li><a href="#s8">8 配色与样式</a></li>
-      <li><a href="#s9">9 与按钮板的分工</a></li>
-      <li><a href="#s10">10 不照搬的地方</a></li>
-      <li><a href="#s11p">11 改动量与分期</a></li>
-      <li><a href="#s12q">12 需要讨论定下的</a></li>
+      <li><a href="#s9">9 操作流程</a></li>
+      <li><a href="#s10">10 与按钮板的分工</a></li>
+      <li><a href="#s11">11 不照搬的地方</a></li>
+      <li><a href="#s12">12 改动量与分期</a></li>
+      <li><a href="#s13">13 需要讨论定下的</a></li>
     </ol>
   </nav>
 
   <main>
     <header class="cover">
-      <div class="eyebrow">MK84160 · SINUMERIK ONE · RGX 上位机 · 设计稿第 2 版 2026-09-28 · 按实拍画面修订 · 待讨论，源代码未改</div>
+      <div class="eyebrow">MK84160 · SINUMERIK ONE · RGX 上位机 · 设计稿第 3 版 2026-09-29 · 按 ONE 手册修订 · 待讨论，源代码未改</div>
       <h1>界面设计稿：对齐 SINUMERIK Operate 的操作习惯</h1>
-      <p class="lede">操作工在这台机床上同时面对西门子 Operate 和本上位机。两边的"区域怎么切、横键竖键各管什么、数怎么输、危险动作怎么确认、提示在哪一行"一致，就不用学两套。第 1 版根据手册摘要推断；第 2 版对照了 4 张 Operate / SINUMERIK ONE 画面，把推断换成了看得见的做法，样机也照画面的分区和配色重画。</p>
+      <p class="lede">操作工在这台机床上同时面对西门子 Operate 和本上位机。两边的"区域怎么切、横键竖键各管什么、数怎么输、危险动作怎么确认、提示在哪一行"一致，就不用学两套。第 3 版逐节评估了《SINUMERIK Operate – Milling》手册（SINUMERIK ONE，2021-10），并对照其中约 25 张 ONE 画面，改正了第 2 版的几处判断，补上了"操作流程"。</p>
     </header>
 
     <div class="box" style="margin-top:18px">
-      <span class="tag">第 2 版改了什么</span>
+      <span class="tag">第 3 版改了什么</span>
       <ul>
-        <li><strong>区域切换</strong>：改用左侧常驻的深灰图标栏，一点直达（画面 4，SINUMERIK ONE 触摸界面）。右上角两个方块显示当前区域和方式。</li>
-        <li><strong>返回上一级</strong>：放在竖键第 8 格"« 返回"（画面 2），不再放在功能键块。</li>
-        <li><strong>功能键块</strong>：内容照 ONE 排成三行两列：撤销 / 重做、键盘 / 计算器、帮助 / 截屏。</li>
-        <li><strong>横键条</strong>：最左留一个空位，中间 8 个键，最右是"&gt;"和页码"1 2"。两组功能之间空一个键位。按不了的键灰字，但留在原位。</li>
-        <li><strong>取消 / 确认</strong>：竖键第 7 格红底"✕ 取消"，第 8 格绿底"✓ 确认"。画面 3 证实了这个位置。</li>
-        <li><strong>参数表单</strong>：
+        <li><strong>青色只给"当前窗口"</strong>：
           <ul>
-            <li>正在输入的格是青底，算出来的只读格是灰底。</li>
-            <li>数值右对齐，单位写在格子后面，分组之间空一行。</li>
-            <li>画面名显示在路径条的右端。</li>
+            <li>手册画面里，有焦点的窗口标题条是青色（#0199C8），其余窗口是灰色。</li>
+            <li>机床区的程序路径条是灰色；编辑器的路径条是青色，因为它就是当前窗口的标题。</li>
+            <li>第 2 版把所有路径条都画成青色，这版改正了。</li>
           </ul>
         </li>
-        <li><strong>机床区</strong>：照画面 2 分上下两部分。
+        <li><strong>左栏是"快捷入口"</strong>：
           <ul>
-            <li>上半部分常驻"实际值"窗口和"砂轮·进给·头架"窗口（对应 Operate 的 T,F,S）。</li>
-            <li>下半部分是随横键变化的功能窗口。</li>
+            <li>ONE 的左栏每项都是图标加文字：Machine、Tool list、WO、Program、Program manager、Diagnostics。其中两项直达参数区的子画面，并不是 6 个区域全列。</li>
+            <li>本机的左栏改成：机床、砂轮、标定、程序、程序管理、记录、诊断。</li>
+            <li>参数、调试两个完整区域，从右上"区域"方块打开的区域菜单进。</li>
           </ul>
         </li>
-        <li><strong>程序编辑器</strong>：照画面 1、3 分三栏。
+        <li><strong>自动方式的竖键是"显示开关"</strong>：
           <ul>
-            <li>左边是窄的工步栏，头上"开始"就是程序头，尾巴是"结束"。</li>
-            <li>中间是帮助图，当前量用橙色标出。</li>
-            <li>右边是参数表单。</li>
-            <li>横键顺序对应 Edit / Drilling / Milling / Cont. mill. / 空 / Various / Simulation / Execute。</li>
+            <li>竖键切换右下的附加窗口：工序参数、实时曲线、时间·计数、测量结果、实际值大字。</li>
+            <li>横键是功能：参数修改、程序控制、工序跳转、曲线记录、补偿……，对应 Operate 的 Overstore、Prog. cntrl.、Block search、Simult. record.。</li>
           </ul>
         </li>
-        <li><strong>配色</strong>：颜色是从画面里取样的，用 ONE 那一套青蓝。取样值和用法见第 8 节。</li>
+        <li><strong>工艺程序编辑器改成 ShopMill 的工步列表</strong>：
+          <ul>
+            <li>一道工序一行：图标、工序名、粗 / 精标记（▿ / ▿▿▿）、参数摘要。</li>
+            <li>选中行右端有"→"打开键，长按也能打开。</li>
+            <li>编辑竖键照 Operate：标记、复制、粘贴、剪切。</li>
+            <li>另加"图形视图"（Ctrl+G）。</li>
+          </ul>
+        </li>
+        <li><strong>保存方式</strong>：Operate 编辑器没有"保存"键，改动随即写入程序。建议照做——确认一道工序就写入，校验不过的程序不能用于作业，改动记录可以回退（D10）。</li>
+        <li><strong>长按 = 打开</strong>：手册写明，长按是"打开要修改的对象（如程序段）"，双指点是快捷菜单（复制、粘贴）。上一稿"关掉长按"只针对 Windows 的"长按当右键"，本机要自己实现长按打开。</li>
+        <li><strong>帮助</strong>：按 i 进帮助，帮助内容替换帮助图的位置，底色变黄，竖键变成黄色的帮助导航（目录、索引、搜索、全屏、退出帮助）。输入格的简短说明（手册叫"cursor text"）仍然写在对话行。</li>
+        <li><strong>其他补充</strong>：
+          <ul>
+            <li>表格和详情窗：详情窗在右边打开，标题条青色。</li>
+            <li>下拉列表：选项多时在原位展开，行高、带图标。</li>
+            <li>弹出对话框：青色标题，竖键第 7 / 8 格是"取消 / 确定"。</li>
+            <li>测量流程：竖键依次"采集 P1、P2……"，最后"设定"。</li>
+            <li>作业前清单：照"刀具需求"表，按"待准备 / 已就绪"分组。</li>
+            <li>砂轮寿命：设预警值。</li>
+            <li>侧屏小部件：实际值、报警、砂轮、本支辊进度。</li>
+            <li>快捷键：Ctrl+C / V / X / A、Ctrl+G 图形视图、Ctrl+L 语言、Ctrl+P 截屏、Ctrl+I 预计时间。</li>
+          </ul>
+        </li>
+        <li><strong>配色</strong>：按手册画面重新取色，ONE 主题比第 2 版用的两张截图更深，左栏是 #1B2228。</li>
+        <li><strong>新增第 9 节"操作流程"</strong>：9 个常用操作，每一步按哪个键都写出来。</li>
       </ul>
     </div>
 
@@ -255,111 +314,193 @@
     <section id="s0">
       <h2><span class="no">0</span>结论</h2>
       <div class="summary">
-        <div><b>外壳照 ONE 画面分区</b><span>左侧区域图标栏；顶上标题行兼报警行，右上角是区域和方式；下面一条路径条，机床区再多一条通道行；右上功能键块；横键条上方一行对话行；横 8 竖 8 软键。</span></div>
-        <div><b>横键选"看什么"，竖键做"做什么"</b><span>竖键第 8 格固定是"✓ 确认"或"« 返回"，第 7 格固定是"✕ 取消"。保存、删除这类提交动作从横键挪到竖键。</span></div>
-        <div><b>区域按 Operate 重组</b><span>机床、参数、程序、程序管理、记录、诊断、调试，共 7 个。自动与手动并进"机床"，画面跟着 NC 方式切换；各处的库都收进"程序管理"。</span></div>
-        <div><b>编程像 ShopTurn</b><span>工步栏、帮助图、参数表单三栏；横键是工序类别，竖键是具体工序；填完参数按"✓ 确认"插入。</span></div>
+        <div><b>外壳照 ONE 分区</b><span>左栏是深色快捷入口（图标加文字）；标题行兼报警行，右上是区域和方式两个方块，再下面是功能键块。机床区从上到下是灰色程序路径条、深灰通道行、各窗口。横键上方一行对话行，横 8 竖 8 软键。</span></div>
+        <div><b>三种颜色各有专用</b><span>青色：当前窗口的标题条、按下的键、当前格。灰色：其余窗口的标题条。红底 / 绿底：竖键第 7 / 8 格的取消 / 确认。黄色只在帮助里用。</span></div>
+        <div><b>横键是功能，竖键是这个功能里的操作</b><span>竖键第 8 格固定是"✓ 确认"、"« 返回"或"≡▸ 翻页"。自动方式基本画面的竖键是显示开关，和 Operate 一样。</span></div>
+        <div><b>编程照 ShopMill 的工步列表</b><span>一道工序一行，带参数摘要；打开后是"工步栏 + 帮助图 + 参数表单"；按"✓ 确认"就写入程序，没有单独的保存。</span></div>
       </div>
-      <p style="margin-top:14px">改动量约 7 周，分两期：第一期做外壳、配色、输入、确认（约 3.5 周），第二期做区域重组和各页软键重排（约 3.5 周）。第 12 节列了 9 个需要一起定下来的问题。</p>
+      <p style="margin-top:14px">改动量约 7.5 周，分两期：第一期做外壳、配色、输入、确认、帮助（约 3.5 周）；第二期做区域重组、各页软键重排、ShopMill 式编辑器、侧屏（约 4 周）。第 13 节列了 13 个需要一起定下来的问题。</p>
     </section>
 
     <!-- 1 -->
     <section id="s1" class="major">
       <h2><span class="no">1</span>调研</h2>
-      <h3 id="s11">1.1 四张画面读出的</h3>
-      <p>四张画面分别是：</p>
+      <p>资料有三份：</p>
       <ul>
-        <li>① 程序区的轮廓编辑（圆弧），老版配色；</li>
-        <li>② 机床区 JOG 下的 T,S,M 画面，老版配色；</li>
-        <li>③ 程序区的测量循环参数画面，新版配色；</li>
-        <li>④ SINUMERIK ONE 触摸界面的程序仿真。</li>
+        <li>《SINUMERIK Operate – Milling · Overview of controllers for vendors of machine tools》（10/2021，A5E51494323B AA）的节选：第 17–124 页，共 86 页，含约 30 张 ONE 画面。下文"手册 p.xx"指这本手册的页码。</li>
+        <li>你之前贴的 4 张 Operate / ONE 画面。</li>
+        <li>其他手册的公开摘要。</li>
       </ul>
-      <p>分辨率约为 1280×768（④ 为 1280×716 宽屏）。</p>
+      <p>这本手册是面向机床厂的功能概览，每节只配一两段文字，版式和交互主要从画面里读。</p>
+
+      <h3 id="s1a">1.1 手册逐节评估</h3>
       <div class="tw"><table>
-        <thead><tr><th>部位</th><th>画面上看到的</th><th>本稿怎么用</th></tr></thead>
+        <thead><tr><th>手册章节</th><th>画面和文字里的做法</th><th>对本机的意义</th><th>本稿怎么用</th></tr></thead>
         <tbody>
-          <tr><td>标题行</td><td>左边品牌，中间产品名，右边日期时间。最右上角是两个方块：当前区域的图标（①③④ 是程序区，② 是机床区"M"）和当前方式"JOG"。</td><td>标题行左边放本软件名，右边放用户、连接、时间；右上两个方块显示区域和方式。有报警时，报警占用标题行中间（这一点按手册推断）。</td></tr>
-          <tr><td>路径条</td><td>①③④ 是蓝 / 青底白字，② 是灰底。左边是程序路径，右边是当前画面名（"Circle"、"Measure: rectang. spigot"）。</td><td>每个区域都有路径条：左边写正在处理的对象（作业、程序、辊形、库），右边写画面名。</td></tr>
-          <tr><td>通道行</td><td>② 有一行"// Reset"（通道状态，图标加文字），中间是程序控制标记"MRD"。</td><td>只有机床区有这一行，写通道状态、当前工序与道次、只读原因。</td></tr>
-          <tr><td>窗口</td><td>
+          <tr><td class="nowrap">4.1 动画元素<br>p.21</td><td>输入画面里用动画演示参数的作用，比如断屑和排屑的区别、测头的探测顺序。</td><td>磨削里周期进给和连续进给、光磨道次、往复换向这些量，动画比静图更容易看懂。</td><td>第二期：工序简图可以播一段短动画（点图播放）。</td></tr>
+          <tr><td class="nowrap">4.2 板载帮助<br>p.22</td><td>
             <ul>
-              <li>②：每个窗口有灰色标题条和浅灰蓝底色，窗口名是粗体（Machine、T,F,S、T,S,M）。</li>
-              <li>实际值的轴名和数值都是大字；当前零点 G54 那一行是浅蓝底。</li>
-              <li>T,F,S 窗口里有倍率百分比和 0–100 的条形刻度，主轴状态用图标（⊗）。</li>
+              <li>每个输入格都有"cursor text"简短说明。</li>
+              <li>完整的上下文帮助有图有文字，按帮助键在编辑画面和帮助画面之间切换。</li>
+              <li>画面上帮助区是黄底，竖键变成黄色的帮助导航：目录、索引、搜索、全屏、跟随引用、返回引用、退出帮助。</li>
             </ul>
-          </td><td>现在的"卡片"改成这种"窗口"样式。实际值用大字，进给和转速带倍率与条形。</td></tr>
-          <tr><td>工步栏</td><td>①③ 左边有一条窄栏，每行一个工步图标，程序段行标"G"。顶上是"P"（程序头），末尾是"END"，选中行青底。① 另有一列轮廓元素（淡黄底，当前元素橙色）。</td><td>工艺程序编辑器左边的工序序列做窄，头尾是"开始（程序头）"和"结束"。辊形编辑器左边是段列表。</td></tr>
-          <tr><td>帮助图</td><td>占中间一大块。① 里当前元素用橙色，③ 是带箭头的立体示意。</td><td>工序简图放中间并做大，当前参数或当前段用橙色。</td></tr>
-          <tr><td>参数表单</td><td>
+          </td><td>现在只有说明行，没有完整帮助。</td><td>对话行放简短说明；按 i 进黄色帮助模式（6.8 节）。</td></tr>
+          <tr><td class="nowrap">4.3.1 多点触摸<br>p.23</td><td>
             <ul>
-              <li>左边标签，右边白色数值格，数值右对齐，单位（abs、°、mm）写在格子后面。</li>
-              <li>算出来的量是灰格；切换项是白格居中文字（"Yes"、"No"、"Work offset"、"Radius"），旋转方向用图标。</li>
-              <li>当前格青底（③ 的 T 3D_PROBE）；分组之间空一行。</li>
+              <li>新的易读字体，扁平、不花哨的图形元素，操作区域在视觉上区分清楚。</li>
+              <li>戴手套可以操作，有手掌识别，能识别液体和污物。</li>
+              <li>手势：双指点 = 快捷菜单（复制、粘贴）；长按 = 打开要修改的对象（如程序段）；拖动 = 移动图形；三指轻扫 = 到列表头 / 尾；张开 = 缩放图形。</li>
             </ul>
-          </td><td>照做。</td></tr>
-          <tr><td>竖键</td><td>
+          </td><td>
             <ul>
-              <li>固定 8 格，空的格也画出来。</li>
-              <li>有下一层的键带"▸"（④ "Further views ▸"）；竖键翻页是"≡▸"图标；按下的键青底白字（④ "3D view"）。</li>
-              <li>② 的第 8 格是"« Back"。</li>
-              <li>①③ 的第 7 / 8 格是"✕ Cancel"/"✓ Accept"，③ 里分别是红底和绿底。</li>
+              <li>硬件选型要求电容屏、支持手套模式和防水（写进装机清单）。</li>
+              <li>长按的含义和上一稿不一样。</li>
             </ul>
-          </td><td>返回、取消、确认的位置和颜色照抄。</td></tr>
-          <tr><td>横键</td><td>
+          </td><td>采用手势表（7.3 节）；长按 = 打开；双指点 = 快捷菜单。</td></tr>
+          <tr><td class="nowrap">4.3.2 侧屏<br>p.24</td><td>
             <ul>
-              <li>最左一个空位（实体面板上"返回"键的位置），接着 8 个键，最右是"&gt;"和页码"1 2"。</li>
-              <li>每个键是小图标加两行字。按下的键蓝 / 青底白字；按不了的键灰字，但留在原位（② "Set WO"）。</li>
-              <li>两组功能之间空一个键位（①③④ 的第 5 格）。</li>
+              <li>小部件和页面可以放在屏幕左侧或右侧，能开能关。</li>
+              <li>标准小部件：NC/PLC 变量、实际值、零点、报警 / 消息、轴负载、当前刀具、刀具寿命、程序运行时间、ABC 键盘、虚拟机床面板。</li>
+              <li>画面上每个小部件是一条深灰标题（带 ▸ / ▾ 展开），可以折叠。</li>
+              <li>适用于 15–24 寸屏：1366×768 用于 22 寸以下，1920×1080 用于 22–24 寸。</li>
             </ul>
-          </td><td>照做。</td></tr>
-          <tr><td>对话行</td><td>横键上面有一条灰色长条，多数时候是空的。</td><td>照做：平时空着，需要时写字。</td></tr>
-          <tr><td>区域栏</td><td>④ 左边有一条深灰竖条，常驻各区域图标：机床、参数、程序、程序管理、诊断、调试、SINUMERIK Integrate。下面有"›"展开键，底部还有两个图标。</td><td>采用。区域一点直达，不用先调出区域菜单。图标下面加两个字的标签。</td></tr>
-          <tr><td>功能键块</td><td>④ 右上是深灰块，三行两列：撤销 / 重做、键盘 / 计算器、信息 / 截屏。键盘打开时那个键发亮。</td><td>采用，内容相同。</td></tr>
-          <tr><td>屏幕上的机床键</td><td>④ 的仿真画面里，竖键上有绿色的启动和蓝灰的"//"复位。</td><td>本机不在屏幕上放启动和复位，它们归按钮板（第 9 节）。</td></tr>
-          <tr><td>紧凑状态条</td><td>④ 仿真图下面有一条：轴值、刀具、程序段"END End of program"、快移 120%、用时。</td><td>曲线、辊形预览这类大图画面，底下也放一条紧凑状态条。</td></tr>
-          <tr><td>配色</td><td>有两套。
+          </td><td>本机的"本支辊进度、砂轮、测量值"正适合做小部件。</td><td>第二期做侧屏（4 节），小部件：实际值、报警、砂轮、本支辊进度、测量结果、变量。</td></tr>
+          <tr><td class="nowrap">4.3.3 显示管理器<br>p.25</td><td>把大屏分成 3–4 块：Operate、小部件、应用（PDF、键盘）、虚拟键盘；可以左右对调，可以临时最大化。</td><td>这是选件，要配 FullHD 大屏。</td><td>暂不做；侧屏已经覆盖主要需求。</td></tr>
+          <tr><td class="nowrap">4.4 快捷键<br>p.26</td><td>Ctrl+A 全选、Ctrl+C 复制、Ctrl+V 粘贴、Ctrl+X 剪切、Ctrl+I 计算到某段的用时、Ctrl+L 选语言、Ctrl+M 最高仿真速度、Ctrl+P 截屏（存到 HMI 数据的截屏目录）；另见 p.75：Ctrl+G 图形视图。</td><td>现在只有 F 键和 Shift+F 键。</td><td>照抄这几个快捷键的意思（4 节表格）。</td></tr>
+          <tr><td class="nowrap">5.1 T,S,M<br>p.27</td><td>
             <ul>
-              <li>老版（①②）：深蓝路径条 #2D5AAF，按下的键 #3666BB。</li>
-              <li>新版 / ONE（③④）：路径条、按下的键、当前区域都是青蓝 #0099C8；区域栏深灰 #414E59；取消红底，确认绿底 #37703D。</li>
+              <li>画面：上半部分保留"实际值"和"T,F,S"两个窗口，下半部分是青色标题的"T,S,M"窗口（表单）。</li>
+              <li>零点偏移格点开后在原位展开下拉列表。</li>
+              <li>竖键：选择刀具、选择零点……，第 8 格"« Back"。</li>
+              <li>横键：T,S,M、Set WO、Meas. workp.、Meas. tool、Position、空、Face mill.、Swivel、"&gt; 1 2"。</li>
             </ul>
-            两套的窗口底色都是浅灰蓝 #E4ECEF。</td><td>用 ONE 那一套（第 8 节）。</td></tr>
+          </td><td>手动方式的机构操作也是"上面看状态，下面做一件事"。</td><td>手动视图照这个结构（6.2 节）。</td></tr>
+          <tr><td class="nowrap">5.2 零点<br>p.28</td><td>
+            <ul>
+              <li>"Set WO"：实际值窗口标题条变青，数值格变成可以直接输入的白格，竖键是 X=0、Y=0、Z=0、X=Y=Z=0、删除当前零点。</li>
+              <li>参数区"Work offset"是表格，行名灰底，当前行红框加青底。</li>
+            </ul>
+          </td><td>标定值、中心架零位这类"一行一套值"的数据适合用这种表格。</td><td>参数 · 标定采用这种表格。</td></tr>
+          <tr><td class="nowrap">5.3 / 5.4 测量<br>p.29–30</td><td>
+            <ul>
+              <li>"Measure: 1 hole"：左边是立体帮助图，当前测点 P1 用橙色标出；中间是带图标的测量方式下拉列表；右边灰字显示当前值和测得值。</li>
+              <li>竖键依次是"Save P1 … P4"，然后是"Set WO"（点数不够时是灰的）、« Back。</li>
+            </ul>
+          </td><td>本机的对中、磨前测量正是"按顺序采点，最后设定"。</td><td>测量对中照这个做（6.3 节）。</td></tr>
+          <tr><td class="nowrap">5.5 / 8.6 测量记录<br>p.31、53</td><td>
+            <ul>
+              <li>可以记录测量结果：文本或表格格式、新建或追加、目录、文件名。</li>
+              <li>自动方式下测量结果怎么显示可以设：自动显示 8 秒 / 等 NC 启动 / 有报警时显示。</li>
+              <li>画面是左边示意图、右边切换项表单，竖键第 7 / 8 格取消 / 确认。</li>
+            </ul>
+          </td><td>本机有磨前 / 磨后测量和记录。</td><td>"设置"里加"测量结果显示方式"（8 秒 / 等下一次启动 / 超差时）；导出格式沿用现有的。</td></tr>
+          <tr><td class="nowrap">5.6 平面铣<br>p.32</td><td>循环画面占满通道行以下的整块区域（实际值窗口让出来）：左边是带刀路的示意图，右边是表单；单位是独立的切换格（mm/min、inc），方向用图标切换；竖键：选刀、图形视图、4 个边界开关、取消、确认。</td><td>大表单画面（换砂轮、作业向导）可以占满这一块。</td><td>向导类画面占满通道行以下。</td></tr>
+          <tr><td class="nowrap">5.7 / 5.8 退刀、ESR<br>p.33–35</td><td>中断后手动退刀；扩展停车退刀（ESR）"主要用于齿轮和磨削工艺"，停电后也能退刀，恢复时用程序段搜索回到中断点。</td><td>这些是 NC 和驱动的功能，与上位机的原则一致：上位机不参与。</td><td>不做界面；中断后继续磨用"工序跳转"（6.1 节）。</td></tr>
+          <tr><td class="nowrap">5.10 手动机床<br>p.37</td><td>
+            <ul>
+              <li>画面：上半部分实际值和 T,F,S；下半部分左边是轴向箭头示意，箭头旁有绿点，表示可以动的方向，右边是 T、F、S 表单。</li>
+              <li>横键：测刀、测工件、直线圆弧、钻、铣、轮廓铣、仿真。</li>
+            </ul>
+          </td><td>"哪个方向能动"用绿点显示，很直观。</td><td>手动视图的机构示意图上，用绿点标出"可以动 / 到位"。</td></tr>
+          <tr><td class="nowrap">6.1 刀具表<br>p.39</td><td>
+            <ul>
+              <li>表格：位置、类型图标、刀名、ST、D、长度、直径、刃数、方向和冷却的勾选框；选中行青底。</li>
+              <li>竖键：测刀、刃 ▸、卸刀、删除刀具 ▸、选刀库、≡▸。</li>
+              <li>"设置"是弹出框：青色标题，里面是勾选项，竖键第 7 / 8 格取消 / 确定。</li>
+              <li>横键：刀具表、刀具磨损、空、刀库、零点、用户变量、空、设定数据、"&gt; 1 2"。</li>
+            </ul>
+          </td><td>砂轮就是本机的"刀具"。</td><td>参数 · 砂轮做成这种表格（6.6 节）；弹出框统一用这个样式。</td></tr>
+          <tr><td class="nowrap">6.2 寿命监控<br>p.40</td><td>
+            <ul>
+              <li>"刀具磨损"表有寿命、设定值、预警值几列。</li>
+              <li>点详情，右边打开"Tool details"窗口（青色标题），里面有刀具图、监控类型切换、实际 / 设定 / 预警。</li>
+              <li>竖键：刀具数据、刃数据、监控数据（按下）、内部数据 ▸、« Back。</li>
+            </ul>
+          </td><td>砂轮寿命（磨削支数、修整次数、最小直径）也要预警。</td><td>砂轮加"寿命与预警"：到预警值时标题行出消息，到极限时不许开新作业。</td></tr>
+          <tr><td class="nowrap">6.4 刀具需求<br>p.42</td><td>程序需要的刀具按"还要装的 / 已装的 / 用不上的"分组列出，状态列用图标（绿 ✓）；竖键只有"标记"和"取消"。</td><td>开作业前的检查清单正好是这种形式。</td><td>作业向导最后一步做成"作业清单"：待准备 / 已就绪分组（6.1 节）。</td></tr>
+          <tr><td class="nowrap">7.1 程序管理器<br>p.45</td><td>
+            <ul>
+              <li>树形列表，列是名称、类型、长度、日期、时间；选中行深灰，右端有"→"。</li>
+              <li>底下一条状态行："路径 · Free 2.1 MB"，再下面是青色标题的"Preview"窗口。</li>
+              <li>横键是存储位置：NC、NC Extend、USB。</li>
+              <li>竖键：归档 ▸、预览窗口（开关）、搜索 ▸、多重装夹 ▸、属性 ▸、删除 ▸、≡。</li>
+              <li>能直接打开 PDF（竖键：放大、缩小、搜索、视图、标记、复制、关闭）。</li>
+            </ul>
+          </td><td>本机的库、台账、U 盘都在这里。</td><td>程序管理照做（6.5 节）；可以在机上看图纸 PDF（第二期）。</td></tr>
+          <tr><td class="nowrap">8.1 程序段搜索<br>p.47</td><td>复位状态下搜索到中断点或任意程序段，可以选"带 / 不带计算"。</td><td>对应本机的"工序跳转 / 中断后续磨"。</td><td>横键"工序跳转"打开工序列表，选好目标后竖键"跳到此处…"（6.1 节）。</td></tr>
+          <tr><td class="nowrap">8.2 程序控制<br>p.48–49</td><td>
+            <ul>
+              <li>自动方式横键"Prog. cntrl."打开青色标题的窗口，是一列勾选项：RG0、M01、DRF、SKP、MRD、CST。</li>
+              <li>选中的项缩写显示在通道行中间（"MRD CST"）。</li>
+              <li>竖键：通用、可配置停止、« Back。</li>
+            </ul>
+          </td><td>本机也有几个运行选项：磨后显示测量、自动记录，以及 NC 支持的话"每道后停"。</td><td>加"程序控制"：选项在 machine.json 里登记（各自对应标签），缩写显示在通道行中间（6.1 节）。</td></tr>
+          <tr><td class="nowrap">8.4 程序段显示<br>p.51</td><td>
+            <ul>
+              <li>自动方式基本画面：灰色程序路径条；通道行"◈ active"（绿色图标）加"MRD"。</li>
+              <li>实际值窗口：机床坐标，有"剩余行程"列；正在动的轴前面标 +/−；窗口底行是"G55、平面"。</li>
+              <li>T,F,S 窗口：进给实际值大字，下面是编程值和倍率 105%；主轴 S1 实际值大字，下面是编程值和倍率 110%，主轴图标变绿；负载条也是绿色。</li>
+              <li>下半部分：左边程序段窗口（灰色标题，是程序路径），右边附加窗口"Basic blocks"（青色标题）。</li>
+              <li>竖键是显示开关：G 功能、辅助功能、Basic blocks、时间 / 计数、程序层次、机床坐标实际值、≡▸。</li>
+              <li>横键：空、Overstore、空、Prog. cntrl.、Block search、空、Simult. record.、Prog. corr.、"&gt; 1 2"。</li>
+            </ul>
+          </td><td>这是自动页最重要的参照。</td><td>机床 · 自动整体照这个结构重画（6.1 节）。</td></tr>
+          <tr><td class="nowrap">8.5 同步记录<br>p.52</td><td>加工时把刀路画在屏幕上。</td><td>对应本机的实时曲线。</td><td>横键"曲线记录"。</td></tr>
+          <tr><td class="nowrap">11.1 程序编辑器<br>p.69</td><td>
+            <ul>
+              <li>G 代码编辑器：注释灰色、T/M/S 蓝色、G0 红色；程序段可以成组折叠（−/+）。</li>
+              <li>路径条是青色（当前窗口），右端"1 ✕"表示打开的程序数和关闭键。</li>
+              <li>竖键：选刀（灰）、建组 ▸、搜索 ▸、标记、复制、粘贴、剪切、≡▸。</li>
+            </ul>
+          </td><td>本机不做 G 代码，但编辑动作的叫法和位置可以照抄。</td><td>编辑竖键照抄（6.4 节）。</td></tr>
+          <tr><td class="nowrap">11.2 ShopMill 工步编程<br>p.72–75</td><td>
+            <ul>
+              <li>一行一道工步：图标、N 号、工步名、粗 / 精标记（▿ 粗、▿▿▿ 精）、参数摘要（T=… F=… V=… Z1=…）。</li>
+              <li>相关工步用方括号连起来；程序头行"P"右端有"→"。</li>
+              <li>"图形视图"（Ctrl+G）：工步栏缩成图标列，旁边是按比例画的图；竖键：视图 ▸、图形视图（按下）、重新编号 ▸、打开其他程序 ▸、设置 ▸、关闭。</li>
+            </ul>
+          </td><td>本机的工序序列可以直接照这个格式。</td><td>工艺程序编辑器改成工步列表（6.4 节）。</td></tr>
+          <tr><td class="nowrap">12.1 / 12.2 仿真<br>p.77–78</td><td>
+            <ul>
+              <li>俯视 / 侧视 / 3D 视图，速度可调，能单段运行、随时停；自动算出加工时间。</li>
+              <li>画面底下一条紧凑状态：轴值、刀具、程序段、进给、倍率、用时。</li>
+              <li>竖键上有红色停止、"//"复位。</li>
+            </ul>
+          </td><td>本机没有 NC 仿真，但有"预计时间"和辊形预览。</td><td>"校验预览"画面底下放紧凑状态条；不在屏幕上放启动和复位。</td></tr>
+          <tr><td class="nowrap">13.3 过程中测量<br>p.88</td><td>
+            <ul>
+              <li>测量循环画面：左边窄工步栏（当前行青底）、中间立体帮助图（P1–P3 箭头）、右边表单。</li>
+              <li>"Pos. In. corner"是切换格，获得焦点时青底，旁边带图标。</li>
+              <li>横键第二页：直线圆弧、测工件（按下）、测刀。</li>
+            </ul>
+          </td><td>和本机工序参数画面同一种结构。</td><td>工序参数画面照这个（6.4 节）。</td></tr>
         </tbody>
       </table></div>
 
-      <h3 id="s12">1.2 手册与资料</h3>
-      <p><span class="pill src">画面</span> 表示上面的画面里看得到；<span class="pill src">手册</span> 表示手册摘要里写明的；<span class="pill inf">推断</span> 表示还要在本机上核对的。</p>
+      <h3 id="s1b">1.2 手册里不适用于本机的部分</h3>
+      <p>下面这些是 NC 的功能或铣床专用功能，和上位机无关：</p>
+      <ul>
+        <li>运行和加工控制：从外部存储运行程序、手轮叠加。</li>
+        <li>NC 精度与动态：80 位精度、程序段时间、加加速度限制、前馈、ACM、ILC、高速设定、Advanced / Top Surface、Look Ahead。</li>
+        <li>编程语言与循环：G 代码语言、各种铣削循环、余料识别、多轴运动学测量。</li>
+        <li>多轴与车铣：TRACYL、CYCLE800、TRAORI、车铣复合、插补车削。</li>
+        <li>其他选件：机器人、多重装夹、DXF、安全集成、防碰撞。</li>
+      </ul>
+      <p>它们在画面上体现的只是：NC 的状态可以在通道行和报警里看到。</p>
+
+      <h3 id="s1c">1.3 第 2 版要改的地方</h3>
       <div class="tw"><table>
-        <thead><tr><th>方面</th><th>Operate 的做法</th><th>依据</th></tr></thead>
+        <thead><tr><th>第 2 版</th><th>手册画面</th><th>第 3 版</th></tr></thead>
         <tbody>
-          <tr><td>区域与方式</td><td>六个操作区域：机床、参数、程序、程序管理、诊断、调试。方式有 JOG、MDA、AUTO，在机床控制面板上选，机床区的画面跟着方式变。</td><td><span class="pill src">手册</span> <span class="pill src">画面</span></td></tr>
-          <tr><td>横键与竖键</td><td>每个横键对应一组竖键：横键选功能，竖键做这个功能下的操作。竖键一页放不下就翻页，横键可以有第二页。</td><td><span class="pill src">手册</span> <span class="pill src">画面</span></td></tr>
-          <tr><td>确认</td><td>参数画面最下面两格是"取消"和"确认"。</td><td><span class="pill src">画面</span></td></tr>
-          <tr><td>报警行</td><td>状态区顶部有报警 / 消息行，显示最新一条。"PLC"图标标出 PLC 报警，箭头表示还有好几条。</td><td><span class="pill src">手册</span> <span class="pill inf">位置待核对</span></td></tr>
-          <tr><td>输入</td><td>
-            <ul>
-              <li>切换框按 SELECT 就地换值。</li>
-              <li>输入框里可以用"="调计算器。</li>
-              <li>按确认之前，Insert 可以撤销。</li>
-              <li>每个画面都有 Help。</li>
-            </ul>
-          </td><td><span class="pill src">手册</span></td></tr>
-          <tr><td>虚拟键盘</td><td>
-            <ul>
-              <li>在输入框点一下是选中，再点一下弹出键盘。</li>
-              <li>键盘可以拖到任何位置，能在全键盘和数字块之间切换。</li>
-              <li>宽屏面板把字母键盘放在屏幕右侧。</li>
-            </ul>
-          </td><td><span class="pill src">手册</span></td></tr>
-          <tr><td>手势</td><td>
-            <ul>
-              <li>单指竖扫：滚动；双指竖扫：翻页；三指竖扫：到头 / 到尾。</li>
-              <li>单指横扫：多列表格左右滚动。</li>
-              <li>双指张开 / 捏合：放大 / 缩小。</li>
-              <li>双指点：快捷菜单。</li>
-            </ul>
-          </td><td><span class="pill src">手册</span></td></tr>
-          <tr><td>侧屏</td><td>宽屏可以开侧屏，放小部件（实际值、零点、报警），收起时只剩标题行。</td><td><span class="pill src">手册</span></td></tr>
-          <tr><td>分辨率</td><td>OP 015 black 是 15.6″ 1366×768，OP 019 是 19″ 1280×1024；FullHD 下有三窗口视图。</td><td><span class="pill src">手册</span></td></tr>
+          <tr><td>所有区域的路径条都是青色</td><td>机床区的程序路径条是灰色；编辑器、表格画面的标题条是青色（当前窗口）</td><td>青色只给当前窗口的标题条</td></tr>
+          <tr><td>窗口标题条都是灰色</td><td>有焦点的窗口标题条是青色（T,S,M、Measure: 1 hole、Program control、Tool details）</td><td>当前窗口青色，其余灰色</td></tr>
+          <tr><td>左栏列出 7 个区域</td><td>左栏是快捷入口：机床、刀具表、零点、程序、程序管理、诊断，每项图标加文字</td><td>机床、砂轮、标定、程序、程序管理、记录、诊断；参数、调试从区域菜单进</td></tr>
+          <tr><td>自动方式：横键是视图，竖键是动作</td><td>自动基本画面的竖键是显示开关（G 功能、Basic blocks、时间 / 计数……），横键是功能</td><td>照手册</td></tr>
+          <tr><td>编辑器是三栏参数画面</td><td>打开程序先看到工步列表（一行一道带摘要），打开一道才进三栏参数画面</td><td>两层：列表 → 参数画面</td></tr>
+          <tr><td>编辑竖键：打开、复制、粘贴、删除、上移、下移、保存</td><td>标记、复制、粘贴、剪切；没有保存键</td><td>标记、复制、粘贴、剪切、上移、下移；确认就写入（D10）</td></tr>
+          <tr><td>关掉长按</td><td>长按 = 打开对象</td><td>长按打开</td></tr>
+          <tr><td>帮助只有对话行</td><td>黄色帮助模式</td><td>加黄色帮助模式</td></tr>
+          <tr><td>左栏深灰 #414E59，窗口底色 #E4ECEF</td><td>左栏 #1B2228，窗口底色 #EBF0F6</td><td>按手册取色</td></tr>
         </tbody>
       </table></div>
     </section>
@@ -370,16 +511,17 @@
       <div class="tw"><table>
         <thead><tr><th>方面</th><th>现在</th><th>Operate / ONE</th><th>差别</th></tr></thead>
         <tbody>
-          <tr><td>横键的意思</td><td>放动作：保存、另存为、新建、校验、下发……</td><td>放视图或功能组</td><td><b>大</b>：同一个动作，两边意思相反</td></tr>
-          <tr><td>换区域</td><td>第 8 个横键是导航槽，要先进"页面菜单"再选</td><td>左侧图标栏一点直达；实体键"菜单选择"</td><td><b>大</b></td></tr>
+          <tr><td>横键的意思</td><td>放动作：保存、另存为、新建、校验、下发……</td><td>放功能，按下后在竖键上给出这个功能的操作</td><td><b>大</b></td></tr>
+          <tr><td>换页面</td><td>第 8 个横键是导航槽，要先进"页面菜单"</td><td>左栏一点直达；区域菜单</td><td><b>大</b></td></tr>
+          <tr><td>自动页</td><td>状态带加卡片</td><td>实际值 + T,F,S 在上；程序段 + 附加窗口在下；竖键是显示开关</td><td><b>大</b></td></tr>
+          <tr><td>编程</td><td>工序序列、简图、参数分三块同时显示</td><td>工步列表（带摘要）→ 打开 → 参数画面；确认就写入</td><td><b>大</b></td></tr>
+          <tr><td>危险动作确认</td><td>同一个键按两下</td><td>竖键第 7 / 8 格：红色取消、绿色确认</td><td>中</td></tr>
           <tr><td>返回</td><td>横键第 8 格"返回原页"，子菜单末格"«"</td><td>竖键第 8 格"« 返回"</td><td>中</td></tr>
-          <tr><td>危险动作确认</td><td>同一个键按两下</td><td>竖键第 7 / 8 格：红"取消"、绿"确认"</td><td>中</td></tr>
-          <tr><td>状态显示</td><td>顶栏一行，加上自动页的状态带</td><td>标题行（兼报警）、路径条，机床区加通道行</td><td>中</td></tr>
-          <tr><td>提示</td><td>悬停提示，状态字散在页面里</td><td>固定的对话行</td><td>中</td></tr>
-          <tr><td>区域划分</td><td>自动磨削、工艺程序、辊形、手动、记录、诊断、设置，外加作业页</td><td>机床、参数、程序、程序管理、诊断、调试</td><td>中</td></tr>
-          <tr><td>视觉</td><td>白底卡片，蓝色强调色 #15507F</td><td>浅灰蓝窗口、灰标题条、青蓝强调色、深灰区域栏</td><td>中</td></tr>
-          <tr><td>输入</td><td>点进文本框直接打字</td><td>点选后再点才出键盘，当前格青底，切换框</td><td>中</td></tr>
-          <tr><td>已经一致的</td><td colspan="3">横 8 竖 8 软键、工序简图亮出当前参数、说明行、方式和通道状态显示、浅色界面。这些保留。</td></tr>
+          <tr><td>当前焦点</td><td>靠蓝色边框</td><td>当前窗口青色标题，当前格青底</td><td>中</td></tr>
+          <tr><td>提示与帮助</td><td>悬停提示和说明行</td><td>对话行 + 黄色帮助模式</td><td>中</td></tr>
+          <tr><td>输入</td><td>点进文本框直接打字</td><td>点选后再点才出键盘；切换格；原位下拉列表</td><td>中</td></tr>
+          <tr><td>视觉</td><td>白底卡片，蓝色 #15507F</td><td>浅灰蓝窗口，深色左栏，青色表示焦点</td><td>中</td></tr>
+          <tr><td>已经一致的</td><td colspan="3">横 8 竖 8 软键、工序简图亮出当前参数、方式和通道状态显示、浅色界面、子菜单用"▸"。这些保留。</td></tr>
         </tbody>
       </table></div>
     </section>
@@ -388,20 +530,20 @@
     <section id="s3">
       <h2><span class="no">3</span>设计规则（替代修改稿的原则 1）</h2>
       <ol>
-        <li><strong>横键选视图，竖键做动作。</strong>按下的横键保持青底；竖键换成这个视图的动作。动作超过 7 个时，竖键第 8 格是"≡▸"翻页。</li>
-        <li><strong>三个固定位置。</strong>
+        <li><strong>横键是功能，竖键是这个功能里的操作。</strong>
           <ul>
-            <li>竖键第 8 格：要确认时是"✓ 确认"（绿），在子画面里是"« 返回"。</li>
-            <li>竖键第 7 格：要确认时是"✕ 取消"（红）。</li>
-            <li>横键最右：是"&gt;"翻页和页码。</li>
+            <li>按下的横键青底；竖键换成这个功能的操作。</li>
+            <li>基本画面（没有按横键时）的竖键可以是显示开关，按下的开关也是青底。</li>
           </ul>
         </li>
-        <li><strong>区域在左栏一点直达。</strong>右上两个方块显示当前区域和方式。</li>
-        <li><strong>"为什么"都写在对话行。</strong>参数说明、单位和范围、输入错误、灰键的原因、确认的问题，都写在横键上方这一行。</li>
-        <li><strong>上面两条到处一样。</strong>标题行（兼报警行）和路径条每个区域都有；机床区多一条通道行。</li>
-        <li><strong>键位不跟着内容挪。</strong>按不了的键留在原位变灰，点它时对话行说明原因；空位画成空键。</li>
+        <li><strong>竖键第 8 格三选一：</strong>"✓ 确认"（绿，需要提交时）、"« 返回"（在子功能里）、"≡▸ / ≡◂"（竖键翻页）。第 7 格需要时是"✕ 取消"（红）。</li>
+        <li><strong>青色只表示"现在在这里"：</strong>当前窗口的标题条、按下的键、当前格、选中行、左栏的当前项。其余窗口的标题条是灰色。</li>
+        <li><strong>快捷入口在左栏，完整区域在区域菜单。</strong>右上两个方块显示当前区域和方式，点区域方块打开区域菜单。</li>
+        <li><strong>"为什么"都写在对话行。</strong>参数的简短说明、单位和范围、输入错误、灰键的原因、确认的问题都在这一行；详细说明进黄色帮助。</li>
+        <li><strong>键位不跟着内容挪。</strong>按不了的键留在原位变灰，点它时对话行说明原因；空位画成空键；功能分组之间留一个空键位。</li>
+        <li><strong>改了就写入。</strong>在参数画面按"✓ 确认"就把改动写进程序或数据；校验不过的程序不能用于作业；每次改动都进改动记录，可以回退（D10）。</li>
         <li><strong>动与停归按钮板，屏幕跟着机床方式走。</strong>机床区的画面跟 NC 方式自动切换。</li>
-        <li><strong>触摸优先，兼顾键盘。</strong>触摸尺寸、键盘、手势见第 7 节。</li>
+        <li><strong>触摸优先，兼顾键盘。</strong>点一下选中，长按或"→"打开，双指点出快捷菜单；快捷键照 Operate。</li>
       </ol>
     </section>
 
@@ -411,74 +553,91 @@
       <div class="tw">
       <div class="scr" role="img" aria-label="外壳分区样机，带编号">
         <div class="lb">
-          <span class="on"><i>⚙</i>机床</span><span><i>▦</i>参数</span><span><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span><i>⚒</i>调试</span>
-          <span class="end"><i>›</i>侧屏</span><span><em class="co">1</em></span>
+          <span class="on"><i>⚙</i>机床<em class="co" style="margin-top:2px">1</em></span><span><i>◎</i>砂轮</span><span><i>⊕</i>标定</span><span><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span>
+          <span class="end"><i>⇆</i>侧屏</span>
         </div>
-        <div class="hd"><em class="co">2</em><span class="app">RGX 磨床上位机</span><span class="al">▲ 700123 砂轮冷却液压力低　+2</span><span class="r">管理员 张工 · NC 已连接<br>2026-09-28 14:32</span></div>
+        <div class="hd"><em class="co">2</em><span class="app">RGX 磨床上位机</span><span class="al">▲ 700123 砂轮冷却液压力低　+2</span><span class="r">管理员 张工 · NC 已连接<br>2026-09-29 14:32</span></div>
         <div class="tl"><span>⚙<br>机床</span><span>AUTO<em class="co" style="margin-top:2px">3</em></span></div>
         <div class="cen">
-          <div class="path"><span><em class="co" style="background:#FFFFFF;color:#10151A">4</em> 作业 J20260928-03 · 工作辊-精磨-标准 · 辊 R-2026-001</span><span>自动</span></div>
-          <div class="chan"><em class="co">5</em><b class="run">↻ 运行</b><span>第 4 道 精磨 · 道次 3/6</span><span>参数只读：运行中</span></div>
-          <div class="wa" style="place-items:center"><span style="display:flex;gap:6px;align-items:center"><em class="co">6</em>工作窗口：当前区域、当前视图的内容</span></div>
+          <div class="path"><span><em class="co">4</em> 作业 J20260929-03 · 工作辊-精磨-标准 · 辊 R-2026-001</span><span></span></div>
+          <div class="chan"><span><em class="co" style="background:#FFFFFF;color:#10151A">5</em> <span class="run">◈ 运行</span></span><span>测显 记录</span><span>第 4 道 精磨 · 3/6</span></div>
+          <div class="wa" style="grid-template-columns: 1fr 1fr">
+            <div class="win"><h6><span>非当前窗口：灰色标题</span></h6><div style="display:grid;place-items:center"><em class="co">6</em></div></div>
+            <div class="win act"><h6><span>当前窗口：青色标题</span></h6><div style="display:grid;place-items:center"><em class="co">7</em></div></div>
+          </div>
         </div>
         <div class="rgt">
-          <div class="fb"><span class="dim">↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span>i 帮助</span><span>◉ 截屏<em class="co" style="margin-left:4px;background:#FFFFFF;color:#10151A">7</em></span></div>
-          <div class="vk"><span>竖键 1<em class="co">8</em></span><span>竖键 2</span><span>竖键 3</span><span>竖键 4</span><span></span><span></span><span class="no">✕ 取消</span><span class="ok">✓ 确认</span></div>
+          <div class="fb"><span class="dim">↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span>i 帮助</span><span>◉ 截屏<em class="co" style="margin-left:4px;background:#FFFFFF;color:#10151A">8</em></span></div>
+          <div class="vk"><span>竖键 1<em class="co">9</em></span><span class="on">竖键 2</span><span>竖键 3</span><span class="dim">竖键 4</span><span></span><span></span><span class="no">✕ 取消</span><span class="ok">✓ 确认</span></div>
         </div>
-        <div class="dlg"><em class="co">9</em> 对话行：参数说明 · 单位 · 范围 · 错误 · 为什么按不了 · 要确认什么</div>
-        <div class="hk"><span class="on">视图 1<em class="co">10</em></span><span>视图 2</span><span>视图 3</span><span class="dim">视图 4</span><span></span><span>视图 5</span><span>视图 6</span><span>视图 7</span><span class="ext"><span>&gt;<em class="co">11</em></span><span class="pg on">1</span><span class="pg">2</span></span></div>
+        <div class="dlg"><em class="co">10</em> 对话行：参数说明 · 单位 · 范围 · 错误 · 为什么按不了 · 要确认什么</div>
+        <div class="hk"><span class="on">功能 1<em class="co">11</em></span><span>功能 2</span><span>功能 3</span><span class="dim">功能 4</span><span></span><span>功能 5</span><span>功能 6</span><span>功能 7</span><span class="ext"><span>&gt;<em class="co">12</em></span><span class="pg on">1</span><span class="pg">2</span></span></div>
       </div>
       </div>
-      <p class="cap">这是屏幕样机，固定用浅色，不跟本文切换深浅色。尺寸按 1920×1080：左栏 72 px，标题行 52，路径条 36，通道行 32，对话行 36，横键条 84（每个键约 200×72）；右栏 200，其中功能键块 3×48，竖键 8 格每格约 90 高。</p>
+      <p class="cap">这是屏幕样机，固定用浅色，不跟本文切换深浅色。尺寸按 1920×1080：左栏 80 px，标题行 52，程序路径条 30，通道行 30，对话行 34，横键条 84（每个键约 200×74）；右栏 200，其中两个方块高 52，功能键块 3×48，竖键 8 格每格约 90 高。</p>
       <div class="tw"><table>
         <thead><tr><th class="num">#</th><th>分区</th><th>内容</th><th>触摸</th><th>键盘</th></tr></thead>
         <tbody>
-          <tr><td class="num">1</td><td>区域栏</td><td>7 个区域，每个是图标加两个字的标签，当前区域青底。下面的"›"展开侧屏小部件（第二期）。</td><td>一点直达</td><td>Ctrl+1…7</td></tr>
+          <tr><td class="num">1</td><td>左栏</td><td>快捷入口，每项是图标加文字，当前项青底；底部"⇆"开关侧屏。条目由 machine.json 的 <code>quickBar</code> 配置，默认：机床、砂轮、标定、程序、程序管理、记录、诊断。</td><td>一点直达</td><td>Ctrl+1…7</td></tr>
           <tr><td class="num">2</td><td>标题行</td><td>
             <ul>
               <li>左边软件名，右边用户、连接、时间。</li>
-              <li>有报警时，中间显示最新一条（红字、报警号，"+2"表示还有 2 条）。</li>
-              <li>急停时整行变红，写"急停中"。</li>
+              <li>有报警时中间显示最新一条（红字、报警号，"+2"表示还有 2 条）。</li>
+              <li>急停时整行变红。</li>
             </ul>
           </td><td>点报警 → 诊断 · 报警列表；点用户 → 登录 / 签退</td><td>—</td></tr>
-          <tr><td class="num">3</td><td>区域 / 方式</td><td>当前区域的图标，当前 NC 方式（JOG / AUTO）。</td><td>点区域方块 → 横键条换成区域栏（Operate 的"菜单选择"）</td><td>F10</td></tr>
-          <tr><td class="num">4</td><td>路径条</td><td>左边写正在处理的对象，未保存时加"●"；右边写画面名。</td><td>—</td><td>—</td></tr>
-          <tr><td class="num">5</td><td>通道行</td><td>只在机床区：通道状态图标和文字（复位 / 运行 / 中断 / 急停）、当前工序与道次、只读原因。</td><td>—</td><td>—</td></tr>
-          <tr><td class="num">6</td><td>工作窗口</td><td>一个或几个"窗口"：灰色标题条，浅灰蓝底。</td><td>竖扫滚动，横扫看宽表</td><td>方向键、Tab</td></tr>
-          <tr><td class="num">7</td><td>功能键块</td><td>
+          <tr><td class="num">3</td><td>区域 / 方式</td><td>当前区域的图标，当前 NC 方式（JOG / AUTO）。</td><td>点区域方块 → 横键条换成 7 个区域的菜单</td><td>F10</td></tr>
+          <tr><td class="num">4</td><td>程序路径条</td><td>只在机床区，灰色：当前作业、程序、辊号，没有作业时空着。其他区域的第一条是当前窗口的青色标题条（左边写对象，右边写画面名，编辑器右端还有"✕"关闭）。</td><td>点 ✕ → 关闭编辑器</td><td>—</td></tr>
+          <tr><td class="num">5</td><td>通道行</td><td>只在机床区，深灰底白字：
             <ul>
-              <li>撤销 / 重做：只在编辑器里可用，其余地方灰。</li>
-              <li>键盘：数字键盘开 / 关。计算器：结果填回当前格。</li>
-              <li>帮助：当前画面的说明。截屏：存成 PNG，报问题时用。</li>
+              <li>左边是通道状态图标和文字（// 复位、◈ 运行（绿）、中断、急停）。</li>
+              <li>中间是已打开的程序控制选项缩写（如"测显 记录"）。</li>
+              <li>右边是当前工序和道次。</li>
             </ul>
-          </td><td>一点</td><td>Ctrl+Z / Ctrl+Y、F11、F1*</td></tr>
-          <tr><td class="num">8</td><td>竖键</td><td>当前视图的动作。第 7 / 8 格见规则 2；有下一层的键加"▸"，翻页用"≡▸"。</td><td></td><td>Shift+F1…F8</td></tr>
-          <tr><td class="num">9</td><td>对话行</td><td>见规则 4；要确认时变成淡黄底粗体。</td><td>点灰键 → 这里写原因</td><td></td></tr>
-          <tr><td class="num">10</td><td>横键</td><td>本区域的视图；两组之间空一个键位；灰键留在原位。</td><td></td><td>F1…F8</td></tr>
-          <tr><td class="num">11</td><td>翻页</td><td>"&gt;"翻到横键第二页，页码显示当前是第几页。</td><td></td><td>F12*</td></tr>
+          </td><td>—</td><td>—</td></tr>
+          <tr><td class="num">6 / 7</td><td>窗口</td><td>浅灰蓝底；当前窗口青色标题，其余灰色标题。</td><td>点窗口 → 它成为当前窗口；竖扫滚动</td><td>Tab 换窗口</td></tr>
+          <tr><td class="num">8</td><td>功能键块</td><td>
+            <ul>
+              <li>撤销 / 重做：编辑器里可用。</li>
+              <li>键盘：数字键盘开关。计算器：结果填回当前格。</li>
+              <li>帮助：黄色帮助模式。截屏：PNG 存到日志目录。</li>
+            </ul>
+          </td><td>一点</td><td>Ctrl+Z / Ctrl+Y、F11、F1、Ctrl+P</td></tr>
+          <tr><td class="num">9</td><td>竖键</td><td>见规则 1、2。有下一层的键加"▸"；显示开关按下是青底。</td><td></td><td>Shift+F1…F8</td></tr>
+          <tr><td class="num">10</td><td>对话行</td><td>见规则 5；要确认时变成淡黄底粗体。</td><td>点灰键 → 这里写原因</td><td></td></tr>
+          <tr><td class="num">11</td><td>横键</td><td>本区域的功能；分组之间留空；灰键留在原位。</td><td></td><td>F1…F8</td></tr>
+          <tr><td class="num">12</td><td>翻页</td><td>"&gt;"翻到横键下一页，页码显示当前是第几页。</td><td></td><td>F12*</td></tr>
+          <tr><td class="num">—</td><td>快捷键</td><td colspan="3">照手册 p.26 / p.75：Ctrl+A 全选、Ctrl+C 复制、Ctrl+V 粘贴、Ctrl+X 剪切（工序列表、点表）；Ctrl+G 图形视图；Ctrl+I 预计时间；Ctrl+L 切换语言；Ctrl+P 截屏。</td></tr>
         </tbody>
       </table></div>
-      <p class="cap">* 快捷键尽量靠拢 Operate 在 PC 键盘上的约定（F1…F8 横键，Shift+F1…F8 竖键，F10 菜单选择），其余的在实现前逐一对照 Operate 的快捷键表。</p>
+      <p class="cap">* F10、F11、F12 在实现前再对照 Operate 的 PC 键盘键位表。</p>
+      <h4>侧屏（第二期，D5）</h4>
+      <p>点左栏底部的"⇆"，在左栏左侧打开侧屏，照手册 p.24：</p>
+      <ul>
+        <li>每个小部件是一条深灰标题（▸ / ▾），可以折叠，竖扫翻动。</li>
+        <li>小部件：实际值、报警、砂轮（直径、寿命）、本支辊进度（剩余 / 总时间条）、测量结果、变量。</li>
+        <li>1920 宽的屏幕上开侧屏后，工作窗口还剩约 1400 px。</li>
+      </ul>
     </section>
 
     <!-- 5 -->
     <section id="s5">
-      <h2><span class="no">5</span>区域</h2>
-      <p>左栏从上到下按 Operate 的名称和顺序排，本机特有的"记录"放在"程序管理"后面。</p>
+      <h2><span class="no">5</span>区域与左栏</h2>
+      <p>点右上的区域方块（或按 F10），横键条换成区域菜单。区域的名称和顺序照 Operate，本机特有的"记录"放在"程序管理"后面：</p>
       <div class="tw"><table>
-        <thead><tr><th class="num">左栏</th><th>区域</th><th>对应 Operate</th><th>放什么（现在在哪）</th></tr></thead>
+        <thead><tr><th class="num">菜单</th><th>区域</th><th>对应 Operate</th><th>放什么</th><th>左栏入口</th></tr></thead>
         <tbody>
-          <tr><td class="num">1</td><td>⚙ 机床</td><td>机床</td><td>自动磨削页、手动页、对中、作业向导。画面跟着 NC 方式切换。</td></tr>
-          <tr><td class="num">2</td><td>▦ 参数</td><td>参数（刀具、零点、设定数据）</td><td>标定值（分组）、砂轮与修整、换砂轮、补偿设定、验收公差。</td></tr>
-          <tr><td class="num">3</td><td>✎ 程序</td><td>程序（编辑器）</td><td>当前打开的工艺程序或辊形的编辑器，也就是现在的工艺程序页和辊形页。</td></tr>
-          <tr><td class="num">4</td><td>☰ 程序管理</td><td>程序管理</td><td>辊形库、工艺程序库、作业、轧辊台账、U 盘。现在散在各页的库都收到这里。</td></tr>
-          <tr><td class="num">5</td><td>▤ 记录</td><td>（本机特有）</td><td>磨削记录、指标、曲线、日报、月报、报表。</td></tr>
-          <tr><td class="num">6</td><td>⚠ 诊断</td><td>诊断</td><td>报警列表、报警日志、变量监视、改动记录、运行日志、连接、快照与备份。</td></tr>
-          <tr><td class="num">7</td><td>⚒ 调试</td><td>调试</td><td>机床配置、标签映射、用户与权限，以及系统设置（语言、屏幕、触摸）。</td></tr>
+          <tr><td class="num">1</td><td>⚙ 机床</td><td>Machine</td><td>自动、手动、测量对中、作业向导、换砂轮向导；画面跟 NC 方式切换</td><td>机床</td></tr>
+          <tr><td class="num">2</td><td>▦ 参数</td><td>Parameter（刀具表、零点、设定数据）</td><td>砂轮（表格、寿命）、修整、标定、补偿、公差、设定数据</td><td>砂轮、标定（直达这两个横键）</td></tr>
+          <tr><td class="num">3</td><td>✎ 程序</td><td>Program</td><td>打开的工艺程序或辊形编辑器</td><td>程序</td></tr>
+          <tr><td class="num">4</td><td>☰ 程序管理</td><td>Program manager</td><td>辊形库、工艺程序库、作业、轧辊台账、U 盘</td><td>程序管理</td></tr>
+          <tr><td class="num">5</td><td>▤ 记录</td><td>（本机特有）</td><td>磨削记录、指标、曲线、日报、月报、报表</td><td>记录</td></tr>
+          <tr><td class="num">6</td><td>⚠ 诊断</td><td>Diagnostics</td><td>报警列表、报警日志、变量监视、改动记录、运行日志、连接、快照备份</td><td>诊断</td></tr>
+          <tr><td class="num">7</td><td>⚒ 调试</td><td>Setup / Commissioning</td><td>机床配置、标签映射、用户、系统、版本</td><td>—（只从区域菜单进，制造商权限）</td></tr>
         </tbody>
       </table></div>
-      <p><strong>为什么把自动和手动并在一起：</strong>在 Operate 里，JOG 和 AUTO 是"机床"区域的两种方式。操作工在面板上切方式，屏幕跟着换，不会去"找手动页"。</p>
-      <p><strong>为什么把库集中到程序管理：</strong>Operate 里打开、复制、删除程序都在程序管理器里做，编辑器只管编辑。集中以后，找东西去"程序管理"，改东西在"程序"。</p>
+      <p><strong>为什么把自动和手动并在一起：</strong>在 Operate 里，JOG 和 AUTO 是"机床"的两种方式。操作工在面板上切方式，屏幕跟着换。</p>
+      <p><strong>为什么左栏只放快捷入口：</strong>ONE 的左栏就是这么做的（Tool list、WO 直达参数区的子画面）。操作工最常去的是机床、砂轮、程序、库，参数区里其他项和调试不常去。</p>
     </section>
 
     <!-- 6 -->
@@ -486,363 +645,540 @@
       <h2><span class="no">6</span>各区域设计稿</h2>
 
       <h3 id="m">6.1 机床 · 自动（NC 方式 AUTO）</h3>
-      <p>照画面 2 分上下两部分：</p>
+      <p>照手册 p.51：</p>
       <ul>
-        <li><strong>上半部分常驻：</strong>"实际值"窗口和"砂轮·进给·头架"窗口（对应 Operate 的 T,F,S）。</li>
-        <li><strong>下半部分是功能窗口：</strong>基本画面是工序序列，对应 Operate 自动方式下的程序段显示；按横键换成别的视图，竖键第 8 格"« 返回"回到基本画面。</li>
+        <li><strong>上半部分：</strong>"实际值"（带剩余行程列）和"砂轮·进给·头架"（对应 T,F,S：实际值大字，下面是编程值和倍率，负载条）。</li>
+        <li><strong>下半部分：</strong>左边是工序窗口，对应程序段显示，灰色标题写程序名；右边是附加窗口，由竖键选择显示什么。</li>
       </ul>
       <div class="tw">
       <div class="scr" role="img" aria-label="机床·自动 样机">
-        <div class="lb"><span class="on"><i>⚙</i>机床</span><span><i>▦</i>参数</span><span><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span><i>⚒</i>调试</span><span class="end"><i>›</i>侧屏</span></div>
-        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">操作者 李工 · NC 已连接<br>2026-09-28 14:32</span></div>
+        <div class="lb"><span class="on"><i>⚙</i>机床</span><span><i>◎</i>砂轮</span><span><i>⊕</i>标定</span><span><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span class="end"><i>⇆</i>侧屏</span></div>
+        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">操作者 李工 · NC 已连接<br>2026-09-29 14:32</span></div>
         <div class="tl"><span>⚙<br>机床</span><span>AUTO</span></div>
         <div class="cen">
-          <div class="path"><span>作业 J20260928-03 · 工作辊-精磨-标准 · 辊 R-2026-001</span><span>自动</span></div>
-          <div class="chan"><b class="run">↻ 运行</b><span>第 4 道 精磨 · 道次 3/6</span><span>参数只读：运行中（参数矩阵可改下一道次）</span></div>
-          <div class="wa" style="grid-template-columns: 1.1fr 1fr; grid-template-rows: auto 1fr">
-            <div class="win"><h6><span>实际值</span><span>机床坐标 [mm]</span></h6><div>
-              <div class="av"><b>X</b><span class="n">312.482</span><span></span><b>Z</b><span class="n">1550.830</span><span></span><b>Ø</b><span class="n">600.012</span><span class="s">目标 600.000<br>余量 12 µm</span></div>
-            </div></div>
-            <div class="win"><h6><span>砂轮 · 进给 · 头架</span><span></span></h6><div>
+          <div class="path"><span>作业 J20260929-03 · 工作辊-精磨-标准 · 辊 R-2026-001</span><span></span></div>
+          <div class="chan"><span class="run">◈ 运行</span><span>测显 记录</span><span>第 4 道 精磨 · 3/6</span></div>
+          <div class="wa" style="grid-template-columns: 1.15fr 1fr; grid-template-rows: auto 1fr">
+            <div class="win"><h6><span>机床</span><span>位置 [mm]</span><span>剩余行程</span></h6><div>
+              <div class="av"><b>+ X</b><span class="n">312.482</span><span class="n">0.018</span><b>− Z</b><span class="n">1550.830</span><span class="n">1249.170</span><b>Ø</b><span class="n">600.012</span><span class="h">目标 600.000<br>余量 12 µm</span></div>
+            </div><div class="ft">补偿 开 · 曲线 #3　辊身 Ø600 × 1800</div></div>
+            <div class="win"><h6><span>砂轮 · 进给 · 头架</span><span>W-03</span></h6><div>
               <div class="tfs">
-                <b>W</b><span>W-03 · Ø 748.2 mm</span><span></span><span></span>
-                <b>F</b><span class="n">800 mm/min</span><span>拖板</span><span class="n">100%</span><span></span><span class="bar"><i style="width:100%"></i></span>
-                <b>S1</b><span class="n">40 r/min</span><span>头架 ↻</span><span class="n">100%</span>
-                <b>S2</b><span class="n">590 r/min</span><span>砂轮 ↻</span><span class="n">95%</span><span></span><span class="bar"><i style="width:95%"></i></span>
+                <b>W</b><span>W-03 · 白刚玉 60#</span><span class="n">Ø 748.2</span><span></span>
+                <b>F</b><span class="n big">812</span><span>mm/min</span><span class="n">105%</span><span class="sub"><span>编程 800 · 拖板</span></span>
+                <b>S1</b><span class="n big">40</span><span>r/min 头架 ↻</span><span class="n">100%</span>
+                <b>S2</b><span class="n big">590</span><span>r/min 砂轮 ↻</span><span class="n">95%</span><span></span><span class="bar"><i style="width:62%"></i></span>
               </div>
             </div></div>
-            <div class="win" style="grid-column: 1 / -1"><h6><span>工序</span><span>进度 62% · 剩余 18 min</span></h6><div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px">
-              <table><thead><tr><th>#</th><th>工序</th><th>道次</th><th>状态</th></tr></thead><tbody>
-                <tr><td>1</td><td>测量</td><td>—</td><td>✓</td></tr><tr><td>2</td><td>粗磨</td><td>8/8</td><td>✓</td></tr><tr><td>3</td><td>半精磨</td><td>4/4</td><td>✓</td></tr>
-                <tr class="on"><td>4</td><td><b>精磨</b></td><td>3/6</td><td>↻</td></tr><tr><td>5</td><td>光磨</td><td>0/2</td><td></td></tr><tr><td>6</td><td>测量</td><td>—</td><td></td></tr></tbody></table>
-              <div class="fm"><label>磨削量 ⌀</label><span class="v ro">0.020</span><span class="u">mm</span><label>拖板速度 f</label><span class="v ro">800</span><span class="u">mm/min</span><label>周期进给</label><span class="v ro">0.002</span><span class="u">mm</span><label>进给方式</label><span class="v ro tg">周期</span><span class="u"></span></div>
+            <div class="win"><h6><span>工作辊-精磨-标准</span><span></span></h6><div style="padding:0">
+              <table style="width:100%"><tbody>
+                <tr><td>P</td><td>程序头</td><td></td><td>辊身 1800 · 目标 Ø600.000</td></tr>
+                <tr><td>◎</td><td>测量</td><td></td><td>5 点 · 圆度</td></tr>
+                <tr><td>▭</td><td>粗磨</td><td>▿</td><td>⌀0.200 f=1200 8 道</td></tr>
+                <tr><td>▭</td><td>半精磨</td><td>▿▿</td><td>⌀0.060 f=1000 4 道</td></tr>
+                <tr class="cur"><td>▭</td><td><b>精磨</b></td><td>▿▿▿</td><td>⌀0.020 f=800 6 道 光磨 2</td></tr>
+                <tr><td>◎</td><td>测量</td><td></td><td>5 点 · 圆度</td></tr>
+                <tr><td>END</td><td>结束</td><td></td><td></td></tr></tbody></table>
+            </div></div>
+            <div class="win act"><h6><span>工序参数 · 精磨</span><span>道次 3/6</span></h6><div>
+              <div class="fm"><label>磨削量 ⌀</label><span class="ro">0.020</span><span class="u">mm</span><label>拖板速度 f</label><span class="ro">800</span><span class="u">mm/min</span><label>周期进给</label><span class="ro">0.002</span><span class="u">mm</span><label>进给方式</label><span class="ro">周期</span><span class="u"></span><label>剩余</label><span class="ro">18 min</span><span class="u">62%</span></div>
             </div></div>
           </div>
         </div>
         <div class="rgt"><div class="fb"><span class="dim">↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span>i 帮助</span><span>◉ 截屏</span></div>
-          <div class="vk"><span>工序跳转…</span><span>提前结束…</span><span>大字<br>实际值</span><span></span><span></span><span></span><span></span><span></span></div></div>
+          <div class="vk"><span class="on">工序参数</span><span>实时曲线</span><span>时间 /<br>计数</span><span>测量结果</span><span></span><span></span><span>实际值<br>大字</span><span>≡▸</span></div></div>
         <div class="dlg"></div>
-        <div class="hk"><span>曲线</span><span>参数矩阵</span><span>补偿</span><span>测量对中</span><span></span><span>作业</span><span>磨削记录</span><span>状态总览</span><span class="ext"><span>&gt;</span></span></div>
+        <div class="hk"><span>参数修改</span><span></span><span>程序控制</span><span>工序跳转</span><span></span><span>曲线记录</span><span>补偿</span><span>作业</span><span class="ext"><span>&gt;</span><span class="pg on">1</span><span class="pg">2</span></span></div>
       </div>
       </div>
-      <p class="cap">"砂轮·进给·头架"里的倍率百分比和条形，要等 tagmap 登记了倍率标签才显示，没登记就不显示这一栏。带"…"的键会先在对话行提问，再用竖键 7 / 8 确认。</p>
+      <p class="cap">
+        实际值窗口：正在动的轴前标 + / −（照手册 p.51），底行显示补偿状态和辊身尺寸。
+        "砂轮·进给·头架"：倍率和负载条要在 tagmap 登记了对应标签才显示，负载条对应砂轮负载（磨削电流）。
+        工序窗口：当前工序深灰底，对应程序段显示里的当前段。
+      </p>
       <div class="tw"><table>
-        <thead><tr><th>横键</th><th>下半部分显示</th><th>竖键（第 8 格都是"« 返回"）</th></tr></thead>
+        <thead><tr><th>横键</th><th>对应 Operate</th><th>打开什么（青色标题，下半部分）</th><th>竖键（第 8 格"« 返回"）</th></tr></thead>
         <tbody>
-          <tr><td>曲线</td><td>误差曲线、圆度、直径分布，底下一条紧凑状态条</td><td>换曲线类型、复位视图、叠加上一支</td></tr>
-          <tr><td>参数矩阵</td><td>剩余各道的参数，可以改下一道次</td><td>改后按"✓ 确认"下发，"✕ 取消"放弃</td></tr>
-          <tr><td>补偿</td><td>阶段 3 的补偿子视图</td><td>保存补偿设定…、恢复配置值…、改动记录</td></tr>
-          <tr><td>测量对中</td><td>测点表、对中比对</td><td>采集测点、清空、归档、记录头架侧、记录尾架侧、清除对中</td></tr>
-          <tr><td>作业</td><td>作业向导（阶段 1）</td><td>上一步、下一步、登记轧辊、取消作业…；最后一步的第 8 格是"✓ 确认下发"</td></tr>
-          <tr><td>磨削记录</td><td>本支辊的记录（只看）</td><td>打印、导出</td></tr>
-          <tr><td>状态总览</td><td>全部机构的状态灯</td><td>—</td></tr>
+          <tr><td>参数修改</td><td>Overstore / Prog. corr.</td><td>剩余各道的参数矩阵，可以改下一道次</td><td>改后第 8 格变"✓ 确认"下发，第 7 格"✕ 取消"</td></tr>
+          <tr><td>程序控制</td><td>Prog. cntrl.</td><td>运行选项的勾选列表，选项由 machine.json 的 <code>programControl</code> 登记，每项对应一个标签：磨后显示测量结果（测显）、自动记录（记录）、每道后停（需要 NC 支持）……</td><td>通用、测量显示方式 ▸</td></tr>
+          <tr><td>工序跳转</td><td>Block search</td><td>工序列表，默认选中"中断点"</td><td>跳到中断点…、跳到所选工序…、提前结束本道…</td></tr>
+          <tr><td>曲线记录</td><td>Simult. record.</td><td>误差曲线、圆度、直径分布，底下一条紧凑状态条</td><td>换曲线类型、复位视图、叠加上一支</td></tr>
+          <tr><td>补偿</td><td>—</td><td>阶段 3 的补偿子视图</td><td>保存补偿设定…、恢复配置值…、改动记录</td></tr>
+          <tr><td>作业</td><td>—</td><td>当前作业信息；空闲时是作业向导（占满通道行以下）</td><td>向导：上一步、下一步、登记轧辊、取消作业…</td></tr>
+          <tr><td>第二页</td><td colspan="3">测量对中、磨削记录（本支辊）、状态总览、设置（测量结果显示方式：8 秒 / 等下一次启动 / 超差时）</td></tr>
         </tbody>
       </table></div>
+      <p><strong>作业向导的最后一步</strong>照手册 p.42 的"刀具需求"：把开磨前要准备的东西按"待准备 / 已就绪"分组列出，状态用图标，例如：辊形已选 ✓、程序已校验 ✓、砂轮寿命 ✓、标定在有效期内 ✓、测头已标定 ✕ 待准备。全部就绪后，第 8 格"✓ 确认下发"才亮。</p>
 
       <h3 id="mj">6.2 机床 · 手动（NC 方式 JOG）</h3>
-      <p>上半部分和自动一样，下半部分的基本画面是状态总览。横键是机构组，按下后下半部分换成这一组的状态，竖键是这一组的动作。下面画的是按了"套筒缩回"、正在等确认的样子：</p>
+      <p>照手册 p.27 的 T,S,M 画面：上半部分和自动方式一样（没有剩余行程列），下半部分是按下的横键打开的窗口，标题条青色。</p>
       <div class="tw">
       <div class="scr" role="img" aria-label="机床·手动·尾架套筒，等待确认 样机">
-        <div class="lb"><span class="on"><i>⚙</i>机床</span><span><i>▦</i>参数</span><span><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span><i>⚒</i>调试</span><span class="end"><i>›</i>侧屏</span></div>
-        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">操作者 李工 · NC 已连接<br>2026-09-28 14:40</span></div>
+        <div class="lb"><span class="on"><i>⚙</i>机床</span><span><i>◎</i>砂轮</span><span><i>⊕</i>标定</span><span><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span class="end"><i>⇆</i>侧屏</span></div>
+        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">操作者 李工 · NC 已连接<br>2026-09-29 14:40</span></div>
         <div class="tl"><span>⚙<br>机床</span><span>JOG</span></div>
         <div class="cen">
-          <div class="path"><span>辊 R-2026-001 · 无作业</span><span>尾架套筒</span></div>
-          <div class="chan"><b>// 复位</b><span>头架停 · 砂轮 590 r/min（按钮板）</span></div>
-          <div class="wa" style="grid-template-columns: 1.1fr 1fr">
-            <div class="win"><h6><span>实际值</span><span>机床坐标 [mm]</span></h6><div><div class="av"><b>X</b><span class="n">412.000</span><span></span><b>Z</b><span class="n">80.000</span><span></span></div></div></div>
-            <div class="win"><h6><span>尾架套筒</span><span></span></h6><div>
-              <span class="lamp on">套筒 伸出到位</span><span class="lamp">套筒 缩回到位</span><br><span class="lamp on">尾架 前进到位</span><span class="lamp">尾架 后退到位</span><br><span class="lamp on">顶紧压力 正常</span>
+          <div class="path"><span>辊 R-2026-001 · 无作业</span><span></span></div>
+          <div class="chan"><span>// 复位</span><span></span><span>头架停 · 砂轮 590 r/min</span></div>
+          <div class="wa" style="grid-template-columns: 1.15fr 1fr; grid-template-rows: auto 1fr">
+            <div class="win"><h6><span>机床</span><span>位置 [mm]</span></h6><div><div class="av" style="grid-template-columns:auto 1fr"><b>X</b><span class="n">412.000</span><b>Z</b><span class="n">80.000</span></div></div></div>
+            <div class="win"><h6><span>砂轮 · 进给 · 头架</span><span>W-03</span></h6><div><div class="tfs"><b>W</b><span>W-03</span><span class="n">Ø 748.2</span><span></span><b>S1</b><span class="n">0</span><span>头架 ⊠</span><span class="n">100%</span><b>S2</b><span class="n">590</span><span>砂轮 ↻</span><span class="n">95%</span></div></div></div>
+            <div class="win act" style="grid-column:1 / -1"><h6><span>尾架套筒</span><span></span></h6><div style="display:grid;grid-template-columns:1fr 1.2fr;gap:10px">
+              <div class="gfx"><div>尾架与套筒示意图<br>可以动的方向用 <span style="color:#2E7D32">● 绿点</span> 标出（照手册 p.37）</div></div>
+              <div><span class="lamp on">套筒 伸出到位</span><span class="lamp">套筒 缩回到位</span><br><span class="lamp on">尾架 前进到位</span><span class="lamp">尾架 后退到位</span><br><span class="lamp on">顶紧压力 正常</span></div>
             </div></div>
           </div>
         </div>
         <div class="rgt"><div class="fb"><span class="dim">↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span>i 帮助</span><span>◉ 截屏</span></div>
           <div class="vk"><span>套筒伸出</span><span class="on">套筒缩回</span><span>尾架前进</span><span>尾架后退</span><span></span><span></span><span class="no">✕ 取消</span><span class="ok">✓ 确认</span></div></div>
         <div class="dlg q">套筒缩回：顶尖将离开辊子端面。按"✓ 确认"执行，按"✕ 取消"放弃（4 秒不按自动取消）</div>
-        <div class="hk"><span>测量臂</span><span class="on">尾架套筒</span><span>头架托瓦</span><span>砂轮冷却</span><span></span><span>辅助循环</span><span>测量对中</span><span>作业</span><span class="ext"><span>&gt;</span></span></div>
+        <div class="hk"><span>测量臂</span><span class="on">尾架套筒</span><span>头架托瓦</span><span>砂轮冷却</span><span></span><span>辅助循环</span><span>测量对中</span><span>换砂轮</span><span class="ext"><span>&gt;</span><span class="pg on">1</span><span class="pg">2</span></span></div>
       </div>
       </div>
-      <p class="cap">不在确认中的时候，第 7 格是空的，第 8 格是"« 返回"（回到状态总览）。"确认"和原来那个键不在同一个位置，手指快速误点两下也不会触发。头架和砂轮的转停在按钮板上，屏幕上只显示状态。</p>
+      <p class="cap">不在确认中的时候，第 7 格是空的，第 8 格是"« 返回"。第二页横键：状态总览、作业、设置。头架和砂轮的转停在按钮板上，屏幕上只显示状态（⊠ 停、↻ 转）。换砂轮、作业向导这类大画面占满通道行以下的整块区域，照手册 p.32 的平面铣。</p>
 
-      <h3 id="p">6.3 程序（编辑器）</h3>
-      <p>照画面 1、3 分三栏：左边是窄的工步栏，中间是帮助图，右边是参数表单。</p>
+      <h3 id="mc">6.3 机床 · 测量对中</h3>
+      <p>照手册 p.29 的"Measure: 1 hole"：</p>
       <ul>
-        <li><strong>横键：</strong>工序类别，顺序照 Operate 的 Edit / Drilling / Milling / Cont. mill. / 空 / Various / Simulation / Execute。</li>
-        <li><strong>竖键：</strong>按下一个类别横键，竖键列出这一类的具体工序；点一个工序，进入它的参数画面；填完按竖键第 8 格"✓ 确认"，插在光标后面。</li>
+        <li>左边是示意图，当前测点用橙色标出。</li>
+        <li>中间是对中方式，用带图标的原位下拉列表选。</li>
+        <li>右边灰字显示当前值和测得值。</li>
+        <li>竖键依次采集测点，采够之后"设定"才亮。</li>
       </ul>
       <div class="tw">
-      <div class="scr" role="img" aria-label="程序编辑器·插入精磨 样机">
-        <div class="lb"><span><i>⚙</i>机床</span><span><i>▦</i>参数</span><span class="on"><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span><i>⚒</i>调试</span><span class="end"><i>›</i>侧屏</span></div>
-        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">管理员 张工 · NC 已连接<br>2026-09-28 15:05</span></div>
+      <div class="scr" role="img" aria-label="机床·测量对中 样机">
+        <div class="lb"><span class="on"><i>⚙</i>机床</span><span><i>◎</i>砂轮</span><span><i>⊕</i>标定</span><span><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span class="end"><i>⇆</i>侧屏</span></div>
+        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">操作者 李工 · NC 已连接<br>2026-09-29 14:52</span></div>
+        <div class="tl"><span>⚙<br>机床</span><span>JOG</span></div>
+        <div class="cen">
+          <div class="path"><span>辊 R-2026-001 · 无作业</span><span></span></div>
+          <div class="chan"><span>// 复位</span><span></span><span></span></div>
+          <div class="wa" style="grid-template-columns: 1fr; grid-template-rows: auto 1fr">
+            <div class="win"><h6><span>机床</span><span>位置 [mm]</span></h6><div><div class="av" style="grid-template-columns:auto 1fr auto 1fr"><b>X</b><span class="n">300.105</span><b>Z</b><span class="n">120.000</span></div></div></div>
+            <div class="win act"><h6><span>测量：两端对中</span><span></span></h6><div style="display:grid;grid-template-columns:1.1fr 1fr 0.9fr;gap:10px">
+              <div class="gfx"><div>辊子示意图<br>测点 <span class="or">P1 头架侧</span> · P2 尾架侧 · P3 中部</div></div>
+              <div class="fm" style="align-content:start"><label>对中方式</label><span class="v dd">两端对中</span><span></span><label>测头</label><span class="v tg">测量臂 1</span><span></span><label>允差</label><span class="v">0.005</span><span class="u">mm</span></div>
+              <div class="fm" style="align-content:start"><span class="gh">当前值</span><label>头架侧</label><span class="ro">+0.004</span><span class="u">mm</span><label>尾架侧</label><span class="ro">−0.006</span><span class="u">mm</span><span class="gh">测得值</span><label>P1</label><span class="ro">300.101</span><span class="u">mm</span><label>P2</label><span class="ro">—</span><span class="u"></span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="rgt"><div class="fb"><span class="dim">↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span>i 帮助</span><span>◉ 截屏</span></div>
+          <div class="vk"><span>采集 P1 ✓</span><span>采集 P2</span><span>采集 P3</span><span></span><span>清空…</span><span></span><span class="dim">设定对中…</span><span>« 返回</span></div></div>
+        <div class="dlg">把测头移到尾架侧 P2（按钮板或手轮），测头接触后按"采集 P2"</div>
+        <div class="hk"><span>测量臂</span><span>尾架套筒</span><span>头架托瓦</span><span>砂轮冷却</span><span></span><span>辅助循环</span><span class="on">测量对中</span><span>换砂轮</span><span class="ext"><span>&gt;</span><span class="pg on">1</span><span class="pg">2</span></span></div>
+      </div>
+      </div>
+
+      <h3 id="p">6.4 程序（编辑器）</h3>
+      <p>分两层，照手册 p.73 和 p.88：</p>
+      <ul>
+        <li><strong>工步列表：</strong>一道工序一行，带参数摘要。</li>
+        <li><strong>参数画面：</strong>打开一道工序后，是"窄工步栏 + 帮助图 + 参数表单"三栏。</li>
+      </ul>
+      <p>横键顺序对应 Edit / Drilling / Milling / Cont. mill. / 空 / Various / Simulation / Execute。</p>
+      <div class="tw">
+      <div class="scr" role="img" aria-label="程序编辑器·工步列表 样机">
+        <div class="lb"><span><i>⚙</i>机床</span><span><i>◎</i>砂轮</span><span><i>⊕</i>标定</span><span class="on"><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span class="end"><i>⇆</i>侧屏</span></div>
+        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">管理员 张工 · NC 已连接<br>2026-09-29 15:05</span></div>
         <div class="tl"><span>✎<br>程序</span><span>JOG</span></div>
         <div class="cen">
-          <div class="path"><span>工艺程序库 / 工作辊-精磨-标准 ●</span><span>精磨</span></div>
-          <div class="wa" style="grid-template-columns: 130px 1fr 1.05fr">
-            <div class="pl"><span class="hd2">P 开始（程序头）</span><span>1 ◎ 测量</span><span>2 ▭ 粗磨</span><span class="on">▸ ▭ 精磨（新）</span><span>3 ◎ 测量</span><span class="hd2">END 结束</span></div>
-            <div class="gfx"><div>砂轮沿辊身往复的示意图<br>当前参数 <span class="cur">f（拖板速度）</span> 的箭头为橙色<br>（点图可放大）</div></div>
-            <div class="win"><h6><span>精磨</span><span></span></h6><div>
+          <div class="path act"><span>工艺程序库 / 工作辊-精磨-标准</span><span>校验通过 · 64 min <span class="x">　✕</span></span></div>
+          <div class="wa" style="grid-template-columns: 1fr">
+            <div class="win" style="border:0"><div style="padding:0">
+              <table style="width:100%"><tbody>
+                <tr class="on"><td>P</td><td>程序头</td><td></td><td>辊身 1800 · 目标 Ø600.000 · 公差 ±0.005</td><td class="go"></td></tr>
+                <tr><td>◎</td><td>测量</td><td></td><td>5 点 · 圆度 · 偏心</td><td></td></tr>
+                <tr><td>▭</td><td>粗磨</td><td>▿</td><td>⌀0.200 f=1200 周期 0.010 · 8 道</td><td></td></tr>
+                <tr><td>▭</td><td>半精磨</td><td>▿▿</td><td>⌀0.060 f=1000 周期 0.005 · 4 道</td><td></td></tr>
+                <tr><td>▭</td><td>精磨</td><td>▿▿▿</td><td>⌀0.020 f=800 周期 0.002 · 6 道 · 光磨 2</td><td></td></tr>
+                <tr><td>⟲</td><td>修整</td><td></td><td>每 2 支 · 修整量 0.02</td><td></td></tr>
+                <tr><td>◎</td><td>测量</td><td></td><td>5 点 · 圆度</td><td></td></tr>
+                <tr><td>END</td><td>结束</td><td></td><td></td><td></td></tr></tbody></table>
+            </div></div>
+          </div>
+        </div>
+        <div class="rgt"><div class="fb"><span>↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span>i 帮助</span><span>◉ 截屏</span></div>
+          <div class="vk"><span>标记</span><span>复制</span><span class="dim">粘贴</span><span>剪切</span><span>上移</span><span>下移</span><span>图形视图</span><span>≡▸</span></div></div>
+        <div class="dlg">点一行选中，点"→"或长按打开；插入新工序：先选插入位置，再按上面的类别横键</div>
+        <div class="hk"><span class="on">编辑</span><span>磨削</span><span>测量</span><span>修整</span><span></span><span>其他</span><span>校验预览</span><span>用于作业</span><span class="ext"><span>&gt;</span></span></div>
+      </div>
+      </div>
+      <p class="cap">"编辑"竖键第二页：余量分配、默认值、另存为、重新命名、关闭。粘贴在没有复制内容时是灰的。路径条是青色，因为它是当前窗口的标题；"✕"关闭编辑器，回到程序管理。</p>
+
+      <div class="tw">
+      <div class="scr" role="img" aria-label="程序编辑器·精磨参数画面 样机">
+        <div class="lb"><span><i>⚙</i>机床</span><span><i>◎</i>砂轮</span><span><i>⊕</i>标定</span><span class="on"><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span class="end"><i>⇆</i>侧屏</span></div>
+        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">管理员 张工 · NC 已连接<br>2026-09-29 15:06</span></div>
+        <div class="tl"><span>✎<br>程序</span><span>JOG</span></div>
+        <div class="cen">
+          <div class="path act"><span>工艺程序库 / 工作辊-精磨-标准</span><span>精磨</span></div>
+          <div class="wa" style="grid-template-columns: 44px 1fr 1fr">
+            <div class="pl"><span>P</span><span>◎</span><span>▭</span><span>▭</span><span class="on">▭</span><span>⟲</span><span>◎</span><span>END</span></div>
+            <div class="gfx"><div>砂轮沿辊身往复的示意图<br>当前参数 <span class="or">f（拖板速度）</span> 的箭头为橙色<br>点图播放动画（第二期）</div></div>
+            <div class="win" style="border:0"><div>
               <div class="fm">
                 <label>磨削量 ⌀</label><span class="v">0.020</span><span class="u">mm</span>
-                <label>拖板速度 f</label><span class="v fo">800</span><span class="u">mm/min</span>
+                <label>拖板速度 f</label><span class="v fo">800</span><span class="u tg">mm/min</span>
                 <label>周期进给</label><span class="v">0.002</span><span class="u">mm</span>
                 <span class="sp"></span>
                 <label>道次</label><span class="v">6</span><span class="u"></span>
                 <label>光磨道次</label><span class="v">2</span><span class="u"></span>
                 <label>进给方式</label><span class="v tg">周期</span><span class="u"></span>
+                <label>加工类型</label><span class="v dd">▿▿▿ 精</span><span class="u"></span>
                 <span class="sp"></span>
                 <label>砂轮转速</label><span class="v">590</span><span class="u">r/min</span>
-                <label>预计用时</label><span class="v ro">12.5</span><span class="u">min</span>
+                <label>预计用时</label><span class="ro">12.5</span><span class="u">min</span>
               </div>
             </div></div>
           </div>
         </div>
         <div class="rgt"><div class="fb"><span>↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span>i 帮助</span><span>◉ 截屏</span></div>
-          <div class="vk"><span>默认值…</span><span></span><span></span><span></span><span></span><span></span><span class="no">✕ 取消</span><span class="ok">✓ 确认</span></div></div>
-        <div class="dlg">拖板速度 f：砂轮沿辊身往复的速度 · mm/min · 允许 1–3000（再点一次输入格弹出键盘）</div>
+          <div class="vk"><span>默认值…</span><span>图形视图</span><span></span><span></span><span></span><span></span><span class="no">✕ 取消</span><span class="ok">✓ 确认</span></div></div>
+        <div class="dlg">拖板速度 f：砂轮沿辊身往复的速度 · 允许 1–3000 · 单位格可以切换 mm/min ⇄ mm/r</div>
         <div class="hk"><span>编辑</span><span class="on">磨削</span><span>测量</span><span>修整</span><span></span><span>其他</span><span>校验预览</span><span>用于作业</span><span class="ext"><span>&gt;</span></span></div>
       </div>
       </div>
+      <p class="cap">只读量（预计用时）只写灰字、不画格子，照手册 p.29 的"Values WO / Measured values"。单位格"mm/min"是独立的切换格，照手册 p.32。按"✓ 确认"就写入程序并回到工步列表，改动进改动记录。</p>
       <div class="tw"><table>
         <thead><tr><th>横键</th><th>对应 Operate</th><th>竖键</th></tr></thead>
         <tbody>
-          <tr><td>编辑</td><td>Edit</td><td>打开（改选中那道）、复制、粘贴、删除…、上移、下移、保存、≡▸（另存为、余量分配、默认值）</td></tr>
-          <tr><td>磨削</td><td>Drilling</td><td>粗磨、半精磨、精磨、光磨、短行程、抛光</td></tr>
+          <tr><td>编辑</td><td>Edit</td><td>标记、复制、粘贴、剪切、上移、下移、图形视图、≡▸（余量分配、默认值、另存为、重新命名、关闭）</td></tr>
+          <tr><td>磨削</td><td>Drilling</td><td>粗磨、半精磨、精磨、光磨、短行程、抛光（点一个进参数画面，确认后插在选中行后面）</td></tr>
           <tr><td>测量</td><td>Milling</td><td>测量、圆度、涡流探伤</td></tr>
           <tr><td>修整</td><td>Cont. mill.</td><td>砂轮修整</td></tr>
           <tr><td>（空）</td><td>（空）</td><td>分组间隔</td></tr>
           <tr><td>其他</td><td>Various</td><td>倒角、辅助动作、暂停</td></tr>
-          <tr><td>校验预览</td><td>Simulation</td><td>重新校验、下一个问题、预计时间；工作窗口列出错误和跨工序提示</td></tr>
-          <tr><td>用于作业</td><td>Execute</td><td>程序已保存就转到"机床 · 作业"；没保存时对话行提示，竖键给"保存并用于作业…"</td></tr>
+          <tr><td>校验预览</td><td>Simulation</td><td>重新校验、下一个问题、预计时间（Ctrl+I）；画面：错误列表 + 辊形与道次示意图，底下紧凑状态条</td></tr>
+          <tr><td>用于作业</td><td>Execute</td><td>程序校验通过时直接转到"机床 · 作业"；有错时灰，点它在对话行说出第一个错</td></tr>
         </tbody>
       </table></div>
-      <p><strong>程序头：</strong>点工步栏最上面的"P 开始"，打开程序头画面，里面是通用参数和程序步骤（阶段 3 做的），和 Operate 的 Program header 一样。</p>
-      <p><strong>辊形编辑</strong>照画面 1 的轮廓编辑来：</p>
+      <p><strong>图形视图（Ctrl+G）：</strong>工步列表缩成左边一列图标，右边按比例画出辊形和每道的磨削量分布，照手册 p.75。</p>
+      <p><strong>辊形编辑</strong>也分两层：</p>
       <ul>
-        <li>左边是段列表，头尾是"开始"和"结束"。</li>
-        <li>中间是辊形曲线，当前段用橙色。</li>
-        <li>右边是这一段的参数。</li>
-        <li>横键：编辑、插入段、点表、对称、空、导入导出、预览校验、用于作业。</li>
-        <li>段参数画面的竖键：删除段…、曲线类型相关的选项、取消、确认。</li>
+        <li>段列表：一段一行，写类型、Z 范围、主要参数。</li>
+        <li>段参数画面：左边窄段栏，中间是曲线（当前段橙色，照你之前贴的轮廓编辑画面），右边是表单。</li>
       </ul>
-      <p><strong>保存：</strong>保存和另存为从 F1 / F2 挪到"编辑"的竖键上，离开未保存的程序时仍然会提示。另外，每次确认插入或修改一道工序后自动存一份草稿（可以恢复，不进库）；撤销和重做也可以用，放在功能键块里。</p>
+      <p>横键：编辑、插入段、点表、对称、空、导入导出、预览校验、用于作业。</p>
 
-      <h3 id="pm">6.4 程序管理</h3>
-      <p>Operate 程序管理器的横键是"盘"（NC、本地盘、U 盘），竖键依次是 Execute、New、Open、Mark、Copy、Paste、Cut、≡▸。这里的横键换成各个库，竖键的顺序照它排：</p>
+      <h3 id="pm">6.5 程序管理</h3>
+      <p>照手册 p.45：</p>
+      <ul>
+        <li>列表：名称、类型、工序数、预计、修改日期、修改人；选中行深灰，右端"→"打开。</li>
+        <li>底下一条状态行，再下面是可以开关的预览窗口。</li>
+        <li>横键是"库"，对应 Operate 的存储位置。</li>
+      </ul>
       <div class="tw">
       <div class="scr" role="img" aria-label="程序管理 样机">
-        <div class="lb"><span><i>⚙</i>机床</span><span><i>▦</i>参数</span><span><i>✎</i>程序</span><span class="on"><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span><i>⚒</i>调试</span><span class="end"><i>›</i>侧屏</span></div>
-        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">管理员 张工 · NC 已连接<br>2026-09-28 15:10</span></div>
+        <div class="lb"><span><i>⚙</i>机床</span><span><i>◎</i>砂轮</span><span><i>⊕</i>标定</span><span><i>✎</i>程序</span><span class="on"><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span class="end"><i>⇆</i>侧屏</span></div>
+        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">管理员 张工 · NC 已连接<br>2026-09-29 15:10</span></div>
         <div class="tl"><span>☰<br>管理</span><span>JOG</span></div>
         <div class="cen">
-          <div class="path"><span>工艺程序库</span><span>12 支</span></div>
-          <div class="wa" style="grid-template-columns: 1.7fr 1fr">
-            <div class="win"><h6><span>工艺程序</span><span>按修改时间</span></h6><div>
-              <table><thead><tr><th>名称</th><th>工序</th><th>预计</th><th>修改</th><th>修改人</th></tr></thead><tbody>
-                <tr class="on"><td>工作辊-精磨-标准</td><td>5</td><td>64 min</td><td>09-26</td><td>张工</td></tr>
-                <tr><td>工作辊-修复磨</td><td>7</td><td>95 min</td><td>09-20</td><td>张工</td></tr>
-                <tr><td>支承辊-标准</td><td>6</td><td>120 min</td><td>09-18</td><td>王工</td></tr>
-                <tr><td>中间辊-精磨</td><td>5</td><td>70 min</td><td>09-11</td><td>张工</td></tr></tbody></table>
+          <div class="wa" style="grid-template-columns: 1fr; grid-template-rows: 1fr auto auto">
+            <div class="win" style="border:0"><div style="padding:0">
+              <table style="width:100%"><thead><tr><th>名称</th><th>工序</th><th>预计</th><th>修改</th><th>修改人</th><th>状态</th><th></th></tr></thead><tbody>
+                <tr class="dk"><td>工作辊-精磨-标准</td><td>7</td><td>64 min</td><td>09-26</td><td>张工</td><td>✓</td><td class="go"></td></tr>
+                <tr><td>工作辊-修复磨</td><td>9</td><td>95 min</td><td>09-20</td><td>张工</td><td>✓</td><td></td></tr>
+                <tr><td>支承辊-标准</td><td>8</td><td>120 min</td><td>09-18</td><td>王工</td><td>✓</td><td></td></tr>
+                <tr><td>中间辊-精磨（草稿）</td><td>5</td><td>—</td><td>09-29</td><td>张工</td><td style="color:#C4161C">✕ 2 处错</td><td></td></tr></tbody></table>
             </div></div>
-            <div class="win"><h6><span>预览</span><span></span></h6><div>P 开始 → 测量 → 粗磨 → 精磨 → 光磨 → 测量 → END<br><br>校验：通过<br>用过 23 次，最近一次 09-27</div></div>
+            <div class="win"><h6><span>工艺程序库</span><span>12 支 · 磁盘剩余 38 GB</span></h6></div>
+            <div class="win act"><h6><span>预览</span><span></span></h6><div>P 程序头 → ◎ 测量 → ▭ 粗磨 ▿ → ▭ 半精磨 ▿▿ → ▭ 精磨 ▿▿▿ → ⟲ 修整 → ◎ 测量 → END　·　用过 23 次，最近 09-27</div></div>
           </div>
         </div>
         <div class="rgt"><div class="fb"><span class="dim">↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span>i 帮助</span><span>◉ 截屏</span></div>
-          <div class="vk"><span>用于作业</span><span>新建</span><span>打开</span><span>复制</span><span>重命名…</span><span>删除…</span><span>导出到<br>U 盘</span><span>≡▸</span></div></div>
-        <div class="dlg">上下扫动翻看；点一行选中，再按"打开"进入程序区编辑</div>
-        <div class="hk"><span>辊形</span><span class="on">工艺程序</span><span>作业</span><span>轧辊台账</span><span></span><span class="dim">U 盘</span><span></span><span></span><span class="ext"><span>&gt;</span></span></div>
+          <div class="vk"><span>用于作业</span><span>新建</span><span>打开</span><span>标记</span><span>复制</span><span class="dim">粘贴</span><span>剪切</span><span>≡▸</span></div></div>
+        <div class="dlg">点一行选中，点"→"或长按打开</div>
+        <div class="hk"><span>辊形</span><span class="on">工艺程序</span><span>作业</span><span>轧辊台账</span><span></span><span class="dim">U 盘</span><span>图纸</span><span></span><span class="ext"><span>&gt;</span></span></div>
       </div>
       </div>
-      <p class="cap">没插 U 盘时"U 盘"键是灰的，但留在原位。</p>
+      <p class="cap">竖键第一页照 Operate 程序管理器的 Execute / New / Open / Mark / Copy / Paste / Cut；第二页：预览窗口（开关）、搜索 ▸、属性 ▸（重命名、备注）、删除 ▸、导出到 U 盘 ▸。"图纸"库存放 PDF 图纸，可以在机上打开看（第二期，照手册 p.45）。没插 U 盘时"U 盘"键是灰的，但留在原位。</p>
 
-      <h3 id="oth">6.5 参数 · 记录 · 诊断 · 调试</h3>
+      <h3 id="par">6.6 参数 · 砂轮</h3>
+      <p>照手册 p.39–40 的刀具表和刀具磨损：</p>
+      <ul>
+        <li>表格一行一片砂轮。</li>
+        <li>点"详情"，右边打开青色标题的详情窗口，里面是砂轮图、寿命的实际值 / 设定值 / 预警值。</li>
+        <li>弹出框（例如"设置"）用青色标题，竖键第 7 / 8 格"✕ 取消 / ✓ 确定"。</li>
+      </ul>
+      <div class="tw">
+      <div class="scr" role="img" aria-label="参数·砂轮 样机">
+        <div class="lb"><span><i>⚙</i>机床</span><span class="on"><i>◎</i>砂轮</span><span><i>⊕</i>标定</span><span><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span class="end"><i>⇆</i>侧屏</span></div>
+        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">管理员 张工 · NC 已连接<br>2026-09-29 15:20</span></div>
+        <div class="tl"><span>▦<br>参数</span><span>JOG</span></div>
+        <div class="cen">
+          <div class="wa" style="grid-template-columns: 1.4fr 1fr">
+            <div class="win"><h6><span>砂轮</span><span>在机 W-03</span></h6><div style="padding:0">
+              <table style="width:100%"><thead><tr><th>位置</th><th>编号</th><th>规格</th><th>Ø</th><th>寿命</th><th>预警</th></tr></thead><tbody>
+                <tr class="grp"><td colspan="6">在机</td></tr>
+                <tr class="on"><td>主轴</td><td>W-03</td><td>白刚玉 60#</td><td>748.2</td><td>41 支</td><td>▲</td></tr>
+                <tr class="grp"><td colspan="6">库存</td></tr>
+                <tr><td>架 1</td><td>W-04</td><td>白刚玉 60#</td><td>900.0</td><td>0 支</td><td></td></tr>
+                <tr><td>架 2</td><td>W-05</td><td>CBN 120#</td><td>750.0</td><td>0 支</td><td></td></tr></tbody></table>
+            </div></div>
+            <div class="win act"><h6><span>砂轮详情 · W-03</span><span></span></h6><div>
+              <div class="fm"><label>监控方式</label><span class="v tg fo">直径</span><span></span><span class="gh">实际　　　设定　　　预警</span><label>直径</label><span class="ro">748.2　　620.0　　640.0</span><span class="u">mm</span><label>磨削支数</label><span class="ro">41　　　—　　　—</span><span class="u"></span><label>修整次数</label><span class="ro">63　　　—　　　—</span><span class="u"></span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="rgt"><div class="fb"><span class="dim">↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span>i 帮助</span><span>◉ 截屏</span></div>
+          <div class="vk"><span>砂轮数据</span><span>修整数据</span><span class="on">寿命监控</span><span>换砂轮 ▸</span><span></span><span>删除 ▸</span><span></span><span>« 返回</span></div></div>
+        <div class="dlg">W-03 直径距预警值还有 108 mm；到预警值时标题行出消息，到设定值时不许开新作业</div>
+        <div class="hk"><span class="on">砂轮</span><span>修整</span><span></span><span>标定</span><span>补偿</span><span>公差</span><span></span><span>设定数据</span><span class="ext"><span>&gt;</span></span></div>
+      </div>
+      </div>
+      <p class="cap">参数区横键照 Operate 参数区（刀具表、刀具磨损、空、刀库、零点、用户变量、空、设定数据）的分组方式排。"标定"照手册 p.28 的零点表格：一行一套值，行名灰底，当前行红框加青底。</p>
+
+      <h3 id="oth">6.7 记录 · 诊断 · 调试</h3>
       <div class="tw"><table>
         <thead><tr><th>区域</th><th>横键</th><th>竖键要点</th></tr></thead>
         <tbody>
-          <tr><td>参数</td><td>标定 · 砂轮 · 修整 · 补偿 · 空 · 公差 · 改动记录</td><td>
-            <ul>
-              <li>表单页：保存…、放弃改动。</li>
-              <li>"砂轮"页：竖键上有"换砂轮 ▸"，进入阶段 1 的换砂轮向导，每一步配图，最后一步的第 8 格是"✓ 确认"。</li>
-            </ul>
-          </td></tr>
-          <tr><td>记录</td><td>记录 · 指标 · 曲线 · 空 · 日报 · 月报 · 报表</td><td>查询（日期段）、上一条、下一条、打印、导出</td></tr>
-          <tr><td>诊断</td><td>报警列表 · 报警日志 · 变量监视 · 改动记录 · 空 · 运行日志 · 连接 · 快照备份</td><td>报警列表的竖键上有"清除上位机报警"（不叫"复位"）；名称和 Operate 诊断区一致</td></tr>
-          <tr><td>调试</td><td>机床配置 · 标签映射 · 用户 · 系统 · 空 · 版本</td><td>
-            <ul>
-              <li>机床配置、标签映射：保存…、恢复上一版…、放弃改动、只看缺失、登记、试读。</li>
-              <li>系统：语言、屏幕、触摸（键盘自动弹出、快捷键提示、擦屏模式）。</li>
-              <li>这个区域只有制造商能改。</li>
-            </ul>
-          </td></tr>
+          <tr><td>记录</td><td>记录 · 指标 · 曲线 · 空 · 日报 · 月报 · 报表</td><td>查询（日期段）、上一条、下一条、打印、导出（文本 / 表格格式，照手册 p.53）</td></tr>
+          <tr><td>诊断</td><td>报警列表 · 报警日志 · 变量监视 · 改动记录 · 空 · 运行日志 · 连接 · 快照备份</td><td>报警列表：清除上位机报警（不叫"复位"）；改动记录：回退到这一版…</td></tr>
+          <tr><td>调试</td><td>机床配置 · 标签映射 · 用户 · 系统 · 空 · 版本</td><td>保存…、恢复上一版…、放弃改动、只看缺失、登记、试读；系统：语言、屏幕、触摸、左栏条目；只有制造商能改</td></tr>
         </tbody>
       </table></div>
+
+      <h3 id="hlp">6.8 帮助</h3>
+      <p>照手册 p.22：</p>
+      <ul>
+        <li>在任何画面按功能键块的"i"（或 F1），帮助图的位置换成黄色帮助，内容就是当前参数那一节。</li>
+        <li>竖键变成黄色的帮助导航；右边的表单还在，可以边看边填。</li>
+        <li>再按"i"或"退出帮助"回到原画面。</li>
+      </ul>
+      <div class="tw">
+      <div class="scr" role="img" aria-label="帮助模式 样机">
+        <div class="lb"><span><i>⚙</i>机床</span><span><i>◎</i>砂轮</span><span><i>⊕</i>标定</span><span class="on"><i>✎</i>程序</span><span><i>☰</i>程序<br>管理</span><span><i>▤</i>记录</span><span><i>⚠</i>诊断</span><span class="end"><i>⇆</i>侧屏</span></div>
+        <div class="hd"><span class="app">RGX 磨床上位机</span><span class="ttl">MK84160</span><span class="r">管理员 张工 · NC 已连接<br>2026-09-29 15:08</span></div>
+        <div class="tl"><span>✎<br>程序</span><span>JOG</span></div>
+        <div class="cen">
+          <div class="path act"><span>工艺程序库 / 工作辊-精磨-标准</span><span>精磨</span></div>
+          <div class="wa" style="grid-template-columns: 44px 1.4fr 1fr">
+            <div class="pl"><span>P</span><span>◎</span><span>▭</span><span>▭</span><span class="on">▭</span><span>⟲</span><span>◎</span><span>END</span></div>
+            <div class="help"><h6>精磨 · 参数说明</h6>
+              <table style="width:100%"><thead><tr><th>参数</th><th>说明</th><th>单位</th></tr></thead><tbody>
+                <tr><td>⌀</td><td>本工序直径方向的总磨削量</td><td>mm</td></tr>
+                <tr><td>f</td><td>砂轮沿辊身往复的速度；越小表面越好、时间越长</td><td>mm/min</td></tr>
+                <tr><td>周期进给</td><td>每个往复在两端换向时的进给量</td><td>mm</td></tr>
+                <tr><td>光磨道次</td><td>不进给、只往复的道数，用来消除火花</td><td>—</td></tr></tbody></table>
+            </div>
+            <div class="win" style="border:0"><div><div class="fm"><label>磨削量 ⌀</label><span class="v">0.020</span><span class="u">mm</span><label>拖板速度 f</label><span class="v fo">800</span><span class="u tg">mm/min</span><label>周期进给</label><span class="v">0.002</span><span class="u">mm</span><label>道次</label><span class="v">6</span><span class="u"></span><label>光磨道次</label><span class="v">2</span><span class="u"></span></div></div></div>
+          </div>
+        </div>
+        <div class="rgt"><div class="fb"><span>↶ 撤销</span><span class="dim">↷ 重做</span><span>⌨ 键盘</span><span>▦ 计算</span><span class="on">i 帮助</span><span>◉ 截屏</span></div>
+          <div class="vk help"><span>目录</span><span>索引</span><span>搜索</span><span>全屏</span><span>跟随链接</span><span>返回链接</span><span></span><span>退出帮助</span></div></div>
+        <div class="dlg">帮助：精磨 · 拖板速度 f</div>
+        <div class="hk"><span>编辑</span><span class="on">磨削</span><span>测量</span><span>修整</span><span></span><span>其他</span><span>校验预览</span><span>用于作业</span><span class="ext"><span>&gt;</span></span></div>
+      </div>
+      </div>
+      <p class="cap">帮助内容和界面文案一样放进资源文件（中、英两份），不写在代码里。</p>
     </section>
 
     <!-- 7 -->
     <section id="s7">
       <h2><span class="no">7</span>输入、确认、手势</h2>
-      <h3>7.1 参数表单与输入</h3>
+      <h3>7.1 表单与输入</h3>
       <ul>
-        <li><strong>版式照画面：</strong>
+        <li><strong>版式：</strong>
           <ul>
-            <li>左边标签，右边白色数值格，数值右对齐，单位在格子后面。</li>
-            <li>算出来的量是灰格，不能点；分组之间空一行。</li>
+            <li>左边标签，右边白色数值格，数值右对齐。</li>
+            <li>单位写在格子后面；能换的单位做成独立的切换格（mm/min ⇄ mm/r）。</li>
+            <li>只读量只写灰字、不画格子；分组之间空一行。</li>
           </ul>
         </li>
-        <li><strong>点一下是选中：</strong>这一格变成青底，帮助图上这个量变成橙色，对话行写说明、单位和范围。</li>
-        <li><strong>再点一下弹出数字键盘。</strong>
-          <ul>
-            <li>功能键块的"⌨"也能打开。</li>
-            <li>键盘停在不挡住当前格的一侧，可以拖动。</li>
-            <li>按"ABC"切到全键盘，按"中文"调系统输入法。</li>
-          </ul>
-        </li>
-        <li><strong>输入：</strong>"↵ 输入"收下这个值并跳到下一格；"取消"恢复原值；超出范围的值不收，对话行说明原因。</li>
-        <li><strong>切换项：</strong>白格居中文字，点一下就地换成下一项（Operate 的 SELECT）；选项多的，点右边的"▾"出列表。</li>
-        <li><strong>计算器：</strong>在功能键块里，算完的结果填回当前格（第二期）。</li>
+        <li><strong>点一下是选中：</strong>这一格变成青底，帮助图上这个量变成橙色，对话行写简短说明。</li>
+        <li><strong>再点一下弹出数字键盘</strong>（也可以点功能键块的"⌨"）。键盘停在不挡住当前格的一侧，可以拖动；"ABC"切到全键盘，"中文"调系统输入法。</li>
+        <li><strong>"↵ 输入"</strong>收下这个值并跳到下一格；超出范围的值不收，对话行说明原因。</li>
+        <li><strong>切换格：</strong>白格居中文字，点一下换成下一项（Operate 的 SELECT）。</li>
+        <li><strong>下拉：</strong>选项多（大约超过 4 个）时，右边带"▾"，点开后在原位展开列表，行高 ≥ 48 px，可以带图标，选中项青底，照手册 p.27、p.29、p.31。不用 Windows 自带的下拉框样式。</li>
+        <li><strong>勾选列表：</strong>开关类选项放在一列勾选框里，照手册 p.48 的程序控制。</li>
+        <li><strong>计算器：</strong>在功能键块里，算完的结果填回当前格。</li>
       </ul>
       <div class="tw">
       <div class="scr" role="img" aria-label="数字键盘样机" style="display:block;min-width:0;max-width:520px;padding:6px">
-        <div class="win"><h6><span>拖板速度 f</span><span>mm/min · 1–3000 · 原值 800</span></h6><div><div class="fm" style="grid-template-columns:1fr"><span class="v fo" style="font-size:20px">1200</span></div></div></div>
+        <div class="win act"><h6><span>拖板速度 f</span><span>mm/min · 1–3000 · 原值 800</span></h6><div><div class="fm" style="grid-template-columns:1fr"><span class="v fo" style="font-size:20px">1200</span></div></div></div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:4px;font-family:var(--mono)">
-          <span class="k" style="background:#DCE2EA;text-align:center;padding:6px 0">7</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">8</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">9</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">⌫</span>
-          <span style="background:#DCE2EA;text-align:center;padding:6px 0">4</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">5</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">6</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">清空</span>
-          <span style="background:#DCE2EA;text-align:center;padding:6px 0">1</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">2</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">3</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">±</span>
-          <span style="background:#DCE2EA;text-align:center;padding:6px 0">0</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">.</span><span style="background:#DCE2EA;text-align:center;padding:6px 0">ABC</span><span style="background:#0099C8;color:#FFFFFF;text-align:center;padding:6px 0;font-family:var(--sans);font-weight:700">↵ 输入</span>
+          <span style="background:#DDE1EA;text-align:center;padding:6px 0">7</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">8</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">9</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">⌫</span>
+          <span style="background:#DDE1EA;text-align:center;padding:6px 0">4</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">5</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">6</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">清空</span>
+          <span style="background:#DDE1EA;text-align:center;padding:6px 0">1</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">2</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">3</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">±</span>
+          <span style="background:#DDE1EA;text-align:center;padding:6px 0">0</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">.</span><span style="background:#DDE1EA;text-align:center;padding:6px 0">ABC</span><span style="background:#0199C8;color:#FFFFFF;text-align:center;padding:6px 0;font-family:var(--sans);font-weight:700">↵ 输入</span>
         </div>
       </div>
       </div>
 
-      <h3>7.2 确认</h3>
-      <p>会改库、会让机床动、会丢数据的操作，统一这样确认：对话行写出问题，竖键第 7 格红底"✕ 取消"，第 8 格绿底"✓ 确认"，4 秒不按就自动取消。这替代现在的"同一个键按两下"，也替代上一稿提的"按住确认"。接键盘时，回车等于确认，Esc 等于取消。</p>
+      <h3>7.2 确认与写入</h3>
+      <ul>
+        <li><strong>危险动作</strong>（会让机床动、会下发、会删除）：对话行写出问题，竖键第 7 格红底"✕ 取消"，第 8 格绿底"✓ 确认"，4 秒不按就自动取消。这替代现在的"按两下"。接键盘时，回车等于确认，Esc 等于取消。</li>
+        <li><strong>参数画面：</strong>第 7 / 8 格是"✕ 取消 / ✓ 确认"。确认就写入：程序、砂轮、标定这些数据直接改。安全靠三件事：
+          <ul>
+            <li>改动记录可以回退；</li>
+            <li>校验不过的程序不能用于作业；</li>
+            <li>运行中的作业用的是下发时的快照，不受影响。</li>
+          </ul>
+          （D10）
+        </li>
+        <li><strong>弹出框：</strong>青色标题，盖在工作窗口上，竖键第 7 / 8 格"✕ 取消 / ✓ 确定"。</li>
+      </ul>
 
-      <h3>7.3 手势</h3>
+      <h3>7.3 手势（照手册 p.23）</h3>
       <div class="tw"><table>
         <thead><tr><th>手势</th><th>作用</th><th>期</th></tr></thead>
         <tbody>
-          <tr><td>单指竖扫</td><td>列表、表格、长表单滚动</td><td>一</td></tr>
-          <tr><td>单指横扫</td><td>宽表格（参数矩阵、标签映射）左右滚动</td><td>一</td></tr>
-          <tr><td>双指张开 / 捏合</td><td>曲线图、辊形预览、帮助图放大 / 缩小；图角有"复位视图"键</td><td>一</td></tr>
-          <tr><td>双指竖扫 / 三指竖扫</td><td>翻页 / 到头到尾</td><td>二</td></tr>
-          <tr><td>双指点</td><td>快捷菜单</td><td>不做（竖键上已经有）</td></tr>
+          <tr><td>点</td><td>选中行、选中格；再点一下输入格出键盘</td><td>一</td></tr>
+          <tr><td>长按（约 0.6 秒）</td><td>打开：工步、辊形段、库里的一项、报警（看详情）。同时关掉 Windows 的"长按当右键"</td><td>一</td></tr>
+          <tr><td>单指竖扫 / 横扫</td><td>列表滚动 / 宽表格左右滚动</td><td>一</td></tr>
+          <tr><td>拖动 / 双指张开、捏合</td><td>移动 / 缩放曲线图、辊形预览、帮助图；图角有"复位视图"键</td><td>一</td></tr>
+          <tr><td>三指竖扫</td><td>到列表头 / 尾</td><td>二</td></tr>
+          <tr><td>双指点</td><td>快捷菜单：复制、粘贴、剪切（工步列表、点表）</td><td>二</td></tr>
         </tbody>
       </table></div>
-      <p>上一稿的触摸规则继续有效：</p>
-      <ul>
-        <li>能点的东西不小于 15 mm。</li>
-        <li>去掉悬停效果，关掉"长按当右键"。</li>
-        <li>没接键盘时不显示快捷键标注。</li>
-        <li>保留擦屏模式。</li>
-      </ul>
+      <p>上一稿的其他触摸规则继续有效：能点的东西不小于 15 mm，去掉悬停效果，没接键盘时不显示快捷键标注，保留擦屏模式。</p>
+      <p>装机清单里加硬件要求：电容屏，支持手套操作和防液体误触（手册 p.23 列为 ONE 面板的特性，甲方配触摸屏时照这个选）。</p>
     </section>
 
     <!-- 8 -->
     <section id="s8">
-      <h2><span class="no">8</span>配色与样式（从画面取样）</h2>
+      <h2><span class="no">8</span>配色与样式（从手册画面取样）</h2>
       <div class="tw"><table>
-        <thead><tr><th>部位</th><th>ONE 画面取样</th><th>本稿取值</th><th>说明</th></tr></thead>
+        <thead><tr><th>部位</th><th>ONE 取样</th><th>本稿</th><th>说明</th></tr></thead>
         <tbody>
-          <tr><td>强调色：路径条、按下的键、当前区域</td><td class="num">#0099C8</td><td class="num">#0099C8</td><td>白字在上面的对比度约 3:1，只配粗体、16 px 以上的字；小字另用深一档的 #00779F</td></tr>
-          <tr><td>区域栏、功能键块</td><td class="num">#414E59</td><td class="num">#414E59 / 键 #56636E</td><td>白色图标和白字</td></tr>
-          <tr><td>标题行</td><td class="num">#EBEBED</td><td class="num">#EBEBED</td><td></td></tr>
-          <tr><td>窗口底色</td><td class="num">#E4ECEF</td><td class="num">#E4ECEF / 窗内 #ECF1F6</td><td></td></tr>
-          <tr><td>窗口标题条</td><td class="num">#C5D2DA</td><td class="num">#C5D2DA</td><td>粗体黑字</td></tr>
-          <tr><td>软键</td><td class="num">#DCE2EA</td><td class="num">#DCE2EA</td><td>键之间的缝和对话行用 #A7B2BA</td></tr>
-          <tr><td>数值格 / 只读格</td><td class="num">#FFFFFF / 灰</td><td class="num">#FFFFFF / #D5DDE3</td><td></td></tr>
-          <tr><td>当前格</td><td class="num">#68C1DF</td><td class="num">#68C1DF</td><td>黑字</td></tr>
-          <tr><td>选中行</td><td class="num">#79BFE3</td><td class="num">#A9DAEE</td><td>稍微调浅一点，保证黑字清楚</td></tr>
-          <tr><td>取消 / 确认</td><td class="num">深红 / #37703D</td><td class="num">#8E1B1B / #37703D</td><td>白色粗体字加 ✕ / ✓ 图标</td></tr>
-          <tr><td>帮助图、曲线上的当前量</td><td>橙色</td><td class="num">#E8891A</td><td></td></tr>
-          <tr><td>状态色</td><td colspan="3">绿：运行、开、到位；黄：中断、警告、未保存；红：报警、急停、错误；灰：关、不可用；虚框：读不到。除了上面这些颜色，其余一律用灰阶。</td></tr>
+          <tr><td>当前窗口标题条、按下的键、左栏当前项</td><td class="num">#0199C8</td><td class="num">#0199C8</td><td>白字；对比度约 3:1，只配 16 px 以上的字，小字改用 #00779F</td></tr>
+          <tr><td>当前格、选中行</td><td class="num">#67C2DF</td><td class="num">#67C2DF / 行 #A9DCEC</td><td>黑字</td></tr>
+          <tr><td>其余窗口标题条、表头</td><td class="num">#C6CBD1</td><td class="num">#C6CBD1</td><td>黑字</td></tr>
+          <tr><td>窗口底色</td><td class="num">#EBF0F6</td><td class="num">#EBF0F6</td><td></td></tr>
+          <tr><td>标题行</td><td class="num">#E6EBF1</td><td class="num">#E6EBF1</td><td></td></tr>
+          <tr><td>程序路径条、对话行、键缝</td><td class="num">#A7B1BA</td><td class="num">#A7B1BA</td><td></td></tr>
+          <tr><td>通道行、侧屏标题</td><td class="num">#6D7F8D</td><td class="num">#6D7F8D</td><td>白字</td></tr>
+          <tr><td>当前工序行（程序段显示里的当前段）</td><td class="num">#B5BEC3</td><td class="num">#B5BEC3</td><td></td></tr>
+          <tr><td>左栏</td><td class="num">#1B2228</td><td class="num">#1B2228</td><td>白色图标和文字</td></tr>
+          <tr><td>功能键块 / 区域、方式方块</td><td class="num">#404C58 / #3D5466</td><td class="num">同左</td><td></td></tr>
+          <tr><td>软键</td><td class="num">#DDE1EA</td><td class="num">#DDE1EA</td><td>黑字；灰键文字 #8A96A1</td></tr>
+          <tr><td>取消 / 确认</td><td class="num">深红 / 深绿</td><td class="num">#8E1B1B / #37703D</td><td>白色粗体字加 ✕ / ✓</td></tr>
+          <tr><td>帮助区 / 帮助竖键</td><td class="num">#F9EEAE / #F5CF2E</td><td class="num">同左</td><td>只在帮助模式里用</td></tr>
+          <tr><td>帮助图里的当前量</td><td>橙色</td><td class="num">#E8891A</td><td></td></tr>
+          <tr><td>状态色</td><td colspan="3">绿：运行、开、到位（主轴转、负载条）；黄：中断、警告、未就绪；红：报警、急停、错误；灰：关、不可用；虚框：读不到。除了上面这些，其余一律用灰阶。</td></tr>
         </tbody>
       </table></div>
       <ul>
-        <li><strong>字号：</strong>正文 16–18 px；数值格 18–20 px；实际值 32–40 px（画面 2 的大字）。数值用等宽字体，右对齐。</li>
-        <li><strong>软键文字：</strong>最多两行，每行约 5 个汉字；横键左边可以加小图标。</li>
-        <li><strong>图标：</strong>区域、功能键块、通道状态用线性的单色图标，风格接近 Operate，但图标由我们自己画。</li>
-        <li><strong>只做浅色，不做深色主题。</strong>和旁边的 Operate 保持一致。</li>
+        <li><strong>字号：</strong>正文 16–18 px；数值格 18–20 px；实际值和进给转速的实际值 32–40 px。数值用等宽字体，右对齐。</li>
+        <li><strong>图形元素：</strong>扁平、不加阴影和渐变，照手册 p.23 的"flat no-frills picture elements"；图标是线性单色，由我们自己画。</li>
+        <li><strong>只做浅色，不做深色主题。</strong></li>
       </ul>
     </section>
 
     <!-- 9 -->
-    <section id="s9">
-      <h2><span class="no">9</span>与按钮板的分工（沿用上一稿）</h2>
-      <ul>
-        <li><strong>放在按钮板上：</strong>急停、复位、头架和砂轮的转停、循环启动。屏幕上不放这些键，只显示状态（标题行、通道行、实际值窗口、手动视图）。哪些动作在按钮板上，登记在 machine.json 的 <code>panelActions</code> 里。
-          <ul>
-            <li>ONE 在仿真画面的竖键上放了启动和复位（画面 4），本机不这么做。</li>
-          </ul>
-        </li>
-        <li><strong>方式：</strong>在按钮板或机床控制面板上切换，机床区的画面自动跟着切。这需要 tagmap 里的 <code>machine.operatingMode</code>，阶段 3 已经加了。</li>
-        <li><strong>急停：</strong>急停时标题行整行变红，写"急停中——解除后在按钮板上按复位"。所有命令键都变灰，点灰键时对话行说明原因。</li>
-      </ul>
+    <section id="s9" class="major">
+      <h2><span class="no">9</span>操作流程（按键路径）</h2>
+      <p>红框表示在按钮板上操作，其余都在触摸屏上。</p>
+      <h4>F1 开磨一支辊</h4>
+      <div class="flow"><span class="st">左栏 程序管理</span><span class="ar">→</span><span class="st">横键 工艺程序</span><span class="ar">→</span><span class="st">点选程序</span><span class="ar">→</span><span class="st">竖键 用于作业</span><span class="ar">→</span><span class="st">机床 · 作业向导：竖键 下一步 ×4</span><span class="ar">→</span><span class="st">作业清单全部就绪</span><span class="ar">→</span><span class="st">竖键 ✓ 确认下发</span><span class="ar">→</span><span class="st pb">按钮板 AUTO + 循环启动</span><span class="ar">→</span><span class="st">画面自动到 机床 · 自动</span></div>
+      <h4>F2 运行中改下一道参数</h4>
+      <div class="flow"><span class="st">机床 · 自动</span><span class="ar">→</span><span class="st">横键 参数修改</span><span class="ar">→</span><span class="st">点格，再点出键盘</span><span class="ar">→</span><span class="st">↵ 输入</span><span class="ar">→</span><span class="st">竖键 ✓ 确认（对话行写"下一道次生效"）</span><span class="ar">→</span><span class="st">« 返回</span></div>
+      <h4>F3 中断后续磨 / 跳工序 / 提前结束</h4>
+      <div class="flow"><span class="st pb">按钮板 复位</span><span class="ar">→</span><span class="st">横键 工序跳转</span><span class="ar">→</span><span class="st">默认选中中断点（或点选工序）</span><span class="ar">→</span><span class="st">竖键 跳到中断点…</span><span class="ar">→</span><span class="st">✓ 确认</span><span class="ar">→</span><span class="st pb">循环启动</span></div>
+      <h4>F4 手动动作（以尾架套筒为例）</h4>
+      <div class="flow"><span class="st pb">按钮板 JOG</span><span class="ar">→</span><span class="st">画面自动到 机床 · 手动</span><span class="ar">→</span><span class="st">横键 尾架套筒</span><span class="ar">→</span><span class="st">竖键 套筒缩回</span><span class="ar">→</span><span class="st">✓ 确认</span><span class="ar">→</span><span class="st">看状态灯到位</span></div>
+      <h4>F5 测量对中</h4>
+      <div class="flow"><span class="st">机床 · 手动</span><span class="ar">→</span><span class="st">横键 测量对中</span><span class="ar">→</span><span class="st">下拉选对中方式</span><span class="ar">→</span><span class="st pb">移测头到 P1</span><span class="ar">→</span><span class="st">竖键 采集 P1</span><span class="ar">→</span><span class="st">… P2、P3</span><span class="ar">→</span><span class="st">竖键 设定对中…</span><span class="ar">→</span><span class="st">✓ 确认</span></div>
+      <h4>F6 编一个工艺程序</h4>
+      <div class="flow"><span class="st">程序管理 · 工艺程序</span><span class="ar">→</span><span class="st">竖键 新建（从模板）</span><span class="ar">→</span><span class="st">编辑器工步列表</span><span class="ar">→</span><span class="st">点选插入位置</span><span class="ar">→</span><span class="st">横键 磨削</span><span class="ar">→</span><span class="st">竖键 精磨</span><span class="ar">→</span><span class="st">填参数（i 看帮助）</span><span class="ar">→</span><span class="st">✓ 确认（写入）</span><span class="ar">→</span><span class="st">横键 校验预览</span><span class="ar">→</span><span class="st">横键 用于作业</span></div>
+      <h4>F7 换砂轮</h4>
+      <div class="flow"><span class="st">左栏 砂轮</span><span class="ar">→</span><span class="st">选库存砂轮</span><span class="ar">→</span><span class="st">竖键 换砂轮 ▸</span><span class="ar">→</span><span class="st">向导每步配图：下一步</span><span class="ar">→</span><span class="st pb">按钮板 砂轮停 / 拆装</span><span class="ar">→</span><span class="st">✓ 确认</span><span class="ar">→</span><span class="st">寿命清零、改动记录</span></div>
+      <h4>F8 处理报警</h4>
+      <div class="flow"><span class="st">点标题行的报警</span><span class="ar">→</span><span class="st">诊断 · 报警列表（选中这一条）</span><span class="ar">→</span><span class="st">长按看详情和处理建议</span><span class="ar">→</span><span class="st pb">机床报警：按钮板 复位</span><span class="ar">→</span><span class="st">上位机报警：竖键 清除上位机报警</span></div>
+      <h4>F9 查一支辊的记录</h4>
+      <div class="flow"><span class="st">左栏 记录</span><span class="ar">→</span><span class="st">竖键 查询（日期段）</span><span class="ar">→</span><span class="st">点选一条</span><span class="ar">→</span><span class="st">横键 指标 / 曲线</span><span class="ar">→</span><span class="st">竖键 打印 / 导出</span></div>
+      <p class="cap">这些流程会写进第一轮操作测试手册的新版本，也会改成自检用例，按这些路径逐键走一遍。</p>
     </section>
 
     <!-- 10 -->
     <section id="s10">
-      <h2><span class="no">10</span>不照搬的地方</h2>
+      <h2><span class="no">10</span>与按钮板的分工（沿用上一稿）</h2>
       <ul>
-        <li><strong>不用西门子的标志、产品名、字体和图标。</strong>标题行写本软件自己的名字。版式、交互规则和配色向 Operate 对齐，但画面一眼就能看出不是西门子的产品界面。</li>
-        <li><strong>不做 G 代码编辑、MDA、程序段编辑。</strong>本上位机下发的是参数，不是 NC 程序，这些功能留在 Operate 里。</li>
-        <li><strong>工序简图用本机自己的图</strong>（磨削、测量、修整、倒角），风格向 Operate 的帮助图靠。</li>
-        <li><strong>作业向导和记录区保留。</strong>Operate 没有这两样，它们是本机的核心流程。</li>
+        <li><strong>放在按钮板上：</strong>急停、复位、头架和砂轮的转停、循环启动。屏幕上不放这些键，只显示状态；哪些动作在按钮板上，登记在 machine.json 的 <code>panelActions</code> 里。
+          <ul>
+            <li>ONE 只在仿真画面的竖键上放启动、停止、复位（手册 p.24），本机不这么做。</li>
+          </ul>
+        </li>
+        <li><strong>方式：</strong>在按钮板或机床控制面板上切换，机床区的画面自动跟着切（用 tagmap 里的 <code>machine.operatingMode</code>）。</li>
+        <li><strong>停车退刀：</strong>中断、停电时的停车退刀是 NC 和驱动的功能（ESR，手册 p.34–35），上位机只显示状态，不参与。这与"上位机被强制结束，这支辊也要能磨完"的原则一致。</li>
+        <li><strong>急停：</strong>急停时标题行整行变红；所有命令键变灰，点灰键时对话行说明原因。</li>
       </ul>
     </section>
 
     <!-- 11 -->
-    <section id="s11p">
-      <h2><span class="no">11</span>改动量与分期</h2>
+    <section id="s11">
+      <h2><span class="no">11</span>不照搬的地方</h2>
+      <ul>
+        <li><strong>不用西门子的标志、产品名、字体和图标。</strong>标题行写本软件的名字。版式、交互和配色向 Operate 对齐，但一眼能看出不是西门子的产品界面。</li>
+        <li><strong>不做 G 代码编辑、MDA、NC 仿真、程序段搜索的计算方式。</strong>本上位机下发的是参数，不是 NC 程序；1.2 节列的 NC 功能都留在 NC 和 Operate 里。</li>
+        <li><strong>工序简图用本机自己的图，</strong>风格向 Operate 的帮助图靠。</li>
+        <li><strong>作业向导和记录区保留。</strong>Operate 没有这两样，它们是本机的核心流程。</li>
+        <li><strong>上移 / 下移保留。</strong>Operate 用剪切加粘贴调顺序；触摸屏上直接上移、下移更顺手，两种都给。</li>
+      </ul>
+    </section>
+
+    <!-- 12 -->
+    <section id="s12">
+      <h2><span class="no">12</span>改动量与分期</h2>
       <div class="tw"><table>
         <thead><tr><th>期</th><th>内容</th><th class="nowrap">工作量</th></tr></thead>
         <tbody>
           <tr><td class="nowrap">第一期<br>外壳、样式、交互</td><td>
             <ul>
-              <li>外壳：左侧区域栏（先放现有的 7 页）、标题行兼报警行和急停显示、区域 / 方式方块、路径条、通道行、功能键块（键盘、帮助、截屏）、对话行。</li>
-              <li>软键：横键条改造（空位、"&gt;"和页码、灰键留位）；竖键第 7 / 8 格的取消 / 确认和返回，替换"按两下"。</li>
-              <li>样式与输入：窗口样式和配色令牌；表单版式（右对齐、单位、只读格、青底当前格）；数字键盘和"点选后再点出键盘"。</li>
-              <li>其他：触摸尺寸、滑动、去掉悬停；按钮板分工（<code>panelActions</code>）；快捷键；自检和手册跟进。</li>
+              <li>外壳：左栏快捷入口（先接现有的页）、标题行兼报警行和急停显示、区域 / 方式方块和区域菜单、机床区的程序路径条和通道行、功能键块（键盘、帮助、截屏）、对话行。</li>
+              <li>窗口与软键：窗口样式（当前窗口青色标题）；横键条改造（空位、"&gt;"和页码、灰键留位）；竖键第 7 / 8 格的取消 / 确认、返回、翻页，替换"按两下"。</li>
+              <li>输入：表单版式（右对齐、单位格、只读灰字、青底当前格）、原位下拉、数字键盘、"点选后再点出键盘"、长按打开。</li>
+              <li>帮助：黄色帮助模式，帮助内容先覆盖工序参数。</li>
+              <li>其他：配色令牌；快捷键；按钮板分工（<code>panelActions</code>）；自检和手册跟进。</li>
             </ul>
           </td><td class="nowrap">约 3.5 周</td></tr>
           <tr><td class="nowrap">第二期<br>区域与软键</td><td>
             <ul>
-              <li>区域：重组为 7 个区域——机床区合并自动和手动并跟着方式切换，上半部分常驻窗口；程序管理收拢各个库；参数和调试拆开。</li>
-              <li>软键：每一页改成横键是视图、竖键是动作。</li>
-              <li>编辑器：程序编辑器改成三栏和"类别 → 工序 → 确认"；辊形编辑器照轮廓编辑的做法改；撤销、重做、草稿。</li>
-              <li>其他：计算器、侧屏小部件；自检全部改写（软键位置全变）；手册重写。</li>
+              <li>区域：重组为 7 个区域。</li>
+              <li>机床区照手册重画：上面实际值和"砂轮·进给·头架"，下面工序窗口加附加窗口；程序控制、工序跳转、测量流程；作业清单。</li>
+              <li>编辑器：ShopMill 式工步列表和参数画面、图形视图、确认即写入加撤销 / 重做；辊形编辑器同样改成两层。</li>
+              <li>程序管理加预览窗口；砂轮表加寿命预警和详情窗口；计算器。</li>
+              <li>侧屏小部件、动画简图、双指点快捷菜单、三指扫。</li>
+              <li>自检全部改写（软键位置全变），手册重写。</li>
             </ul>
-          </td><td class="nowrap">约 3.5 周</td></tr>
-          <tr><td class="nowrap">看硬件</td><td>1366×768（和 OP 015 black 同尺寸）与 1280×1024 的紧凑版面</td><td class="nowrap">约 1.5 周</td></tr>
+          </td><td class="nowrap">约 4 周</td></tr>
+          <tr><td class="nowrap">看硬件</td><td>1366×768 与 1280×1024 的紧凑版面</td><td class="nowrap">约 1.5 周</td></tr>
         </tbody>
       </table></div>
-      <p>第二期几乎每个键的位置都会变，甲方第一轮测试时记住的键位要重新熟悉一次；好处是之后和 Operate 是同一套习惯。建议第一期做完先请甲方试一轮，再做第二期。</p>
+      <p>第二期几乎每个键的位置都会变。建议第一期做完先请甲方试一轮，再做第二期。</p>
     </section>
 
-    <!-- 12 -->
-    <section id="s12q">
-      <h2><span class="no">12</span>需要讨论定下的</h2>
+    <!-- 13 -->
+    <section id="s13">
+      <h2><span class="no">13</span>需要讨论定下的</h2>
       <div class="tw"><table>
         <thead><tr><th class="num">#</th><th>问题</th><th>建议</th></tr></thead>
         <tbody>
-          <tr><td class="num">D1</td><td>区域按 Operate 重组为机床、参数、程序、程序管理、记录、诊断、调试，还是保留现在的 7 页、只改软键的意思？</td><td>重组（第二期做）</td></tr>
-          <tr><td class="num">D2</td><td>机床区的画面跟着 NC 方式自动切换（AUTO 到自动，JOG 到手动）吗？</td><td>自动切换；方式不变时也能手动点横键看别的视图</td></tr>
-          <tr><td class="num">D3</td><td>横键管视图、竖键管动作，保存这类提交动作挪到竖键上吗？</td><td>是</td></tr>
-          <tr><td class="num">D4</td><td>区域切换用左侧常驻图标栏（ONE 触摸界面的做法），第 8 个横键不再当导航键吗？</td><td>是；图标下面加两个字的标签</td></tr>
-          <tr><td class="num">D5</td><td>宽屏上要不要侧屏小部件？</td><td>要，第二期做；左栏"›"展开，默认收起</td></tr>
-          <tr><td class="num">D6</td><td>危险动作的确认改成"对话行提问 + 竖键第 7 / 8 格红色取消、绿色确认"吗？</td><td>是（替代按两下，也替代按住确认）</td></tr>
-          <tr><td class="num">D7</td><td>输入框是点一下选中、再点一下出键盘（Operate 的做法），还是一点就出键盘？</td><td>用 Operate 的做法；在"调试 · 系统"里可以改成一点就出</td></tr>
-          <tr><td class="num">D8</td><td>配色用 ONE 那套青蓝 #0099C8（替换现在的深蓝 #15507F）吗？</td><td>是</td></tr>
-          <tr><td class="num">D9</td><td>第一期做完先请甲方试一轮，再做第二期吗？</td><td>是</td></tr>
+          <tr><td class="num">D1</td><td>区域按 Operate 重组为机床、参数、程序、程序管理、记录、诊断、调试吗？</td><td>重组（第二期做）</td></tr>
+          <tr><td class="num">D2</td><td>机床区的画面跟着 NC 方式自动切换吗？</td><td>是</td></tr>
+          <tr><td class="num">D3</td><td>横键是功能、竖键是操作；自动基本画面的竖键是显示开关。这样可以吗？</td><td>是（照手册 p.51）</td></tr>
+          <tr><td class="num">D4</td><td>左栏放快捷入口：机床、砂轮、标定、程序、程序管理、记录、诊断，可以在 machine.json 里配置。这样可以吗？</td><td>是</td></tr>
+          <tr><td class="num">D5</td><td>侧屏小部件做不做？</td><td>做，第二期；默认关</td></tr>
+          <tr><td class="num">D6</td><td>危险动作改成"对话行提问 + 竖键第 7 / 8 格红色取消、绿色确认"吗？</td><td>是</td></tr>
+          <tr><td class="num">D7</td><td>输入框点一下选中、再点一下出键盘吗？</td><td>是；"调试 · 系统"里可以改成一点就出</td></tr>
+          <tr><td class="num">D8</td><td>配色换成 ONE 那套（左栏 #1B2228、青色 #0199C8 只表示焦点）吗？</td><td>是</td></tr>
+          <tr><td class="num">D9</td><td>第一期做完先请甲方试，再做第二期吗？</td><td>是</td></tr>
+          <tr><td class="num">D10</td><td>编辑器改成"确认就写入"，不要单独的保存键（安全靠改动记录回退、校验不过不能用于作业、运行中的作业用快照）。这样可以吗？</td><td>是，照 Operate；"另存为"保留</td></tr>
+          <tr><td class="num">D11</td><td>长按 = 打开，双指点 = 快捷菜单吗？</td><td>是（照手册 p.23）</td></tr>
+          <tr><td class="num">D12</td><td>"程序控制"的选项（磨后显示测量、自动记录、每道后停……）由 machine.json 登记吗？哪些需要 NC 配合，要和电气确认。</td><td>是；先做两项纯上位机的选项</td></tr>
+          <tr><td class="num">D13</td><td>砂轮寿命预警按哪个量监控：直径、磨削支数还是修整次数？预警值谁来设？</td><td>默认按直径，设定值和预警值放在参数 · 砂轮里，需要管理员权限</td></tr>
         </tbody>
       </table></div>
-      <p>如果方便，请再拍几张本机的画面：机床区 AUTO 正在运行时、有报警时的标题行、报警列表、程序管理器。用来核对报警行的位置和机床区的细节。</p>
     </section>
 
     <footer>
       资料来源：
       <ul>
-        <li>用户提供的 4 张 SINUMERIK Operate / SINUMERIK ONE 画面，出自 Southwestern Industries 的 SINUMERIK ONE 功能介绍页。画面只用来读版式和取色，没有放进仓库。</li>
-        <li>SINUMERIK 840D sl / SINUMERIK ONE 操作手册（通用、磨削）、多点触摸与第二代界面的系统手册、OP 015 black 手册、Operate 快捷键说明的公开摘要；Siemens iX 设计体系文档。</li>
+        <li>《SINUMERIK Operate – Milling · Overview of controllers for vendors of machine tools》10/2021（A5E51494323B AA），用户提供的节选第 17–124 页；文中的"手册 p.xx"指这本手册的页码。</li>
+        <li>用户提供的 4 张 Operate / ONE 画面。</li>
+        <li>SINUMERIK 840D sl / ONE 操作手册的公开摘要。</li>
       </ul>
-      原文页面在本次环境中打不开。本稿只提设计，源代码没有改。
+      手册画面只用来读版式和取色，没有放进仓库。本稿只提设计，源代码没有改。
     </footer>
   </main>
 </div>
