@@ -62,19 +62,13 @@
     <value>各轴归位</value>
   </data>
   <data name="Action_Coolant" xml:space="preserve">
-    <value>冷却水</value>
+    <value>冷却液</value>
   </data>
   <data name="Action_DriverExtend" xml:space="preserve">
     <value>拨盘伸出</value>
   </data>
   <data name="Action_DriverRetract" xml:space="preserve">
     <value>拨盘收回</value>
-  </data>
-  <data name="Action_HeadstockDown" xml:space="preserve">
-    <value>头架 −</value>
-  </data>
-  <data name="Action_HeadstockUp" xml:space="preserve">
-    <value>头架 +</value>
   </data>
   <data name="Action_MeasureWheelDiameter" xml:space="preserve">
     <value>测砂轮直径</value>
@@ -386,10 +380,10 @@
     <value>冷却液</value>
   </data>
   <data name="Fn_DailyReport" xml:space="preserve">
-    <value>磨削日报</value>
+    <value>日报</value>
   </data>
   <data name="Fn_EndEarly" xml:space="preserve">
-    <value>提前结束</value>
+    <value>提前结束…</value>
   </data>
   <data name="Fn_GeneratePoints" xml:space="preserve">
     <value>生成点列</value>
@@ -401,7 +395,7 @@
     <value>机床配置</value>
   </data>
   <data name="Fn_MonthlyReport" xml:space="preserve">
-    <value>磨削月报</value>
+    <value>月报</value>
   </data>
   <data name="Fn_Pause" xml:space="preserve">
     <value>暂停</value>
@@ -419,10 +413,10 @@
     <value>保存</value>
   </data>
   <data name="Fn_SaveAs" xml:space="preserve">
-    <value>另存为</value>
+    <value>另存为…</value>
   </data>
   <data name="Fn_SaveProgram" xml:space="preserve">
-    <value>保存程序</value>
+    <value>保存</value>
   </data>
   <data name="Fn_TagMapping" xml:space="preserve">
     <value>标签映射</value>
@@ -1085,10 +1079,10 @@
     <value>返回 {0}</value>
   </data>
   <data name="Shell_Modified" xml:space="preserve">
-    <value>已修改</value>
+    <value>● 未保存</value>
   </data>
   <data name="Shell_ReadOnlyRunning" xml:space="preserve">
-    <value>运行中 · 只读</value>
+    <value>只读 · 运行中</value>
   </data>
   <data name="Choice_speedVariationTarget_off" xml:space="preserve">
     <value>关闭</value>
@@ -1562,10 +1556,10 @@
     <value>补偿迭代次数</value>
   </data>
   <data name="Curve_BeforeAfter" xml:space="preserve">
-    <value>磨前 / 磨后辊形</value>
+    <value>磨前 / 磨后</value>
   </data>
   <data name="Curve_Convergence" xml:space="preserve">
-    <value>补偿收敛过程</value>
+    <value>补偿收敛</value>
   </data>
   <data name="Curve_BeforeGrinding" xml:space="preserve">
     <value>磨前</value>
@@ -1710,12 +1704,6 @@
   </data>
   <data name="NamePrompt_Label" xml:space="preserve">
     <value>名称</value>
-  </data>
-  <data name="NamePrompt_Confirm" xml:space="preserve">
-    <value>确定</value>
-  </data>
-  <data name="NamePrompt_Cancel" xml:space="preserve">
-    <value>取消</value>
   </data>
   <data name="NamePrompt_Empty" xml:space="preserve">
     <value>请填一个名字</value>
@@ -2498,10 +2486,10 @@
     <value>补偿</value>
   </data>
   <data name="Vk_SaveTuning" xml:space="preserve">
-    <value>保存补偿设定</value>
+    <value>保存补偿设定…</value>
   </data>
   <data name="Vk_ResetTuning" xml:space="preserve">
-    <value>恢复配置值</value>
+    <value>恢复配置值…</value>
   </data>
   <data name="Comp_TuningHeader" xml:space="preserve">
     <value>上位机补偿设定</value>
@@ -3059,7 +3047,7 @@
     <value>导入对照线</value>
   </data>
   <data name="Fn_JumpToStep" xml:space="preserve">
-    <value>跳到工序 ▸</value>
+    <value>工序跳转…</value>
   </data>
   <data name="Fn_ManualGrinding" xml:space="preserve">
     <value>手动磨削</value>
@@ -3263,13 +3251,13 @@
     <value>{0} 段 · {1} mm</value>
   </data>
   <data name="Lib_Profiles" xml:space="preserve">
-    <value>辊形库</value>
+    <value>辊形</value>
   </data>
   <data name="Lib_ProgramDetailFormat" xml:space="preserve">
     <value>{0} 道工序</value>
   </data>
   <data name="Lib_Programs" xml:space="preserve">
-    <value>程序库</value>
+    <value>工艺程序</value>
   </data>
   <data name="Lib_RenameTitle" xml:space="preserve">
     <value>改名为</value>
@@ -3629,7 +3617,7 @@
     <value>+{0}</value>
   </data>
   <data name="Top_EmergencyStop" xml:space="preserve">
-    <value>急停</value>
+    <value>急停中——解除后按复位</value>
   </data>
   <data name="Vk_Backup" xml:space="preserve">
     <value>备份</value>
@@ -3653,7 +3641,7 @@
     <value>✓ 确认</value>
   </data>
   <data name="Vk_ConfirmDownload" xml:space="preserve">
-    <value>✓ 下发</value>
+    <value>✓ 确认下发</value>
   </data>
   <data name="Vk_Copy" xml:space="preserve">
     <value>复制…</value>
@@ -3737,7 +3725,7 @@
     <value>查询…</value>
   </data>
   <data name="Vk_RegisterRoll" xml:space="preserve">
-    <value>登记新辊</value>
+    <value>新登记轧辊</value>
   </data>
   <data name="Vk_RegisterWheel" xml:space="preserve">
     <value>新砂轮登记</value>
@@ -3746,7 +3734,7 @@
     <value>重新读取</value>
   </data>
   <data name="Vk_Rename" xml:space="preserve">
-    <value>改名…</value>
+    <value>重命名…</value>
   </data>
   <data name="Vk_Save" xml:space="preserve">
     <value>✓ 保存</value>
@@ -3807,5 +3795,38 @@
   </data>
   <data name="Area_Commissioning" xml:space="preserve">
     <value>调试</value>
+  </data>
+  <data name="NamePrompt_KeysHint" xml:space="preserve">
+    <value>回车或竖键 8"✓ 确认"存下；Esc 或竖键 7"✕ 取消"不存</value>
+  </data>
+  <data name="Context_Issues" xml:space="preserve">
+    <value>问题</value>
+  </data>
+  <data name="Vk_AddPoint" xml:space="preserve">
+    <value>加点</value>
+  </data>
+  <data name="Vk_RemovePoint" xml:space="preserve">
+    <value>删点</value>
+  </data>
+  <data name="Clip_Copied" xml:space="preserve">
+    <value>已复制，按 Ctrl+V 粘在选中的一条之后</value>
+  </data>
+  <data name="Clip_Cut" xml:space="preserve">
+    <value>已剪下，按 Ctrl+V 粘在选中的一条之后</value>
+  </data>
+  <data name="Clip_Pasted" xml:space="preserve">
+    <value>已粘贴</value>
+  </data>
+  <data name="Clip_Empty" xml:space="preserve">
+    <value>还没有复制过：先选中一条按 Ctrl+C</value>
+  </data>
+  <data name="Clip_NothingSelected" xml:space="preserve">
+    <value>先选中一条</value>
+  </data>
+  <data name="Quick_SideScreenUnavailable" xml:space="preserve">
+    <value>侧屏归数控系统自带的操作界面，在这里不开</value>
+  </data>
+  <data name="Plot_ResetView" xml:space="preserve">
+    <value>⟲ 复位视图</value>
   </data>
 </root>

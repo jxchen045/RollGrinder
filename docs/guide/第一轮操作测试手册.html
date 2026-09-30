@@ -296,7 +296,7 @@
         <li><strong>新的手动磨削页：</strong>砂轮、头架给定与倍率（先标红、确认才写）、拖板往复、定位 ▸、手持盒状态、沿辊身的位置图。头架正反转、回参考点在按钮板上。</li>
         <li><strong>库区：</strong>辊形库、程序库、作业、轧辊台账、U 盘导出 / 导入（.rgxlib，重名自动加"(2)"），带曲线预览；辊形、工艺页不再弹库列表。</li>
         <li><strong>诊断与调试分开：</strong>诊断 7 组（报警详情写消除方法），机床配置与标签映射移到调试区。</li>
-        <li><strong>其他：</strong>标题行显示报警、急停时整条变红；灰键按下去说原因；数字键盘；长按打开；黄色帮助（<kbd>i</kbd>）；<kbd>Ctrl</kbd>+<kbd>L</kbd> 切换中英文。</li>
+        <li><strong>其他：</strong>标题行显示报警、急停时整条变红写"急停中——解除后按复位"；曲线双指缩放、拖动，图角"⟲ 复位视图"回到全貌；左栏底部"⇆ 侧屏"按下去说明侧屏归数控系统自带界面；灰键按下去说原因；数字键盘；长按打开；黄色帮助（<kbd>i</kbd>）；<kbd>Ctrl</kbd>+<kbd>L</kbd> 切换中英文；<kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd> 在段表和工序序列里复制、剪切、粘贴。</li>
       </ul>
     </div>
 
@@ -496,7 +496,7 @@
         <li><strong>左栏：</strong>机床、辊形、工艺、砂轮、库、记录、诊断七个入口，一点直达（<kbd>Ctrl</kbd>+<kbd>1</kbd>…<kbd>7</kbd>）。条目可以在 machine.json 的 <code>quickBar</code> 里改。</li>
         <li><strong>标题行：</strong>最新一条报警（红字，报警号 + 文字，"+n"表示还有几条），点一下到诊断 › 报警；登录的人（点它签退、用户管理）；NC 连接；时间。<strong>急停时整条标题行变红，写"急停"。</strong></li>
         <li><strong>区域方块 / 方式方块（右上）：</strong>当前区域（点它或按 <kbd>F10</kbd> 打开区域菜单）；方式 JOG / MDA / AUTO。</li>
-        <li><strong>路径条：</strong>左端"« 返回"（子视图、任务跳转时才有），然后是区域 · 功能组 · 上下文（辊号、辊身长）。改了没存有"已修改"，权限不够有"只读 · 要××权限"，自动循环在跑有"运行中 · 只读"。</li>
+        <li><strong>路径条：</strong>左端"« 返回"（子视图、任务跳转时才有），然后是区域 · 功能组 · 上下文（辊号、辊身长）。改了没存有"● 未保存"，有错有"✕ n 处问题"，权限不够有"只读 · 要××权限"，自动循环在跑有"只读 · 运行中"（通道行同时写"◈ 运行"）。</li>
         <li><strong>通道行：</strong>通道状态、程序名、上电、回参考点、手持盒选的轴与倍率。</li>
         <li><strong>横键（底部 F1–F8）：</strong>这一区的功能组，按下去青底表示正在看这一组。</li>
         <li><strong>竖键（右侧 Shift+F1…F8）：</strong>这一组里的动作。带 ▸ 的键开下一层，第 8 格是"« 返回"；多于 8 个时第 8 格是"≡▸"翻页。</li>
@@ -508,9 +508,9 @@
         <table>
           <thead><tr><th class="num">左栏</th><th>区域</th><th>功能组（横键）</th><th>离线可用</th></tr></thead>
           <tbody>
-            <tr><td class="num">Ctrl+1</td><td>⚙ 机床</td><td>手动磨削（JOG 时的入口）· 测量臂 · 尾架 · 头架拨盘 · 托瓦 · 测量对中 · 辅助循环 ▸ · 作业；AUTO 时入口是自动磨削（补偿、磨削记录、状态总览、跳到工序 ▸、提前结束、作业、冷却液）。方式一变，入口页跟着换</td><td>否（作业可以）</td></tr>
+            <tr><td class="num">Ctrl+1</td><td>⚙ 机床</td><td>手动磨削（JOG 时的入口）· 测量臂 · 尾架 · 头架拨盘 · 托瓦 · 测量对中 · 辅助循环 ▸ · 作业；AUTO 时入口是自动磨削（补偿、磨削记录、状态总览、工序跳转…、提前结束、作业、冷却液）。方式一变，入口页跟着换</td><td>否（作业可以）</td></tr>
             <tr><td class="num">Ctrl+2</td><td>⌒ 辊形</td><td>辊形库 · 保存 · 另存为 · 点表导入 · 生成点列 · 导入对照线 · 校验</td><td>是</td></tr>
-            <tr><td class="num">Ctrl+3</td><td>≡ 工艺程序</td><td>程序库 · 保存程序 · 另存为 · 新建程序 · 校验 · 用于作业</td><td>是</td></tr>
+            <tr><td class="num">Ctrl+3</td><td>≡ 工艺程序</td><td>程序库 · 保存 · 另存为… · 新建程序 · 校验 · 用于作业</td><td>是</td></tr>
             <tr><td class="num">Ctrl+4</td><td>◎ 砂轮（参数区）</td><td>砂轮 · 标定 · 标定审计</td><td>是</td></tr>
             <tr><td class="num">Ctrl+5</td><td>☰ 库</td><td>辊形库 · 程序库 · 作业 · 轧辊台账 · U 盘</td><td>是</td></tr>
             <tr><td class="num">Ctrl+6</td><td>▤ 记录</td><td>磨削记录 · 磨前报表 · 日报 · 月报</td><td>是</td></tr>
@@ -533,7 +533,7 @@
             <tr><td>按不了的键</td><td>灰底、位置不变。按下去对话行说原因：缺标签 xxx、急停中、要××权限、自动循环在跑、现在不能做……</td></tr>
             <tr><td>长按</td><td>列表里长按一行 0.6 秒 = 打开它（库区、记录）。</td></tr>
             <tr><td>帮助</td><td>按 <kbd>i</kbd>（不在输入时）或功能键块"i 帮助"：简图位置换成黄色帮助，竖键换成目录、索引、搜索、全屏、退出帮助；表单照样能填。</td></tr>
-            <tr><td>运行中只读</td><td>自动循环在跑时，工艺程序、作业、辊形、参数变只读，路径条写"运行中 · 只读"。</td></tr>
+            <tr><td>运行中只读</td><td>自动循环在跑时，工艺程序、作业、辊形、参数变只读，路径条写"只读 · 运行中"。</td></tr>
           </tbody>
         </table>
       </div>
@@ -560,7 +560,7 @@
           </tbody>
         </table>
       </div>
-      <p>权限不够的页照样能看：路径条出现"只读 · 要管理员权限"这样的标记，保存、插入这类键和输入格是灰的。自动循环运行中编辑页另有"运行中 · 只读"的标记，两个标记各管各的。</p>
+      <p>权限不够的页照样能看：路径条出现"只读 · 要管理员权限"这样的标记，保存、插入这类键和输入格是灰的。自动循环运行中编辑页另有"只读 · 运行中"的标记，两个标记各管各的。</p>
     </section>
 
     <!-- ============================== 5 ============================== -->
@@ -651,7 +651,7 @@
           <li>用<strong>操作者</strong>账号登录再进这一页。<span class="expect">路径条显示"只读 · 要管理员权限"，保存、另存为、新建和竖键上的编辑键都是灰的；能打开程序库看、能"用于作业"。</span></li>
           <li>按 <span class="key"><span class="f">F8</span>用于作业</span>。<span class="expect">还没存的程序不能用，提示"先把程序存进库里，作业用的是库里那一支"。</span></li>
           <li>按 <span class="key"><span class="f">F6</span>校验</span>（或左栏"校验"）。<span class="expect">和下发前同一套检查（参数范围、机床能力、至少一道走拖板）；通过显示"程序校验通过"，不通过时原因逐条列出。</span></li>
-          <li>程序名填 <code>工作辊-精磨-标准</code>，按 <span class="key"><span class="f">F3</span>另存为</span>，在命名框里确认。之后改了按 <span class="key primary"><span class="f">F2</span>保存程序</span> 覆盖保存。<span class="key"><span class="f">F1</span>程序库</span> 到库区的程序库，在那里打开、复制、改名、删除（删除先问一句）。<span class="expect">保存之前自动校验，有错不存；重名时给出"覆盖 / 改名 / 取消"。上一轮存的程序打开时，如果缺开始 / 结束会自动补上，并提示保存一次。</span></li>
+          <li>程序名填 <code>工作辊-精磨-标准</code>，按 <span class="key"><span class="f">F3</span>另存为</span>，在命名框里确认。之后改了按 <span class="key primary"><span class="f">F2</span>保存</span> 覆盖保存。<span class="key"><span class="f">F1</span>程序库</span> 到库区的程序库，在那里打开、复制、改名、删除（删除先问一句）。<span class="expect">保存之前自动校验，有错不存；重名时给出"覆盖 / 改名 / 取消"。上一轮存的程序打开时，如果缺开始 / 结束会自动补上，并提示保存一次。</span></li>
         </ol>
         <div class="look"><h4>请重点看</h4><ul>
           <li>工序种类（开始、测量、粗磨、半精磨、精磨、光磨、短行程、抛光、倒角、砂轮修整、涡流探伤、圆度测量、暂停、结束）和 5 个工序槽，能否覆盖现场的工艺</li>
@@ -677,7 +677,7 @@
         <p>作业 = 这一支辊这一次磨：用台账里哪根辊、辊形库里哪条辊形、程序库里哪支程序，这一次开哪些程序步骤。作业页左边是 ① 轧辊、② 辊形、③ 工艺程序、④ 程序步骤、⑤ 核对并下发五步，每步选好后显示摘要；右边是当前这一步的列表。竖键 <span class="key">上一步</span>、<span class="key">下一步</span>，这一步没选好"下一步"是灰的，按了对话行说原因。作业在机床区横键 <span class="key"><span class="f">F8</span>作业</span>。</p>
         <ol class="steps">
           <li>在场景 C 的工艺程序页按 <span class="key"><span class="f">F8</span>用于作业</span>。<span class="expect">进作业页，路径条左端显示"« 工艺程序"；第 ③ 步已选好这支程序。</span></li>
-          <li><strong>① 轧辊：</strong>台账里还没有这支辊，按竖键 <span class="key">登记新辊</span>。<span class="expect">跳到库区的轧辊台账，直接给一张空表。</span>辊号填 <code>R-2026-001</code>，类型选"工作辊"，辊身长度 <code>1900</code>、公称直径 <code>600</code>、当前直径 <code>596</code>，按竖键 <span class="key">保存这支辊</span>，再按路径条上的"« 返回"回作业页。<span class="expect">这支辊已经选上，摘要显示辊身、公称直径和起磨直径（登记了当前直径就用当前直径）。</span></li>
+          <li><strong>① 轧辊：</strong>台账里还没有这支辊，按竖键 <span class="key">新登记轧辊</span>。<span class="expect">跳到库区的轧辊台账，直接给一张空表。</span>辊号填 <code>R-2026-001</code>，类型选"工作辊"，辊身长度 <code>1900</code>、公称直径 <code>600</code>、当前直径 <code>596</code>，按竖键 <span class="key">保存这支辊</span>，再按路径条上的"« 返回"回作业页。<span class="expect">这支辊已经选上，摘要显示辊身、公称直径和起磨直径（登记了当前直径就用当前直径）。</span></li>
           <li>按竖键 <span class="key">下一步</span>。<strong>② 辊形：</strong>选场景 B 存的"工作辊-凸度300"。<span class="expect">辊形设计长度 2000 与辊身 1900 对不上，显示两者长度，要你选"按比例拉伸"还是"中心对齐、不拉伸"；不选"下一步"是灰的，<strong>不会自己悄悄处理</strong>。</span>选"按比例拉伸"。（长度一样时直接显示"长度一致"。）</li>
           <li><strong>③ 工艺程序：</strong><span class="expect">已经选好，列出各道工序和按这支辊尺寸估出的时间。</span>也可以在列表里换一支。</li>
           <li><strong>④ 程序步骤：</strong><span class="expect">开关照程序里存的默认值来。</span>这一次可以单独改，不影响程序库里那一支。</li>
@@ -711,7 +711,7 @@
           <li><strong>中间下：</strong>工艺参数矩阵，行是参数，列是工序，一屏看完整支程序。</li>
           <li><strong>右栏：</strong>轧辊实测直径（大字）、目标、余量；实时数据（外测头 A、内测头 B、对中偏差、砂轮直径、磨削电流、当前道次）；补偿状态。</li>
           <li><strong>顶上状态带：</strong>方式、通道、程序名、X、Z（从右栏挪上来）、砂轮与头架转速；右边四盏灯：切削液、中心架、尾架、测量臂。开为绿、关为灰、读不到（PLC 地址未登记或断线）画虚框。</li>
-          <li><strong>右侧竖键：</strong><span class="key">曲线 ▸</span>（五种曲线一键一个）、<span class="key">补偿</span>、<span class="key">保存补偿设定</span>、<span class="key">恢复配置值</span>、<span class="key">测量记录</span>。</li>
+          <li><strong>右侧竖键：</strong>五种曲线一键一个（误差、参考曲线、圆度、偏心、磨削电流）；横键 <span class="key">补偿</span> 打开后竖键换成 <span class="key">保存补偿设定…</span>、<span class="key">恢复配置值…</span>、<span class="key">改动记录</span>、<span class="key">« 返回</span>。曲线可双指缩放、拖动，图角 <span class="key">⟲ 复位视图</span> 回到全貌。</li>
         </ul>
         <ol class="steps">
           <li>观察进度、当前道次、直径、余量随时间变化。</li>
@@ -720,12 +720,12 @@
           <li>再试着改一道<strong>已经磨完</strong>的工序。<span class="expect">提示"这道工序已经磨完，改不动了"。正在磨的那一道只允许改能在线调整的参数。</span></li>
           <li>按 <span class="key"><span class="f">F8</span>冷却液</span> 开、关各一次（不问）。<span class="expect">冷却液开着时按键青底。</span>循环启动、进给保持在按钮板上时，这一页没有这两个键（machine.json <code>panelActions</code>）。</li>
           <li>按 <span class="key"><span class="f">F5</span>提前结束</span>，<strong>不要确认</strong>，等 5 秒。<span class="expect">对话行问"提前结束当前这一道？"，竖键 7 / 8 变成 ✕ 取消 / ✓ 确认；5 秒后自动放弃，什么也没发生。</span></li>
-          <li>按 <span class="key"><span class="f">F4</span>跳到工序 ▸</span>。<span class="expect">竖键列出后面的工序。</span>选一道，按 ✓ 确认。<span class="expect">NC 做完当前这一道后从那里继续，工序序列的红黄标记跟着变。</span></li>
+          <li>按 <span class="key"><span class="f">F4</span>工序跳转…</span>。<span class="expect">竖键列出后面的工序。</span>选一道，按 ✓ 确认。<span class="expect">NC 做完当前这一道后从那里继续，工序序列的红黄标记跟着变。</span></li>
           <li>按 <span class="key"><span class="f">F7</span>作业</span>。<span class="expect">跳到作业页。</span>此时作业页是只读的，下发不出现——正在磨的这支辊不能被新作业覆盖。按 ⚙ 机床回来。</li>
           <li><span class="key"><span class="f">F6</span>循环启动…</span>（循环启动不在按钮板上时才有）也要确认。仿真里下发后已经在磨，按它可能提示现在不能做，这是正常的。</li>
           <li>看顶上状态带：磨削中方式是 AUTO、通道"运行"、程序名 SIM_…、X / Z 在走；切削液灯随 <span class="key"><span class="f">F8</span>冷却液</span> 变绿 / 变灰；中心架灯磨削中是绿的（仿真）。</li>
           <li>按 <span class="key"><span class="f">F1</span>补偿</span>。<span class="expect">补偿子视图盖住本页，路径条左端"« 返回"：左边是 NC 补偿状态和上位机补偿设定（增益、滤波窗口、限幅，写着现在用的是配置文件的值还是改过的值）；中间是行程间补偿的收敛——NC 每修正一次记一行，并画成曲线；右边是这支辊各次测量离目标多远（均方根、峰谷）。</span></li>
-          <li>（制造商登录）把增益改成 <code>0.5</code>、限幅改成比 machine.json 的上限还大的数，按竖键 <span class="key">保存补偿设定</span>。<span class="expect">提示"限幅要大于 0，且不能超过 machine.json 的上限"，不保存。</span>改回合理的数再保存，<span class="expect">提示"已保存；之后算出的补偿按新设定，正在执行的程序不受影响"。诊断页"审计日志"的改动记录里多三行（增益、滤波、限幅的原值与新值）。</span>按 <span class="key">恢复配置值</span> 回到配置文件的值。用操作者登录时这三格是灰的。</li>
+          <li>（制造商登录）把增益改成 <code>0.5</code>、限幅改成比 machine.json 的上限还大的数，按竖键 <span class="key">保存补偿设定…</span>。<span class="expect">提示"限幅要大于 0，且不能超过 machine.json 的上限"，不保存。</span>改回合理的数再保存，<span class="expect">提示"已保存；之后算出的补偿按新设定，正在执行的程序不受影响"。诊断页"审计日志"的改动记录里多三行（增益、滤波、限幅的原值与新值）。</span>按 <span class="key">恢复配置值…</span> 回到配置文件的值。用操作者登录时这三格是灰的。</li>
         </ol>
         <div class="look"><h4>请重点看</h4><ul>
           <li>一屏信息够不够、多不多；实测直径、余量、当前道次的位置和大小</li>
@@ -780,7 +780,7 @@
           <li>按 <span class="key"><span class="f">F4</span>磨削日报</span>、<span class="key"><span class="f">F5</span>磨削月报</span>。<span class="expect">显示本日 / 本月开几支、合格几支、合格率、累计时长。</span></li>
           <li>按竖键 <span class="key">导出 Excel</span>，选保存位置。<span class="expect">导出的是 CSV 文件，Excel 能直接打开。</span></li>
           <li>点左栏 ☰ 库，按 <span class="key"><span class="f">F4</span>轧辊台账</span>。<span class="expect">每支辊一行：辊号、类型、直径、当前直径、辊身、材质、磨削次数、最近一次。场景 D 登记的 R-2026-001 也在里面。</span></li>
-          <li>选中 R-2026-001：<span class="expect">下面是它的登记表和磨削履历（开始时间、作业、状态、用时）。</span>把当前直径改成 <code>594</code>，按"保存"。<span class="expect">提示"已存入台账"，列表跟着更新；下次作业按 594 起磨。</span>再按"登记新辊"，辊号填同一个 <code>R-2026-001</code> 保存：<span class="expect">拒绝，说明"台账里已经有这个辊号了"。</span></li>
+          <li>选中 R-2026-001：<span class="expect">下面是它的登记表和磨削履历（开始时间、作业、状态、用时）。</span>把当前直径改成 <code>594</code>，按"保存"。<span class="expect">提示"已存入台账"，列表跟着更新；下次作业按 594 起磨。</span>再按"新登记轧辊"，辊号填同一个 <code>R-2026-001</code> 保存：<span class="expect">拒绝，说明"台账里已经有这个辊号了"。</span></li>
         </ol>
         <div class="look"><h4>请重点看</h4><ul>
           <li>12 项指标是否是现场要的；缺什么、多什么</li>
@@ -871,7 +871,7 @@
           <li>点左栏 ◎ 砂轮。<span class="expect">三栏：砂轮数据（简图、当前直径、新砂轮直径、宽度、已磨去、最高线速度）、修整参数（金刚笔简图）、修整与更换记录。</span>点"当前直径"格。<span class="expect">对话行写"当前直径（mm），范围 … "，简图上这个量亮起。</span></li>
           <li>按竖键 <span class="key">新砂轮登记</span>。<span class="expect">光标落到"新砂轮直径"，对话行说明：先登标称直径、按 ✓ 保存，装上后走"换砂轮 ▸"。</span></li>
           <li>按竖键 <span class="key">换砂轮 ▸</span>。<span class="expect">向导盖住本组，竖键换成"下一步 / 这一刀不作数 / … / 放弃换砂轮…"；每一步配一张图，标出要量、要填的尺寸。</span>走完 6 步：填新砂轮直径 → 切手动对刀 → 试磨一刀、填以为会磨成多少和实际量出来多少 → 看反推出的砂轮直径误差与修正值 → 接受（或"这一刀不作数"）→ 切回原来的对刀方式。<span class="expect">记录栏多一条"换砂轮"。</span></li>
-          <li>按 <span class="key"><span class="f">F2</span>标定</span>。<span class="expect">按部件分组（砂轮、金刚笔与修整、测头、基准盘、对刀、验收公差），每组一个窗。</span>改一个值。<span class="expect">路径条"已修改"，竖键 7 / 8 变成 ✕ 放弃改动 / ✓ 保存。</span>按 ✓ 保存。</li>
+          <li>按 <span class="key"><span class="f">F2</span>标定</span>。<span class="expect">按部件分组（砂轮、金刚笔与修整、测头、基准盘、对刀、验收公差），每组一个窗。</span>改一个值。<span class="expect">路径条"● 未保存"，竖键 7 / 8 变成 ✕ 放弃改动 / ✓ 保存。</span>按 ✓ 保存。</li>
           <li>按 <span class="key"><span class="f">F4</span>标定审计</span>。<span class="expect">刚改的那一项在最上面：谁、什么时候。</span></li>
           <li>用操作者登录再进来。<span class="expect">路径条"只读 · 要管理员权限"，格子和保存键灰着。</span></li>
         </ol>
@@ -929,7 +929,7 @@
           <li>在辊形库选中"工作辊-凸度300"。<span class="expect">右边画出这条辊形。</span>长按这一行（或竖键 <span class="key">打开</span>）。<span class="expect">到辊形区打开它编辑。</span></li>
           <li>回库区，竖键 <span class="key">复制…</span> 起名"工作辊-凸度300 副本"，再 <span class="key">改名…</span>、<span class="key">删除…</span>。<span class="expect">删除先问一句。</span></li>
           <li>竖键 <span class="key">导出到 U 盘</span>，选 U 盘上的位置。<span class="expect">生成一个 .rgxlib 文件。</span>再 <span class="key">从 U 盘导入</span> 同一个文件。<span class="expect">同名的不覆盖，自动加"(2)"；对话行写导入了几条。</span></li>
-          <li>按 <span class="key"><span class="f">F4</span>轧辊台账</span>，竖键 <span class="key">登记新辊</span>、<span class="key">保存这支辊</span>。<span class="expect">重号拒绝并说明原因。</span></li>
+          <li>按 <span class="key"><span class="f">F4</span>轧辊台账</span>，竖键 <span class="key">新登记轧辊</span>、<span class="key">保存这支辊</span>。<span class="expect">重号拒绝并说明原因。</span></li>
         </ol>
       </div>
     </section>
@@ -1005,7 +1005,7 @@
         <thead><tr><th>区域 / 页</th><th class="num">F1</th><th class="num">F2</th><th class="num">F3</th><th class="num">F4</th><th class="num">F5</th><th class="num">F6</th><th class="num">F7</th><th class="num">F8</th></tr></thead>
         <tbody>
           <tr><td>机床 · 手动（JOG）</td><td><span class="key">手动磨削</span></td><td><span class="key">测量臂</span></td><td><span class="key">尾架</span></td><td><span class="key">头架拨盘</span></td><td><span class="key">托瓦</span></td><td><span class="key">测量对中</span></td><td><span class="key">辅助循环 ▸</span></td><td><span class="key">作业</span></td></tr>
-          <tr><td>机床 · 自动（AUTO）</td><td><span class="key">补偿</span></td><td><span class="key">磨削记录</span></td><td><span class="key">状态总览</span></td><td><span class="key">跳到工序 ▸</span></td><td><span class="key">提前结束</span></td><td>循环启动…（在按钮板上时为空）</td><td><span class="key">作业</span></td><td><span class="key">冷却液</span></td></tr>
+          <tr><td>机床 · 自动（AUTO）</td><td><span class="key">补偿</span></td><td><span class="key">磨削记录</span></td><td><span class="key">状态总览</span></td><td><span class="key">工序跳转…</span></td><td><span class="key">提前结束</span></td><td>循环启动…（在按钮板上时为空）</td><td><span class="key">作业</span></td><td><span class="key">冷却液</span></td></tr>
           <tr><td>辊形</td><td><span class="key">辊形库</span></td><td><span class="key">保存</span></td><td><span class="key">另存为</span></td><td></td><td><span class="key">点表导入</span></td><td><span class="key">生成点列</span></td><td><span class="key">导入对照线</span></td><td><span class="key">校验</span></td></tr>
           <tr><td>工艺程序</td><td><span class="key">程序库</span></td><td><span class="key">保存程序</span></td><td><span class="key">另存为</span></td><td></td><td><span class="key">新建程序</span></td><td><span class="key">校验</span></td><td></td><td><span class="key">用于作业</span></td></tr>
           <tr><td>参数（砂轮）</td><td><span class="key">砂轮</span></td><td><span class="key">标定</span></td><td></td><td><span class="key">标定审计</span></td><td></td><td></td><td></td><td></td></tr>
@@ -1046,6 +1046,7 @@
           <tr><td><kbd>Esc</kbd></td><td>按层退：键盘 → 等确认的事 → 帮助 → 命名框 → 竖键子菜单 → « 返回（登录框关不掉）</td></tr>
           <tr><td><kbd>i</kbd></td><td>黄色帮助（不在输入时）</td></tr>
           <tr><td><kbd>Ctrl</kbd>+<kbd>L</kbd></td><td>中文 ⇄ English（问一句，重启后生效）</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></td><td>辊形段表、工序序列里复制 / 剪切 / 粘贴选中的一条（粘在选中的一条之后；开始 / 结束不复制；只读时剪切、粘贴不做并说原因）。输入框里照常是文字的复制粘贴</td></tr>
           <tr><td><kbd>Ctrl</kbd>+<kbd>P</kbd></td><td>截屏（存到 data/screenshots）</td></tr>
         </tbody>
       </table></div>

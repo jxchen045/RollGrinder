@@ -253,6 +253,15 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly Dictionary<CurveKind, FunctionKeyViewModel> curveKeys = new();
 
     private GrindingJob? activeJob;
+
+    private readonly JobDraft jobDraft;
+
+    /// <summary>横键"磨削记录"（最终稿：并入原"测量记录"）：打开记录区，选中正在磨的这支辊。</summary>
+    private void OpenRecordsOfThisRoll()
+    {
+        this.jobDraft.RecordsJobId = this.activeJob?.JobId;
+        Navigator.StartTask(PageKey.Records, PageKey.AutoGrinding);
+    }
     private IReadOnlyList<GrindingStepPlan> activePlans = Array.Empty<GrindingStepPlan>();
 
     public AutoGrindingViewModel(
@@ -273,12 +282,14 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         IMeasurementNotifications measurementNotifications,
         ICompensationTuningService compensationTuning,
         IStrokeCompensationLog strokeCompensationLog,
+        JobDraft jobDraft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator,
         ShellInteraction interaction)
         : base(alarms, localizer, navigator, interaction)
     {
+        this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
         this.measurementNotifications = measurementNotifications ?? throw new ArgumentNullException(nameof(measurementNotifications));
         this.seenMeasurementVersion = measurementNotifications.Version;
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
@@ -339,7 +350,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         var functionKeys = new List<FunctionKeyViewModel?>
         {
             this.compensationKey,
-            FunctionKeyViewModel.ForAction("Fn_GrindingRecords", localizer, () => Navigator.StartTask(PageKey.Records, PageKey.AutoGrinding)),
+            FunctionKeyViewModel.ForAction("Fn_GrindingRecords", localizer, OpenRecordsOfThisRoll),
             this.overviewKey,
             this.jumpKey,
             this.endEarlyKey,

@@ -159,16 +159,24 @@ public sealed partial class JobViewModel : PageViewModelBase
 
         // 竖键（最终稿 5.6）：上一步 · 下一步 · 新登记轧辊 · 打开辊形 · 打开程序 · 空 · 取消作业…；
         // 第 5 步核对全部通过时第 7 / 8 格是"✕ 取消 / ✓ 确认下发"——确认下发就是那一次确认，不再多问。
-        SetVerticalKeys(new FunctionKeyViewModel?[]
+        var previous = new FunctionKeyViewModel("Vk_PreviousStep", this.previousCommand, localizer);
+        var openProfile = new FunctionKeyViewModel("Vk_OpenProfile", OpenProfileCommand, localizer) { PreconditionResourceKey = "Job_NothingSelected" };
+        var openProgram = new FunctionKeyViewModel("Vk_OpenProgram", OpenProgramCommand, localizer) { PreconditionResourceKey = "Job_NothingSelected" };
+        var cancelJob = new FunctionKeyViewModel("Vk_CancelJob", new RelayCommand(AskCancelJob), localizer, requiresEditable: true);
+        this.stepKeys = new FunctionKeyViewModel?[]
         {
-            new FunctionKeyViewModel("Vk_PreviousStep", this.previousCommand, localizer),
+            previous,
             new FunctionKeyViewModel("Vk_NextStep", this.nextCommand, localizer) { PreconditionResourceKey = "Job_NextNeedsSelection" },
             new FunctionKeyViewModel("Vk_RegisterRoll", RegisterRollCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_OpenProfile", OpenProfileCommand, localizer) { PreconditionResourceKey = "Job_NothingSelected" },
-            new FunctionKeyViewModel("Vk_OpenProgram", OpenProgramCommand, localizer) { PreconditionResourceKey = "Job_NothingSelected" },
+            openProfile,
+            openProgram,
             null,
-            new FunctionKeyViewModel("Vk_CancelJob", new RelayCommand(AskCancelJob), localizer, requiresEditable: true),
-        });
+            cancelJob,
+        };
+
+        // 第 5 步核对：没有"下一步"，"取消作业…"挪到第 6 格，7 / 8 留给"✕ 取消 / ✓ 确认下发"（最终稿 5.6）。
+        this.reviewKeys = new FunctionKeyViewModel?[] { previous, openProfile, openProgram, null, null, cancelJob };
+        SetVerticalKeys(this.stepKeys);
 
         this.cancelReviewKey = new FunctionKeyViewModel("Vk_Cancel", this.previousCommand, localizer, FunctionKeyKind.Cancel);
 
@@ -278,10 +286,23 @@ public sealed partial class JobViewModel : PageViewModelBase
 
     partial void OnCanDownloadChanged(bool value) => RefreshCommitPair();
 
-    /// <summary>第 5 步、核对通过：竖键 7 / 8 = 取消 / 确认下发。</summary>
+    private readonly IReadOnlyList<FunctionKeyViewModel?> stepKeys;
+
+    private readonly IReadOnlyList<FunctionKeyViewModel?> reviewKeys;
+
+    private bool showingReviewKeys;
+
+    /// <summary>第 5 步、核对通过：竖键 7 / 8 = 取消 / 确认下发。第 5 步的竖键另排一排。</summary>
     private void RefreshCommitPair()
     {
-        bool ready = ActiveStep == ReviewStep && CanDownload;
+        bool review = ActiveStep == ReviewStep;
+        if (review != this.showingReviewKeys)
+        {
+            this.showingReviewKeys = review;
+            SetVerticalKeys(review ? this.reviewKeys : this.stepKeys);
+        }
+
+        bool ready = review && CanDownload;
         SetCommitPair(ready ? this.cancelReviewKey : null, ready ? this.confirmDownloadKey : null);
     }
 

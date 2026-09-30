@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -161,6 +162,18 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// </summary>
     public virtual bool ShowGroup(string groupKey) => false;
 
+    /// <summary>本画面有没有可以复制 / 粘贴的列表（辊形的段表、工艺程序的工序序列）。</summary>
+    public virtual bool SupportsClipboard => false;
+
+    /// <summary>复制 / 剪切 / 粘贴选中的一条（外壳已挡掉只读时的剪切与粘贴）。</summary>
+    public virtual void Clipboard(ClipboardAction action)
+    {
+    }
+
+    /// <summary>本页只读时说明为什么（运行中锁定、权限不够）；可编辑时为 null。</summary>
+    public string? ReadOnlyReason =>
+        IsRunLocked ? Localizer["Key_RunLocked"] : IsRoleLocked && EditPermission is { } edit ? NeedsRole(edit) : null;
+
     /// <summary>功能键块"↶ 撤销"：本画面有没有可撤销的改动。</summary>
     public virtual bool CanUndo => false;
 
@@ -270,6 +283,57 @@ public abstract partial class PageViewModelBase : ViewModelBase
         this.commitConfirm = confirm;
         RefreshVerticalKeys();
     }
+
+    /// <summary>
+    /// 页面上的命名框（另存为、复制、改名）：开着时竖键 7 / 8 是"✕ 取消 / ✓ 确认"（最终稿 5.14 弹出框），
+    /// 收起后换回页面原来的一对。
+    /// </summary>
+    protected void AttachPrompt(NamePromptViewModel prompt)
+    {
+        ArgumentNullException.ThrowIfNull(prompt);
+        var cancel = new FunctionKeyViewModel("Vk_Cancel", prompt.CancelCommand, Localizer, FunctionKeyKind.Cancel);
+        var confirm = new FunctionKeyViewModel("Vk_Confirm", prompt.ConfirmCommand, Localizer, FunctionKeyKind.Confirm);
+        (FunctionKeyViewModel? Cancel, FunctionKeyViewModel? Confirm) saved = (null, null);
+        prompt.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(NamePromptViewModel.IsOpen))
+            {
+                return;
+            }
+
+            if (prompt.IsOpen)
+            {
+                saved = (this.commitCancel, this.commitConfirm);
+                SetCommitPair(cancel, confirm);
+            }
+            else
+            {
+                SetCommitPair(saved.Cancel, saved.Confirm);
+            }
+        };
+    }
+
+    /// <summary>路径条上的问题计数（最终稿：辊形、工艺的错误数写在路径条上）；0 时不显示。</summary>
+    protected void SetIssueCount(int errors)
+    {
+        ContextItem? existing = ContextItems.FirstOrDefault(item => item.LabelResourceKey == IssueContextKey);
+        if (existing is not null)
+        {
+            if (errors > 0 && existing.Value == errors.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            {
+                return;
+            }
+
+            ContextItems.Remove(existing);
+        }
+
+        if (errors > 0)
+        {
+            ContextItems.Add(new ContextItem(IssueContextKey, errors.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+    }
+
+    private const string IssueContextKey = "Context_Issues";
 
     /// <summary>
     /// 子菜单里的一项：按下去做事，然后收回根层（选好了就不必再按"返回"）。

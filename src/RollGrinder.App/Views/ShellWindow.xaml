@@ -102,12 +102,14 @@
         <!-- 左栏：7 个快捷入口（machine.json quickBar），Ctrl+1…7；当前项青底，进不去的灰字。 -->
         <Border x:Name="QuickBar" Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Background="{StaticResource Brush.LeftBar}" Padding="3,4">
             <DockPanel>
-                <Border DockPanel.Dock="Bottom" Height="60" Background="{StaticResource Brush.LeftBarKey}" Margin="0,4,0,0"
-                        IsEnabled="False">
-                    <TextBlock Text="{loc:Loc Quick_SideScreen}" Foreground="{StaticResource Brush.OnAccent}"
-                               FontSize="{StaticResource Size.Caption}" TextWrapping="Wrap" TextAlignment="Center"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
+                <!-- "⇆ 侧屏"：按得下去，在对话行说为什么这里不开（侧屏是数控系统操作界面自带的）。 -->
+                <Button DockPanel.Dock="Bottom" Height="60" Margin="0,4,0,0" Command="{Binding SideScreenCommand}"
+                        Style="{StaticResource ShellDarkButton}" ctl:ButtonStates.IsUnavailable="True">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="⇆" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{loc:Loc Quick_SideScreen}" FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
                 <ItemsControl ItemsSource="{Binding QuickBarItems}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:QuickBarItemViewModel}">

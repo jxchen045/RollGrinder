@@ -159,6 +159,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.library = library ?? throw new ArgumentNullException(nameof(library));
         this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
         NamePrompt = new NamePromptViewModel(localizer);
+        AttachPrompt(NamePrompt);
 
         this.geometry = RollGeometry.FromDiameter(machine.Workpiece.MinBodyLengthMm, machine.Workpiece.MinDiameterMm);
         this.segments.Add(new SequentialSegment(ProfileTypeKeys.Cylindrical, this.geometry.BodyLengthMm, ParameterSet.Empty));
@@ -169,17 +170,32 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
         // 竖向软键：段的编辑动作。插入 / 改类型 / 插值方式 带 ▸，开一层子菜单选；全程不用下拉。
         this.interpolationMenuCommand = new RelayCommand(OpenInterpolationMenu, () => IsPointTableSelected);
-        SetVerticalKeys(new[]
+        var insert = new FunctionKeyViewModel("Vk_InsertSegment", new RelayCommand(OpenInsertMenu), localizer, requiresEditable: true);
+        var delete = new FunctionKeyViewModel("Vk_DeleteSegment", RemoveSegmentCommand, localizer, requiresEditable: true);
+        var moveUp = new FunctionKeyViewModel("Vk_MoveUp", MoveSegmentUpCommand, localizer, requiresEditable: true);
+        var moveDown = new FunctionKeyViewModel("Vk_MoveDown", MoveSegmentDownCommand, localizer, requiresEditable: true);
+        var copy = new FunctionKeyViewModel("Vk_CopySegment", CopySegmentCommand, localizer, requiresEditable: true);
+        var changeType = new FunctionKeyViewModel("Vk_ChangeType", new RelayCommand(OpenChangeTypeMenu), localizer, requiresEditable: true);
+        var interpolation = new FunctionKeyViewModel("Vk_Interpolation", this.interpolationMenuCommand, localizer, requiresEditable: true);
+        var clear = new FunctionKeyViewModel("Vk_ClearSegments", new RelayCommand(() => Ask("Profile_AskClear", ClearSegments)), localizer, requiresEditable: true);
+        this.segmentKeys = new FunctionKeyViewModel?[] { insert, delete, moveUp, moveDown, copy, changeType, interpolation, clear };
+
+        // 选中的是点表段（最终稿 5.8）：加点、删点、插值方式 ▸ 放前面，段的动作排在后面，第 8 格 ≡▸ 翻页。
+        this.pointTableKeys = new FunctionKeyViewModel?[]
         {
-            new FunctionKeyViewModel("Vk_InsertSegment", new RelayCommand(OpenInsertMenu), localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_DeleteSegment", RemoveSegmentCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_MoveUp", MoveSegmentUpCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_MoveDown", MoveSegmentDownCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_CopySegment", CopySegmentCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_ChangeType", new RelayCommand(OpenChangeTypeMenu), localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_Interpolation", this.interpolationMenuCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_ClearSegments", new RelayCommand(() => Ask("Profile_AskClear", ClearSegments)), localizer, requiresEditable: true),
-        });
+            new FunctionKeyViewModel("Vk_AddPoint", AddPointCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Vk_RemovePoint", RemovePointCommand, localizer, requiresEditable: true),
+            interpolation,
+            null,
+            insert,
+            delete,
+            changeType,
+            moveUp,
+            moveDown,
+            copy,
+            clear,
+        };
+        SetVerticalKeys(this.segmentKeys);
 
         // 有错误时"保存""另存为"变灰。
         this.saveKeyCommand = new AsyncRelayCommand(() => SaveAsync(CancellationToken.None), () => !HasErrors);
@@ -614,6 +630,55 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         Rebuild(position + 1);
     }
 
+    /// <summary>Ctrl+C / X 记下的那一段（本页自己的剪贴板，不进系统剪贴板）。</summary>
+    private SequentialSegment? clipboardSegment;
+
+    public override bool SupportsClipboard => true;
+
+    /// <summary>Ctrl+C 复制选中段、Ctrl+X 剪下、Ctrl+V 粘在选中段之后（界面最终稿 4.6）。</summary>
+    public override void Clipboard(ClipboardAction action)
+    {
+        if (action == ClipboardAction.Paste)
+        {
+            if (this.clipboardSegment is not { } clip)
+            {
+                Interaction.Refuse(Localizer["Clip_Empty"]);
+                return;
+            }
+
+            if (IsSymmetric && !this.profileTypes.Get(clip.ProfileTypeKey).SupportsSymmetricEditing)
+            {
+                StatusResourceKey = "Profile_SymmetryUnsupportedType";
+                return;
+            }
+
+            int position = SelectedSegment?.Order ?? this.segments.Count;
+            this.segments.Insert(position, clip);
+            MarkDirty();
+            RecomputeComposite();
+            Rebuild(position + 1);
+            Say("Clip_Pasted");
+            return;
+        }
+
+        if (SelectedSegment is null)
+        {
+            Interaction.Refuse(Localizer["Clip_NothingSelected"]);
+            return;
+        }
+
+        this.clipboardSegment = this.segments[SelectedSegment.Order - 1];
+        if (action == ClipboardAction.Cut)
+        {
+            RemoveSegment();
+            Say("Clip_Cut");
+        }
+        else
+        {
+            Say("Clip_Copied");
+        }
+    }
+
     /// <summary>把选中段换成所选类型，长度与镜像不变，参数回到新类型的默认值。</summary>
     [RelayCommand]
     private void ChangeSegmentType()
@@ -682,7 +747,16 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             })));
     }
 
-    partial void OnIsPointTableSelectedChanged(bool value) => this.interpolationMenuCommand.NotifyCanExecuteChanged();
+    partial void OnIsPointTableSelectedChanged(bool value)
+    {
+        this.interpolationMenuCommand.NotifyCanExecuteChanged();
+        SetVerticalKeys(value ? this.pointTableKeys : this.segmentKeys);
+    }
+
+    /// <summary>竖键：普通段的一排、点表段的一排（两排共用同一批键对象）。</summary>
+    private readonly IReadOnlyList<FunctionKeyViewModel?> segmentKeys;
+
+    private readonly IReadOnlyList<FunctionKeyViewModel?> pointTableKeys;
 
     /// <summary>清空：删掉全部段，从头编。空辊形不能保存；不想要了按"放弃修改"或重新打开库里那一条。</summary>
     [RelayCommand]
@@ -1382,6 +1456,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
 
         HasErrors = errors.Count > 0;
+        SetIssueCount(errors.Count);
         IssueSummaryText = errors.Count > 0
             ? Localizer.Format("Profile_IssuesSummaryFormat", errors.Count)
             : Localizer["Profile_IssuesNone"];

@@ -298,6 +298,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         NamePrompt = new NamePromptViewModel(localizer);
+        AttachPrompt(NamePrompt);
+        Violations.CollectionChanged += (_, _) => SetIssueCount(Violations.Count);
 
         // 按槽排序，让下拉里的分组按实机屏幕上的顺序出现——
         // 不排的话粗磨会跟在精磨后面，和操作工脑子里的顺序对不上。
@@ -550,6 +552,71 @@ public sealed partial class StepsViewModel : PageViewModelBase
         RefreshDurations();
         MarkEdited();
         SelectedStep = copy;
+    }
+
+    /// <summary>Ctrl+C / X 记下的那一道：类型与各参数格的字（本页自己的剪贴板）。</summary>
+    private (IGrindingStepType Type, string[] Texts)? clipboardStep;
+
+    public override bool SupportsClipboard => true;
+
+    /// <summary>
+    /// Ctrl+C 复制选中工序、Ctrl+X 剪下、Ctrl+V 粘在选中工序之后（界面最终稿 4.6）。
+    /// 开始 / 结束不能复制、剪切；粘贴总落在开始之后、结束之前。
+    /// </summary>
+    public override void Clipboard(ClipboardAction action)
+    {
+        if (action == ClipboardAction.Paste)
+        {
+            if (this.clipboardStep is not { } clip)
+            {
+                Interaction.Refuse(Localizer["Clip_Empty"]);
+                return;
+            }
+
+            int position = SelectedStep is null ? Steps.Count : Steps.IndexOf(SelectedStep) + 1;
+            if (Steps.Count > 0 && position >= Steps.Count && ProgramFrame.IsFixed(Steps[^1].StepTypeKey))
+            {
+                position = Steps.Count - 1;
+            }
+
+            if (Steps.Count > 0 && position == 0 && ProgramFrame.IsFixed(Steps[0].StepTypeKey))
+            {
+                position = 1;
+            }
+
+            var pasted = new StepRowViewModel(position + 1, clip.Type, clip.Type.Schema.CreateDefaults(), Localizer);
+            ApplyTexts(pasted.Parameters, clip.Texts);
+            Steps.Insert(position, Track(pasted));
+            Renumber();
+            RefreshDurations();
+            MarkEdited();
+            SelectedStep = pasted;
+            Say("Clip_Pasted");
+            return;
+        }
+
+        if (SelectedStep is not { } step)
+        {
+            Interaction.Refuse(Localizer["Clip_NothingSelected"]);
+            return;
+        }
+
+        if (ProgramFrame.IsFixed(step.StepTypeKey))
+        {
+            StatusResourceKey = "Program_FrameFixed";
+            return;
+        }
+
+        this.clipboardStep = (step.StepType, step.Parameters.Select(row => row.Text).ToArray());
+        if (action == ClipboardAction.Cut)
+        {
+            RemoveStep(step);
+            Say("Clip_Cut");
+        }
+        else
+        {
+            Say("Clip_Copied");
+        }
     }
 
     [ObservableProperty]

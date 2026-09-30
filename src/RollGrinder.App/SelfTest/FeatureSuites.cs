@@ -122,7 +122,14 @@ internal sealed class ProfileSuite : ISelfTestSuite
                 ctx.Check(h.IndexOfVerticalKey("Vk_Back") == PageViewModelBase.VerticalKeyCount - 1,
                     "a sub menu keeps 'back' in the eighth slot");
                 await h.PressVerticalKeyAsync(ctx, "ProfileType_" + type);
-                ctx.Check(h.IndexOfVerticalKey("Vk_InsertSegment") == 0, "choosing a type should return to the root keys");
+                int insertSlot = type == ProfileTypeKeys.PointTable ? 4 : 0;
+                ctx.Check(h.IndexOfVerticalKey("Vk_InsertSegment") == insertSlot,
+                    "choosing a type should return to the root keys (a point table puts add / remove point first)");
+                if (type == ProfileTypeKeys.PointTable)
+                {
+                    ctx.Check(h.IndexOfVerticalKey("Vk_AddPoint") == 0 && h.IndexOfVerticalKey("Vk_NextPage") == PageViewModelBase.VerticalKeyCount - 1,
+                        "a point table shows add point first and pages the rest behind ≡▸");
+                }
                 ctx.Check(page.SelectedSegment?.Order == page.Segments.Count, "the new segment should be selected, at the end");
 
                 // 参数格数等于这种辊形的参数定义（点表那一列单独用表格编辑，不算在格子里）。
@@ -175,6 +182,16 @@ internal sealed class ProfileSuite : ISelfTestSuite
             ctx.Check(page.Segments.Count == count + 1 && page.HasErrors, "a copy makes the profile longer than the design length");
             await h.RunAsync(page.RemoveSegmentCommand);
             ctx.Check(page.Segments.Count == count && !page.HasErrors, "removing the copy should make it fit again: " + Issues(page));
+
+            // Ctrl+C / V（最终稿 4.6）：同一件事走剪贴板，粘在选中段之后；Ctrl+X 剪回去。
+            page.SelectedSegment = page.Segments.Last();
+            ctx.Check(h.Shell.Clipboard(ClipboardAction.Copy), "the segment table takes Ctrl+C");
+            h.Shell.Clipboard(ClipboardAction.Paste);
+            await h.SettleAsync();
+            ctx.Check(page.Segments.Count == count + 1 && page.SelectedSegment?.Order == count + 1, "Ctrl+V pastes after the selection and selects it");
+            h.Shell.Clipboard(ClipboardAction.Cut);
+            await h.SettleAsync();
+            ctx.Check(page.Segments.Count == count && !page.HasErrors, "Ctrl+X removes it again: " + Issues(page));
         });
 
         await h.StepAsync("Segments", "LiveValidationBlocksSave", async ctx =>
@@ -571,6 +588,36 @@ internal sealed class StepsSuite : ISelfTestSuite
             await h.SettleAsync();
             ctx.Check(page.Steps[1] == first && page.Steps[0].StepTypeKey == StepTypeKeys.Start, "nothing moves in front of the start");
             ctx.Check(page.StatusResourceKey == "Program_FrameFixed", "status should say start/end are fixed, is " + page.StatusResourceKey);
+        });
+
+        await h.StepAsync("Clipboard", "CopyCutPaste", async ctx =>
+        {
+            // Ctrl+C / X / V（最终稿 4.6）：走外壳那条路，和窗口按键同一个入口。
+            page.SelectedStep = page.Steps[0];
+            ctx.Check(h.Shell.Clipboard(ClipboardAction.Copy) && page.StatusResourceKey == "Program_FrameFixed", "the start cannot be copied");
+
+            StepRowViewModel source = page.Steps[1];
+            page.SelectedStep = source;
+            int count = page.Steps.Count;
+            h.Shell.Clipboard(ClipboardAction.Copy);
+            h.Shell.Clipboard(ClipboardAction.Paste);
+            await h.SettleAsync();
+            ctx.Check(page.Steps.Count == count + 1, Invariant($"paste should add one step, has {page.Steps.Count}"));
+            ctx.Check(page.Steps[2].StepTypeKey == source.StepTypeKey && page.SelectedStep == page.Steps[2], "the copy lands right after and is selected");
+            ctx.Check(page.Steps[2].Parameters.Select(r => r.Text).SequenceEqual(source.Parameters.Select(r => r.Text)), "the copy keeps the parameters");
+
+            h.Shell.Clipboard(ClipboardAction.Cut);
+            await h.SettleAsync();
+            ctx.Check(page.Steps.Count == count, "cut removes the selected step");
+
+            page.SelectedStep = page.Steps[^1];
+            h.Shell.Clipboard(ClipboardAction.Paste);
+            await h.SettleAsync();
+            ctx.Check(page.Steps[^1].StepTypeKey == StepTypeKeys.End && page.Steps[^2].StepTypeKey == source.StepTypeKey,
+                "pasting with the end selected goes in before the end");
+            page.RemoveStepCommand.Execute(page.Steps[^2]);
+            await h.SettleAsync();
+            ctx.Check(page.Steps.Count == count, "back to where it started");
         });
 
         await h.StepAsync("VerticalKeys", "InsertByCategoryCopyDelete", async ctx =>

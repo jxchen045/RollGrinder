@@ -3,9 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibility}}">
-    <!-- 起名字的框：盖在整页之上。DataContext 是 NamePromptViewModel。
-         回车 = 确定，Esc = 取消（Esc 由外壳转给页面）——纯按键也能走完。
-         名字被库里另一条占了才出现"覆盖"。 -->
+    <!-- 起名字的框（最终稿 5.14 弹出框）：青色标题，盖在工作区中央。DataContext 是 NamePromptViewModel。
+         取消 / 确认在竖键 7 / 8（页面 AttachPrompt 挂上）；回车 = 确认，Esc = 取消。
+         名字被库里另一条占了才出现"覆盖那一条"。 -->
     <Grid Background="#B3101418">
         <Border Background="{StaticResource Brush.Surface}"
                 BorderBrush="{StaticResource Brush.Accent}"
@@ -13,19 +13,21 @@
                 Width="640"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Center"
-                Padding="28,24">
+                Padding="0">
             <StackPanel>
-                <TextBlock Text="{Binding Title}" FontSize="26"
-                           Foreground="{StaticResource Brush.TextPrimary}" TextWrapping="Wrap" />
+                <Border Style="{StaticResource ActiveCardHeader}">
+                    <TextBlock Text="{Binding Title}" Style="{StaticResource Text.CardTitle}" TextWrapping="Wrap" />
+                </Border>
+                <StackPanel Margin="28,8,28,24">
                 <TextBlock Text="{loc:Loc NamePrompt_Label}" Style="{StaticResource Text.Label}" Margin="0,18,0,6" />
                 <TextBox x:Name="NameBox"
                          Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                         Height="50" FontSize="20" VerticalContentAlignment="Center">
+                         Height="56" FontSize="{StaticResource Size.Body}" VerticalContentAlignment="Center">
                     <TextBox.InputBindings>
                         <KeyBinding Key="Enter" Command="{Binding ConfirmCommand}" />
                     </TextBox.InputBindings>
                 </TextBox>
-                <TextBlock Text="{Binding ErrorText}" FontSize="17" TextWrapping="Wrap" Margin="0,10,0,0"
+                <TextBlock Text="{Binding ErrorText}" FontSize="{StaticResource Size.Body}" TextWrapping="Wrap" Margin="0,10,0,0"
                            Foreground="{StaticResource Brush.CurrentStep}">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
@@ -37,14 +39,12 @@
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
-                    <Button Content="{loc:Loc NamePrompt_Confirm}" Command="{Binding ConfirmCommand}"
-                            Style="{StaticResource DialogPrimaryButton}" />
-                    <Button Content="{loc:Loc NamePrompt_Overwrite}" Command="{Binding OverwriteCommand}"
+                <DockPanel Margin="0,24,0,0">
+                    <Button DockPanel.Dock="Right" Content="{loc:Loc NamePrompt_Overwrite}" Command="{Binding OverwriteCommand}"
                             Style="{StaticResource DialogDangerButton}"
                             Visibility="{Binding CanOverwrite, Converter={StaticResource BoolToVisibility}}" />
-                    <Button Content="{loc:Loc NamePrompt_Cancel}" Command="{Binding CancelCommand}"
-                            Style="{StaticResource DialogButton}" />
+                    <TextBlock Text="{loc:Loc NamePrompt_KeysHint}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                </DockPanel>
                 </StackPanel>
             </StackPanel>
         </Border>

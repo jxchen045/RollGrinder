@@ -148,7 +148,8 @@ public partial class AutoGrindingView : UserControl
         this.wheelLine.IsVisible = this.viewModel.WheelPositionMm is not null;
 
         CurvePlot.Plot.Axes.Left.Label.Text = this.viewModel.CurveYAxisLabel;
-        CurvePlot.Plot.Axes.AutoScale();
+        // 边磨边刷新：人手缩放 / 拖过就保留人看的那一段，按图角"复位视图"再回到全貌。
+        PlotTheme.AutoScale(CurvePlot);
         CurvePlot.Refresh();
     }
 }

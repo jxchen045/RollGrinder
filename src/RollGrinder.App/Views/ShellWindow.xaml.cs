@@ -19,7 +19,8 @@ namespace RollGrinder.App.Views;
 /// 与机床数据到达频率解耦；每一拍只驱动当前页。
 ///
 /// 键盘（最终稿 4.6）：F1–F8 横键，Shift+F1–F8 竖键，F10 区域菜单，Esc 返回 / 取消，
-/// 回车 = 确认（有待确认的事时），Ctrl+1…7 左栏，Ctrl+P 截屏，Ctrl+L 语言；
+/// 回车 = 确认（有待确认的事时），Ctrl+1…7 左栏，Ctrl+P 截屏，Ctrl+L 语言，
+/// Ctrl+C / X / V 在段表和工序序列里复制、剪切、粘贴（输入框里照常是文字的复制粘贴）；
 /// 不在输入框里时按 i 开关帮助。
 /// </summary>
 public partial class ShellWindow : Window
@@ -220,6 +221,15 @@ public partial class ShellWindow : Window
             {
                 this.viewModel.ToggleLanguage();
                 e.Handled = true;
+            }
+            else if (key is Key.C or Key.X or Key.V && Keyboard.FocusedElement is not TextBoxBase and not PasswordBox)
+            {
+                e.Handled = this.viewModel.Clipboard(key switch
+                {
+                    Key.C => ClipboardAction.Copy,
+                    Key.X => ClipboardAction.Cut,
+                    _ => ClipboardAction.Paste,
+                });
             }
 
             return;

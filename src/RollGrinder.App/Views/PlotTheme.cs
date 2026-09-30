@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using VisualTreeHelper = System.Windows.Media.VisualTreeHelper;
 using ScottPlot;
 using ScottPlot.WPF;
@@ -69,6 +70,150 @@ internal static class PlotTheme
         };
 
         void OnWindowDpiChanged(object sender, DpiChangedEventArgs e) => MatchDisplayScale(control);
+
+        EnableTouch(control);
+        control.Loaded += (_, _) => AddResetButton(control);
+    }
+
+    /// <summary>
+    /// 画面刷新数据后调它代替 <c>Axes.AutoScale()</c>：人手缩放 / 拖过图，就保留人看的那一段，
+    /// 直到按图角的"复位视图"（界面最终稿 4.6）。
+    /// </summary>
+    public static void AutoScale(WpfPlot control)
+    {
+        if (!Views.GetOrCreateValue(control).UserAdjusted)
+        {
+            control.Plot.Axes.AutoScale();
+        }
+    }
+
+    /// <summary>复位视图：回到自动缩放，看全整条曲线。</summary>
+    public static void ResetView(WpfPlot control)
+    {
+        Views.GetOrCreateValue(control).UserAdjusted = false;
+        control.Plot.Axes.AutoScale();
+        control.Refresh();
+    }
+
+    /// <summary>
+    /// 双指缩放、单指拖动（界面最终稿 4.6）。触摸交给 WPF 的操作事件自己算：ScottPlot 只认鼠标，
+    /// 触摸提升成鼠标只有单指拖，没有双指缩放。鼠标拖、滚轮缩放照旧走 ScottPlot 自己的。
+    /// </summary>
+    private static void EnableTouch(WpfPlot control)
+    {
+        control.IsManipulationEnabled = true;
+        control.ManipulationStarting += (_, e) =>
+        {
+            e.ManipulationContainer = control;
+            e.Mode = System.Windows.Input.ManipulationModes.Translate | System.Windows.Input.ManipulationModes.Scale;
+            e.Handled = true;
+        };
+        control.ManipulationDelta += (_, e) =>
+        {
+            PixelRect data = control.Plot.LastRender.DataRect;
+            AxisLimits limits = control.Plot.Axes.GetLimits();
+            if (data.Width <= 0 || data.Height <= 0 || limits.HorizontalSpan <= 0 || limits.VerticalSpan <= 0)
+            {
+                return;
+            }
+
+            // 作图用的像素已按屏幕缩放折回 DIP（见 MatchDisplayScale），和操作事件的坐标是同一种单位。
+            double perX = limits.HorizontalSpan / data.Width;
+            double perY = limits.VerticalSpan / data.Height;
+            double originX = limits.Left + ((e.ManipulationOrigin.X - data.Left) * perX);
+            double originY = limits.Top - ((e.ManipulationOrigin.Y - data.Top) * perY);
+            double scale = e.DeltaManipulation.Scale.X > 0 ? e.DeltaManipulation.Scale.X : 1.0;
+            double shiftX = -e.DeltaManipulation.Translation.X * perX;
+            double shiftY = e.DeltaManipulation.Translation.Y * perY;
+
+            control.Plot.Axes.SetLimits(
+                originX - ((originX - limits.Left) / scale) + shiftX,
+                originX + ((limits.Right - originX) / scale) + shiftX,
+                originY - ((originY - limits.Bottom) / scale) + shiftY,
+                originY + ((limits.Top - originY) / scale) + shiftY);
+            Views.GetOrCreateValue(control).UserAdjusted = true;
+            control.Refresh();
+            e.Handled = true;
+        };
+
+        // 鼠标拖、滚轮缩放也算人手调过视图。
+        control.PreviewMouseWheel += (_, _) => Views.GetOrCreateValue(control).UserAdjusted = true;
+        control.PreviewMouseMove += (_, e) =>
+        {
+            if (e.LeftButton == System.Windows.Input.MouseButtonState.Pressed || e.RightButton == System.Windows.Input.MouseButtonState.Pressed)
+            {
+                Views.GetOrCreateValue(control).UserAdjusted = true;
+            }
+        };
+    }
+
+    /// <summary>图右上角放一个"⟲ 复位视图"。图的外层是面板就叠在同一格里，是边框就包一层网格。</summary>
+    private static void AddResetButton(WpfPlot control)
+    {
+        PlotState state = Views.GetOrCreateValue(control);
+        if (state.HasResetButton)
+        {
+            return;
+        }
+
+        var button = new Button
+        {
+            Content = Localization.LocalizationScope.Current["Plot_ResetView"],
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Right,
+            VerticalAlignment = System.Windows.VerticalAlignment.Top,
+            Margin = new Thickness(0, 4, 4, 0),
+            Padding = new Thickness(10, 2, 10, 2),
+            MinHeight = 36,
+            Style = control.TryFindResource("SecondaryButton") as Style,
+        };
+        button.Click += (_, _) => ResetView(control);
+
+        // 图藏起来（例如记录页没数据）时按钮跟着藏。
+        button.SetBinding(UIElement.VisibilityProperty, new System.Windows.Data.Binding(nameof(UIElement.Visibility)) { Source = control });
+
+        switch (control.Parent)
+        {
+            case System.Windows.Controls.Grid grid:
+                System.Windows.Controls.Grid.SetRow(button, System.Windows.Controls.Grid.GetRow(control));
+                System.Windows.Controls.Grid.SetColumn(button, System.Windows.Controls.Grid.GetColumn(control));
+                System.Windows.Controls.Grid.SetRowSpan(button, System.Windows.Controls.Grid.GetRowSpan(control));
+                System.Windows.Controls.Grid.SetColumnSpan(button, System.Windows.Controls.Grid.GetColumnSpan(control));
+                grid.Children.Add(button);
+                state.HasResetButton = true;
+                break;
+            case Decorator decorator:
+                decorator.Child = null;
+                decorator.Child = Wrap(control, button);
+                state.HasResetButton = true;
+                break;
+            case Panel panel:
+                // 例如 DockPanel 的最后一格（填满）：在原位置换成"图 + 按钮"的一格，停靠方向跟着搬过去。
+                int index = panel.Children.IndexOf(control);
+                Dock dock = DockPanel.GetDock(control);
+                panel.Children.RemoveAt(index);
+                System.Windows.Controls.Grid host = Wrap(control, button);
+                DockPanel.SetDock(host, dock);
+                panel.Children.Insert(index, host);
+                state.HasResetButton = true;
+                break;
+        }
+    }
+
+    private static System.Windows.Controls.Grid Wrap(WpfPlot control, Button button)
+    {
+        var host = new System.Windows.Controls.Grid();
+        host.Children.Add(control);
+        host.Children.Add(button);
+        return host;
+    }
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<WpfPlot, PlotState> Views = new();
+
+    private sealed class PlotState
+    {
+        public bool UserAdjusted { get; set; }
+
+        public bool HasResetButton { get; set; }
     }
 
     /// <summary>

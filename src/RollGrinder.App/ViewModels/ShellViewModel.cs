@@ -330,7 +330,13 @@ public sealed partial class ShellViewModel : ViewModelBase
     public void PressVerticalKey(int index)
     {
         IReadOnlyList<FunctionKeyViewModel> keys = VerticalKeys;
-        if ((CurrentPage.HasModalPrompt && !Help.IsOpen) || index < 0 || index >= keys.Count)
+        if (index < 0 || index >= keys.Count)
+        {
+            return;
+        }
+
+        // 命名框开着时只有它的"✕ 取消 / ✓ 确认"（竖键 7 / 8）能按，别的动作等框答完。
+        if (CurrentPage.HasModalPrompt && !Help.IsOpen && keys[index].Kind is not (FunctionKeyKind.Cancel or FunctionKeyKind.Confirm))
         {
             return;
         }
@@ -647,6 +653,10 @@ public sealed partial class ShellViewModel : ViewModelBase
         }
     }
 
+    /// <summary>左栏底部"⇆ 侧屏"：侧屏归数控系统自带的操作界面，上位机里不开；按下去说清楚原因。</summary>
+    [RelayCommand]
+    private void SideScreen() => this.interaction.Refuse(this.localizer["Quick_SideScreenUnavailable"]);
+
     /// <summary>"⌨ 键盘"、"▦ 计算"、"◉ 截屏"是视图层的事（系统键盘、计算器、截图），由窗口接。</summary>
     public event EventHandler<ShellViewRequest>? ViewRequested;
 
@@ -682,6 +692,27 @@ public sealed partial class ShellViewModel : ViewModelBase
                     Alarms.RaiseException(ex);
                 }
             });
+    }
+
+    /// <summary>
+    /// Ctrl+C / X / V（最终稿 4.6）：交给本页（段表、工序序列）。本页不认就返回 false，按键照常往下传。
+    /// 剪切、粘贴会改东西：只读时不做，在对话行说原因。
+    /// </summary>
+    public bool Clipboard(ClipboardAction action)
+    {
+        if (IsOverlayOpen || Help.IsOpen || CurrentPage.HasModalPrompt || !CurrentPage.SupportsClipboard)
+        {
+            return false;
+        }
+
+        if (action != ClipboardAction.Copy && CurrentPage.ReadOnlyReason is { } reason)
+        {
+            this.interaction.Refuse(reason);
+            return true;
+        }
+
+        CurrentPage.Clipboard(action);
+        return true;
     }
 
     /// <summary>视图层做完一件事后在对话行报个结果。</summary>
@@ -953,6 +984,19 @@ public sealed partial class ShellViewModel : ViewModelBase
         DialogText = this.interaction.DialogLine.Text;
         DialogKind = this.interaction.DialogLine.Kind;
     }
+}
+
+/// <summary>段表、工序序列里的剪贴板动作（Ctrl+C / X / V）。</summary>
+public enum ClipboardAction
+{
+    /// <summary>复制选中的一条。</summary>
+    Copy = 0,
+
+    /// <summary>剪下选中的一条。</summary>
+    Cut = 1,
+
+    /// <summary>粘在选中的一条之后。</summary>
+    Paste = 2,
 }
 
 /// <summary>外壳请视图层做的事。</summary>

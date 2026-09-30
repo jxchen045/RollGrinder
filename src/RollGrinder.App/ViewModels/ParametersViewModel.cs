@@ -99,7 +99,8 @@ public sealed partial class ParametersViewModel : PageViewModelBase
             new FunctionKeyViewModel("Vk_RegisterWheel", RegisterNewWheelCommand, localizer, requiresEditable: true),
             reload,
         };
-        this.calibrationKeys = new FunctionKeyViewModel?[] { reload };
+        // 最终稿 5.10：重新读取在竖键 3，与砂轮组同位；7 / 8 留给放弃 / 保存。
+        this.calibrationKeys = new FunctionKeyViewModel?[] { null, null, reload };
         this.auditKeys = new FunctionKeyViewModel?[] { new FunctionKeyViewModel("Vk_Reload", new AsyncRelayCommand(RefreshAuditAsync), localizer) };
         this.wizardKeys = new FunctionKeyViewModel?[]
         {

@@ -70,12 +70,6 @@
   <data name="Action_DriverRetract" xml:space="preserve">
     <value>Driver retract</value>
   </data>
-  <data name="Action_HeadstockDown" xml:space="preserve">
-    <value>Headstock −</value>
-  </data>
-  <data name="Action_HeadstockUp" xml:space="preserve">
-    <value>Headstock +</value>
-  </data>
   <data name="Action_MeasureWheelDiameter" xml:space="preserve">
     <value>Measure wheel</value>
   </data>
@@ -389,7 +383,7 @@
     <value>Daily report</value>
   </data>
   <data name="Fn_EndEarly" xml:space="preserve">
-    <value>End early</value>
+    <value>End early…</value>
   </data>
   <data name="Fn_GeneratePoints" xml:space="preserve">
     <value>Generate points</value>
@@ -419,10 +413,10 @@
     <value>Save</value>
   </data>
   <data name="Fn_SaveAs" xml:space="preserve">
-    <value>Save as</value>
+    <value>Save as…</value>
   </data>
   <data name="Fn_SaveProgram" xml:space="preserve">
-    <value>Save program</value>
+    <value>Save</value>
   </data>
   <data name="Fn_TagMapping" xml:space="preserve">
     <value>Tag mapping</value>
@@ -1085,10 +1079,10 @@
     <value>Back to {0}</value>
   </data>
   <data name="Shell_Modified" xml:space="preserve">
-    <value>Modified</value>
+    <value>● Unsaved</value>
   </data>
   <data name="Shell_ReadOnlyRunning" xml:space="preserve">
-    <value>Running · read-only</value>
+    <value>Read-only · running</value>
   </data>
   <data name="Choice_speedVariationTarget_off" xml:space="preserve">
     <value>Off</value>
@@ -1562,10 +1556,10 @@
     <value>Compensation iterations</value>
   </data>
   <data name="Curve_BeforeAfter" xml:space="preserve">
-    <value>Before / after profile</value>
+    <value>Before / after</value>
   </data>
   <data name="Curve_Convergence" xml:space="preserve">
-    <value>Compensation convergence</value>
+    <value>Convergence</value>
   </data>
   <data name="Curve_BeforeGrinding" xml:space="preserve">
     <value>Before</value>
@@ -1710,12 +1704,6 @@
   </data>
   <data name="NamePrompt_Label" xml:space="preserve">
     <value>Name</value>
-  </data>
-  <data name="NamePrompt_Confirm" xml:space="preserve">
-    <value>OK</value>
-  </data>
-  <data name="NamePrompt_Cancel" xml:space="preserve">
-    <value>Cancel</value>
   </data>
   <data name="NamePrompt_Empty" xml:space="preserve">
     <value>Enter a name</value>
@@ -2498,10 +2486,10 @@
     <value>Compensation</value>
   </data>
   <data name="Vk_SaveTuning" xml:space="preserve">
-    <value>Save tuning</value>
+    <value>Save tuning…</value>
   </data>
   <data name="Vk_ResetTuning" xml:space="preserve">
-    <value>Reset to config</value>
+    <value>Reset to config…</value>
   </data>
   <data name="Comp_TuningHeader" xml:space="preserve">
     <value>HMI compensation tuning</value>
@@ -3059,7 +3047,7 @@
     <value>Import reference</value>
   </data>
   <data name="Fn_JumpToStep" xml:space="preserve">
-    <value>Jump to ▸</value>
+    <value>Jump to step…</value>
   </data>
   <data name="Fn_ManualGrinding" xml:space="preserve">
     <value>Manual grinding</value>
@@ -3629,7 +3617,7 @@
     <value>+{0}</value>
   </data>
   <data name="Top_EmergencyStop" xml:space="preserve">
-    <value>EMERGENCY STOP</value>
+    <value>EMERGENCY STOP — release it, then press Reset</value>
   </data>
   <data name="Vk_Backup" xml:space="preserve">
     <value>Backup</value>
@@ -3653,7 +3641,7 @@
     <value>✓ Confirm</value>
   </data>
   <data name="Vk_ConfirmDownload" xml:space="preserve">
-    <value>✓ Download</value>
+    <value>✓ Confirm download</value>
   </data>
   <data name="Vk_Copy" xml:space="preserve">
     <value>Copy…</value>
@@ -3807,5 +3795,38 @@
   </data>
   <data name="Area_Commissioning" xml:space="preserve">
     <value>Commissioning</value>
+  </data>
+  <data name="NamePrompt_KeysHint" xml:space="preserve">
+    <value>Enter or vertical key 8 "✓ Confirm" saves; Esc or key 7 "✕ Cancel" does not</value>
+  </data>
+  <data name="Context_Issues" xml:space="preserve">
+    <value>Issues</value>
+  </data>
+  <data name="Vk_AddPoint" xml:space="preserve">
+    <value>Add point</value>
+  </data>
+  <data name="Vk_RemovePoint" xml:space="preserve">
+    <value>Remove point</value>
+  </data>
+  <data name="Clip_Copied" xml:space="preserve">
+    <value>Copied — Ctrl+V pastes it after the selected row</value>
+  </data>
+  <data name="Clip_Cut" xml:space="preserve">
+    <value>Cut — Ctrl+V pastes it after the selected row</value>
+  </data>
+  <data name="Clip_Pasted" xml:space="preserve">
+    <value>Pasted</value>
+  </data>
+  <data name="Clip_Empty" xml:space="preserve">
+    <value>Nothing copied yet: select a row and press Ctrl+C</value>
+  </data>
+  <data name="Clip_NothingSelected" xml:space="preserve">
+    <value>Select a row first</value>
+  </data>
+  <data name="Quick_SideScreenUnavailable" xml:space="preserve">
+    <value>The side screen belongs to the CNC's own operator interface and is not opened here</value>
+  </data>
+  <data name="Plot_ResetView" xml:space="preserve">
+    <value>⟲ Reset view</value>
   </data>
 </root>

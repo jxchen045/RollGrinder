@@ -82,6 +82,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
         NamePrompt = new NamePromptViewModel(localizer);
+        AttachPrompt(NamePrompt);
 
         foreach ((string group, string label) in new[]
         {
