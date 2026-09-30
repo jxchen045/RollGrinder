@@ -68,8 +68,8 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="{ctl:Px 360}" />
-                            <ColumnDefinition Width="{ctl:Px 120}" />
+                            <ColumnDefinition Width="{x:Static ctl:LayoutProfile.TagValueColumn}" />
+                            <ColumnDefinition Width="{x:Static ctl:LayoutProfile.TagStateColumn}" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="{loc:Loc Diag_TagMonitorKey}"
                                    Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="16,0,0,0" />
@@ -88,8 +88,8 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="{ctl:Px 360}" />
-                                            <ColumnDefinition Width="{ctl:Px 120}" />
+                                            <ColumnDefinition Width="{x:Static ctl:LayoutProfile.TagValueColumn}" />
+                                            <ColumnDefinition Width="{x:Static ctl:LayoutProfile.TagStateColumn}" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="{Binding Key}"
                                                    Style="{StaticResource Text.DataRow}" Margin="16,0,0,0" />

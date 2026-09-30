@@ -33,6 +33,26 @@ public sealed class LayoutProfileTests
     }
 
     [Fact]
+    public void Layout_extensions_are_not_used_where_the_target_type_is_unknown()
+    {
+        // 模板（DataTemplate、ItemsPanelTemplate……）里的标记扩展拿不到目标属性类型：ByLayout 会把字符串塞给 int 属性，
+        // Px 会把 double 塞给 GridLength / DataGridLength——都在建窗口时才抛异常（主窗口建不出来那一次就是这样）。
+        // 模板里改用 x:Static（例如 LayoutProfile.MetricColumns）。
+        var offenders = Directory.EnumerateFiles(App, "*.xaml", SearchOption.AllDirectories)
+            .Where(path => !path.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar))
+            .SelectMany(path => XDocument.Load(path).Descendants()
+                .Where(e => e.Ancestors().Any(a => a.Name.LocalName.EndsWith("Template", System.StringComparison.Ordinal)))
+                .SelectMany(e => e.Attributes().Select(attribute => (path, element: e.Name.LocalName, value: attribute.Value))))
+            .Where(x => x.value.Contains("{ctl:ByLayout", System.StringComparison.Ordinal)
+                        || (x.value.Contains("{ctl:Px", System.StringComparison.Ordinal)
+                            && (x.element is "ColumnDefinition" or "RowDefinition" || x.element.StartsWith("DataGrid", System.StringComparison.Ordinal))))
+            .Select(x => Path.GetFileName(x.path) + ": " + x.element + " = " + x.value)
+            .ToList();
+
+        offenders.Should().BeEmpty();
+    }
+
+    [Fact]
     public void Views_have_no_literal_size_of_100_or_more()
     {
         // 大尺寸必须写成 {ctl:Px n}（紧凑档乘 0.7）或走 Layout.* 令牌，否则 1366 下几栏加起来会超出工作区。

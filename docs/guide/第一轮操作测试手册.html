@@ -287,6 +287,20 @@
     </header>
 
     <div class="box">
+      <span class="tag">本版改动 · 两块屏适配、先选辊形再编程序</span>
+      <ul>
+        <li><strong>两种屏幕：</strong>19″ 1920×1080 用标准版面，15″ 1366×768 用紧凑版面，按屏幕自动选；也可在 <code>config/hmi.json</code> 里写 <code>"layout": "standard"</code> 或 <code>"compact"</code> 锁定。字号按两块屏重新定过（正文 22 / 20）。其他分辨率整体等比缩放，不会互相遮挡。</li>
+        <li><strong>全屏：</strong>默认无边框全屏、盖住任务栏（<code>"fullScreen": true</code>）；调试时改成 <code>false</code>。Windows 显示缩放请设 100%。</li>
+        <li><strong>只能开一个：</strong>上位机已在运行时再双击图标，提示"已经在运行"并退出；主窗口建不出来时弹出原因并退出，不再留下看不见的进程。</li>
+        <li><strong>辊形曲线处处一个样：</strong>辊形页、库、作业核对、磨削记录、自动页的曲线都按同一规则画——横轴整根辊身、纵轴直径量 µm（范围由目标辊形定）、绘图区固定 4 : 1。双指缩放、拖动；图角"⟲ 复位视图"回到这个范围。</li>
+        <li><strong>先选辊形再编程序：</strong>工艺区横键 <span class="key">新建程序…</span> 先在右侧竖键里列出辊形库，选一条才给空程序；横键 <span class="key">换关联辊形…</span> 可改。程序卡显示"关联辊形"，估时的辊身长度随它；"标准余量"随程序保存。没关联辊形的程序不能"用于作业"。</li>
+        <li><strong>作业向导 ④ 改为"本次余量"：</strong>目标直径默认 = 磨前直径 − 程序标准余量。本次余量与程序不同时，<b>差额全部由粗磨吸收</b>（精磨、光磨量不变）；比精磨 + 光磨还少、或低于台账的报废直径时，"下一步"是灰的并说原因。③ 里关联本辊形的程序排在前面；按别的辊形编、但设计长度相同的程序可以借用（提示），长度不同不能用。</li>
+        <li><strong>参数归属：</strong>台账加"报废直径"，去掉启磨点、曲线长度、曲线允许误差（库里原值保留）；辊形加"适用直径""辊形公差"。作业核对时辊径和辊形适用直径差 10% 以上会提示。</li>
+        <li><strong>紧凑档记录页：</strong>12 项指标挪到曲线下面（4 列 × 3 行）。</li>
+      </ul>
+    </div>
+
+    <div class="box">
       <span class="tag">本版改动 · 界面最终稿（全部画面）</span>
       <p>这一版按《界面最终稿》把界面整体改了一遍，第 3 节和场景 A–L 已按新界面改写：</p>
       <ul>
@@ -638,7 +652,7 @@
         <div class="scene-head"><h3>C 工艺程序</h3><span class="dur">约 15 分钟</span><span class="who">参加：工艺、操作人员</span></div>
         <p>工艺程序是<strong>可复用的模板</strong>：一串工序和它们的工艺参数，加上程序步骤的默认开关。它不含辊号、辊形——那些在作业页选（场景 D）。页面布局：左栏是"校验"键和工序序列（上下键选中一道，下面是预计总磨削时间）；右栏从上到下是程序卡（程序名、估算用辊身长度与直径）、校验结果、<strong>选中那道工序的简图和参数</strong>（下面一行说明）、程序步骤开关。插入、删除、上移、下移、复制、余量分配、默认值、程序步骤都在右侧竖向软键上。补偿设置已挪到自动磨削页的补偿子视图（场景 E）。</p>
         <ol class="steps">
-          <li>点左栏 ≡ 工艺（<kbd>Ctrl</kbd>+<kbd>3</kbd>），按 <span class="key"><span class="f">F5</span>新建程序</span>。<span class="expect">序列里只有"开始"和"结束"两道。</span></li>
+          <li>点左栏 ≡ 工艺（<kbd>Ctrl</kbd>+<kbd>3</kbd>），按 <span class="key"><span class="f">F5</span>新建程序…</span>。<span class="expect">右侧竖键列出辊形库，一条一个键。</span>选场景 B 存的 <code>工作辊-凸度300</code>。<span class="expect">序列里只有"开始"和"结束"两道；程序卡"关联辊形"写"工作辊-凸度300 · 2000 mm"，对话行写"新程序，关联辊形：…"。</span>辊形库是空的时按"新建程序…"：<span class="expect">对话行说"辊形库是空的：先到辊形区编一条辊形"。</span></li>
           <li>按竖向软键 <span class="key">插入工序 ▸</span>。<span class="expect">竖键换成类别：磨削 ▸、测量 ▸、砂轮修整、倒角、辅助动作、暂停。</span>按 <span class="key">测量 ▸</span> → <span class="key">测量</span>，再依次插 <code>磨削 ▸ 粗磨 → 磨削 ▸ 精磨 → 测量 ▸ 测量 → 测量 ▸ 圆度测量</code>。<span class="expect">每道都插在选中那道之后，并自动选中新插的这道；"结束"永远在最后。本机没装的工序键是灰的，鼠标停留说明原因。</span></li>
           <li>选中"开始"，按 <span class="key">删除</span>；再选中第一道工序按 <span class="key">上移</span>。<span class="expect">都不动，提示"开始、结束固定在首尾，不能删、不能挪、不能再加"。</span></li>
           <li>用 <span class="key">上移</span> <span class="key">下移</span> 调一下中间工序的顺序，再按 <span class="key">复制</span>。<span class="expect">序号跟着重排；复制出的那道连参数一起接在后面。</span></li>
@@ -646,7 +660,7 @@
           <li>点选"粗磨"，右栏显示它的简图和工艺参数：拖板速度、周期进给或连续进给、磨削道次、光磨道次、砂轮线速度、头架转速、变速设置等。用 Tab 在参数格之间走一遍。<span class="expect">光标在哪一格，简图上对应的量（f、ae、n、vc……）就加粗变色；图下一行写这个参数是什么、单位、允许范围。填错或超出机床能力的格子当场标出，并说明原因。</span>再点选"测量""圆度测量""辅助动作"，<span class="expect">各有各的简图。</span></li>
           <li>改一下程序卡里的"估算用辊身长度""估算用直径"，看预计总磨削时间怎么变。<span class="expect">这两格只用来估时间，不存进程序，改了也不算修改。真正下发时按作业里那支辊的尺寸算。</span></li>
           <li>看右栏"程序步骤"的 10 个开关（轧辊磨前测量、测量安装误差、轴线前馈补偿、U1 轴自动调平、砂轮自动趋近、允许在线测量、轧辊磨后测量、涡流探伤、打印磨前数据、打印磨后数据）。这里存的是这支程序的<strong>默认值</strong>，作业里还能逐次改。<strong>打开"打印磨前数据"和"打印磨后数据"</strong>，场景 F 会用到。<span class="expect">本机未配置的装置对应的开关变灰，鼠标停留说明原因。</span></li>
-          <li><strong>余量分配与跨工序提示：</strong>在程序卡的"总余量"里填 <code>300</code>。<span class="expect">校验结果上方出现一行黄字"各道磨削量合计 … µm，与总余量 300 µm 对不上"。</span>按竖键 <span class="key">余量分配</span>，<span class="expect">粗磨、精磨等去量的工序按原来的比例分好磨削量，合计正好 300，黄字消失。</span>把最后一道"测量"删掉，<span class="expect">出现"第 N 道磨完之后没有测量"</span>；把精磨的磨削量改得比粗磨还大，<span class="expect">出现"比前面更粗的一道还大"</span>。这些是提示，不挡保存。</li>
+          <li><strong>余量分配与跨工序提示：</strong>在程序卡的"标准余量"里填 <code>300</code>（随程序保存）。<span class="expect">校验结果上方出现一行黄字"各道磨削量合计 … µm，与总余量 300 µm 对不上"。</span>按竖键 <span class="key">余量分配</span>，<span class="expect">粗磨、精磨等去量的工序按原来的比例分好磨削量，合计正好 300，黄字消失。</span>把最后一道"测量"删掉，<span class="expect">出现"第 N 道磨完之后没有测量"</span>；把精磨的磨削量改得比粗磨还大，<span class="expect">出现"比前面更粗的一道还大"</span>。这些是提示，不挡保存。</li>
           <li>选中一道磨削，改乱几个参数后按竖键 <span class="key">默认值</span>。<span class="expect">这一道的参数回到默认值（砂轮修整回到砂轮页的修整参数）。</span>按 <span class="key">程序步骤</span>，<span class="expect">键盘焦点跳到程序步骤的第一个开关上，Tab、回车就能逐个切。</span></li>
           <li>用<strong>操作者</strong>账号登录再进这一页。<span class="expect">路径条显示"只读 · 要管理员权限"，保存、另存为、新建和竖键上的编辑键都是灰的；能打开程序库看、能"用于作业"。</span></li>
           <li>按 <span class="key"><span class="f">F8</span>用于作业</span>。<span class="expect">还没存的程序不能用，提示"先把程序存进库里，作业用的是库里那一支"。</span></li>
@@ -674,13 +688,13 @@
       <!-- D -->
       <div class="scene" id="d">
         <div class="scene-head"><h3>D 作业：选辊、辊形、程序，核对并下发</h3><span class="dur">约 10 分钟</span><span class="who">参加：工艺、操作人员</span></div>
-        <p>作业 = 这一支辊这一次磨：用台账里哪根辊、辊形库里哪条辊形、程序库里哪支程序，这一次开哪些程序步骤。作业页左边是 ① 轧辊、② 辊形、③ 工艺程序、④ 程序步骤、⑤ 核对并下发五步，每步选好后显示摘要；右边是当前这一步的列表。竖键 <span class="key">上一步</span>、<span class="key">下一步</span>，这一步没选好"下一步"是灰的，按了对话行说原因。作业在机床区横键 <span class="key"><span class="f">F8</span>作业</span>。</p>
+        <p>作业 = 这一支辊这一次磨：用台账里哪根辊、辊形库里哪条辊形、程序库里哪支程序，这一次开哪些程序步骤。作业页左边是 ① 轧辊、② 辊形、③ 工艺程序、④ 本次余量（含程序步骤开关）、⑤ 核对并下发五步，每步选好后显示摘要；右边是当前这一步的列表。竖键 <span class="key">上一步</span>、<span class="key">下一步</span>，这一步没选好"下一步"是灰的，按了对话行说原因。作业在机床区横键 <span class="key"><span class="f">F8</span>作业</span>。</p>
         <ol class="steps">
           <li>在场景 C 的工艺程序页按 <span class="key"><span class="f">F8</span>用于作业</span>。<span class="expect">进作业页，路径条左端显示"« 工艺程序"；第 ③ 步已选好这支程序。</span></li>
           <li><strong>① 轧辊：</strong>台账里还没有这支辊，按竖键 <span class="key">新登记轧辊</span>。<span class="expect">跳到库区的轧辊台账，直接给一张空表。</span>辊号填 <code>R-2026-001</code>，类型选"工作辊"，辊身长度 <code>1900</code>、公称直径 <code>600</code>、当前直径 <code>596</code>，按竖键 <span class="key">保存这支辊</span>，再按路径条上的"« 返回"回作业页。<span class="expect">这支辊已经选上，摘要显示辊身、公称直径和起磨直径（登记了当前直径就用当前直径）。</span></li>
           <li>按竖键 <span class="key">下一步</span>。<strong>② 辊形：</strong>选场景 B 存的"工作辊-凸度300"。<span class="expect">辊形设计长度 2000 与辊身 1900 对不上，显示两者长度，要你选"按比例拉伸"还是"中心对齐、不拉伸"；不选"下一步"是灰的，<strong>不会自己悄悄处理</strong>。</span>选"按比例拉伸"。（长度一样时直接显示"长度一致"。）</li>
           <li><strong>③ 工艺程序：</strong><span class="expect">已经选好，列出各道工序和按这支辊尺寸估出的时间。</span>也可以在列表里换一支。</li>
-          <li><strong>④ 程序步骤：</strong><span class="expect">开关照程序里存的默认值来。</span>这一次可以单独改，不影响程序库里那一支。</li>
+          <li><strong>④ 本次余量：</strong><span class="expect">目标直径已按"磨前直径 − 程序标准余量"填好，下面写"本次余量 … µm · 程序 … µm · 粗磨调为 … µm"。</span>把目标直径改小 0.1 mm：<span class="expect">本次余量多 100 µm，全部加在粗磨上，精磨、光磨不变。</span>改到比精磨 + 光磨还少：<span class="expect">"下一步"变灰，说明"余量比精磨、光磨之和还少"。</span>在台账里给这支辊登记报废直径 <code>595</code> 再回来，目标直径填 <code>594</code>：<span class="expect">拦住，说明低于报废直径。</span>下面的程序步骤开关照程序里存的默认值来，这一次可以单独改。</li>
           <li><strong>⑤ 核对并下发：</strong><span class="expect">列出作业号、辊号、轧辊尺寸、辊形、长度核对、工艺程序、预计时间、开着的程序步骤，并跑下发前同一套校验；通过显示"参数可用，可以下发"。</span></li>
           <li>（校验拦截）回到场景 C 把粗磨的"周期进给"改成 <code>500</code> 存盘，再从 <span class="key"><span class="f">F8</span>用于作业</span> 进来走到第 ⑤ 步。<span class="expect">显示"校验未通过，未写入任何参数"，逐条列出哪个参数、为什么不行，竖键 8 的"✓ 下发"不出现。<strong>机床上一个字节都没写。</strong></span>改回合理值后再来。</li>
           <li>第 ⑤ 步校验通过时竖键 7 / 8 是 <span class="key cancel">✕ 取消</span> / <span class="key confirm">✓ 下发</span>，按 ✓ 下发。<span class="expect">对话行提示参数已下发，上位机请求 AUTO，<strong>自动切到自动磨削页</strong>，工序序列和参数矩阵都已装好。仿真机床随即开始磨削（真机要等启动）。作业页换上新的作业号，等下一支辊。</span></li>
@@ -1023,7 +1037,7 @@
           <tr><td>机床 · 手动磨削</td><td>砂轮启动… ⇄ 停止</td><td>拖板往复… ⇄ 停止</td><td>冷却液</td><td>带启动装置</td><td>定位 ▸</td><td>各轴归位…</td><td></td><td>≡▸（测砂轮直径…、校测量臂…）</td></tr>
           <tr><td>机床 · 自动磨削</td><td colspan="5">曲线：误差、参考、圆度、偏心、磨削电流（一键一种）</td><td></td><td colspan="2">参数矩阵有改动：✕ 放弃改动 / ✓ 下发改动</td></tr>
           <tr><td>机床 · 补偿</td><td>保存补偿设定…</td><td>恢复出厂值…</td><td>改动记录</td><td></td><td></td><td></td><td></td><td>« 返回</td></tr>
-          <tr><td>机床 · 作业</td><td>上一步</td><td>下一步</td><td>登记新辊</td><td>打开辊形</td><td>打开程序</td><td></td><td>取消作业…</td><td>（第 ⑤ 步：✕ 取消 / ✓ 下发）</td></tr>
+          <tr><td>机床 · 作业</td><td>上一步</td><td>下一步</td><td>新登记轧辊</td><td>打开辊形</td><td>打开程序</td><td></td><td>取消作业…</td><td>（第 ⑤ 步：✕ 取消 / ✓ 下发）</td></tr>
           <tr><td>辊形</td><td>插入段 ▸</td><td>删除段</td><td>上移</td><td>下移</td><td>复制段</td><td>改类型 ▸</td><td>插值方式 ▸</td><td>清空…</td></tr>
           <tr><td>工艺程序</td><td>插入工序 ▸</td><td>删除</td><td>上移</td><td>下移</td><td>复制</td><td>余量分配</td><td>默认值…</td><td>程序步骤</td></tr>
           <tr><td>参数 · 砂轮</td><td>换砂轮 ▸</td><td>新砂轮登记</td><td>重新读取</td><td></td><td></td><td></td><td colspan="2">有改动：✕ 放弃改动 / ✓ 保存</td></tr>

@@ -26,6 +26,15 @@ public static class LayoutProfile
 
     public static double CanvasHeight => Kind == LayoutKind.Compact ? 768 : 1080;
 
+    /// <summary>诊断 › 变量监视的"值"列宽：表头和行模板共用（模板里只能用 x:Static）。</summary>
+    public static GridLength TagValueColumn => new(Math.Round(360 * Scale));
+
+    /// <summary>诊断 › 变量监视的"状态"列宽。</summary>
+    public static GridLength TagStateColumn => new(Math.Round(120 * Scale));
+
+    /// <summary>记录页 12 项指标的列数：标准档在右栏 2 列；紧凑档挪到曲线下面，4 列 × 3 行。模板里用 x:Static 取。</summary>
+    public static int MetricColumns => Kind == LayoutKind.Compact ? 4 : 2;
+
     /// <summary>在任何窗口建出来之前调用：定档，紧凑档把尺寸字典叠上去。</summary>
     public static void Apply(Application application, string? setting, bool fullScreen)
     {
@@ -82,5 +91,31 @@ public sealed class PxExtension : MarkupExtension
         }
 
         return scaled;
+    }
+}
+
+/// <summary>
+/// XAML：Grid.Column="{ctl:ByLayout Standard=2, Compact=1}"。两档各取一个值，按目标属性的类型转换
+/// （int、GridLength、double、Thickness……），用来在紧凑档把第三栏挪到第二栏下面这类重排。
+/// </summary>
+[MarkupExtensionReturnType(typeof(object))]
+public sealed class ByLayoutExtension : MarkupExtension
+{
+    public string Standard { get; set; } = string.Empty;
+
+    public string Compact { get; set; } = string.Empty;
+
+    public override object? ProvideValue(IServiceProvider serviceProvider)
+    {
+        string text = LayoutProfile.Kind == LayoutKind.Compact ? Compact : Standard;
+        Type? type = (serviceProvider?.GetService(typeof(IProvideValueTarget)) as IProvideValueTarget)?.TargetProperty switch
+        {
+            DependencyProperty property => property.PropertyType,
+            System.Reflection.PropertyInfo info => info.PropertyType,
+            _ => null,
+        };
+        return type is null || type == typeof(string) || type == typeof(object)
+            ? text
+            : System.ComponentModel.TypeDescriptor.GetConverter(type).ConvertFromInvariantString(text);
     }
 }
