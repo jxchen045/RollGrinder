@@ -26,6 +26,22 @@ internal static class SelfTestNames
 {
     public const string ProfileA = "SelfTest Profile A";
     public const string ProfileB = "SelfTest Profile B";
+
+    /// <summary>
+    /// "新建程序…"（流程调整方案第 6 节）：先在竖键里选关联辊形，再给空程序。
+    /// 优先选 <paramref name="profileName"/>；库里没有这条就选第一条。
+    /// </summary>
+    public static async Task NewProgramAsync(SelfTestHarness h, StepContext ctx, string profileName = ProfileA)
+    {
+        await h.PressKeyAsync(ctx, "Fn_NewProgram");
+        FunctionKeyViewModel? choice = h.Shell.VerticalKeys.FirstOrDefault(k => k.LabelResourceKey == "Vk_ProfileChoiceFormat" && k.Label == profileName)
+            ?? h.Shell.VerticalKeys.FirstOrDefault(k => k.LabelResourceKey == "Vk_ProfileChoiceFormat");
+        ctx.Check(choice is not null, "'new program' should first list the profile library: " + h.DialogLineText);
+        if (choice is not null)
+        {
+            await h.PressAsync(choice);
+        }
+    }
     public const string OldProfile = "SelfTest Old Profile";
     public const string LedgerRollId = "SELFTEST-BR1";
     public const string ProgramA = "SelfTest Program A";
@@ -500,7 +516,7 @@ internal sealed class StepsSuite : ISelfTestSuite
 
         await h.StepAsync("Program", "NewProgramHasFrame", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_NewProgram");
+            await SelfTestNames.NewProgramAsync(h, ctx);
             ctx.Check(page.Steps.Count == 2, Invariant($"a new program holds start and end only, has {page.Steps.Count}"));
             ctx.Check(page.Steps[0].StepTypeKey == StepTypeKeys.Start && page.Steps[^1].StepTypeKey == StepTypeKeys.End,
                 "start first, end last");
@@ -797,7 +813,7 @@ internal sealed class StepsSuite : ISelfTestSuite
             page.ProgramName = SelfTestNames.ProgramA;
             ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveProgramAsCommand, page.NamePrompt, SelfTestNames.ProgramA),
                 "save-as A should go through, error: " + page.NamePrompt.ErrorText);
-            await h.PressKeyAsync(ctx, "Fn_NewProgram");
+            await SelfTestNames.NewProgramAsync(h, ctx);
             ctx.Check(page.Steps.Count == 2, "a new program keeps only start and end");
             ctx.Check(page.ProgramId is null && string.IsNullOrEmpty(page.ProgramName), "a new program must not keep the old program's identity");
             await h.PressKeyAsync(ctx, "Fn_ProgramLibrary");

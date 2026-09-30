@@ -15,7 +15,8 @@ public sealed record ProgramSummary(
     string ProgramId,
     string Name,
     int StepCount,
-    DateTimeOffset ModifiedAtUtc);
+    DateTimeOffset ModifiedAtUtc,
+    string? ProfileId = null);
 
 /// <summary>
 /// 程序库。程序是**可复用的模板**，不属于任何一支辊——

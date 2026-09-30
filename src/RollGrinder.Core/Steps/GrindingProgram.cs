@@ -29,6 +29,15 @@ public sealed record GrindingProgram(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset ModifiedAtUtc)
 {
+    /// <summary>
+    /// 关联辊形（流程调整方案第 6 节）：新建程序先选这支程序磨哪条辊形；行程、余量、估时都按它算。
+    /// 旧库里的程序没有，为 null——打开时提示先选关联辊形。
+    /// </summary>
+    public string? ProfileId { get; init; }
+
+    /// <summary>标准余量（直径量 µm）：余量分配按它分；作业里本次余量与它不同时差额由粗磨吸收。没填为 null。</summary>
+    public double? StandardStockMicrometer { get; init; }
+
     /// <summary>这支程序有几道工序。</summary>
     public int StepCount => Steps.Count;
 

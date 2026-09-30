@@ -1961,7 +1961,7 @@
     <value>Job</value>
   </data>
   <data name="Fn_NewProgram" xml:space="preserve">
-    <value>New program</value>
+    <value>New program…</value>
   </data>
   <data name="Fn_UseForJob" xml:space="preserve">
     <value>Use for a job</value>
@@ -1979,7 +1979,7 @@
     <value>Process program</value>
   </data>
   <data name="Job_StepOptions" xml:space="preserve">
-    <value>Program steps</value>
+    <value>Stock</value>
   </data>
   <data name="Job_StepReview" xml:space="preserve">
     <value>Check and download</value>
@@ -2052,9 +2052,6 @@
   </data>
   <data name="Program_Header" xml:space="preserve">
     <value>Process program</value>
-  </data>
-  <data name="Program_ReferenceBodyLength" xml:space="preserve">
-    <value>Reference body length mm</value>
   </data>
   <data name="Program_ReferenceDiameter" xml:space="preserve">
     <value>Reference diameter mm</value>
@@ -2828,7 +2825,7 @@
     <value>Program steps</value>
   </data>
   <data name="Program_TotalStock" xml:space="preserve">
-    <value>Total stock µm (dia., estimate)</value>
+    <value>Standard stock (dia. µm)</value>
   </data>
   <data name="Program_HintStockFormat" xml:space="preserve">
     <value>Step stock adds up to {0:0.#} µm, not the total {1:0.#} µm; “Allocate stock” spreads it</value>
@@ -3828,5 +3825,68 @@
   </data>
   <data name="Plot_ResetView" xml:space="preserve">
     <value>⟲ Reset view</value>
+  </data>
+  <data name="Vk_ProfileChoiceFormat" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="Vk_PickProfileTitle" xml:space="preserve">
+    <value>Change linked profile</value>
+  </data>
+  <data name="Vk_PickProfileForNewTitle" xml:space="preserve">
+    <value>New program: pick the profile</value>
+  </data>
+  <data name="Fn_ChangeProfile" xml:space="preserve">
+    <value>Change profile…</value>
+  </data>
+  <data name="Program_LinkedProfile" xml:space="preserve">
+    <value>Linked profile</value>
+  </data>
+  <data name="Program_LinkedProfileFormat" xml:space="preserve">
+    <value>{0} · {1:0} mm</value>
+  </data>
+  <data name="Program_NoLinkedProfile" xml:space="preserve">
+    <value>None (press "Change profile…")</value>
+  </data>
+  <data name="Program_NoProfiles" xml:space="preserve">
+    <value>The profile library is empty: create a profile first — programs are written for a profile</value>
+  </data>
+  <data name="Program_NewForProfileFormat" xml:space="preserve">
+    <value>New program for profile {0}</value>
+  </data>
+  <data name="Program_ProfileChangedFormat" xml:space="preserve">
+    <value>Linked profile changed to {0}; save to keep it</value>
+  </data>
+  <data name="Program_LinkProfileFirst" xml:space="preserve">
+    <value>This program has no linked profile: press "Change profile…" before using it for a job</value>
+  </data>
+  <data name="Stock_ActualInvalid" xml:space="preserve">
+    <value>The stock must be above 0: check the start and target diameters</value>
+  </data>
+  <data name="Stock_BelowFinishing" xml:space="preserve">
+    <value>The stock is less than the finishing passes need: change the target diameter or the program</value>
+  </data>
+  <data name="Stock_NoRoughStep" xml:space="preserve">
+    <value>The program has no rough pass to absorb the stock difference</value>
+  </data>
+  <data name="Job_TargetDiameter" xml:space="preserve">
+    <value>Target diameter (mm)</value>
+  </data>
+  <data name="Job_StockSummaryFormat" xml:space="preserve">
+    <value>Stock {0:0} µm · program {1:0} µm · rough set to {2:0} µm (finishing unchanged)</value>
+  </data>
+  <data name="Job_ReviewStock" xml:space="preserve">
+    <value>Stock this time</value>
+  </data>
+  <data name="Job_ProgramNotLinked" xml:space="preserve">
+    <value>This program has no linked profile (older program): link one in the process area</value>
+  </data>
+  <data name="Job_ProgramLinkedHere" xml:space="preserve">
+    <value>✓ This program was written for this profile</value>
+  </data>
+  <data name="Job_ProgramBorrowedFormat" xml:space="preserve">
+    <value>Written for "{0}" with the same design length: may be used</value>
+  </data>
+  <data name="Job_ProgramOtherLengthFormat" xml:space="preserve">
+    <value>Written for "{0}" with a different design length: cannot be used here</value>
   </data>
 </root>

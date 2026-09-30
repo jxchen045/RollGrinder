@@ -1961,7 +1961,7 @@
     <value>作业</value>
   </data>
   <data name="Fn_NewProgram" xml:space="preserve">
-    <value>新建程序</value>
+    <value>新建程序…</value>
   </data>
   <data name="Fn_UseForJob" xml:space="preserve">
     <value>用于作业</value>
@@ -1979,7 +1979,7 @@
     <value>工艺程序</value>
   </data>
   <data name="Job_StepOptions" xml:space="preserve">
-    <value>程序步骤</value>
+    <value>本次余量</value>
   </data>
   <data name="Job_StepReview" xml:space="preserve">
     <value>核对并下发</value>
@@ -2052,9 +2052,6 @@
   </data>
   <data name="Program_Header" xml:space="preserve">
     <value>工艺程序</value>
-  </data>
-  <data name="Program_ReferenceBodyLength" xml:space="preserve">
-    <value>估算用辊身长度 mm</value>
   </data>
   <data name="Program_ReferenceDiameter" xml:space="preserve">
     <value>估算用直径 mm</value>
@@ -2828,7 +2825,7 @@
     <value>程序步骤</value>
   </data>
   <data name="Program_TotalStock" xml:space="preserve">
-    <value>总余量 µm（直径，估算用）</value>
+    <value>标准余量（直径 µm）</value>
   </data>
   <data name="Program_HintStockFormat" xml:space="preserve">
     <value>各道磨削量合计 {0:0.#} µm，与总余量 {1:0.#} µm 对不上；按“余量分配”可按比例分好</value>
@@ -3828,5 +3825,68 @@
   </data>
   <data name="Plot_ResetView" xml:space="preserve">
     <value>⟲ 复位视图</value>
+  </data>
+  <data name="Vk_ProfileChoiceFormat" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="Vk_PickProfileTitle" xml:space="preserve">
+    <value>换关联辊形</value>
+  </data>
+  <data name="Vk_PickProfileForNewTitle" xml:space="preserve">
+    <value>新建程序：先选辊形</value>
+  </data>
+  <data name="Fn_ChangeProfile" xml:space="preserve">
+    <value>换关联辊形…</value>
+  </data>
+  <data name="Program_LinkedProfile" xml:space="preserve">
+    <value>关联辊形</value>
+  </data>
+  <data name="Program_LinkedProfileFormat" xml:space="preserve">
+    <value>{0} · {1:0} mm</value>
+  </data>
+  <data name="Program_NoLinkedProfile" xml:space="preserve">
+    <value>未选（按横键换关联辊形…）</value>
+  </data>
+  <data name="Program_NoProfiles" xml:space="preserve">
+    <value>辊形库是空的：先到辊形区编一条辊形，程序要按辊形编</value>
+  </data>
+  <data name="Program_NewForProfileFormat" xml:space="preserve">
+    <value>新程序，关联辊形：{0}</value>
+  </data>
+  <data name="Program_ProfileChangedFormat" xml:space="preserve">
+    <value>关联辊形改为 {0}，保存后生效</value>
+  </data>
+  <data name="Program_LinkProfileFirst" xml:space="preserve">
+    <value>这支程序还没有关联辊形：按换关联辊形…选一条再用于作业</value>
+  </data>
+  <data name="Stock_ActualInvalid" xml:space="preserve">
+    <value>本次余量要大于 0：检查磨前直径与目标直径</value>
+  </data>
+  <data name="Stock_BelowFinishing" xml:space="preserve">
+    <value>本次余量比精磨、光磨之和还少：改目标直径或换程序</value>
+  </data>
+  <data name="Stock_NoRoughStep" xml:space="preserve">
+    <value>程序没有粗磨，本次余量又和程序不同：没法吸收差额</value>
+  </data>
+  <data name="Job_TargetDiameter" xml:space="preserve">
+    <value>目标直径（mm）</value>
+  </data>
+  <data name="Job_StockSummaryFormat" xml:space="preserve">
+    <value>本次余量 {0:0} µm · 程序 {1:0} µm · 粗磨调为 {2:0} µm（精磨、光磨不变）</value>
+  </data>
+  <data name="Job_ReviewStock" xml:space="preserve">
+    <value>本次余量</value>
+  </data>
+  <data name="Job_ProgramNotLinked" xml:space="preserve">
+    <value>这支程序没有关联辊形（旧程序）：建议到工艺区选一条关联辊形再用</value>
+  </data>
+  <data name="Job_ProgramLinkedHere" xml:space="preserve">
+    <value>✓ 这支程序就是按这条辊形编的</value>
+  </data>
+  <data name="Job_ProgramBorrowedFormat" xml:space="preserve">
+    <value>这支程序按「{0}」编制，设计长度相同，可以借用</value>
+  </data>
+  <data name="Job_ProgramOtherLengthFormat" xml:space="preserve">
+    <value>这支程序按「{0}」编制，设计长度不同，不能用于这条辊形</value>
   </data>
 </root>

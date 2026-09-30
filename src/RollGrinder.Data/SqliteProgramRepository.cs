@@ -28,7 +28,8 @@ public sealed class SqliteProgramRepository : IProgramRepository
         command.CommandText =
             """
             SELECT p.program_id, p.name, p.modified_at_utc,
-                   (SELECT COUNT(*) FROM program_step s WHERE s.program_id = p.program_id)
+                   (SELECT COUNT(*) FROM program_step s WHERE s.program_id = p.program_id),
+                   p.profile_id
             FROM program p
             ORDER BY p.modified_at_utc DESC
             LIMIT $limit;
@@ -43,7 +44,8 @@ public sealed class SqliteProgramRepository : IProgramRepository
                 reader.GetString(0),
                 reader.GetString(1),
                 reader.GetInt32(3),
-                SqlMapping.ToTimestamp(reader.GetString(2))));
+                SqlMapping.ToTimestamp(reader.GetString(2)),
+                reader.IsDBNull(4) ? null : reader.GetString(4)));
         }
 
         return summaries;
@@ -58,10 +60,12 @@ public sealed class SqliteProgramRepository : IProgramRepository
         string name;
         DateTimeOffset createdAtUtc;
         DateTimeOffset modifiedAtUtc;
+        string? profileId;
+        double? standardStock;
 
         await using (SqliteCommand command = connection.CreateCommand())
         {
-            command.CommandText = "SELECT name, created_at_utc, modified_at_utc FROM program WHERE program_id = $id;";
+            command.CommandText = "SELECT name, created_at_utc, modified_at_utc, profile_id, standard_stock_um FROM program WHERE program_id = $id;";
             SqlMapping.AddParameter(command, "$id", programId);
 
             await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -73,6 +77,8 @@ public sealed class SqliteProgramRepository : IProgramRepository
             name = reader.GetString(0);
             createdAtUtc = SqlMapping.ToTimestamp(reader.GetString(1));
             modifiedAtUtc = SqlMapping.ToTimestamp(reader.GetString(2));
+            profileId = reader.IsDBNull(3) ? null : reader.GetString(3);
+            standardStock = reader.IsDBNull(4) ? null : reader.GetDouble(4);
         }
 
         Dictionary<int, ParameterSet> parameters = await SqlMapping
@@ -113,6 +119,8 @@ public sealed class SqliteProgramRepository : IProgramRepository
         return GrindingProgram.Create(programId, name, steps, createdAtUtc, programOptions) with
         {
             ModifiedAtUtc = modifiedAtUtc,
+            ProfileId = profileId,
+            StandardStockMicrometer = standardStock,
         };
     }
 
@@ -129,16 +137,20 @@ public sealed class SqliteProgramRepository : IProgramRepository
             command.Transaction = transaction;
             command.CommandText =
                 """
-                INSERT INTO program (program_id, name, created_at_utc, modified_at_utc)
-                VALUES ($id, $name, $created, $modified)
+                INSERT INTO program (program_id, name, created_at_utc, modified_at_utc, profile_id, standard_stock_um)
+                VALUES ($id, $name, $created, $modified, $profile, $stock)
                 ON CONFLICT(program_id) DO UPDATE SET
                     name = excluded.name,
-                    modified_at_utc = excluded.modified_at_utc;
+                    modified_at_utc = excluded.modified_at_utc,
+                    profile_id = excluded.profile_id,
+                    standard_stock_um = excluded.standard_stock_um;
                 """;
             SqlMapping.AddParameter(command, "$id", program.ProgramId);
             SqlMapping.AddParameter(command, "$name", program.Name);
             SqlMapping.AddParameter(command, "$created", SqlMapping.ToText(program.CreatedAtUtc));
             SqlMapping.AddParameter(command, "$modified", SqlMapping.ToText(program.ModifiedAtUtc));
+            command.Parameters.AddWithValue("$profile", (object?)program.ProfileId ?? DBNull.Value);
+            command.Parameters.AddWithValue("$stock", (object?)program.StandardStockMicrometer ?? DBNull.Value);
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 

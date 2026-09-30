@@ -169,6 +169,7 @@
                         </Grid.ColumnDefinitions>
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Job_PickProgram}" FontSize="18" Margin="0,0,0,8" />
+                            <TextBlock DockPanel.Dock="Bottom" Text="{Binding ProgramFitText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" Margin="0,6,0,0" />
                             <DataGrid ItemsSource="{Binding Programs}" SelectedItem="{Binding SelectedProgram}" Style="{StaticResource DataTable}"
                                       AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" FontSize="16">
                                 <DataGrid.Columns>
@@ -204,6 +205,14 @@
 
                     <!-- ④ 程序步骤：这一次的开关，默认照程序里存的来。 -->
                     <DockPanel Style="{StaticResource Step4Panel}">
+                        <!-- 本次余量（流程调整方案第 5 节）：目标直径默认 = 磨前 − 标准余量；差额由粗磨吸收，精工序不动。 -->
+                        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                            <TextBlock Text="{loc:Loc Job_TargetDiameter}" Style="{StaticResource Text.Label}" />
+                            <TextBox Text="{Binding TargetDiameterText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                                     IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                                     ctl:TouchInput.IsNumeric="True" Width="{ctl:Px 240}" HorizontalAlignment="Left" Margin="0,6,0,6" />
+                            <TextBlock Text="{Binding StockSummaryText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                        </StackPanel>
                         <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Job_PickOptions}" FontSize="18" Margin="0,0,0,8" />
                         <ItemsControl ItemsSource="{Binding ProgramOptions}"
                                       Margin="12"

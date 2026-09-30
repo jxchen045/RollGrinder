@@ -340,6 +340,12 @@ public sealed class SqliteDatabase
             changed_by         TEXT    NOT NULL
         );
         """,
+
+        // 程序绑定关联辊形、保存标准余量（分辨率适配与流程调整方案第 5、6 节）。
+        """
+        ALTER TABLE program ADD COLUMN profile_id TEXT NULL;
+        ALTER TABLE program ADD COLUMN standard_stock_um REAL NULL;
+        """,
     };
 
     private readonly string connectionString;

@@ -263,6 +263,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
 {
     private readonly GrindingStepTypeRegistry stepTypes;
     private readonly IProgramRepository programs;
+    private readonly IRollProfileRepository profiles;
     private readonly GrindingJobValidator validator;
     private readonly MachineCapability capability;
     private readonly MachineDescription machine;
@@ -278,6 +279,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     public StepsViewModel(
         GrindingStepTypeRegistry stepTypes,
         IProgramRepository programs,
+        IRollProfileRepository profiles,
         ICalibrationService calibration,
         JobDraft jobDraft,
         GrindingJobValidator validator,
@@ -294,6 +296,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
         this.stepTypes = stepTypes ?? throw new ArgumentNullException(nameof(stepTypes));
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
+        this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
@@ -359,8 +362,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
             new FunctionKeyViewModel("Fn_SaveProgram", new AsyncRelayCommand(
                 () => SaveAsync(CancellationToken.None)), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_SaveAs", SaveProgramAsCommand, localizer, requiresEditable: true),
-            null,
-            new FunctionKeyViewModel("Fn_NewProgram", NewProgramCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Fn_ChangeProfile", new AsyncRelayCommand(() => PickProfileAsync(newProgram: false)), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Fn_NewProgram", new AsyncRelayCommand(() => PickProfileAsync(newProgram: true)), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
             null,
 
@@ -628,8 +631,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
     partial void OnStatusResourceKeyChanged(string value) => OnPropertyChanged(nameof(StatusText));
 
     /// <summary>
-    /// 总余量（直径量 µm，估算用，和辊身、直径两格一样不存进程序）：填了就对账——
-    /// 各道磨削量合计对不上时提示，"余量分配"按比例分到各道。
+    /// 标准余量（直径量 µm），随程序保存：填了就对账——各道磨削量合计对不上时提示，"余量分配"按比例分到各道。
+    /// 作业里本次余量与它不同时，差额由粗磨吸收（<see cref="StockAdjustment"/>）。
     /// </summary>
     [ObservableProperty]
     private string totalStockText = string.Empty;
@@ -835,12 +838,96 @@ public sealed partial class StepsViewModel : PageViewModelBase
         }
     }
 
-    /// <summary>新建一支程序：只有开始与结束，开关回到默认。</summary>
+    /// <summary>新建一支程序：只有开始与结束，开关回到默认（先选关联辊形，见 <see cref="PickProfileAsync"/>）。</summary>
     [RelayCommand]
     private void NewProgram()
     {
         ResetToEmptyProgram();
         MarkEdited();
+    }
+
+    /// <summary>关联辊形（流程调整方案第 6 节）：这支程序磨哪条辊形。行程、余量、估时都按它算。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLinkedProfile))]
+    private string? linkedProfileId;
+
+    /// <summary>关联辊形的名称与设计长度；没选时写"未选"。</summary>
+    [ObservableProperty]
+    private string linkedProfileText = string.Empty;
+
+    public bool HasLinkedProfile => LinkedProfileId is not null;
+
+    /// <summary>
+    /// "新建程序…"先选辊形再给空程序；"换关联辊形…"只换关联。竖键列出辊形库，一条一个键。
+    /// 库里没有辊形时说原因：先去辊形区编一条。
+    /// </summary>
+    private async Task PickProfileAsync(bool newProgram)
+    {
+        IReadOnlyList<RollProfileSummary> list;
+        try
+        {
+            list = await this.profiles.ListAsync(200, CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+            return;
+        }
+
+        if (list.Count == 0)
+        {
+            Interaction.Refuse(Localizer["Program_NoProfiles"]);
+            return;
+        }
+
+        OpenVerticalMenu(newProgram ? "Vk_PickProfileForNewTitle" : "Vk_PickProfileTitle", list.Select(entry => MenuChoice(
+            "Vk_ProfileChoiceFormat",
+            () =>
+            {
+                if (newProgram)
+                {
+                    ResetToEmptyProgram();
+                }
+
+                LinkProfile(entry.ProfileId, entry.Name, entry.BodyLengthMm);
+                MarkEdited();
+                Say(newProgram ? "Program_NewForProfileFormat" : "Program_ProfileChangedFormat", entry.Name);
+            },
+            labelArgument: entry.Name)));
+    }
+
+    private void LinkProfile(string? profileId, string? name, double? bodyLengthMm)
+    {
+        LinkedProfileId = profileId;
+        LinkedProfileText = profileId is null
+            ? Localizer["Program_NoLinkedProfile"]
+            : Localizer.Format("Program_LinkedProfileFormat", name ?? profileId, bodyLengthMm ?? 0.0);
+        if (bodyLengthMm is > 0.0)
+        {
+            // 估时按关联辊形的设计长度算，不再手填"参考辊身"。
+            BodyLengthMmText = bodyLengthMm.Value.ToString("F0", CultureInfo.CurrentCulture);
+        }
+    }
+
+    /// <summary>打开的程序带关联辊形标识：到库里找名称与长度（辊形被删了就写"未选"并提示）。</summary>
+    private async Task ResolveLinkedProfileAsync(string? profileId)
+    {
+        if (profileId is null)
+        {
+            LinkProfile(null, null, null);
+            Say("Program_LinkProfileFirst");
+            return;
+        }
+
+        try
+        {
+            RollProfileDefinition? profile = await this.profiles.GetAsync(profileId, CancellationToken.None).ConfigureAwait(true);
+            LinkProfile(profile?.ProfileId, profile?.Name, profile?.BodyLengthMm);
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+        }
     }
 
     private void ResetToEmptyProgram()
@@ -850,6 +937,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
         {
             ProgramId = null;
             ProgramName = string.Empty;
+            TotalStockText = string.Empty;
+            LinkProfile(null, null, null);
             Steps.Clear();
             foreach (GrindingJobStep step in ProgramFrame.Normalize(Array.Empty<GrindingJobStep>(), this.stepTypes))
             {
@@ -897,7 +986,15 @@ public sealed partial class StepsViewModel : PageViewModelBase
             return;
         }
 
+        if (LinkedProfileId is null)
+        {
+            Interaction.Refuse(Localizer["Program_LinkProfileFirst"]);
+            return;
+        }
+
+        // 作业向导带着关联辊形过去：② 辊形直接选好。
         this.jobDraft.PendingProgramId = ProgramId;
+        this.jobDraft.PendingProfileId = LinkedProfileId;
         Navigator.StartTask(PageKey.Job, PageKey.Steps);
     }
 
@@ -1104,7 +1201,12 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
             await this.programs.SaveAsync(
                 GrindingProgram.Create(programId, name, steps, existing?.CreatedAtUtc ?? now, CollectProgramOptions())
-                    with { ModifiedAtUtc = now },
+                    with
+                    {
+                        ModifiedAtUtc = now,
+                        ProfileId = LinkedProfileId,
+                        StandardStockMicrometer = TryParseDouble(TotalStockText, out double stock) && stock > 0.0 ? stock : null,
+                    },
                 cancellationToken).ConfigureAwait(true);
 
             ProgramId = programId;
@@ -1152,6 +1254,10 @@ public sealed partial class StepsViewModel : PageViewModelBase
         {
             ProgramId = program.ProgramId;
             ProgramName = program.Name;
+            TotalStockText = program.StandardStockMicrometer is double stock
+                ? stock.ToString("0.#", CultureInfo.CurrentCulture)
+                : string.Empty;
+            _ = ResolveLinkedProfileAsync(program.ProfileId);
 
             // 以前存的程序可能没有开始 / 结束，或者不在首尾：整理成"开始 … 结束"，并提示存一次。
             framed = ProgramFrame.IsNormalized(program.Steps);

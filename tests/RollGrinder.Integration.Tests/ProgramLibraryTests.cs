@@ -78,6 +78,23 @@ public sealed class ProgramLibraryTests : IDisposable
     }
 
     [Fact]
+    public async Task The_linked_profile_and_standard_stock_round_trip()
+    {
+        // 流程调整方案第 6 节：程序绑定一条关联辊形、带标准余量；列表里也带出关联辊形，作业向导按它排序。
+        await MigratedAsync();
+        var library = new SqliteProgramRepository(this.database);
+        await library.SaveAsync(Program() with { ProfileId = "P-7", StandardStockMicrometer = 350.0 }, CancellationToken.None);
+
+        GrindingProgram? loaded = await library.GetAsync("G-1", CancellationToken.None);
+        loaded!.ProfileId.Should().Be("P-7");
+        loaded.StandardStockMicrometer.Should().Be(350.0);
+        (await library.ListAsync(10, CancellationToken.None)).Single().ProfileId.Should().Be("P-7");
+
+        await library.SaveAsync(Program(), CancellationToken.None);
+        (await library.GetAsync("G-1", CancellationToken.None))!.ProfileId.Should().BeNull("没关联的旧程序照样存得进、读得出");
+    }
+
+    [Fact]
     public async Task A_program_read_back_has_every_switch_defined()
     {
         // 少一个键不该让"这个开关开没开"变成未定义。

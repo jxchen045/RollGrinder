@@ -41,7 +41,7 @@ internal sealed class FullFlowSuite : ISelfTestSuite
         await h.StepAsync("Prepare", "BuildProgram", async ctx =>
         {
             await h.GoToAsync(PageKey.Steps, ctx);
-            await h.PressKeyAsync(ctx, "Fn_NewProgram");
+            await SelfTestNames.NewProgramAsync(h, ctx, SelfTestNames.ProfileA);
 
             // 磨前测量 → 粗磨 → 辅助动作（样例机床登记了动作时）→ 磨后测量 → 圆度：
             // 把测量分阶段落库、圆度存档、辅助动作的下发与原地停留都走一遍。

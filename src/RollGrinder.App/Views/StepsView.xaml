@@ -84,9 +84,10 @@
                             </Border>
                             <Border Style="{StaticResource ParameterCell}">
                                 <StackPanel>
-                                    <TextBlock Text="{loc:Loc Program_ReferenceBodyLength}" Style="{StaticResource Text.Label}" />
-                                    <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
+                                    <!-- 关联辊形（流程调整方案第 6 节）：新建程序先选；横键"换关联辊形…"改。估时的辊身长度随它。 -->
+                                    <TextBlock Text="{loc:Loc Program_LinkedProfile}" Style="{StaticResource Text.Label}" />
+                                    <TextBlock Text="{Binding LinkedProfileText}" Style="{StaticResource Text.Body}" FontWeight="SemiBold"
+                                               TextWrapping="Wrap" Margin="0,8,0,0" />
                                 </StackPanel>
                             </Border>
                             <Border Style="{StaticResource ParameterCell}">

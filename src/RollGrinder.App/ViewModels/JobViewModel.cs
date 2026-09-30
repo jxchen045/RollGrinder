@@ -402,6 +402,7 @@ public sealed partial class JobViewModel : PageViewModelBase
                 this.roll.Geometry.NominalDiameterMm,
                 StartDiameterMm(this.roll));
         RefreshLengthCheck();
+        ResetTargetDiameter();
         RefreshProgramSteps();
         RefreshStepItems();
     }
@@ -417,7 +418,112 @@ public sealed partial class JobViewModel : PageViewModelBase
         }
 
         RefreshLengthCheck();
+        SortProgramsForProfile();
+        RefreshProgramFit();
         RefreshStepItems();
+    }
+
+    /// <summary>③ 程序：关联到本辊形的程序排在前面（流程调整方案第 6 节）；选中项不变。</summary>
+    private void SortProgramsForProfile()
+    {
+        string? profileId = this.profile?.ProfileId;
+        ProgramSummary? keep = SelectedProgram;
+        ProgramSummary[] ordered = Programs
+            .OrderBy(entry => entry.ProfileId is not null && entry.ProfileId == profileId ? 0 : 1)
+            .ThenByDescending(entry => entry.ModifiedAtUtc)
+            .ToArray();
+        for (int i = 0; i < ordered.Length; i++)
+        {
+            int from = Programs.IndexOf(ordered[i]);
+            if (from != i)
+            {
+                Programs.Move(from, i);
+            }
+        }
+
+        SelectedProgram = keep;
+    }
+
+    /// <summary>程序与辊形对不对得上：关联的就是这条；关联别的但设计长度相同可以借用（提示）；长度不同不能用。</summary>
+    [ObservableProperty]
+    private string programFitText = string.Empty;
+
+    private bool programFitBlocks;
+
+    private void RefreshProgramFit()
+    {
+        programFitBlocks = false;
+        this.nextCommand.NotifyCanExecuteChanged();
+        if (this.program is null || this.profile is null)
+        {
+            ProgramFitText = string.Empty;
+            return;
+        }
+
+        if (this.program.ProfileId is null)
+        {
+            ProgramFitText = Localizer["Job_ProgramNotLinked"];
+            return;
+        }
+
+        if (this.program.ProfileId == this.profile.ProfileId)
+        {
+            ProgramFitText = Localizer["Job_ProgramLinkedHere"];
+            return;
+        }
+
+        RollProfileSummary? linked = Profiles.FirstOrDefault(entry => entry.ProfileId == this.program.ProfileId);
+        string linkedName = linked?.Name ?? this.program.ProfileId;
+        programFitBlocks = linked is null || Math.Abs(linked.BodyLengthMm - this.profile.BodyLengthMm) > 0.5;
+        ProgramFitText = Localizer.Format(programFitBlocks ? "Job_ProgramOtherLengthFormat" : "Job_ProgramBorrowedFormat", linkedName);
+    }
+
+    /// <summary>
+    /// ④ 目标直径（mm）：默认 = 磨前直径 − 程序标准余量。本次余量 = 磨前 − 目标；
+    /// 与程序不同时差额由粗磨吸收（<see cref="StockAdjustment"/>），精工序不动。
+    /// </summary>
+    [ObservableProperty]
+    private string targetDiameterText = string.Empty;
+
+    /// <summary>④ 本次余量的说明：本次 / 程序 / 粗磨调整后。</summary>
+    [ObservableProperty]
+    private string stockSummaryText = string.Empty;
+
+    partial void OnTargetDiameterTextChanged(string value) => RefreshStock();
+
+    private StockAdjustmentResult? stock;
+
+    private void ResetTargetDiameter()
+    {
+        if (this.roll is null || this.program is null)
+        {
+            TargetDiameterText = string.Empty;
+            return;
+        }
+
+        double programStock = this.program.StandardStockMicrometer
+            ?? StockAdjustment.Apply(this.program.Steps, 1.0).ProgramStockMicrometer;
+        TargetDiameterText = (StartDiameterMm(this.roll) - (programStock / 1000.0)).ToString("F3", CultureInfo.CurrentCulture);
+        RefreshStock();
+    }
+
+    private void RefreshStock()
+    {
+        this.stock = null;
+        StockSummaryText = string.Empty;
+        this.nextCommand.NotifyCanExecuteChanged();
+        if (this.roll is null || this.program is null
+            || !double.TryParse(TargetDiameterText, NumberStyles.Float, CultureInfo.CurrentCulture, out double target))
+        {
+            return;
+        }
+
+        double actual = (StartDiameterMm(this.roll) - target) * 1000.0;
+        this.stock = StockAdjustment.Apply(ProgramFrame.Normalize(this.program.Steps, this.stepTypes), actual);
+        StockSummaryText = this.stock.ProblemResourceKey is { } problem
+            ? Localizer[problem]
+            : Localizer.Format("Job_StockSummaryFormat", actual, this.stock.ProgramStockMicrometer, this.stock.RoughStockMicrometer);
+        this.nextCommand.NotifyCanExecuteChanged();
     }
 
     private async Task LoadProgramAsync(string? programId, CancellationToken cancellationToken)
@@ -432,6 +538,8 @@ public sealed partial class JobViewModel : PageViewModelBase
             }
         }
 
+        RefreshProgramFit();
+        ResetTargetDiameter();
         RefreshProgramSteps();
         RefreshStepItems();
     }
@@ -510,8 +618,8 @@ public sealed partial class JobViewModel : PageViewModelBase
     {
         RollStep => this.roll is not null,
         ProfileStep => this.profile is not null && (!LengthMismatch || FitMode is not null),
-        ProgramStep => this.program is not null,
-        OptionsStep => true,
+        ProgramStep => this.program is not null && !programFitBlocks,
+        OptionsStep => this.stock is { ProblemResourceKey: null },
         _ => false,
     };
 
@@ -580,7 +688,9 @@ public sealed partial class JobViewModel : PageViewModelBase
                 this.roll.RollId,
                 JobGeometry(this.roll),
                 fitted,
-                ProgramFrame.Normalize(this.program.Steps, this.stepTypes),
+                this.stock is { ProblemResourceKey: null } adjusted
+                    ? adjusted.Steps
+                    : ProgramFrame.Normalize(this.program.Steps, this.stepTypes),
                 options) with
         {
             ProfileId = this.profile.ProfileId,
@@ -642,6 +752,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         ReviewRows.Add(new LabelValueViewModel("Job_ReviewProfile", this.profile!.Name, Localizer));
         ReviewRows.Add(new LabelValueViewModel("Job_ReviewLength", LengthCheckText, Localizer));
         ReviewRows.Add(new LabelValueViewModel("Job_ReviewProgram", this.program!.Name, Localizer));
+        ReviewRows.Add(new LabelValueViewModel("Job_ReviewStock", StockSummaryText, Localizer));
         ReviewRows.Add(new LabelValueViewModel("Job_ReviewDuration", TotalDurationText, Localizer));
         ReviewRows.Add(new LabelValueViewModel(
             "Job_ReviewOptions",
@@ -654,8 +765,10 @@ public sealed partial class JobViewModel : PageViewModelBase
             Violations.Add(new ViolationRowViewModel(violation, Localizer));
         }
 
-        CanDownload = result.IsValid;
-        StatusResourceKey = result.IsValid ? "Job_ReadyToHandOver" : "Job_ValidationFailed";
+        bool stockOk = this.stock is { ProblemResourceKey: null } && !programFitBlocks;
+        CanDownload = result.IsValid && stockOk;
+        StatusResourceKey = !stockOk ? this.stock?.ProblemResourceKey ?? "Job_Incomplete"
+            : result.IsValid ? "Job_ReadyToHandOver" : "Job_ValidationFailed";
         this.downloadCommand.NotifyCanExecuteChanged();
     }
 
