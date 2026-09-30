@@ -34,6 +34,13 @@ public partial class ShellWindow : Window
         InitializeComponent();
         DataContext = viewModel;
 
+        // 现场全屏、盖住任务栏（hmi.json fullScreen，默认开）；调试时关掉就是普通最大化窗口。
+        if (LayoutProfile.FullScreen)
+        {
+            WindowStyle = WindowStyle.None;
+            ResizeMode = ResizeMode.NoResize;
+        }
+
         this.timer = new DispatcherTimer(DispatcherPriority.Render)
         {
             Interval = viewModel.RefreshInterval,

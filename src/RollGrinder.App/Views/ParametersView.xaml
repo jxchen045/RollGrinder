@@ -138,7 +138,7 @@
 
                 <!-- 下一步 / 这一刀不作数 / 放弃换砂轮… 在竖键 1 / 2 / 8。 -->
                 <!-- 每一步配一张图，标出这一步要量、要填的是哪个尺寸（修改稿 5②）。 -->
-                <ctl:WheelDiagram DockPanel.Dock="Right" Width="420" Height="260" Margin="0,20,24,0" VerticalAlignment="Top"
+                <ctl:WheelDiagram DockPanel.Dock="Right" Width="{ctl:Px 420}" Height="{ctl:Px 260}" Margin="0,20,24,0" VerticalAlignment="Top"
                                   Mode="{Binding WizardDiagramMode}" HighlightKey="{Binding WizardHighlightKey}" />
 
                 <StackPanel Margin="24,20">
@@ -148,18 +148,18 @@
                     <StackPanel Style="{StaticResource WheelChangeEnterNewWheel}">
                         <TextBlock Text="{loc:Loc Parameter_newWheelDiameterMm}" Style="{StaticResource Text.Label}" />
                         <TextBox Text="{Binding NewWheelDiameterText, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource ValueTextBox}" Width="220" HorizontalAlignment="Left"
+                                 Style="{StaticResource ValueTextBox}" Width="{ctl:Px 220}" HorizontalAlignment="Left"
                                  Margin="0,6,0,0" />
                     </StackPanel>
 
                     <StackPanel Style="{StaticResource WheelChangeTrial}">
                         <TextBlock Text="{loc:Loc WheelChange_ExpectedDiameter}" Style="{StaticResource Text.Label}" />
                         <TextBox Text="{Binding TrialExpectedDiameterText, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource ValueTextBox}" Width="220" HorizontalAlignment="Left"
+                                 Style="{StaticResource ValueTextBox}" Width="{ctl:Px 220}" HorizontalAlignment="Left"
                                  Margin="0,6,0,16" />
                         <TextBlock Text="{loc:Loc WheelChange_MeasuredDiameter}" Style="{StaticResource Text.Label}" />
                         <TextBox Text="{Binding TrialMeasuredDiameterText, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource ValueTextBox}" Width="220" HorizontalAlignment="Left"
+                                 Style="{StaticResource ValueTextBox}" Width="{ctl:Px 220}" HorizontalAlignment="Left"
                                  Margin="0,6,0,0" />
                     </StackPanel>
 
@@ -181,7 +181,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="360" />
+                        <ColumnDefinition Width="{ctl:Px 360}" />
                     </Grid.ColumnDefinitions>
 
                     <DockPanel Grid.Column="0" Margin="0,0,1,0">
@@ -202,7 +202,7 @@
                                 </DockPanel>
                             </StackPanel>
                         </Border>
-                        <ctl:WheelDiagram DockPanel.Dock="Top" Mode="Wheel" Height="220" Margin="10"
+                        <ctl:WheelDiagram DockPanel.Dock="Top" Mode="Wheel" Height="{ctl:Px 220}" Margin="10"
                                           HighlightKey="{Binding FocusedWheelKey}" />
                         <ItemsControl ItemsSource="{Binding WheelRows}" Background="{StaticResource Brush.GridLine}"
                                       IsEnabled="{Binding CanEdit}" ItemTemplate="{StaticResource ParameterCellTemplate}">
@@ -220,7 +220,7 @@
                         </Border>
                         <TextBlock DockPanel.Dock="Bottom" Text="{loc:Loc Wheel_DressDefaultsNote}" Style="{StaticResource Text.Label}"
                                    TextWrapping="Wrap" Margin="14,10" />
-                        <ctl:StepDiagram DockPanel.Dock="Top" StepTypeKey="WheelDress" Height="220" Margin="10"
+                        <ctl:StepDiagram DockPanel.Dock="Top" StepTypeKey="WheelDress" Height="{ctl:Px 220}" Margin="10"
                                          HighlightedParameterKey="{Binding FocusedWheelKey}" />
                         <ItemsControl ItemsSource="{Binding DressRows}" Background="{StaticResource Brush.GridLine}"
                                       IsEnabled="{Binding CanEdit}" ItemTemplate="{StaticResource ParameterCellTemplate}">

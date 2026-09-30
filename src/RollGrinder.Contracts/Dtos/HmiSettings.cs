@@ -19,6 +19,8 @@ namespace RollGrinder.Contracts.Dtos;
 /// <param name="CompensationSmoothingPoints">补偿平滑窗口点数（奇数）。</param>
 /// <param name="DefaultRole">用户管理里新建账号时预选的权限。启动权限由登录决定，不看这一项。</param>
 /// <param name="ManualPulseMs">手动动作脉冲命令的脉宽（ms）。</param>
+/// <param name="Layout">版面档位：auto（按屏幕选）、standard（1920×1080）、compact（1366×768）。</param>
+/// <param name="FullScreen">全屏、盖住任务栏（现场 kiosk）；调试时可关。</param>
 public sealed record HmiSettings(
     int SchemaVersion,
     string Culture,
@@ -31,4 +33,6 @@ public sealed record HmiSettings(
     double CompensationGain,
     int CompensationSmoothingPoints,
     UserRole DefaultRole,
-    int ManualPulseMs = 300);
+    int ManualPulseMs = 300,
+    string Layout = "auto",
+    bool FullScreen = true);

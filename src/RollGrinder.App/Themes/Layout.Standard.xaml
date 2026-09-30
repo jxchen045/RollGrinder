@@ -1,0 +1,30 @@
+<!--
+  标准档（1920×1080，19″ IFP1900，像素 0.219 mm）的字号与外壳尺寸（分辨率适配方案第 2、3 节）。
+  字号按真屏论证：L1 58 在 1.5 m 处 20.4′；正文 22 在 0.7 m 处 16.6′；最小 18 为 13.6′，只放辅助信息。
+  紧凑档（1366×768）在 Layout.Compact.xaml 里覆盖同名键，启动时由 LayoutProfile 叠上。
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <sys:Double x:Key="Size.Measurement">58</sys:Double>
+  <sys:Double x:Key="Size.Secondary">32</sys:Double>
+  <sys:Double x:Key="Size.Parameter">30</sys:Double>
+  <sys:Double x:Key="Size.DataRow">24</sys:Double>
+  <sys:Double x:Key="Size.Body">22</sys:Double>
+  <sys:Double x:Key="Size.Label">20</sys:Double>
+  <sys:Double x:Key="Size.Caption">18</sys:Double>
+  <sys:Double x:Key="Size.CardTitle">20</sys:Double>
+  <sys:Double x:Key="Size.PageTitle">24</sys:Double>
+  <sys:Double x:Key="Size.Brand">26</sys:Double>
+  <GridLength x:Key="Layout.LeftBarWidth">80</GridLength>
+  <GridLength x:Key="Layout.RightBarWidth">200</GridLength>
+  <GridLength x:Key="Layout.TitleHeight">52</GridLength>
+  <GridLength x:Key="Layout.PathHeight">32</GridLength>
+  <GridLength x:Key="Layout.DialogHeight">34</GridLength>
+  <GridLength x:Key="Layout.KeyBarHeight">84</GridLength>
+  <sys:Double x:Key="Layout.QuickItemHeight">88</sys:Double>
+  <sys:Double x:Key="Layout.SideScreenHeight">60</sys:Double>
+  <sys:Double x:Key="Layout.TitleButtonHeight">46</sys:Double>
+  <sys:Double x:Key="Layout.ChannelHeight">32</sys:Double>
+  <sys:Double x:Key="Layout.FunctionBlockHeight">144</sys:Double>
+</ResourceDictionary>

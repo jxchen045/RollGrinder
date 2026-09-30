@@ -1,6 +1,7 @@
 <UserControl x:Class="RollGrinder.App.Views.NamePromptOverlay"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibility}}">
     <!-- 起名字的框（最终稿 5.14 弹出框）：青色标题，盖在工作区中央。DataContext 是 NamePromptViewModel。
@@ -10,7 +11,7 @@
         <Border Background="{StaticResource Brush.Surface}"
                 BorderBrush="{StaticResource Brush.Accent}"
                 BorderThickness="3"
-                Width="640"
+                Width="{ctl:Px 640}"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Center"
                 Padding="0">

@@ -18,7 +18,7 @@
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="560" />
+                <ColumnDefinition Width="{ctl:Px 560}" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,6">
@@ -76,7 +76,7 @@
         <Grid x:Name="CentringPage" Visibility="{Binding IsCentring, Converter={StaticResource BoolToVisibility}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="640" />
+                <ColumnDefinition Width="{ctl:Px 640}" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
@@ -84,13 +84,13 @@
                     <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                         <TextBlock Text="{loc:Loc Manual_PointsHeader}" Style="{StaticResource Text.CardTitle}" />
                     </Border>
-                    <Border DockPanel.Dock="Bottom" Height="300" Margin="8">
+                    <Border DockPanel.Dock="Bottom" Height="{ctl:Px 300}" Margin="8">
                         <plot:WpfPlot x:Name="PointsPlot" />
                     </Border>
                     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="12,8">
                         <TextBlock Text="{loc:Loc Manual_JobIdLabel}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="0,0,10,0" />
                         <TextBox Text="{Binding JobId, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
-                                 ctl:TouchInput.IsNumeric="False" Width="300" />
+                                 ctl:TouchInput.IsNumeric="False" Width="{ctl:Px 300}" />
                     </StackPanel>
                     <DataGrid ItemsSource="{Binding Points}" Style="{StaticResource DataTable}" Margin="8">
                         <DataGrid.Columns>

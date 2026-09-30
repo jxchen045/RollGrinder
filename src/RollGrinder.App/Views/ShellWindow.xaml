@@ -84,26 +84,28 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Grid>
+    <!-- 两档固定画布（LayoutProfile）：画布就是该档的屏幕尺寸；实际屏幕不同时整体等比缩放、留边居中。 -->
+    <Viewbox Stretch="Uniform">
+    <Grid x:Name="Canvas" Width="{x:Static ctl:LayoutProfile.CanvasWidth}" Height="{x:Static ctl:LayoutProfile.CanvasHeight}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="80" />
+            <ColumnDefinition Width="{StaticResource Layout.LeftBarWidth}" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="{StaticResource Layout.RightBarWidth}" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="52" />
-            <RowDefinition Height="32" />
+            <RowDefinition Height="{StaticResource Layout.TitleHeight}" />
+            <RowDefinition Height="{StaticResource Layout.PathHeight}" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="34" />
-            <RowDefinition Height="84" />
+            <RowDefinition Height="{StaticResource Layout.DialogHeight}" />
+            <RowDefinition Height="{StaticResource Layout.KeyBarHeight}" />
         </Grid.RowDefinitions>
 
         <!-- 左栏：7 个快捷入口（machine.json quickBar），Ctrl+1…7；当前项青底，进不去的灰字。 -->
         <Border x:Name="QuickBar" Grid.Row="0" Grid.RowSpan="6" Grid.Column="0" Background="{StaticResource Brush.LeftBar}" Padding="3,4">
             <DockPanel>
                 <!-- "⇆ 侧屏"：按得下去，在对话行说为什么这里不开（侧屏是数控系统操作界面自带的）。 -->
-                <Button DockPanel.Dock="Bottom" Height="60" Margin="0,4,0,0" Command="{Binding SideScreenCommand}"
+                <Button DockPanel.Dock="Bottom" Height="{StaticResource Layout.SideScreenHeight}" Margin="0,4,0,0" Command="{Binding SideScreenCommand}"
                         Style="{StaticResource ShellDarkButton}" ctl:ButtonStates.IsUnavailable="True">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="⇆" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
@@ -113,7 +115,7 @@
                 <ItemsControl ItemsSource="{Binding QuickBarItems}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:QuickBarItemViewModel}">
-                            <Button Command="{Binding Command}" Height="88" Margin="0,0,0,3"
+                            <Button Command="{Binding Command}" Height="{StaticResource Layout.QuickItemHeight}" Margin="0,0,0,3"
                                     Style="{StaticResource ShellDarkButton}"
                                     ctl:ButtonStates.IsSelected="{Binding IsCurrent}"
                                     ctl:ButtonStates.IsUnavailable="{Binding IsAvailable, Converter={StaticResource InverseBool}}">
@@ -155,7 +157,7 @@
                 </StackPanel>
 
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="UserButton" Command="{Binding PressUserCommand}" Style="{StaticResource TitleRowButton}" Height="46">
+                    <Button x:Name="UserButton" Command="{Binding PressUserCommand}" Style="{StaticResource TitleRowButton}" Height="{StaticResource Layout.TitleButtonHeight}">
                         <TextBlock Text="{Binding UserText}" FontSize="{StaticResource Size.Body}" Foreground="{StaticResource Brush.TextPrimary}" />
                     </Button>
                     <Ellipse Width="12" Height="12" Margin="14,0,6,0" VerticalAlignment="Center">
@@ -183,7 +185,7 @@
                                Visibility="{Binding IsEmergencyStop, Converter={StaticResource BoolToVisibility}}" />
                     <!-- 报警：红字，点它到诊断 › 报警。 -->
                     <Button x:Name="AlarmButton" Command="{Binding OpenAlarmsCommand}" Style="{StaticResource TitleRowButton}"
-                            Height="46" HorizontalAlignment="Left" HorizontalContentAlignment="Left">
+                            Height="{StaticResource Layout.TitleButtonHeight}" HorizontalAlignment="Left" HorizontalContentAlignment="Left">
                         <Button.Visibility>
                             <MultiBinding Converter="{StaticResource AllTrueToVisibility}">
                                 <Binding Path="HasAlarm" />
@@ -194,7 +196,7 @@
                             <TextBlock Text="{Binding AlarmCode}" FontFamily="{StaticResource Font.Mono}" FontWeight="Bold"
                                        FontSize="{StaticResource Size.Body}" Foreground="{StaticResource Brush.Alarm}" Margin="0,0,10,0" />
                             <TextBlock Text="{Binding AlarmText}" FontWeight="Bold" FontSize="{StaticResource Size.Body}"
-                                       Foreground="{StaticResource Brush.Alarm}" TextTrimming="CharacterEllipsis" MaxWidth="820" />
+                                       Foreground="{StaticResource Brush.Alarm}" TextTrimming="CharacterEllipsis" MaxWidth="{ctl:Px 820}" />
                             <TextBlock Text="{Binding AlarmMoreText}" FontWeight="Bold" FontSize="{StaticResource Size.Body}"
                                        Foreground="{StaticResource Brush.Alarm}" Margin="10,0,0,0" />
                         </StackPanel>
@@ -269,7 +271,7 @@
         </Border>
 
         <!-- 通道行（只在机床区）：左通道状态与回参考点，中机床已起动（钥匙），右手持盒的轴、手轮倍率、使能。 -->
-        <Border x:Name="ChannelRow" Grid.Row="2" Grid.Column="1" Height="32" Padding="12,0"
+        <Border x:Name="ChannelRow" Grid.Row="2" Grid.Column="1" Height="{StaticResource Layout.ChannelHeight}" Padding="12,0"
                 Background="{StaticResource Brush.ChannelRow}"
                 Visibility="{Binding IsMachineArea, Converter={StaticResource BoolToVisibility}}">
             <Grid TextElement.Foreground="{StaticResource Brush.OnAccent}" TextElement.FontSize="{StaticResource Size.Body}">
@@ -304,7 +306,7 @@
         <!-- 右栏：功能键块（撤销 / 重做、键盘 / 计算、帮助 / 截屏）+ 8 个竖键。 -->
         <DockPanel Grid.Row="1" Grid.RowSpan="3" Grid.Column="2" Background="{StaticResource Brush.PathBar}"
                    IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}">
-            <UniformGrid x:Name="FunctionBlock" DockPanel.Dock="Top" Columns="2" Rows="3" Height="144"
+            <UniformGrid x:Name="FunctionBlock" DockPanel.Dock="Top" Columns="2" Rows="3" Height="{StaticResource Layout.FunctionBlockHeight}"
                          Background="{StaticResource Brush.LeftBar}">
                 <Button Command="{Binding UndoCommand}" Content="{loc:Loc Fb_Undo}" Style="{StaticResource ShellDarkButton}" Margin="1" />
                 <Button Command="{Binding RedoCommand}" Content="{loc:Loc Fb_Redo}" Style="{StaticResource ShellDarkButton}" Margin="1" />
@@ -365,7 +367,7 @@
               IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="{StaticResource Layout.RightBarWidth}" />
             </Grid.ColumnDefinitions>
             <ItemsControl ItemsSource="{Binding HorizontalKeys}" ItemTemplate="{StaticResource SoftKeyTemplate}" Margin="0,2">
                 <ItemsControl.ItemsPanel>
@@ -426,7 +428,7 @@
 
         <!-- 数字键盘（最终稿 4.5）：停靠在工作区右下，不挡对话行与软键。 -->
         <Border x:Name="KeypadPanel" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                Margin="0,0,8,8" Width="336" Background="{StaticResource Brush.Surface}"
+                Margin="0,0,8,8" Width="{ctl:Px 336}" Background="{StaticResource Brush.Surface}"
                 BorderBrush="{StaticResource Brush.Active}" BorderThickness="2"
                 Visibility="{Binding Keypad.IsOpen, Converter={StaticResource BoolToVisibility}}">
             <StackPanel>
@@ -463,7 +465,7 @@
 
         <!-- 用户小菜单：签退、用户管理（管理员以上）。 -->
         <Border x:Name="UserMenu" Grid.Row="1" Grid.RowSpan="3" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top"
-                Margin="0,0,180,0" Width="300" Style="{StaticResource Card}" Padding="10"
+                Margin="0,0,180,0" Width="{ctl:Px 300}" Style="{StaticResource Card}" Padding="10"
                 Visibility="{Binding IsUserMenuOpen, Converter={StaticResource BoolToVisibility}}">
             <StackPanel>
                 <Button Content="{loc:Loc Users_Manage}" Command="{Binding OpenUserAdminCommand}" Style="{StaticResource SoftKeyButton}"
@@ -481,7 +483,7 @@
             <Border Background="{StaticResource Brush.Surface}"
                     BorderBrush="{StaticResource Brush.CurrentStep}"
                     BorderThickness="3"
-                    Width="820"
+                    Width="{ctl:Px 820}"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Center"
                     Padding="32,28">
@@ -514,7 +516,7 @@
         <!-- 登录：退不掉的浮层。没登录就什么都不给。 -->
         <Border x:Name="SignInOverlay" Grid.Row="1" Grid.RowSpan="5" Grid.Column="0" Grid.ColumnSpan="3" Background="#E6101418"
                 Visibility="{Binding IsSignInOpen, Converter={StaticResource BoolToVisibility}}">
-            <Border Style="{StaticResource Card}" Width="480"
+            <Border Style="{StaticResource Card}" Width="{ctl:Px 480}"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel Margin="28">
                     <TextBlock Text="{loc:Loc SignIn_Title}" Style="{StaticResource Text.CardTitle}"
@@ -573,7 +575,7 @@
         <!-- 用户管理：管理员以上才开得出来 -->
         <Border x:Name="UserAdminOverlay" Grid.Row="1" Grid.RowSpan="3" Grid.Column="1" Background="#CC101418"
                 Visibility="{Binding IsUserAdminOpen, Converter={StaticResource BoolToVisibility}}">
-            <Border Style="{StaticResource Card}" Width="820" Height="620"
+            <Border Style="{StaticResource Card}" Width="{ctl:Px 820}" Height="{ctl:Px 620}"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
@@ -589,7 +591,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="330" />
+                                    <ColumnDefinition Width="{ctl:Px 330}" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBox Grid.Column="0" Text="{Binding NewUserName, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="False"
@@ -614,7 +616,7 @@
                                 </ItemsControl>
                                 <Button Grid.Column="3" Content="{loc:Loc Users_Create}"
                                         Command="{Binding CreateUserCommand}"
-                                        Style="{StaticResource PrimaryButton}" Height="56" Width="110" />
+                                        Style="{StaticResource PrimaryButton}" Height="56" Width="{ctl:Px 110}" />
                             </Grid>
                             <TextBlock Text="{loc:Loc Users_PasswordHint}" Style="{StaticResource Text.Label}"
                                        Foreground="{StaticResource Brush.TextMuted}" Margin="0,8,0,0" />
@@ -622,13 +624,13 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
                                 <Button Content="{loc:Loc Users_ResetPassword}"
                                         Command="{Binding ResetUserPasswordCommand}"
-                                        Style="{StaticResource SecondaryButton}" Height="56" Width="140"
+                                        Style="{StaticResource SecondaryButton}" Height="56" Width="{ctl:Px 140}"
                                         Margin="0,0,10,0" />
                                 <Button Content="{loc:Loc Users_Delete}" Command="{Binding DeleteUserCommand}"
-                                        Style="{StaticResource DialogDangerButton}" Height="56" Width="120"
+                                        Style="{StaticResource DialogDangerButton}" Height="56" Width="{ctl:Px 120}"
                                         Margin="0,0,10,0" />
                                 <Button Content="{loc:Loc Users_Close}" Command="{Binding CloseUserAdminCommand}"
-                                        Style="{StaticResource SecondaryButton}" Height="56" Width="120" />
+                                        Style="{StaticResource SecondaryButton}" Height="56" Width="{ctl:Px 120}" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -640,8 +642,8 @@
                             <DataGridTextColumn Header="{loc:Loc Users_ColumnName}"
                                                 Binding="{Binding UserName}" Width="*" />
                             <DataGridTextColumn Header="{loc:Loc Users_ColumnRole}"
-                                                Binding="{Binding Role}" Width="180" />
-                            <DataGridTemplateColumn Header="{loc:Loc Users_ColumnPasswordSet}" Width="120">
+                                                Binding="{Binding Role}" Width="{ctl:Px 180}" />
+                            <DataGridTemplateColumn Header="{loc:Loc Users_ColumnPasswordSet}" Width="{ctl:Px 120}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock VerticalAlignment="Center">
@@ -665,4 +667,5 @@
             </Border>
         </Border>
     </Grid>
+    </Viewbox>
 </Window>

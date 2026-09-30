@@ -1,0 +1,29 @@
+<!--
+  紧凑档（1366×768，15″ IPC477E，像素 0.243 mm）：只覆盖和标准档不同的键。
+  15″ 的像素比 19″ 大，字号只比标准档小一两号就达到同样视角（正文 20 在 0.7 m 处 16.7′）；缺的是地方，靠重排。
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <sys:Double x:Key="Size.Measurement">52</sys:Double>
+  <sys:Double x:Key="Size.Secondary">28</sys:Double>
+  <sys:Double x:Key="Size.Parameter">26</sys:Double>
+  <sys:Double x:Key="Size.DataRow">22</sys:Double>
+  <sys:Double x:Key="Size.Body">20</sys:Double>
+  <sys:Double x:Key="Size.Label">18</sys:Double>
+  <sys:Double x:Key="Size.Caption">16</sys:Double>
+  <sys:Double x:Key="Size.CardTitle">18</sys:Double>
+  <sys:Double x:Key="Size.PageTitle">22</sys:Double>
+  <sys:Double x:Key="Size.Brand">22</sys:Double>
+  <GridLength x:Key="Layout.LeftBarWidth">64</GridLength>
+  <GridLength x:Key="Layout.RightBarWidth">156</GridLength>
+  <GridLength x:Key="Layout.TitleHeight">40</GridLength>
+  <GridLength x:Key="Layout.PathHeight">28</GridLength>
+  <GridLength x:Key="Layout.DialogHeight">28</GridLength>
+  <GridLength x:Key="Layout.KeyBarHeight">64</GridLength>
+  <sys:Double x:Key="Layout.QuickItemHeight">76</sys:Double>
+  <sys:Double x:Key="Layout.SideScreenHeight">52</sys:Double>
+  <sys:Double x:Key="Layout.TitleButtonHeight">36</sys:Double>
+  <sys:Double x:Key="Layout.ChannelHeight">28</sys:Double>
+  <sys:Double x:Key="Layout.FunctionBlockHeight">108</sys:Double>
+</ResourceDictionary>

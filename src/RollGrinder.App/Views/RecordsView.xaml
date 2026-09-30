@@ -10,9 +10,9 @@
     -->
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="400" />
+            <ColumnDefinition Width="{ctl:Px 400}" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="460" />
+            <ColumnDefinition Width="{ctl:Px 460}" />
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
@@ -59,7 +59,7 @@
                 <Grid Margin="8">
                     <plot:WpfPlot x:Name="RecordPlot" Visibility="{Binding CurveHasData, Converter={StaticResource BoolToVisibility}}" />
                     <TextBlock Text="{Binding CurveEmptyText}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               TextWrapping="Wrap" MaxWidth="420" TextAlignment="Center">
+                               TextWrapping="Wrap" MaxWidth="{ctl:Px 420}" TextAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Body}">
                                 <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
@@ -113,7 +113,7 @@
         <!-- 查询…：起止日期（点日期弹月历）与三个快捷范围；竖键 7 / 8 = 取消 / 查询。 -->
         <Border x:Name="QueryPanel" Grid.ColumnSpan="3" Background="#B3101418"
                 Visibility="{Binding IsQueryOpen, Converter={StaticResource BoolToVisibility}}">
-            <Border Style="{StaticResource Card}" Width="720" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border Style="{StaticResource Card}" Width="{ctl:Px 720}" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                         <TextBlock Text="{loc:Loc SubView_Query}" Style="{StaticResource Text.CardTitle}" />

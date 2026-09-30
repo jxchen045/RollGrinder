@@ -17,7 +17,7 @@ namespace RollGrinder.Integration.Tests;
 /// </summary>
 public sealed class MinimumFontSizeTests
 {
-    private const double Minimum = 15.0;
+    private const double Minimum = 16.0;
 
     private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
 
@@ -40,8 +40,9 @@ public sealed class MinimumFontSizeTests
     [Fact]
     public void Every_size_token_meets_the_minimum()
     {
-        string path = Path.Combine(RepositoryLayout.Root, "src", "RollGrinder.App", "Themes", "Typography.xaml");
-        var sizes = XDocument.Load(path).Root!.Elements()
+        // 两档各一份（分辨率适配方案第 2 节）：标准档最小 18，紧凑档最小 16。
+        var sizes = new[] { "Layout.Standard.xaml", "Layout.Compact.xaml" }
+            .SelectMany(file => XDocument.Load(Path.Combine(RepositoryLayout.Root, "src", "RollGrinder.App", "Themes", file)).Root!.Elements())
             .Where(e => e.Name.LocalName == "Double" && ((string?)e.Attribute(X + "Key"))?.StartsWith("Size.") == true)
             .Select(e => ((string)e.Attribute(X + "Key")!, double.Parse(e.Value, CultureInfo.InvariantCulture)))
             .ToList();

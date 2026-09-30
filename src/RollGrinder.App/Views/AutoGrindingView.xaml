@@ -30,9 +30,9 @@
 
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="330" />
+                <ColumnDefinition Width="{ctl:Px 330}" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="372" />
+                <ColumnDefinition Width="{ctl:Px 372}" />
             </Grid.ColumnDefinitions>
 
             <!-- 左：工序序列 + 本支辊进度 -->
@@ -87,7 +87,7 @@
             <Grid Grid.Column="1" Margin="0,0,12,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
-                    <RowDefinition Height="286" />
+                    <RowDefinition Height="{ctl:Px 286}" />
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
@@ -137,7 +137,7 @@
                                 <TextBlock Text="{loc:Loc Auto_MatrixHeader}" Style="{StaticResource Text.CardTitle}" />
                                 <TextBlock Text="{loc:Loc Auto_MatrixHint}" Style="{StaticResource Text.Label}"
                                            Margin="12,0,0,0" Foreground="{StaticResource Brush.TextMuted}" />
-                                <TextBlock Text="{Binding MatrixMessage}" FontSize="15" Margin="12,0,0,0"
+                                <TextBlock Text="{Binding MatrixMessage}" FontSize="{StaticResource Size.Caption}" Margin="12,0,0,0"
                                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                            Foreground="{StaticResource Brush.WarningFill}"
                                            Visibility="{Binding MatrixMessage, Converter={StaticResource TextToVisibility}}" />
@@ -170,7 +170,7 @@
 
                                 <!-- 列头：工序名 -->
                                 <StackPanel Orientation="Horizontal">
-                                    <Border Width="190" Height="52" Background="{StaticResource Brush.HeaderFill}"
+                                    <Border Width="{ctl:Px 190}" Height="52" Background="{StaticResource Brush.HeaderFill}"
                                             BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,0,1,1"
                                             Padding="10,0">
                                         <TextBlock Text="{loc:Loc Auto_MatrixParameterColumn}"
@@ -184,14 +184,14 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Width="116" Height="52" Padding="8,0"
+                                                <Border Width="{ctl:Px 116}" Height="52" Padding="8,0"
                                                         BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,0,1,1"
                                                         Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
                                                     <StackPanel VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding OrderText}" FontSize="{StaticResource Size.Caption}"
                                                                    FontFamily="{StaticResource Font.Mono}"
                                                                    Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
-                                                        <TextBlock Text="{Binding DisplayName}" FontSize="15"
+                                                        <TextBlock Text="{Binding DisplayName}" FontSize="{StaticResource Size.Caption}"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
                                                     </StackPanel>
@@ -206,13 +206,13 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
-                                                <Border Width="190" Height="48" Padding="10,0"
+                                                <Border Width="{ctl:Px 190}" Height="48" Padding="10,0"
                                                         Background="{StaticResource Brush.Surface}"
                                                         BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,0,1,1">
                                                     <DockPanel VerticalAlignment="Center">
                                                         <TextBlock DockPanel.Dock="Right" Text="{Binding UnitText}"
                                                                    Style="{StaticResource Text.Label}" Margin="6,0,0,0" />
-                                                        <TextBlock Text="{Binding Label}" FontSize="15"
+                                                        <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}"
                                                                    TextTrimming="CharacterEllipsis" />
                                                     </DockPanel>
                                                 </Border>
@@ -224,7 +224,7 @@
                                                     </ItemsControl.ItemsPanel>
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <Border Width="116" Height="48"
+                                                            <Border Width="{ctl:Px 116}" Height="48"
                                                                     BorderBrush="{StaticResource Brush.Divider}"
                                                                     BorderThickness="0,0,1,1"
                                                                     Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
@@ -387,9 +387,9 @@
                 </Border.Style>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="400" />
+                        <ColumnDefinition Width="{ctl:Px 400}" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="420" />
+                        <ColumnDefinition Width="{ctl:Px 420}" />
                     </Grid.ColumnDefinitions>
 
                     <!-- 左：NC 补偿状态 + 上位机补偿设定（制造商可改） -->
@@ -441,7 +441,7 @@
                             <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                                 <TextBlock Text="{loc:Loc Comp_StrokeHeader}" Style="{StaticResource Text.CardTitle}" />
                             </Border>
-                            <DataGrid DockPanel.Dock="Bottom" Height="260" ItemsSource="{Binding StrokeCorrections}" Style="{StaticResource DataTable}"
+                            <DataGrid DockPanel.Dock="Bottom" Height="{ctl:Px 260}" ItemsSource="{Binding StrokeCorrections}" Style="{StaticResource DataTable}"
                                       AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" FontSize="16">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="{loc:Loc Comp_ColumnVersion}" Binding="{Binding VersionText}" Width="*" />

@@ -112,6 +112,7 @@ public static class Program
 
             var application = new App(host, selfTestRunner is null ? null : selfTestRunner.RunAsync);
             application.InitializeComponent();
+            RollGrinder.App.Controls.LayoutProfile.Apply(application, hmiSettings.Layout, hmiSettings.FullScreen);
             int exitCode = application.Run();
 
             host.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();

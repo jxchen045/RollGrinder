@@ -95,7 +95,7 @@
                 <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Right" Text="{Binding ConfigStatusText}" FontSize="{StaticResource Size.Caption}" VerticalAlignment="Center"
-                                   Foreground="{StaticResource Brush.TextSecondary}" TextTrimming="CharacterEllipsis" MaxWidth="900" />
+                                   Foreground="{StaticResource Brush.TextSecondary}" TextTrimming="CharacterEllipsis" MaxWidth="{ctl:Px 900}" />
                         <TextBlock Text="{loc:Loc Cfg_TagMapHeader}" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center" />
                     </DockPanel>
                 </Border>
@@ -180,7 +180,7 @@
         <!-- 系统：只读——语言、刷新、左栏条目、按钮板动作；配置原文只读查看（竖键 1 / 2）。 -->
         <Grid Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=system}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="640" />
+                <ColumnDefinition Width="{ctl:Px 640}" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
@@ -194,7 +194,7 @@
                             <DataTemplate>
                                 <Border Height="56" Padding="16,0" BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="0,0,0,1">
                                     <DockPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" Width="200" />
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" Width="{ctl:Px 200}" />
                                         <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextTrimming="CharacterEllipsis" />
                                     </DockPanel>
                                 </Border>

@@ -1,4 +1,5 @@
 <!--
+  字号的值在 Layout.Standard.xaml / Layout.Compact.xaml（按档位）。
   字号层级（界面最终稿 F1、4.2）：
   L1 主读数 54（Size.Measurement：手动磨削的 X、X1、Z、U，测量直径，自动页实测直径，对中两端之差）；
   L2 次读数 32（Size.Secondary：砂轮、头架、拖板实际值，自动页状态带 X、Z）；
@@ -19,16 +20,6 @@
   <FontFamily x:Key="Font.Sans">pack://application:,,,/Fonts/#Noto Sans SC, Microsoft YaHei UI, Microsoft YaHei</FontFamily>
   <FontFamily x:Key="Font.Mono">pack://application:,,,/Fonts/#IBM Plex Mono, Consolas, Cascadia Mono</FontFamily>
 
-  <sys:Double x:Key="Size.Measurement">54</sys:Double>
-  <sys:Double x:Key="Size.Secondary">32</sys:Double>
-  <sys:Double x:Key="Size.Parameter">30</sys:Double>
-  <sys:Double x:Key="Size.DataRow">24</sys:Double>
-  <sys:Double x:Key="Size.Body">19</sys:Double>
-  <sys:Double x:Key="Size.Label">16</sys:Double>
-  <sys:Double x:Key="Size.Caption">15</sys:Double>
-  <sys:Double x:Key="Size.CardTitle">18</sys:Double>
-  <sys:Double x:Key="Size.PageTitle">22</sys:Double>
-  <sys:Double x:Key="Size.Brand">26</sys:Double>
 
   <!-- 主测量值：实测直径这类"一眼要看到"的数 -->
   <Style x:Key="Text.Measurement" TargetType="TextBlock">

@@ -16,7 +16,7 @@
         <Grid Visibility="{Binding IsListGroup, Converter={StaticResource BoolToVisibility}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="720" />
+                <ColumnDefinition Width="{ctl:Px 720}" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
@@ -59,13 +59,13 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <DockPanel Margin="0,0,0,6">
-                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" Width="140" />
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" Width="{ctl:Px 140}" />
                                     <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
                                 </DockPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <plot:WpfPlot x:Name="PreviewPlot" Margin="8" MinHeight="300" />
+                    <plot:WpfPlot x:Name="PreviewPlot" Margin="8" MinHeight="{ctl:Px 300}" />
                 </DockPanel>
             </Border>
         </Grid>
@@ -79,7 +79,7 @@
             <Grid Margin="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="620" />
+                    <ColumnDefinition Width="{ctl:Px 620}" />
                 </Grid.ColumnDefinitions>
 
                 <DataGrid ItemsSource="{Binding Ledger}" SelectedItem="{Binding SelectedLedgerRow}"
@@ -109,10 +109,10 @@
                                 </Style>
                             </Grid.Resources>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="{ctl:Px 120}" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="16" />
-                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="{ctl:Px 120}" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
@@ -182,7 +182,7 @@
 
                         <TextBlock Text="{loc:Loc Ledger_HistoryHeader}" Style="{StaticResource Text.Label}" Margin="0,16,0,6" />
                         <DataGrid ItemsSource="{Binding LedgerHistory}" AutoGenerateColumns="False" IsReadOnly="True"
-                                  Style="{StaticResource DataTable}" HeadersVisibility="Column" MaxHeight="300">
+                                  Style="{StaticResource DataTable}" HeadersVisibility="Column" MaxHeight="{ctl:Px 300}">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="{loc:Loc Ledger_HistoryStarted}" Binding="{Binding StartedText}" Width="1.4*" />
                                 <DataGridTextColumn Header="{loc:Loc Ledger_HistoryJob}" Binding="{Binding JobId}" Width="1.4*" />

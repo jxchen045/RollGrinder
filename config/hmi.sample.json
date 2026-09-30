@@ -10,5 +10,7 @@
   "compensationGain": 0.7,
   "compensationSmoothingPoints": 5,
   "defaultRole": "Operator",
-  "manualPulseMs": 300
+  "manualPulseMs": 300,
+  "layout": "auto",
+  "fullScreen": true
 }

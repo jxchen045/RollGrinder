@@ -1,12 +1,13 @@
 <UserControl x:Class="RollGrinder.App.Views.ProfileView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              xmlns:views="clr-namespace:RollGrinder.App.Views"
              xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="380" />
+            <ColumnDefinition Width="{ctl:Px 380}" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -134,14 +135,14 @@
                                         <ColumnDefinition Width="10" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="{Binding OrderText}" FontFamily="{StaticResource Font.Mono}"
-                                               FontSize="15" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                               FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
                                     <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontSize="17" Margin="8,0,0,0"
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Grid.Column="2" Text="{Binding StartText}" FontFamily="{StaticResource Font.Mono}" FontSize="15"
+                                    <TextBlock Grid.Column="2" Text="{Binding StartText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
                                                TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Brush.TextSecondary}" />
-                                    <TextBlock Grid.Column="3" Text="{Binding LengthText}" FontFamily="{StaticResource Font.Mono}" FontSize="15"
+                                    <TextBlock Grid.Column="3" Text="{Binding LengthText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
                                                TextAlignment="Right" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="4" Text="{Binding EndText}" FontFamily="{StaticResource Font.Mono}" FontSize="15"
+                                    <TextBlock Grid.Column="4" Text="{Binding EndText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
                                                TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Brush.TextSecondary}" />
                                     <!-- 这一段有错：行尾一条红标，和问题列表里的"第 N 段"对得上。 -->
                                     <Border Grid.Column="5" Width="6" Height="30" HorizontalAlignment="Right"
@@ -158,7 +159,7 @@
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
-                <RowDefinition Height="280" />
+                <RowDefinition Height="{ctl:Px 280}" />
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
@@ -169,10 +170,10 @@
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="{loc:Loc Profile_PreviewHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,16,0" />
                                 <Rectangle Width="22" Height="3" Fill="{StaticResource Brush.Accent}" VerticalAlignment="Center" />
-                                <TextBlock Text="{loc:Loc Profile_LegendComposed}" FontSize="15" Margin="7,0,16,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:Loc Profile_LegendComposed}" FontSize="{StaticResource Size.Caption}" Margin="7,0,16,0" VerticalAlignment="Center" />
                                 <Rectangle Width="22" Height="6" Fill="{StaticResource Brush.CurrentStep}" VerticalAlignment="Center" />
-                                <TextBlock Text="{loc:Loc Profile_LegendSelected}" FontSize="15" Margin="7,0,16,0" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding ReferenceDeviationText}" FontSize="15" VerticalAlignment="Center"
+                                <TextBlock Text="{loc:Loc Profile_LegendSelected}" FontSize="{StaticResource Size.Caption}" Margin="7,0,16,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ReferenceDeviationText}" FontSize="{StaticResource Size.Caption}" VerticalAlignment="Center"
                                            Foreground="{StaticResource Brush.TextSecondary}" />
                             </StackPanel>
                         </DockPanel>
@@ -182,8 +183,8 @@
                             Padding="14,8">
                         <StackPanel>
                             <DockPanel>
-                                <TextBlock DockPanel.Dock="Right" Text="{Binding StatusText}" FontSize="15"
-                                           Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" MaxWidth="520" />
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding StatusText}" FontSize="{StaticResource Size.Caption}"
+                                           Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" MaxWidth="{ctl:Px 520}" />
                                 <TextBlock Text="{Binding IssueSummaryText}" FontSize="17" FontWeight="SemiBold">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
@@ -197,7 +198,7 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                             </DockPanel>
-                            <ScrollViewer MaxHeight="118" VerticalScrollBarVisibility="Auto" Margin="0,4,0,0">
+                            <ScrollViewer MaxHeight="{ctl:Px 118}" VerticalScrollBarVisibility="Auto" Margin="0,4,0,0">
                                 <ItemsControl ItemsSource="{Binding Issues}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -241,7 +242,7 @@
                         </Grid.ColumnDefinitions>
 
                         <!-- 点表段：Z（段内，mm）与直径偏差（µm）一行一个点；加点落在选中点和下一个点的正中。 -->
-                        <DockPanel Grid.Column="0" Width="380" Margin="8"
+                        <DockPanel Grid.Column="0" Width="{ctl:Px 380}" Margin="8"
                                    Visibility="{Binding IsPointTableSelected, Converter={StaticResource BoolToVisibility}}">
                             <StackPanel DockPanel.Dock="Right" Margin="8,0,0,0">
                                 <Button Content="{loc:Loc Profile_AddPoint}" Command="{Binding AddPointCommand}"

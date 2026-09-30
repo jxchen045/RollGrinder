@@ -12,7 +12,7 @@
         <Grid Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=alarms}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="520" />
+                <ColumnDefinition Width="{ctl:Px 520}" />
             </Grid.ColumnDefinitions>
             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
                 <DockPanel>
@@ -28,10 +28,10 @@
                     </Border>
                     <DataGrid ItemsSource="{Binding Events}" SelectedItem="{Binding SelectedAlarm}" Style="{StaticResource DataTable}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="{loc:Loc Alarm_TimeColumn}" Binding="{Binding TimeText}" Width="220" />
-                            <DataGridTextColumn Header="{loc:Loc Diag_AlarmCodeColumn}" Binding="{Binding CodeText}" Width="120" />
+                            <DataGridTextColumn Header="{loc:Loc Alarm_TimeColumn}" Binding="{Binding TimeText}" Width="{ctl:Px 220}" />
+                            <DataGridTextColumn Header="{loc:Loc Diag_AlarmCodeColumn}" Binding="{Binding CodeText}" Width="{ctl:Px 120}" />
                             <DataGridTextColumn Header="{loc:Loc Alarm_MessageColumn}" Binding="{Binding Message}" Width="*" />
-                            <DataGridTextColumn Header="{loc:Loc Alarm_SeverityColumn}" Binding="{Binding SeverityText}" Width="110" />
+                            <DataGridTextColumn Header="{loc:Loc Alarm_SeverityColumn}" Binding="{Binding SeverityText}" Width="{ctl:Px 110}" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
@@ -68,8 +68,8 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="360" />
-                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="{ctl:Px 360}" />
+                            <ColumnDefinition Width="{ctl:Px 120}" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="{loc:Loc Diag_TagMonitorKey}"
                                    Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="16,0,0,0" />
@@ -88,8 +88,8 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="360" />
-                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="{ctl:Px 360}" />
+                                            <ColumnDefinition Width="{ctl:Px 120}" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="{Binding Key}"
                                                    Style="{StaticResource Text.DataRow}" Margin="16,0,0,0" />
@@ -156,7 +156,7 @@
         <!-- 连接与接口：连接、补偿接口、契约校验、降级、机床能力 -->
         <Grid Visibility="{Binding Group, Converter={StaticResource EqualsToVisibility}, ConverterParameter=connection}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="520" />
+                <ColumnDefinition Width="{ctl:Px 520}" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
         <StackPanel Grid.Column="0" Margin="0,0,12,0">
@@ -328,7 +328,7 @@
                 <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                     <TextBlock Text="{loc:Loc Diag_BackupHeader}" Style="{StaticResource Text.CardTitle}" />
                 </Border>
-                <StackPanel Margin="24,16" MaxWidth="1000" HorizontalAlignment="Left">
+                <StackPanel Margin="24,16" MaxWidth="{ctl:Px 1000}" HorizontalAlignment="Left">
                     <TextBlock Text="{loc:Loc Diag_BackupNote}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
                     <TextBlock Text="{loc:Loc Diag_RestoreNote}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" Margin="0,16,0,0" />
                 </StackPanel>

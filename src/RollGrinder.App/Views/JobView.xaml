@@ -54,7 +54,7 @@
             </Style>
         </Grid.Resources>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="320" />
+            <ColumnDefinition Width="{ctl:Px 320}" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -165,7 +165,7 @@
                     <Grid Style="{StaticResource Step3Panel}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="360" />
+                            <ColumnDefinition Width="{ctl:Px 360}" />
                         </Grid.ColumnDefinitions>
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Job_PickProgram}" FontSize="18" Margin="0,0,0,8" />
@@ -252,7 +252,7 @@
                     <Grid Style="{StaticResource Step5Panel}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*" />
-                            <RowDefinition Height="320" />
+                            <RowDefinition Height="{ctl:Px 320}" />
                         </Grid.RowDefinitions>
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
@@ -260,7 +260,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <DockPanel Margin="0,0,0,8">
-                                            <TextBlock Text="{Binding Label}" Width="200" Style="{StaticResource Text.Label}" VerticalAlignment="Top" />
+                                            <TextBlock Text="{Binding Label}" Width="{ctl:Px 200}" Style="{StaticResource Text.Label}" VerticalAlignment="Top" />
                                             <TextBlock Text="{Binding ValueText}" FontSize="18" TextWrapping="Wrap" />
                                         </DockPanel>
                                     </DataTemplate>
@@ -270,7 +270,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Margin="4,0,0,6">
-                                            <TextBlock Text="{Binding ParameterText}" Width="260" FontSize="17"
+                                            <TextBlock Text="{Binding ParameterText}" Width="{ctl:Px 260}" FontSize="17"
                                                        Foreground="{StaticResource Brush.CurrentStep}" />
                                             <TextBlock Text="{Binding ReasonText}" FontSize="17"
                                                        Foreground="{StaticResource Brush.CurrentStep}" />
