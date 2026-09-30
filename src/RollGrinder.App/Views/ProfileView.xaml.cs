@@ -111,7 +111,7 @@ public partial class ProfileView : UserControl
         }
 
         double[] composedX = this.viewModel.ComposedPoints.Select(point => point.BodyPositionMm).ToArray();
-        double[] composedY = this.viewModel.ComposedPoints.Select(point => point.DiameterMm).ToArray();
+        double[] composedY = this.viewModel.ComposedPoints.Select(point => point.DiameterMm * 1000.0).ToArray();
         var composed = PreviewPlot.Plot.Add.Scatter(composedX, composedY);
         composed.LineWidth = 3f;
         composed.MarkerSize = 0;
@@ -131,7 +131,7 @@ public partial class ProfileView : UserControl
         {
             var selected = PreviewPlot.Plot.Add.Scatter(
                 this.viewModel.SelectedSegmentPoints.Select(point => point.BodyPositionMm).ToArray(),
-                this.viewModel.SelectedSegmentPoints.Select(point => point.DiameterMm).ToArray());
+                this.viewModel.SelectedSegmentPoints.Select(point => point.DiameterMm * 1000.0).ToArray());
             selected.LineWidth = 6f;
             selected.MarkerSize = 0;
             selected.Color = Color.FromHex("#B3241C").WithAlpha(0.55);
@@ -142,7 +142,7 @@ public partial class ProfileView : UserControl
         {
             var table = PreviewPlot.Plot.Add.Scatter(
                 this.viewModel.TablePoints.Select(point => point.BodyPositionMm).ToArray(),
-                this.viewModel.TablePoints.Select(point => point.DiameterMm).ToArray());
+                this.viewModel.TablePoints.Select(point => point.DiameterMm * 1000.0).ToArray());
             table.LineWidth = 0f;
             table.MarkerSize = 8f;
             table.Color = Color.FromHex("#B3241C");
@@ -150,7 +150,7 @@ public partial class ProfileView : UserControl
 
         // 导进来的对照线：虚线、另一个颜色，一眼看出哪条是设计、哪条是拿来比的。
         double[] referenceX = this.viewModel.ReferencePoints.Select(point => point.BodyPositionMm).ToArray();
-        double[] referenceY = this.viewModel.ReferencePoints.Select(point => point.DiameterMm).ToArray();
+        double[] referenceY = this.viewModel.ReferencePoints.Select(point => point.DiameterMm * 1000.0).ToArray();
         if (referenceX.Length >= 2)
         {
             var reference = PreviewPlot.Plot.Add.Scatter(referenceX, referenceY);
@@ -160,7 +160,8 @@ public partial class ProfileView : UserControl
             reference.Color = Color.FromHex("#8A5A00");
         }
 
-        PreviewPlot.Plot.Axes.AutoScale();
+        // 辊形图规范：直径量 µm，Y 由合成辊形定，绘图区 4 : 1（和库、作业、记录里同一条辊形一个样）。
+        PlotTheme.ShowProfile(PreviewPlot, composedX[^1], composedY);
         PreviewPlot.Refresh();
     }
 }

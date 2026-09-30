@@ -54,7 +54,7 @@ public partial class LibraryView : UserControl
             line.MarkerSize = 0;
             line.Color = PlotTheme.Curve(PreviewPlot, "Color.CurveTarget");
             PreviewPlot.Plot.Axes.Left.Label.Text = vm.Localizer["Job_ReviewCurveAxis"];
-            PreviewPlot.Plot.Axes.AutoScale();
+            PlotTheme.ShowProfile(PreviewPlot, vm.PreviewCurve.Max(point => point.BodyPositionMm), vm.PreviewCurve.Select(point => point.DiameterMicrometer));
         }
 
         PreviewPlot.Refresh();

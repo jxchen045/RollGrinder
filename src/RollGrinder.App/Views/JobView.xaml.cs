@@ -55,7 +55,7 @@ public partial class JobView : UserControl
             target.MarkerSize = 0;
             target.Color = PlotTheme.Curve(ReviewPlot, "Color.CurveTarget");
             ReviewPlot.Plot.Axes.Left.Label.Text = vm.Localizer["Job_ReviewCurveAxis"];
-            ReviewPlot.Plot.Axes.AutoScale();
+            PlotTheme.ShowProfile(ReviewPlot, vm.ReviewCurve.Max(point => point.BodyPositionMm), vm.ReviewCurve.Select(point => point.DiameterMicrometer));
         }
 
         ReviewPlot.Refresh();

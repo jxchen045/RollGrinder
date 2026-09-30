@@ -148,8 +148,17 @@ public partial class AutoGrindingView : UserControl
         this.wheelLine.IsVisible = this.viewModel.WheelPositionMm is not null;
 
         CurvePlot.Plot.Axes.Left.Label.Text = this.viewModel.CurveYAxisLabel;
-        // 边磨边刷新：人手缩放 / 拖过就保留人看的那一段，按图角"复位视图"再回到全貌。
-        PlotTheme.AutoScale(CurvePlot);
+        // 边磨边刷新：人手缩放 / 拖过就保留人看的那一段，按图角"复位视图"再回到规范范围。
+        // 五条曲线共用 4 : 1 的框，切换时框不跳；误差按偏差图（公差带居中），其余按数据取整。
+        double length = positions.Max();
+        if (showTolerance)
+        {
+            PlotTheme.ShowDeviation(CurvePlot, length, tolerance, values);
+        }
+        else
+        {
+            PlotTheme.ShowAlongBody(CurvePlot, length, values);
+        }
         CurvePlot.Refresh();
     }
 }

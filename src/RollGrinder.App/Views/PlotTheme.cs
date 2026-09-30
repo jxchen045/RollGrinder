@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using RollGrinder.App.Controls;
 using System.Windows;
 using System.Windows.Controls;
 using VisualTreeHelper = System.Windows.Media.VisualTreeHelper;
@@ -73,6 +75,14 @@ internal static class PlotTheme
 
         EnableTouch(control);
         control.Loaded += (_, _) => AddResetButton(control);
+        control.SizeChanged += (_, _) =>
+        {
+            if (Views.GetOrCreateValue(control).FixedAspect)
+            {
+                ApplyAspect(control);
+                control.Refresh();
+            }
+        };
     }
 
     /// <summary>
@@ -87,12 +97,80 @@ internal static class PlotTheme
         }
     }
 
-    /// <summary>复位视图：回到自动缩放，看全整条曲线。</summary>
+    /// <summary>复位视图：回到规范范围（辊形图、偏差图），其余回到自动缩放。</summary>
     public static void ResetView(WpfPlot control)
     {
-        Views.GetOrCreateValue(control).UserAdjusted = false;
-        control.Plot.Axes.AutoScale();
+        PlotState state = Views.GetOrCreateValue(control);
+        state.UserAdjusted = false;
+        if (state.Home is { } home)
+        {
+            control.Plot.Axes.SetLimits(home.Left, home.Right, home.Bottom, home.Top);
+        }
+        else
+        {
+            control.Plot.Axes.AutoScale();
+        }
+
         control.Refresh();
+    }
+
+    /// <summary>
+    /// 辊形图（分辨率适配方案第 4 节）：X 整根辊身 0…L，Y 由目标辊形定（直径量 µm），绘图区固定 4 : 1。
+    /// 同一条辊形在辊形页、库、作业、记录里形状完全一样。
+    /// </summary>
+    public static void ShowProfile(WpfPlot control, double bodyLengthMm, IEnumerable<double> targetMicrometer)
+    {
+        (double low, double high) = ChartRanges.Profile(targetMicrometer);
+        SetHome(control, bodyLengthMm, low, high);
+    }
+
+    /// <summary>偏差图（误差等）：X 整根辊身，Y 以 0 为中心对称，半幅 = max(2 × 公差, 数据)，绘图区同样 4 : 1。</summary>
+    public static void ShowDeviation(WpfPlot control, double bodyLengthMm, double toleranceMicrometer, IEnumerable<double> values)
+    {
+        (double low, double high) = ChartRanges.Deviation(toleranceMicrometer, values);
+        SetHome(control, bodyLengthMm, low, high);
+    }
+
+    /// <summary>其他沿辊身的量（圆度、偏心、电流）：X 整根辊身，Y 按数据取整，绘图区 4 : 1。</summary>
+    public static void ShowAlongBody(WpfPlot control, double bodyLengthMm, IEnumerable<double> values)
+    {
+        (double low, double high) = ChartRanges.Data(values);
+        SetHome(control, bodyLengthMm, low, high);
+    }
+
+    private static void SetHome(WpfPlot control, double bodyLengthMm, double low, double high)
+    {
+        PlotState state = Views.GetOrCreateValue(control);
+        state.Home = new AxisLimits(0.0, Math.Max(bodyLengthMm, 1.0), low, high);
+        state.FixedAspect = true;
+        if (!state.UserAdjusted)
+        {
+            control.Plot.Axes.SetLimits(0.0, Math.Max(bodyLengthMm, 1.0), low, high);
+        }
+
+        ApplyAspect(control);
+    }
+
+    /// <summary>绘图区按 4 : 1 居中，容器比例不同就四周留白，不拉伸。</summary>
+    private static void ApplyAspect(WpfPlot control)
+    {
+        if (!Views.GetOrCreateValue(control).FixedAspect || control.ActualWidth <= 0 || control.ActualHeight <= 0)
+        {
+            return;
+        }
+
+        bool labelled = !string.IsNullOrEmpty(control.Plot.Axes.Left.Label.Text);
+        float left = (TickFontSize * 4.2f) + (labelled ? AxisLabelFontSize * 1.8f : 0f);
+        float bottom = (TickFontSize * 2.4f) + (string.IsNullOrEmpty(control.Plot.Axes.Bottom.Label.Text) ? 0f : AxisLabelFontSize * 1.8f);
+        const float top = 14f;
+        const float right = 20f;
+        double availableWidth = Math.Max(control.ActualWidth - left - right, 10.0);
+        double availableHeight = Math.Max(control.ActualHeight - top - bottom, 10.0);
+        double width = Math.Min(availableWidth, availableHeight * ChartRanges.PlotAspect);
+        double height = width / ChartRanges.PlotAspect;
+        float padX = (float)((availableWidth - width) / 2.0);
+        float padY = (float)((availableHeight - height) / 2.0);
+        control.Plot.Layout.Fixed(new PixelPadding(left + padX, right + padX, bottom + padY, top + padY));
     }
 
     /// <summary>
@@ -212,6 +290,10 @@ internal static class PlotTheme
     private sealed class PlotState
     {
         public bool UserAdjusted { get; set; }
+
+        public AxisLimits? Home { get; set; }
+
+        public bool FixedAspect { get; set; }
 
         public bool HasResetButton { get; set; }
     }

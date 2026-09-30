@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Threading;
@@ -92,7 +93,23 @@ public partial class RecordsView : UserControl
         RecordPlot.Plot.Axes.Bottom.Label.Text = this.viewModel.Localizer[curve.AxisUnitResourceKey];
         RecordPlot.Plot.Axes.Left.Label.Text = this.viewModel.Localizer[curve.ValueUnitResourceKey];
         RecordPlot.Plot.ShowLegend();
-        RecordPlot.Plot.Axes.AutoScale();
+
+        // 磨前 / 磨后是辊形图：按磨后（目标）那条定范围，和辊形页同一个样；误差按偏差图；其余自动。
+        double[] xs = curve.Series.SelectMany(series => series.Points).Select(point => point.X).ToArray();
+        IEnumerable<double> ys = curve.Series.SelectMany(series => series.Points).Select(point => point.Y);
+        switch (curve.Kind)
+        {
+            case RecordCurveKind.BeforeAfterProfile:
+                PlotTheme.ShowProfile(RecordPlot, xs.Max(), curve.Series[^1].Points.Select(point => point.Y));
+                break;
+            case RecordCurveKind.Deviation:
+                PlotTheme.ShowDeviation(RecordPlot, xs.Max(), 0.0, ys);
+                break;
+            default:
+                RecordPlot.Plot.Axes.AutoScale();
+                break;
+        }
+
         RecordPlot.Refresh();
     }
 
