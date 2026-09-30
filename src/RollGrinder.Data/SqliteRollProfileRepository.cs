@@ -62,11 +62,13 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
         double bodyLengthMm;
         DateTimeOffset createdAtUtc;
         DateTimeOffset modifiedAtUtc;
+        double? nominalDiameter;
+        double? tolerance;
 
         await using (SqliteCommand command = connection.CreateCommand())
         {
             command.CommandText =
-                "SELECT name, body_length_mm, created_at_utc, modified_at_utc FROM roll_profile WHERE profile_id = $id;";
+                "SELECT name, body_length_mm, created_at_utc, modified_at_utc, nominal_diameter_mm, tolerance_um FROM roll_profile WHERE profile_id = $id;";
             SqlMapping.AddParameter(command, "$id", profileId);
 
             await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -79,6 +81,8 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             bodyLengthMm = reader.GetDouble(1);
             createdAtUtc = SqlMapping.ToTimestamp(reader.GetString(2));
             modifiedAtUtc = SqlMapping.ToTimestamp(reader.GetString(3));
+            nominalDiameter = reader.IsDBNull(4) ? null : reader.GetDouble(4);
+            tolerance = reader.IsDBNull(5) ? null : reader.GetDouble(5);
         }
 
         CompositeRollProfile? profile = await ProfileSegmentMapping
@@ -90,7 +94,11 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             throw new DataStoreException($"Roll profile '{profileId}' has no segments.");
         }
 
-        return new RollProfileDefinition(profileId, name, bodyLengthMm, profile, createdAtUtc, modifiedAtUtc);
+        return new RollProfileDefinition(profileId, name, bodyLengthMm, profile, createdAtUtc, modifiedAtUtc)
+        {
+            NominalDiameterMm = nominalDiameter,
+            ToleranceMicrometer = tolerance,
+        };
     }
 
     public async Task SaveAsync(RollProfileDefinition profile, CancellationToken cancellationToken)
@@ -106,16 +114,20 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             command.Transaction = transaction;
             command.CommandText =
                 """
-                INSERT INTO roll_profile (profile_id, name, body_length_mm, created_at_utc, modified_at_utc)
-                VALUES ($id, $name, $length, $created, $modified)
+                INSERT INTO roll_profile (profile_id, name, body_length_mm, created_at_utc, modified_at_utc, nominal_diameter_mm, tolerance_um)
+                VALUES ($id, $name, $length, $created, $modified, $diameter, $tolerance)
                 ON CONFLICT(profile_id) DO UPDATE SET
                     name = excluded.name,
                     body_length_mm = excluded.body_length_mm,
+                    nominal_diameter_mm = excluded.nominal_diameter_mm,
+                    tolerance_um = excluded.tolerance_um,
                     modified_at_utc = excluded.modified_at_utc;
                 """;
             SqlMapping.AddParameter(command, "$id", profile.ProfileId);
             SqlMapping.AddParameter(command, "$name", profile.Name);
             SqlMapping.AddParameter(command, "$length", profile.BodyLengthMm);
+            SqlMapping.AddParameter(command, "$diameter", profile.NominalDiameterMm);
+            SqlMapping.AddParameter(command, "$tolerance", profile.ToleranceMicrometer);
             SqlMapping.AddParameter(command, "$created", SqlMapping.ToText(profile.CreatedAtUtc));
             SqlMapping.AddParameter(command, "$modified", SqlMapping.ToText(profile.ModifiedAtUtc));
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);

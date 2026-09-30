@@ -30,12 +30,12 @@ public sealed class SqliteRollRepository : IRollRepository
                 roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc,
                 grind_start_position_mm, curve_length_mm, curve_tolerance_um,
                 net_weight_kg, head_box_weight_kg, tail_box_weight_kg,
-                roll_kind, current_diameter_mm)
+                roll_kind, current_diameter_mm, scrap_diameter_mm)
             VALUES (
                 $id, $code, $length, $radius, $material, $created,
                 $grindStart, $curveLength, $curveTolerance,
                 $netWeight, $headBoxWeight, $tailBoxWeight,
-                $kind, $currentDiameter)
+                $kind, $currentDiameter, $scrapDiameter)
             ON CONFLICT(roll_id) DO UPDATE SET
                 code = excluded.code,
                 body_length_mm = excluded.body_length_mm,
@@ -48,7 +48,8 @@ public sealed class SqliteRollRepository : IRollRepository
                 head_box_weight_kg = excluded.head_box_weight_kg,
                 tail_box_weight_kg = excluded.tail_box_weight_kg,
                 roll_kind = excluded.roll_kind,
-                current_diameter_mm = excluded.current_diameter_mm;
+                current_diameter_mm = excluded.current_diameter_mm,
+                scrap_diameter_mm = excluded.scrap_diameter_mm;
             """;
         SqlMapping.AddParameter(command, "$grindStart", roll.Data.GrindStartPositionMm);
         SqlMapping.AddParameter(command, "$curveLength", roll.Data.CurveLengthMm);
@@ -58,6 +59,7 @@ public sealed class SqliteRollRepository : IRollRepository
         SqlMapping.AddParameter(command, "$tailBoxWeight", roll.Data.TailBoxWeightKg);
         SqlMapping.AddParameter(command, "$kind", (int)roll.Kind);
         SqlMapping.AddParameter(command, "$currentDiameter", roll.CurrentDiameterMm);
+        SqlMapping.AddParameter(command, "$scrapDiameter", roll.ScrapDiameterMm);
         SqlMapping.AddParameter(command, "$id", roll.RollId);
         SqlMapping.AddParameter(command, "$code", roll.Code);
         SqlMapping.AddParameter(command, "$length", roll.Geometry.BodyLengthMm);
@@ -79,7 +81,7 @@ public sealed class SqliteRollRepository : IRollRepository
             SELECT roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc,
                    grind_start_position_mm, curve_length_mm, curve_tolerance_um,
                    net_weight_kg, head_box_weight_kg, tail_box_weight_kg,
-                   roll_kind, current_diameter_mm
+                   roll_kind, current_diameter_mm, scrap_diameter_mm
             FROM roll WHERE roll_id = $id;
             """;
         SqlMapping.AddParameter(command, "$id", rollId);
@@ -97,7 +99,7 @@ public sealed class SqliteRollRepository : IRollRepository
             SELECT roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc,
                    grind_start_position_mm, curve_length_mm, curve_tolerance_um,
                    net_weight_kg, head_box_weight_kg, tail_box_weight_kg,
-                   roll_kind, current_diameter_mm
+                   roll_kind, current_diameter_mm, scrap_diameter_mm
             FROM roll ORDER BY created_at_utc DESC LIMIT $limit;
             """;
         SqlMapping.AddParameter(command, "$limit", limit);
@@ -128,6 +130,7 @@ public sealed class SqliteRollRepository : IRollRepository
             Nullable(reader, 11)),
         Kind = (RollKind)reader.GetInt32(12),
         CurrentDiameterMm = Nullable(reader, 13),
+        ScrapDiameterMm = Nullable(reader, 14),
     };
 
     /// <summary>没登记的那几项读回来仍然是"没登记"，不是 0。</summary>

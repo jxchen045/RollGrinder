@@ -1621,15 +1621,6 @@
   <data name="Profile_ReferenceDeviationFormat" xml:space="preserve">
     <value>Up to {0:F1} µm from the reference</value>
   </data>
-  <data name="RollData_GrindStart" xml:space="preserve">
-    <value>Grind start position (mm)</value>
-  </data>
-  <data name="RollData_CurveLength" xml:space="preserve">
-    <value>Curve length (mm)</value>
-  </data>
-  <data name="RollData_CurveTolerance" xml:space="preserve">
-    <value>Curve tolerance (µm)</value>
-  </data>
   <data name="RollData_NetWeight" xml:space="preserve">
     <value>Roll net weight (kg)</value>
   </data>
@@ -3888,5 +3879,26 @@
   </data>
   <data name="Job_ProgramOtherLengthFormat" xml:space="preserve">
     <value>Written for "{0}" with a different design length: cannot be used here</value>
+  </data>
+  <data name="Startup_AlreadyRunning" xml:space="preserve">
+    <value>The HMI is already running; a second copy was not started.</value>
+  </data>
+  <data name="Ledger_ScrapDiameterLabel" xml:space="preserve">
+    <value>Scrap diameter</value>
+  </data>
+  <data name="Stock_BelowScrap" xml:space="preserve">
+    <value>The target diameter is below the roll's scrap diameter</value>
+  </data>
+  <data name="Job_ReviewDiameterCheck" xml:space="preserve">
+    <value>Diameter check</value>
+  </data>
+  <data name="Job_DiameterMismatchFormat" xml:space="preserve">
+    <value>⚠ Profile designed for {0:0} mm, this roll is {1:0.0} mm (over 10% apart)</value>
+  </data>
+  <data name="Profile_NominalDiameter" xml:space="preserve">
+    <value>Diameter</value>
+  </data>
+  <data name="Profile_Tolerance" xml:space="preserve">
+    <value>Tolerance</value>
   </data>
 </root>

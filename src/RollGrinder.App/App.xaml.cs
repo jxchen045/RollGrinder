@@ -51,7 +51,26 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
         AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
 
-        ShellWindow window = this.host.Services.GetRequiredService<ShellWindow>();
+        // 主窗口建不出来（XAML 资源、绑定类型错……）：不能转成报警后留下一个没有窗口的进程常驻——
+        // 现场看不见它，却占着数据库和 NC 连接。记日志、说原因、退出。
+        ShellWindow window;
+        try
+        {
+            window = this.host.Services.GetRequiredService<ShellWindow>();
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "The main window could not be created; exiting instead of running without a window");
+            IStringLocalizer localizer = this.host.Services.GetRequiredService<IStringLocalizer>();
+            MessageBox.Show(
+                localizer.Format("Startup_FailedMessage", ex.GetBaseException().Message),
+                localizer["Startup_FailedCaption"],
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Shutdown(1);
+            return;
+        }
+
         MainWindow = window;
 
         // 自动打印挂在应用上而不是某一页上：勾了"打印磨后数据"的那张报表，

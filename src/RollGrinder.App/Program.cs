@@ -65,6 +65,14 @@ public static class Program
         IStringLocalizer localizer = new ResxStringLocalizer();
         LocalizationScope.SetCurrent(localizer);
 
+        // 一台机床只跑一个上位机：再点一次图标不能又起一个进程去抢 NC 连接和数据库（自检用自己的数据目录，不受限）。
+        using var instance = new Mutex(initiallyOwned: true, @"Local\RollGrinderHmi", out bool firstInstance);
+        if (!firstInstance && selfTestRunner is null)
+        {
+            MessageBox.Show(localizer["Startup_AlreadyRunning"], localizer["Startup_FailedCaption"], MessageBoxButton.OK, MessageBoxImage.Information);
+            return 1;
+        }
+
         try
         {
             IReadOnlyList<string> createdConfigFiles = ConfigBootstrapper

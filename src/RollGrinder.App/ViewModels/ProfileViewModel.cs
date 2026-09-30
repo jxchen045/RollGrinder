@@ -679,6 +679,21 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
     }
 
+    /// <summary>适用公称直径（mm，流程调整方案第 5 节）：估时用；作业里与这支辊的直径差 10% 以上提示。可空。</summary>
+    [ObservableProperty]
+    private string nominalDiameterText = string.Empty;
+
+    /// <summary>辊形公差（直径量 µm）：形状规格，随辊形保存。可空。</summary>
+    [ObservableProperty]
+    private string toleranceText = string.Empty;
+
+    partial void OnNominalDiameterTextChanged(string value) => MarkDirty();
+
+    partial void OnToleranceTextChanged(string value) => MarkDirty();
+
+    private static double? OptionalNumber(string text) =>
+        double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out double value) && value > 0.0 ? value : null;
+
     /// <summary>把选中段换成所选类型，长度与镜像不变，参数回到新类型的默认值。</summary>
     [RelayCommand]
     private void ChangeSegmentType()
@@ -1154,7 +1169,11 @@ public sealed partial class ProfileViewModel : PageViewModelBase
                     this.geometry.BodyLengthMm,
                     this.composite,
                     existing?.CreatedAtUtc ?? now,
-                    now),
+                    now)
+                {
+                    NominalDiameterMm = OptionalNumber(NominalDiameterText),
+                    ToleranceMicrometer = OptionalNumber(ToleranceText),
+                },
                 cancellationToken).ConfigureAwait(true);
 
             ProfileId = profileId;
@@ -1197,6 +1216,8 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             this.committedBodyLengthMm = this.geometry.BodyLengthMm;
             ProfileId = definition.ProfileId;
             ProfileName = definition.Name;
+            NominalDiameterText = definition.NominalDiameterMm?.ToString("0.#", CultureInfo.CurrentCulture) ?? string.Empty;
+            ToleranceText = definition.ToleranceMicrometer?.ToString("0.#", CultureInfo.CurrentCulture) ?? string.Empty;
             IsDirty = legacy;
             StatusResourceKey = legacy ? "Profile_LegacyConverted" : string.Empty;
         }
@@ -1252,6 +1273,8 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         Rebuild(1);
         ProfileId = null;
         ProfileName = string.Empty;
+        NominalDiameterText = string.Empty;
+        ToleranceText = string.Empty;
         this.committedComposite = this.composite;
         this.committedBodyLengthMm = this.geometry.BodyLengthMm;
         IsDirty = false;

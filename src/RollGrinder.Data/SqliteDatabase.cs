@@ -346,6 +346,13 @@ public sealed class SqliteDatabase
         ALTER TABLE program ADD COLUMN profile_id TEXT NULL;
         ALTER TABLE program ADD COLUMN standard_stock_um REAL NULL;
         """,
+
+        // 参数归属（流程调整方案第 5 节）：台账加报废直径；辊形加适用公称直径与辊形公差。
+        """
+        ALTER TABLE roll ADD COLUMN scrap_diameter_mm REAL NULL;
+        ALTER TABLE roll_profile ADD COLUMN nominal_diameter_mm REAL NULL;
+        ALTER TABLE roll_profile ADD COLUMN tolerance_um REAL NULL;
+        """,
     };
 
     private readonly string connectionString;

@@ -1621,15 +1621,6 @@
   <data name="Profile_ReferenceDeviationFormat" xml:space="preserve">
     <value>与对照线最大相差 {0:F1} µm</value>
   </data>
-  <data name="RollData_GrindStart" xml:space="preserve">
-    <value>启磨点坐标 (mm)</value>
-  </data>
-  <data name="RollData_CurveLength" xml:space="preserve">
-    <value>曲线长度 (mm)</value>
-  </data>
-  <data name="RollData_CurveTolerance" xml:space="preserve">
-    <value>曲线允许误差 (µm)</value>
-  </data>
   <data name="RollData_NetWeight" xml:space="preserve">
     <value>轧辊净重 (kg)</value>
   </data>
@@ -3888,5 +3879,26 @@
   </data>
   <data name="Job_ProgramOtherLengthFormat" xml:space="preserve">
     <value>这支程序按「{0}」编制，设计长度不同，不能用于这条辊形</value>
+  </data>
+  <data name="Startup_AlreadyRunning" xml:space="preserve">
+    <value>上位机已经在运行，不再启动第二个。</value>
+  </data>
+  <data name="Ledger_ScrapDiameterLabel" xml:space="preserve">
+    <value>报废直径</value>
+  </data>
+  <data name="Stock_BelowScrap" xml:space="preserve">
+    <value>目标直径小于台账登记的报废直径：这支辊不能再磨到这个尺寸</value>
+  </data>
+  <data name="Job_ReviewDiameterCheck" xml:space="preserve">
+    <value>辊径核对</value>
+  </data>
+  <data name="Job_DiameterMismatchFormat" xml:space="preserve">
+    <value>⚠ 辊形按公称直径 {0:0} mm 设计，这支辊 {1:0.0} mm，相差超过 10%</value>
+  </data>
+  <data name="Profile_NominalDiameter" xml:space="preserve">
+    <value>适用直径</value>
+  </data>
+  <data name="Profile_Tolerance" xml:space="preserve">
+    <value>辊形公差</value>
   </data>
 </root>

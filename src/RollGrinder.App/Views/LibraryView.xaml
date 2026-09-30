@@ -151,23 +151,20 @@
                             <TextBlock Grid.Row="2" Grid.Column="3" Text="{loc:Loc Ledger_CurrentDiameterLabel}" Style="{StaticResource LedgerLabel}" />
                             <TextBox Grid.Row="2" Grid.Column="4" Text="{Binding LedgerCurrentDiameterText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
 
-                            <TextBlock Grid.Row="3" Text="{loc:Loc RollData_GrindStart}" Style="{StaticResource LedgerLabel}" />
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding LedgerGrindStartText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-                            <TextBlock Grid.Row="3" Grid.Column="3" Text="{loc:Loc RollData_CurveLength}" Style="{StaticResource LedgerLabel}" />
-                            <TextBox Grid.Row="3" Grid.Column="4" Text="{Binding LedgerCurveLengthText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+                            <!-- 参数归属（流程调整方案第 5 节）：台账只管这支辊本身。曲线长度、曲线允许误差归辊形，启磨点归作业，
+                                 不再在这里填（库里原有的值原样保留）。报废直径：作业的目标直径不能小于它。 -->
+                            <TextBlock Grid.Row="3" Text="{loc:Loc Ledger_ScrapDiameterLabel}" Style="{StaticResource LedgerLabel}" />
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding LedgerScrapDiameterText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+                            <TextBlock Grid.Row="3" Grid.Column="3" Text="{loc:Loc RollData_NetWeight}" Style="{StaticResource LedgerLabel}" />
+                            <TextBox Grid.Row="3" Grid.Column="4" Text="{Binding LedgerNetWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
 
-                            <TextBlock Grid.Row="4" Text="{loc:Loc RollData_CurveTolerance}" Style="{StaticResource LedgerLabel}" />
-                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding LedgerCurveToleranceText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-                            <TextBlock Grid.Row="4" Grid.Column="3" Text="{loc:Loc RollData_NetWeight}" Style="{StaticResource LedgerLabel}" />
-                            <TextBox Grid.Row="4" Grid.Column="4" Text="{Binding LedgerNetWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+                            <TextBlock Grid.Row="4" Text="{loc:Loc RollData_HeadBoxWeight}" Style="{StaticResource LedgerLabel}" />
+                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding LedgerHeadBoxWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
+                            <TextBlock Grid.Row="4" Grid.Column="3" Text="{loc:Loc RollData_TailBoxWeight}" Style="{StaticResource LedgerLabel}" />
+                            <TextBox Grid.Row="4" Grid.Column="4" Text="{Binding LedgerTailBoxWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
 
-                            <TextBlock Grid.Row="5" Text="{loc:Loc RollData_HeadBoxWeight}" Style="{StaticResource LedgerLabel}" />
-                            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding LedgerHeadBoxWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-                            <TextBlock Grid.Row="5" Grid.Column="3" Text="{loc:Loc RollData_TailBoxWeight}" Style="{StaticResource LedgerLabel}" />
-                            <TextBox Grid.Row="5" Grid.Column="4" Text="{Binding LedgerTailBoxWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource LedgerBox}" />
-
-                            <TextBlock Grid.Row="6" Grid.Column="3" Text="{loc:Loc Ledger_TotalWeight}" Style="{StaticResource LedgerLabel}" />
-                            <TextBlock Grid.Row="6" Grid.Column="4" Text="{Binding LedgerTotalWeightText}" FontFamily="{StaticResource Font.Mono}"
+                            <TextBlock Grid.Row="5" Grid.Column="3" Text="{loc:Loc Ledger_TotalWeight}" Style="{StaticResource LedgerLabel}" />
+                            <TextBlock Grid.Row="5" Grid.Column="4" Text="{Binding LedgerTotalWeightText}" FontFamily="{StaticResource Font.Mono}"
                                        FontSize="18" VerticalAlignment="Center" />
                         </Grid>
 

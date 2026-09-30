@@ -35,6 +35,23 @@
                                  Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}"
                                  VerticalContentAlignment="Center" />
                     </DockPanel>
+                    <!-- 适用公称直径、辊形公差（流程调整方案第 5 节）：属于辊形规格，随辊形保存。 -->
+                    <DockPanel Margin="0,8,0,0">
+                        <TextBlock Text="{loc:Loc Profile_NominalDiameter}" Style="{StaticResource Text.Label}"
+                                   VerticalAlignment="Center" Width="80" TextWrapping="Wrap" />
+                        <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
+                                   DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        <TextBox Text="{Binding NominalDiameterText, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="True"
+                                 Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}" VerticalContentAlignment="Center" />
+                    </DockPanel>
+                    <DockPanel Margin="0,8,0,0">
+                        <TextBlock Text="{loc:Loc Profile_Tolerance}" Style="{StaticResource Text.Label}"
+                                   VerticalAlignment="Center" Width="80" TextWrapping="Wrap" />
+                        <TextBlock Text="{loc:Loc Unit_Micrometer}" Style="{StaticResource Text.Label}"
+                                   DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
+                        <TextBox Text="{Binding ToleranceText, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="True"
+                                 Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}" VerticalContentAlignment="Center" />
+                    </DockPanel>
                     <!-- 对称只是编辑辅助：勾上只编头架端，尾架端镜像生成；含 CVC 时置灰。 -->
                     <CheckBox Content="{loc:Loc Profile_Symmetric}" IsChecked="{Binding IsSymmetric}"
                               IsEnabled="{Binding CanToggleSymmetry}" ToolTip="{loc:Loc Profile_SymmetricHint}"

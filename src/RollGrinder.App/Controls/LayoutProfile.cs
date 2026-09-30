@@ -70,6 +70,17 @@ public sealed class PxExtension : MarkupExtension
             System.Reflection.PropertyInfo info => info.PropertyType,
             _ => null,
         };
-        return type == typeof(GridLength) ? new GridLength(scaled) : scaled;
+        // 列宽、行宽各有各的类型：GridLength（Grid 行列）、DataGridLength（DataGrid 列）；给错类型 WPF 在建窗口时抛异常。
+        if (type == typeof(GridLength))
+        {
+            return new GridLength(scaled);
+        }
+
+        if (type == typeof(System.Windows.Controls.DataGridLength))
+        {
+            return new System.Windows.Controls.DataGridLength(scaled);
+        }
+
+        return scaled;
     }
 }

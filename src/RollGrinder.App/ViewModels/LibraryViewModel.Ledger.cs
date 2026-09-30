@@ -66,6 +66,10 @@ public sealed partial class LibraryViewModel
     [ObservableProperty]
     private string ledgerCurveToleranceText = string.Empty;
 
+    /// <summary>报废直径（mm，流程调整方案第 5 节）：作业的目标直径不能小于它。</summary>
+    [ObservableProperty]
+    private string ledgerScrapDiameterText = string.Empty;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LedgerTotalWeightText))]
     private string ledgerNetWeightText = string.Empty;
@@ -122,6 +126,7 @@ public sealed partial class LibraryViewModel
         LedgerGrindStartText = string.Empty;
         LedgerCurveLengthText = string.Empty;
         LedgerCurveToleranceText = string.Empty;
+        LedgerScrapDiameterText = string.Empty;
         LedgerNetWeightText = string.Empty;
         LedgerHeadBoxWeightText = string.Empty;
         LedgerTailBoxWeightText = string.Empty;
@@ -219,6 +224,7 @@ public sealed partial class LibraryViewModel
         LedgerGrindStartText = Format(roll.Data.GrindStartPositionMm, "F1");
         LedgerCurveLengthText = Format(roll.Data.CurveLengthMm, "F1");
         LedgerCurveToleranceText = Format(roll.Data.CurveToleranceMicrometer, "F1");
+        LedgerScrapDiameterText = Format(roll.ScrapDiameterMm, "F1");
         LedgerNetWeightText = Format(roll.Data.NetWeightKg, "F0");
         LedgerHeadBoxWeightText = Format(roll.Data.HeadBoxWeightKg, "F0");
         LedgerTailBoxWeightText = Format(roll.Data.TailBoxWeightKg, "F0");
@@ -247,6 +253,7 @@ public sealed partial class LibraryViewModel
             || !TryOptional(LedgerGrindStartText, out double? grindStart)
             || !TryOptional(LedgerCurveLengthText, out double? curveLength)
             || !TryOptional(LedgerCurveToleranceText, out double? curveTolerance)
+            || !TryOptional(LedgerScrapDiameterText, out double? scrap)
             || !TryOptional(LedgerNetWeightText, out double? net)
             || !TryOptional(LedgerHeadBoxWeightText, out double? head)
             || !TryOptional(LedgerTailBoxWeightText, out double? tail))
@@ -265,6 +272,7 @@ public sealed partial class LibraryViewModel
             Material = string.IsNullOrWhiteSpace(LedgerMaterial) ? null : LedgerMaterial.Trim(),
             Kind = LedgerKind,
             CurrentDiameterMm = current,
+            ScrapDiameterMm = scrap,
             Data = new RollDataSheet(grindStart, curveLength, curveTolerance, net, head, tail),
         };
     }

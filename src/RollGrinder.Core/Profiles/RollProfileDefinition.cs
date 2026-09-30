@@ -23,6 +23,12 @@ public sealed record RollProfileDefinition(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset ModifiedAtUtc)
 {
+    /// <summary>适用公称直径（mm）：估时用；作业里和这支辊的直径相差 10% 以上时提示。没填为 null。</summary>
+    public double? NominalDiameterMm { get; init; }
+
+    /// <summary>辊形公差（直径量 µm）：形状规格的一部分，不属于某一支辊。没填为 null。</summary>
+    public double? ToleranceMicrometer { get; init; }
+
     /// <summary>主辊形（第一段）的曲线类型键，列表上显示用。</summary>
     public string ProfileTypeKey => Profile.Segments[0].ProfileTypeKey;
 

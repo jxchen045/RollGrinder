@@ -31,6 +31,9 @@ public sealed record RollRecord(
 
     /// <summary>当前直径（mm）：每磨一次小一点，公称直径是新辊时的尺寸。没登记为 null。</summary>
     public double? CurrentDiameterMm { get; init; }
+
+    /// <summary>报废直径（mm）：磨到比它小这支辊就不能用了。作业的目标直径不能小于它；没登记为 null。</summary>
+    public double? ScrapDiameterMm { get; init; }
 }
 
 /// <summary>轧辊类型。</summary>

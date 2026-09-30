@@ -520,6 +520,12 @@ public sealed partial class JobViewModel : PageViewModelBase
 
         double actual = (StartDiameterMm(this.roll) - target) * 1000.0;
         this.stock = StockAdjustment.Apply(ProgramFrame.Normalize(this.program.Steps, this.stepTypes), actual);
+        if (this.roll.ScrapDiameterMm is double scrap && target < scrap)
+        {
+            // 台账登记了报废直径：磨到比它小这支辊就废了，不下发。
+            this.stock = this.stock with { ProblemResourceKey = "Stock_BelowScrap" };
+        }
+
         StockSummaryText = this.stock.ProblemResourceKey is { } problem
             ? Localizer[problem]
             : Localizer.Format("Job_StockSummaryFormat", actual, this.stock.ProgramStockMicrometer, this.stock.RoughStockMicrometer);
@@ -753,6 +759,14 @@ public sealed partial class JobViewModel : PageViewModelBase
         ReviewRows.Add(new LabelValueViewModel("Job_ReviewLength", LengthCheckText, Localizer));
         ReviewRows.Add(new LabelValueViewModel("Job_ReviewProgram", this.program!.Name, Localizer));
         ReviewRows.Add(new LabelValueViewModel("Job_ReviewStock", StockSummaryText, Localizer));
+        if (this.profile.NominalDiameterMm is double designed && designed > 0.0
+            && Math.Abs(StartDiameterMm(this.roll!) - designed) / designed > 0.1)
+        {
+            // 辊形按另一种辊径设计（例如支承辊的辊形套到工作辊上）：提示，不拦——拉伸 / 居中已经管了长度。
+            ReviewRows.Add(new LabelValueViewModel(
+                "Job_ReviewDiameterCheck", Localizer.Format("Job_DiameterMismatchFormat", designed, StartDiameterMm(this.roll!)), Localizer));
+        }
+
         ReviewRows.Add(new LabelValueViewModel("Job_ReviewDuration", TotalDurationText, Localizer));
         ReviewRows.Add(new LabelValueViewModel(
             "Job_ReviewOptions",

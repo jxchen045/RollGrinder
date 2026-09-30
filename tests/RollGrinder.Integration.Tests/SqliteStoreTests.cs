@@ -109,6 +109,32 @@ public sealed class SqliteStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Scrap_diameter_and_profile_spec_round_trip()
+    {
+        // 参数归属（流程调整方案第 5 节）：报废直径归台账；适用直径、辊形公差归辊形。
+        await MigratedAsync();
+        var rolls = new SqliteRollRepository(this.database);
+        await rolls.UpsertAsync(
+            new RollRecord("R-1", "WR-4711", RollGeometry.FromDiameter(2000.0, 650.0), null, DateTimeOffset.UnixEpoch) { ScrapDiameterMm = 600.0 },
+            CancellationToken.None);
+        (await rolls.GetAsync("R-1", CancellationToken.None))!.ScrapDiameterMm.Should().Be(600.0);
+
+        var profiles = new SqliteRollProfileRepository(this.database);
+        await profiles.SaveAsync(
+            RollProfileDefinition.Create(
+                "P-1",
+                "凸度",
+                2000.0,
+                CompositeRollProfile.Sequential(0.0, new[] { new SequentialSegment(ProfileTypeKeys.Crown, 2000.0, new CrownProfileType().Schema.CreateDefaults()) }),
+                DateTimeOffset.UnixEpoch)
+            with { NominalDiameterMm = 650.0, ToleranceMicrometer = 5.0 },
+            CancellationToken.None);
+        RollProfileDefinition loaded = (await profiles.GetAsync("P-1", CancellationToken.None))!;
+        loaded.NominalDiameterMm.Should().Be(650.0);
+        loaded.ToleranceMicrometer.Should().Be(5.0);
+    }
+
+    [Fact]
     public async Task Roll_round_trips()
     {
         await MigratedAsync();
