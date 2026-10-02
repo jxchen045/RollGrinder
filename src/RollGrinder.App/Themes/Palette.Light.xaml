@@ -43,6 +43,8 @@
   <Color x:Key="Color.HelpKeyPressed">#E0B815</Color>
   <Color x:Key="Color.HelpBorder">#EED32E</Color>
   <Color x:Key="Color.Alarm">#C4161C</Color>
+  <!-- 灯"动作中"：橙（四态灯，界面修订稿 v3 1.1）。 -->
+  <Color x:Key="Color.Moving">#D9822B</Color>
   <Color x:Key="Color.PendingValue">#B3241C</Color>
 
   <!-- 曲线（最终稿 4.3）：各页统一 -->
@@ -148,6 +150,7 @@
   <SolidColorBrush x:Key="Brush.HelpKeyPressed" Color="{StaticResource Color.HelpKeyPressed}" />
   <SolidColorBrush x:Key="Brush.HelpBorder" Color="{StaticResource Color.HelpBorder}" />
   <SolidColorBrush x:Key="Brush.Alarm" Color="{StaticResource Color.Alarm}" />
+  <SolidColorBrush x:Key="Brush.Moving" Color="{StaticResource Color.Moving}" />
   <SolidColorBrush x:Key="Brush.PendingValue" Color="{StaticResource Color.PendingValue}" />
 
 </ResourceDictionary>

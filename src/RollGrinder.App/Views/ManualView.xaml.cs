@@ -51,7 +51,7 @@ public partial class ManualView : UserControl
             line.LineWidth = 2.5f;
             line.MarkerSize = 8;
             line.Color = PlotTheme.Curve(PointsPlot, "Color.CurveMeasured");
-            PointsPlot.Plot.Axes.Left.Label.Text = vm.Localizer["Manual_PointsAxis"];
+            PlotTheme.AxisTitles(PointsPlot, vm.Localizer["Chart_AxisZ"], vm.Localizer["Manual_PointsAxis"]);
             PointsPlot.Plot.Axes.AutoScale();
         }
 

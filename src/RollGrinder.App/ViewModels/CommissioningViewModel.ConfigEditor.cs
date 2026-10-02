@@ -153,11 +153,36 @@ public sealed partial class CommissioningViewModel
             }
         }
 
-        foreach (string name in new[] { "options", "workpiece", "thresholds", "stepTypeCodes", "auxiliaryActionCodes" })
+        foreach (string name in new[] { "options", "workpiece" })
+        {
+            AddObjectGroup(name, document[name] as JsonObject);
+        }
+
+        // 作业核对（关系设计第 6 节）：长度容差、工件线速度上下限单列一组，其余阈值照旧。
+        if (document["thresholds"] is JsonObject thresholds)
+        {
+            string[] jobChecks = JobCheckThresholdKeys.Where(thresholds.ContainsKey).ToArray();
+            if (jobChecks.Length > 0)
+            {
+                AddGroup("CfgGroup_jobChecks", "thresholds.", thresholds, jobChecks, Array.Empty<string>());
+            }
+
+            AddGroup("CfgGroup_thresholds", "thresholds.", thresholds,
+                thresholds.Select(pair => pair.Key).Where(key => !JobCheckThresholdKeys.Contains(key)).ToArray(), Array.Empty<string>());
+        }
+
+        foreach (string name in new[] { "stepTypeCodes", "auxiliaryActionCodes" })
         {
             AddObjectGroup(name, document[name] as JsonObject);
         }
     }
+
+    private static readonly string[] JobCheckThresholdKeys =
+    {
+        MachineDescription.LengthTolerancePercentKey,
+        MachineDescription.MinWorkpieceSurfaceSpeedKey,
+        MachineDescription.MaxWorkpieceSurfaceSpeedKey,
+    };
 
     private void AddObjectGroup(string name, JsonObject? group)
     {

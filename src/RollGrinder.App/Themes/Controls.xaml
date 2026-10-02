@@ -517,6 +517,16 @@
         <Setter TargetName="LampDash" Property="Visibility" Value="Visible" />
         <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
       </DataTrigger>
+      <DataTrigger Binding="{Binding IsMoving}" Value="True">
+        <Setter TargetName="LampFill" Property="Background" Value="{StaticResource Brush.Moving}" />
+        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+        <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+      </DataTrigger>
+      <DataTrigger Binding="{Binding IsFault}" Value="True">
+        <Setter TargetName="LampFill" Property="Background" Value="{StaticResource Brush.Alarm}" />
+        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+        <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+      </DataTrigger>
     </DataTemplate.Triggers>
   </DataTemplate>
 
@@ -573,6 +583,36 @@
   </DataTemplate>
 
   <!-- 状态带上的一格文字：小字标签在上，值在下。 -->
+  <!-- 辅助功能块的小灯（一组一行）：名字写在灯里，绿 到位/开 · 灰 关 · 橙 动作中 · 红 故障 · 虚框 读不到。 -->
+  <DataTemplate x:Key="StatusLampCompactTemplate">
+    <Grid Margin="0,0,6,0" MinWidth="78" Height="28" ToolTip="{Binding StateText}">
+      <Border x:Name="LampFill" Background="{StaticResource Brush.StepIdle}" CornerRadius="2" />
+      <Rectangle x:Name="LampDash" Stroke="{StaticResource Brush.TextMuted}" StrokeThickness="1.5"
+                 StrokeDashArray="3 2" Visibility="Collapsed" />
+      <TextBlock x:Name="LampLabel" Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Margin="8,0"
+                 VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{StaticResource Brush.TextSecondary}" />
+    </Grid>
+    <DataTemplate.Triggers>
+      <DataTrigger Binding="{Binding IsOn}" Value="True">
+        <Setter TargetName="LampFill" Property="Background" Value="{StaticResource Brush.Normal}" />
+        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+      </DataTrigger>
+      <DataTrigger Binding="{Binding IsMoving}" Value="True">
+        <Setter TargetName="LampFill" Property="Background" Value="{StaticResource Brush.Moving}" />
+        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+      </DataTrigger>
+      <DataTrigger Binding="{Binding IsFault}" Value="True">
+        <Setter TargetName="LampFill" Property="Background" Value="{StaticResource Brush.Alarm}" />
+        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+      </DataTrigger>
+      <DataTrigger Binding="{Binding IsUnknown}" Value="True">
+        <Setter TargetName="LampFill" Property="Background" Value="Transparent" />
+        <Setter TargetName="LampDash" Property="Visibility" Value="Visible" />
+        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+      </DataTrigger>
+    </DataTemplate.Triggers>
+  </DataTemplate>
+
   <DataTemplate x:Key="StatusFieldTemplate">
     <StackPanel Margin="0,0,22,0" VerticalAlignment="Center">
       <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" />

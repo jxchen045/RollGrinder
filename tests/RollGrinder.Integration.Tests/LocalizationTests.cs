@@ -121,7 +121,7 @@ public sealed class LocalizationTests
         "JobState_", "StepSlot_", "Option_", "Role_", "Severity_", "Violation_",
         "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_", "WheelEvent_", "WheelSource_", "Status_", "MeasurementStage_", "ChangeArea_", "ManualPage_", "CfgField_", "CfgGroup_",
         "Area_", "Mode_", "Help_", "Language_", "Keypad_Error_", "Pendant_Axis",
-        "CheckItem_", "Check_Stock_", "ImportKind_", "Ledger_Problem_", "RollKindFilter_", "RollKind_",
+        "CheckItem_", "Check_Stock_", "Chart_AxisX_", "Chart_AxisY_", "StatusGroup_", "Verdict_", "ImportKind_", "Ledger_Problem_", "RollKindFilter_", "RollKind_",
     };
 
     [Fact]

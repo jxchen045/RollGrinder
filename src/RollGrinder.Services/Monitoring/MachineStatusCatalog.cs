@@ -17,6 +17,12 @@ public enum IndicatorState
 
     /// <summary>开 / 到位。绿。</summary>
     On = 2,
+
+    /// <summary>动作中（发了命令还没到位）。橙。读 <c>&lt;变量&gt;.moving</c>，没映射就没有这一态。</summary>
+    Moving = 3,
+
+    /// <summary>故障。红。读 <c>&lt;变量&gt;.fault</c>，没映射就没有这一态。</summary>
+    Fault = 4,
 }
 
 /// <summary>
@@ -44,16 +50,35 @@ public sealed record StatusIndicator(string Key, string TagKey)
             return IndicatorState.Unknown;
         }
 
+        // 故障、动作中两位可选：映射了且为真时盖过开 / 关（四态灯，界面修订稿 v3 1.1）。
+        if (snapshot.GetNumberOrNull(FaultTagKey) is double fault && fault != 0.0)
+        {
+            return IndicatorState.Fault;
+        }
+
+        if (snapshot.GetNumberOrNull(MovingTagKey) is double moving && moving != 0.0)
+        {
+            return IndicatorState.Moving;
+        }
+
         double? value = snapshot.GetNumberOrNull(TagKey);
         return value is null ? IndicatorState.Unknown : value.Value != 0.0 ? IndicatorState.On : IndicatorState.Off;
     }
+
+    /// <summary>故障位（可选）。</summary>
+    public string FaultTagKey => TagKey + ".fault";
+
+    /// <summary>动作中位（可选）。</summary>
+    public string MovingTagKey => TagKey + ".moving";
 
     /// <summary>几项合成一个灯（例如内外两个测量臂合成"测量臂"）：有一项开就是开；都读不到才是读不到。</summary>
     public static IndicatorState Combine(IEnumerable<IndicatorState> states)
     {
         ArgumentNullException.ThrowIfNull(states);
         IndicatorState[] all = states.ToArray();
-        return all.Contains(IndicatorState.On) ? IndicatorState.On
+        return all.Contains(IndicatorState.Fault) ? IndicatorState.Fault
+            : all.Contains(IndicatorState.Moving) ? IndicatorState.Moving
+            : all.Contains(IndicatorState.On) ? IndicatorState.On
             : all.Contains(IndicatorState.Off) ? IndicatorState.Off
             : IndicatorState.Unknown;
     }
@@ -89,11 +114,34 @@ public static class MachineStatusCatalog
 
     public static StatusIndicator SteadyRest { get; } = new("steadyRest", MachineTagKeys.Status("steadyRest.engaged"));
 
+    /// <summary>防护门关好。</summary>
+    public static StatusIndicator Door { get; } = new("door", MachineTagKeys.Status("door.closed"));
+
+    /// <summary>液压正常。</summary>
+    public static StatusIndicator Hydraulics { get; } = new("hydraulics", MachineTagKeys.Status("hydraulics.ok"));
+
+    /// <summary>润滑正常。</summary>
+    public static StatusIndicator Lubrication { get; } = new("lubrication", MachineTagKeys.Status("lubrication.ok"));
+
     /// <summary>全部指示。</summary>
     public static IReadOnlyList<StatusIndicator> All { get; } = new[]
     {
         Coolant, WheelRunning, HeadstockForward, HeadstockReverse,
         OuterArm, InnerArm, Quill, Tailstock, Driver,
         SoftLandingHeadstock, SoftLandingTailstock, SteadyRest,
+        Door, Hydraulics, Lubrication,
+    };
+
+    /// <summary>
+    /// 辅助功能块的五组（界面修订稿 v3 1.1）：冷却 · 装夹 · 支承 · 测量 · 机床，每组一行。
+    /// 组名资源键 "StatusGroup_" + 键。自动页与 JOG 页同一套。
+    /// </summary>
+    public static IReadOnlyList<(string Key, IReadOnlyList<StatusIndicator> Indicators)> Groups { get; } = new (string, IReadOnlyList<StatusIndicator>)[]
+    {
+        ("cooling", new[] { Coolant, WheelRunning }),
+        ("clamping", new[] { Tailstock, Quill, Driver }),
+        ("support", new[] { SteadyRest, SoftLandingHeadstock, SoftLandingTailstock }),
+        ("measuring", new[] { OuterArm, InnerArm }),
+        ("machine", new[] { Door, Hydraulics, Lubrication }),
     };
 }

@@ -1,0 +1,121 @@
+<UserControl x:Class="RollGrinder.App.Views.MachineTopRow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:RollGrinder.App.Localization"
+             xmlns:ctl="clr-namespace:RollGrinder.App.Controls">
+    <!--
+        自动页与 JOG 页共用的上排三块（界面修订稿 v3 1.1）：
+        位置（X · X1 · Z · U，L1 大字 + 剩余行程）· 主轴与进给（转速、线速、进给、倍率）· 辅助功能（五组，每组一行，四态灯）。
+        上面一行是方式、通道、程序。DataContext 是 StatusBandViewModel。
+    -->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1.15*" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="1.25*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Style="{StaticResource Card}" Padding="12,6">
+            <DockPanel>
+                <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Fields}" Margin="0,0,0,4">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,16,0" Visibility="{Binding IsPrimary, Converter={StaticResource InverseBoolVisibility}}">
+                                <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,6,0" />
+                                <TextBlock Text="{Binding ValueText}" FontSize="{StaticResource Size.Caption}" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Grid DockPanel.Dock="Top">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1" Text="{loc:Loc Top_Position}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="2" Text="{loc:Loc Top_Remaining}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Axes}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="{x:Static ctl:LayoutProfile.AxisNameColumn}" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Name}" FontSize="{StaticResource Size.Parameter}" FontWeight="Bold" VerticalAlignment="Center"
+                                           ToolTip="{Binding RoleText}" />
+                                <TextBlock Grid.Column="1" Text="{Binding PositionText}" FontFamily="{StaticResource Font.Mono}"
+                                           FontSize="{StaticResource Size.Secondary}" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="2" Text="{Binding RemainingText}" FontFamily="{StaticResource Font.Mono}"
+                                           FontSize="{StaticResource Size.DataRow}" Foreground="{StaticResource Brush.TextSecondary}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Column="2" Style="{StaticResource Card}" Padding="12,6">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Top_Drives}" Style="{StaticResource Text.Label}" Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding Drives}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="{x:Static ctl:LayoutProfile.AxisNameColumn}" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="{x:Static ctl:LayoutProfile.OverrideColumn}" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Symbol}" FontSize="{StaticResource Size.Body}" FontWeight="Bold" VerticalAlignment="Center"
+                                           ToolTip="{Binding Label}" />
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Body}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding SecondaryText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
+                                               Foreground="{StaticResource Brush.TextSecondary}" Margin="10,0,0,0" VerticalAlignment="Bottom" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="3" Text="{Binding OverrideText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Column="4" Style="{StaticResource Card}" Padding="12,6">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Top_Aux}" Style="{StaticResource Text.Label}" Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding Groups}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,0,0,3">
+                                <TextBlock DockPanel.Dock="Left" Text="{Binding Label}" Width="{x:Static ctl:LayoutProfile.StatusGroupColumnWidth}"
+                                           FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                <ItemsControl ItemsSource="{Binding Lamps}" ItemTemplate="{StaticResource StatusLampCompactTemplate}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

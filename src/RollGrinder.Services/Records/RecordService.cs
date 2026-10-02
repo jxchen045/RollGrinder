@@ -49,6 +49,15 @@ public sealed record GrindingRecordView(
 {
     /// <summary>磨削时长；未结束为空。</summary>
     public TimeSpan? Duration => FinishedAtUtc is null ? null : FinishedAtUtc.Value - StartedAtUtc;
+
+    /// <summary>合格判定（收尾时写入）；没判为 null。</summary>
+    public bool? Passed { get; init; }
+
+    /// <summary>这一次与台账计划的关系。</summary>
+    public Core.Steps.JobDeviation Deviation { get; init; }
+
+    /// <summary>返磨的是哪一份作业；不是返磨为 null。</summary>
+    public string? RegrindOfJobId { get; init; }
 }
 
 /// <summary>磨削记录的查询、收尾与导出。</summary>
@@ -65,6 +74,15 @@ public interface IRecordService
     /// <see cref="GrindingOutcome.Empty"/>——界面上一排 "--"，而不是一屏错误。
     /// </summary>
     Task<GrindingOutcome> LoadOutcomeAsync(string recordId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 一条记录的合格判定与依据（辊形误差峰值对辊形公差、圆度对验收公差）。记录或作业找不到时为 null。
+    /// 自动页结束横幅、收尾时写"合格"一栏都用它。
+    /// </summary>
+    Task<Core.Steps.GrindingVerdict?> LoadVerdictAsync(string recordId, CancellationToken cancellationToken);
+
+    /// <summary>下发时留的快照（下发参数子视图）：当时的辊形 / 程序版本、磨前直径、磨削量、工序、点列、核对结论。没有为 null。</summary>
+    Task<DownloadSnapshot?> LoadDownloadSnapshotAsync(string recordId, CancellationToken cancellationToken);
 
     /// <summary>
     /// 一条记录的某一张曲线。没有数据时返回空曲线，界面照实说，
@@ -189,10 +207,41 @@ public sealed class RecordService : IRecordService
                 record.FinishedAtUtc,
                 record.State,
                 record.Note,
-                await WorstDeviationAsync(job, cancellationToken).ConfigureAwait(false)));
+                await WorstDeviationAsync(job, cancellationToken).ConfigureAwait(false))
+            {
+                Passed = record.Passed,
+                Deviation = job?.Job.Deviation ?? Core.Steps.JobDeviation.None,
+                RegrindOfJobId = job?.Job.RegrindOfJobId,
+            });
         }
 
         return views;
+    }
+
+    public async Task<DownloadSnapshot?> LoadDownloadSnapshotAsync(string recordId, CancellationToken cancellationToken)
+    {
+        string? json = await this.records.GetSnapshotAsync(recordId, cancellationToken).ConfigureAwait(false);
+        return json is null ? null : LibrarySnapshotJson.ReadDownload(json);
+    }
+
+    public async Task<Core.Steps.GrindingVerdict?> LoadVerdictAsync(string recordId, CancellationToken cancellationToken)
+    {
+        GrindingRecord? record = await this.records.GetAsync(recordId, cancellationToken).ConfigureAwait(false);
+        (Core.Steps.GrindingJob Job, JobState State)? stored = record is null
+            ? null
+            : await this.jobs.GetAsync(record.JobId, cancellationToken).ConfigureAwait(false);
+        return stored is null ? null : await VerdictAsync(recordId, stored.Value.Job, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>辊形公差取这支辊形的（没填用标定里的通用值），圆度用验收公差。</summary>
+    private async Task<Core.Steps.GrindingVerdict> VerdictAsync(string recordId, Core.Steps.GrindingJob job, CancellationToken cancellationToken)
+    {
+        GrindingOutcome outcome = await LoadOutcomeAsync(recordId, cancellationToken).ConfigureAwait(false);
+        double tolerance = job.ProfileId is null
+            ? this.calibration.Current.ProfileToleranceMicrometer
+            : (await this.profiles.GetAsync(job.ProfileId, cancellationToken).ConfigureAwait(false))?.ToleranceMicrometer
+              ?? this.calibration.Current.ProfileToleranceMicrometer;
+        return outcome.Verdict(tolerance, this.calibration.Current.RoundnessToleranceMicrometer);
     }
 
     public async Task<GrindingOutcome> LoadOutcomeAsync(string recordId, CancellationToken cancellationToken)
@@ -454,12 +503,7 @@ public sealed class RecordService : IRecordService
 
             if (state == JobState.Completed)
             {
-                GrindingOutcome outcome = await LoadOutcomeAsync(recordId, cancellationToken).ConfigureAwait(false);
-                double tolerance = job.ProfileId is null
-                    ? this.calibration.Current.ProfileToleranceMicrometer
-                    : (await this.profiles.GetAsync(job.ProfileId, cancellationToken).ConfigureAwait(false))?.ToleranceMicrometer
-                      ?? this.calibration.Current.ProfileToleranceMicrometer;
-                Core.Steps.GrindingVerdict verdict = outcome.Verdict(tolerance, this.calibration.Current.RoundnessToleranceMicrometer);
+                Core.Steps.GrindingVerdict verdict = await VerdictAsync(recordId, job, cancellationToken).ConfigureAwait(false);
                 await this.records.SetVerdictAsync(recordId, verdict.Passed, cancellationToken).ConfigureAwait(false);
             }
 

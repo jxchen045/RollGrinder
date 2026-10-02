@@ -20,6 +20,7 @@ using RollGrinder.Core.Units;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Records;
 using RollGrinder.Services.Measurement;
 using RollGrinder.Services.Calibration;
 using RollGrinder.Services.Jobs;
@@ -198,6 +199,9 @@ public enum CurveKind
     GrindingCurrent = 4,
 }
 
+/// <summary>结果横幅的一行判定依据：项目、实测、允许、结论。</summary>
+public sealed record VerdictRowViewModel(string ItemText, string MeasuredText, string AllowedText, string ResultText, bool IsFail);
+
 /// <summary>要确认的流程动作。</summary>
 internal enum StepFlowAction
 {
@@ -253,6 +257,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly Dictionary<CurveKind, FunctionKeyViewModel> curveKeys = new();
 
     private GrindingJob? activeJob;
+    private readonly IRecordService recordService;
+    private readonly IRollPlanningService planning;
+    private bool lastCycleComplete;
+    private string? finishJobId;
 
     private readonly JobDraft jobDraft;
 
@@ -282,6 +290,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         IMeasurementNotifications measurementNotifications,
         ICompensationTuningService compensationTuning,
         IStrokeCompensationLog strokeCompensationLog,
+        IRecordService recordService,
+        IRollPlanningService planning,
         JobDraft jobDraft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
@@ -290,6 +300,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         : base(alarms, localizer, navigator, interaction)
     {
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
+        this.recordService = recordService ?? throw new ArgumentNullException(nameof(recordService));
+        this.planning = planning ?? throw new ArgumentNullException(nameof(planning));
         this.measurementNotifications = measurementNotifications ?? throw new ArgumentNullException(nameof(measurementNotifications));
         this.seenMeasurementVersion = measurementNotifications.Version;
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
@@ -331,7 +343,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         // 循环启动、暂停在按钮板上（machine.json panelActions），屏幕上不放——停止类不依赖上位机（C4、C7）。
         // 按钮板没装的现场才把它们放回来：启动占"空"那一格，暂停排到第二页。
         this.compensationKey = FunctionKeyViewModel.ForAction("Fn_Compensation", localizer, ToggleCompensation);
-        this.overviewKey = FunctionKeyViewModel.ForAction("Fn_StatusOverview", localizer, ToggleStatusOverview);
+        this.overviewKey = FunctionKeyViewModel.ForAction("Fn_ProgramBlock", localizer, ToggleStatusOverview);
         this.jumpKey = new FunctionKeyViewModel("Fn_JumpToStep", new RelayCommand(OpenJumpMenu), localizer)
         {
             IsMachineCommand = true,
@@ -342,28 +354,31 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             IsMachineCommand = true,
             RequiredPermission = Permission.RunMachine,
         };
-        this.coolantKey = new FunctionKeyViewModel("Fn_Coolant", ToggleCoolantCommand, localizer)
+        this.coolantKey = new FunctionKeyViewModel("Vk_Coolant", ToggleCoolantCommand, localizer)
         {
             RequiredPermission = Permission.RunMachine,
         };
 
+        // 横键（界面修订稿 v3 5.1）：补偿 · 程序段 · 工序跳转… · 提前结束… · 磨削记录 · 作业；
+        // 按钮板上没有的循环启动 / 暂停补在后面。冷却挪到竖键 6（运行中随手开关，不占横键）。
         var functionKeys = new List<FunctionKeyViewModel?>
         {
             this.compensationKey,
-            FunctionKeyViewModel.ForAction("Fn_GrindingRecords", localizer, OpenRecordsOfThisRoll),
             this.overviewKey,
             this.jumpKey,
             this.endEarlyKey,
-            machine.IsOnPanel(MachineDescription.PanelCycleStart)
-                ? null
-                : new FunctionKeyViewModel("Fn_CycleStart", RequestCycleStartCommand, localizer, FunctionKeyKind.Start)
-                {
-                    IsMachineCommand = true,
-                    RequiredPermission = Permission.RunMachine,
-                },
+            FunctionKeyViewModel.ForAction("Fn_GrindingRecords", localizer, OpenRecordsOfThisRoll),
             FunctionKeyViewModel.ForAction("Fn_Job", localizer, () => Navigator.GoTo(PageKey.Job)),
-            this.coolantKey,
         };
+        if (!machine.IsOnPanel(MachineDescription.PanelCycleStart))
+        {
+            functionKeys.Add(new FunctionKeyViewModel("Fn_CycleStart", RequestCycleStartCommand, localizer, FunctionKeyKind.Start)
+            {
+                IsMachineCommand = true,
+                RequiredPermission = Permission.RunMachine,
+            });
+        }
+
         if (!machine.IsOnPanel(MachineDescription.PanelFeedHold))
         {
             functionKeys.Add(new FunctionKeyViewModel("Fn_Pause", RequestFeedHoldCommand, localizer)
@@ -397,11 +412,127 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         ApplyVerticalKeys();
     }
 
-    /// <summary>状态总览子功能（最终稿 F3）：全部机构到位灯。</summary>
-    public const string StatusOverviewSubView = "SubView_StatusOverview";
+    /// <summary>磨完的结果横幅（界面修订稿 v3 U7）：✓ 合格 / ✗ 不合格 + 判定依据。</summary>
+    public const string FinishSubView = "SubView_Finish";
 
-    /// <summary>状态总览开着没有。</summary>
+    public bool IsFinishOpen => ActiveSubViewKey == FinishSubView;
+
+    /// <summary>判定：true 合格、false 不合格、null 没量到（不下结论）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FinishPassedTrue), nameof(FinishPassedFalse))]
+    private bool? finishPassed;
+
+    public bool FinishPassedTrue => FinishPassed == true;
+
+    public bool FinishPassedFalse => FinishPassed == false;
+
+    [ObservableProperty]
+    private string finishTitle = string.Empty;
+
+    public ObservableCollection<VerdictRowViewModel> FinishRows { get; } = new();
+
+    /// <summary>NC 报"循环正常结束"的那一拍：等记录收尾（合格判定写进去）再打开横幅。</summary>
+    private async Task ShowFinishAsync(string jobId, CancellationToken cancellationToken)
+    {
+        GrindingRecord? record = null;
+        for (int attempt = 0; attempt < 20; attempt++)
+        {
+            record = await this.records.GetLatestByJobAsync(jobId, cancellationToken).ConfigureAwait(true);
+            if (record?.FinishedAtUtc is not null)
+            {
+                break;
+            }
+
+            await Task.Delay(250, cancellationToken).ConfigureAwait(true);
+        }
+
+        if (record?.FinishedAtUtc is null)
+        {
+            return;
+        }
+
+        GrindingVerdict? verdict = await this.recordService.LoadVerdictAsync(record.RecordId, cancellationToken).ConfigureAwait(true);
+        this.finishJobId = jobId;
+        FinishPassed = verdict?.Passed;
+        FinishTitle = Localizer.Format(
+            FinishPassed switch { true => "Finish_PassedFormat", false => "Finish_FailedFormat", _ => "Finish_UnknownFormat" },
+            this.activeJob?.RollId ?? jobId);
+        FinishRows.Clear();
+        foreach (VerdictItem item in verdict?.Items ?? Array.Empty<VerdictItem>())
+        {
+            FinishRows.Add(new VerdictRowViewModel(
+                Localizer["Verdict_" + item.ItemKey],
+                item.MeasuredMicrometer?.ToString("F1", CultureInfo.CurrentCulture) ?? "--",
+                item.AllowedMicrometer.ToString("F1", CultureInfo.CurrentCulture),
+                item.Passed switch { true => Localizer["Result_Pass"], false => Localizer["Result_Fail"], _ => "--" },
+                item.Passed == false));
+        }
+
+        Navigator.OpenSubView(FinishSubView);
+    }
+
+    /// <summary>返磨…：问一句，建一份返磨草稿（同计划、标"返磨"），到作业页它排在待磨清单最前。</summary>
+    private void AskRegrind()
+    {
+        if (this.finishJobId is not { } jobId)
+        {
+            return;
+        }
+
+        Ask(
+            "Finish_AskRegrind",
+            async () => await RunGuardedAsync(
+                async token =>
+                {
+                    await this.planning.CreateRegrindAsync(jobId, token).ConfigureAwait(true);
+                    Say("Finish_RegrindCreated");
+                    Navigator.CloseSubView();
+                    Navigator.GoTo(PageKey.Job);
+                },
+                CancellationToken.None).ConfigureAwait(true));
+    }
+
+    private void OpenFinishRecords()
+    {
+        this.jobDraft.RecordsJobId = this.finishJobId;
+        Navigator.CloseSubView();
+        Navigator.StartTask(PageKey.Records, PageKey.AutoGrinding);
+    }
+
+    /// <summary>程序段子功能（界面修订稿 v3：取代"状态总览"，机构灯已在上排）：NC 当前 / 下一程序段、工序与道次。</summary>
+    public const string StatusOverviewSubView = "SubView_ProgramBlock";
+
+    /// <summary>程序段开着没有。</summary>
     public bool IsStatusOverviewOpen => ActiveSubViewKey == StatusOverviewSubView;
+
+    /// <summary>程序段子视图：NC 程序名、当前段、下一段、工序与道次。</summary>
+    public ObservableCollection<LabelValueViewModel> BlockRows { get; } = new();
+
+    [ObservableProperty]
+    private string currentBlockText = "--";
+
+    [ObservableProperty]
+    private string nextBlockText = "--";
+
+    private void UpdateBlocks(MachineStateSnapshot snapshot)
+    {
+        CurrentBlockText = snapshot.GetTextOrNull(MachineTagKeys.CurrentBlock) is { Length: > 0 } current ? current : "--";
+        NextBlockText = snapshot.GetTextOrNull(MachineTagKeys.NextBlock) is { Length: > 0 } next ? next : "--";
+        if (!IsStatusOverviewOpen)
+        {
+            return;
+        }
+
+        int order = (int)(snapshot.GetNumberOrNull(MachineTagKeys.JobCurrentStepOrder) ?? 0);
+        string stepName = this.activeJob?.Steps.FirstOrDefault(step => step.Order == order) is { } step
+            ? Localizer["StepType_" + step.StepTypeKey]
+            : "--";
+        BlockRows.Clear();
+        BlockRows.Add(new LabelValueViewModel("Block_Program", snapshot.GetTextOrNull(MachineTagKeys.ProgramName) ?? "--", Localizer));
+        BlockRows.Add(new LabelValueViewModel("Block_Job", this.activeJob is { } job ? job.JobId + " · " + job.RollId : "--", Localizer));
+        BlockRows.Add(new LabelValueViewModel("Block_Step", order > 0 ? order.ToString(CultureInfo.InvariantCulture) + " · " + stepName : "--", Localizer));
+        BlockRows.Add(new LabelValueViewModel("Block_Pass", this.currentPass.ValueText, Localizer));
+    }
 
     /// <summary>
     /// 竖键随子功能换（最终稿 5.2、5.3）：基本画面是 5 条曲线；补偿里是保存 / 恢复 / 改动记录 / 返回；
@@ -412,6 +543,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         this.compensationKey.IsActive = IsCompensationOpen;
         this.overviewKey.IsActive = IsStatusOverviewOpen;
         OnPropertyChanged(nameof(IsStatusOverviewOpen));
+        OnPropertyChanged(nameof(IsFinishOpen));
 
         if (IsCompensationOpen)
         {
@@ -434,11 +566,36 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         if (IsStatusOverviewOpen)
         {
-            SetVerticalKeys(new FunctionKeyViewModel?[] { null, null, null, null, null, null, null, BackKey() });
+            SetVerticalKeys(new FunctionKeyViewModel?[] { null, null, null, null, null, this.coolantKey, null, BackKey() });
             return;
         }
 
-        SetVerticalKeys(this.curveKeys.Values);
+        if (IsFinishOpen)
+        {
+            // 结果横幅（界面修订稿 v3 U7）：磨削记录 · 返磨… · 打印… · 下一支辊 ▸。
+            SetVerticalKeys(new FunctionKeyViewModel?[]
+            {
+                FunctionKeyViewModel.ForAction("Vk_FinishRecords", Localizer, OpenFinishRecords),
+                new FunctionKeyViewModel("Vk_Regrind", new RelayCommand(AskRegrind), Localizer, requiresEditable: false)
+                {
+                    RequiredPermission = Permission.EditJobs,
+                },
+                FunctionKeyViewModel.ForAction("Vk_FinishPrint", Localizer, OpenFinishRecords),
+                FunctionKeyViewModel.ForAction("Vk_NextRoll", Localizer, () =>
+                {
+                    Navigator.CloseSubView();
+                    Navigator.GoTo(PageKey.Job);
+                }),
+                null,
+                this.coolantKey,
+                null,
+                BackKey(),
+            });
+            return;
+        }
+
+        // 竖键 1–5 选曲线，6 冷却（界面修订稿 v3 5.1）。
+        SetVerticalKeys(this.curveKeys.Values.Cast<FunctionKeyViewModel?>().Append(this.coolantKey));
         MarkSelectedCurve();
     }
 
@@ -797,6 +954,16 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         UpdateDiameters(snapshot);
         UpdateSequence(snapshot);
+        UpdateBlocks(snapshot);
+
+        // 循环正常结束的上升沿：等收尾写完，弹结果横幅。
+        bool complete = snapshot.GetNumberOrNull(MachineTagKeys.JobCycleComplete) is double flag && flag > 0.5;
+        if (complete && !this.lastCycleComplete && this.activeJob is { } finished)
+        {
+            _ = RunGuardedAsync(token => ShowFinishAsync(finished.JobId, token), CancellationToken.None);
+        }
+
+        this.lastCycleComplete = complete;
         UpdateCompensation(snapshot);
         TickCompensation();
         UpdateStepFlow();

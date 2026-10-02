@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using RollGrinder.Contracts;
@@ -193,6 +195,39 @@ public sealed class ManualCommandService : IManualCommandService
             ? null
             : this.monitor.Current.GetBooleanOrNull(MachineTagKeys.ManualCommandState(command.Key));
     }
+
+    public IReadOnlyList<ManualCondition> Conditions(ManualCommandDescriptor command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        var conditions = new List<ManualCondition>();
+        if (command.Kind == ManualCommandKind.Local)
+        {
+            return conditions;
+        }
+
+        MachineStateSnapshot snapshot = this.monitor.Current;
+        bool connected = snapshot.ConnectionState == GatewayConnectionState.Connected;
+        conditions.Add(new ManualCondition("Cond_Mapped", IsMapped(command), Blocking: true));
+        conditions.Add(new ManualCondition("Cond_Connected", connected, Blocking: true));
+        if (command.RequiresIdleChannel)
+        {
+            conditions.Add(new ManualCondition("Cond_ChannelIdle", connected ? !IsChannelBusy(snapshot) : null, Blocking: true));
+        }
+
+        // 下面几条由 PLC 联锁把关；上位机读得到就照实显示，读不到画"—"。
+        conditions.Add(new ManualCondition("Cond_EmergencyReleased", Flag(snapshot, MachineTagKeys.EmergencyStop, connected) is bool estop ? !estop : null, Blocking: false));
+        conditions.Add(new ManualCondition("Cond_MachineOn", Flag(snapshot, MachineTagKeys.MachineOn, connected), Blocking: false));
+        if (command.MutuallyExclusiveWith is string opposite
+            && ManualCommandCatalog.All.FirstOrDefault(candidate => candidate.Key == opposite) is { } other)
+        {
+            conditions.Add(new ManualCondition("Cond_OppositeOff", ReadState(other) is bool on ? !on : null, Blocking: false));
+        }
+
+        return conditions;
+    }
+
+    private static bool? Flag(MachineStateSnapshot snapshot, string key, bool connected) =>
+        connected && snapshot.GetNumberOrNull(key) is double value ? value != 0.0 : null;
 
     private static bool IsChannelBusy(MachineStateSnapshot snapshot)
     {

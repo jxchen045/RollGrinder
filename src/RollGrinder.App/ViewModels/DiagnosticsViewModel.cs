@@ -114,6 +114,9 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
     private readonly DiagnosticRowViewModel softwareVersion;
     private readonly DiagnosticRowViewModel machineConfig;
     private readonly DiagnosticRowViewModel tagMapVersion;
+
+    /// <summary>NC 侧报废保护（关系设计 7.3）：报废直径有没有下发给 NC、NC 用没用上。</summary>
+    private readonly DiagnosticRowViewModel scrapProtection;
     private readonly DiagnosticRowViewModel machineSerial;
 
     private readonly DiagnosticRowViewModel measuringChannel;
@@ -155,11 +158,12 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         this.machineConfig = new DiagnosticRowViewModel("Diag_MachineConfig", localizer);
         this.tagMapVersion = new DiagnosticRowViewModel("Diag_TagMap", localizer);
         this.machineSerial = new DiagnosticRowViewModel("Diag_MachineSerial", localizer);
+        this.scrapProtection = new DiagnosticRowViewModel("Diag_ScrapProtection", localizer);
 
         ConnectionRows = new ObservableCollection<DiagnosticRowViewModel>
         {
             this.connection, this.snapshotAge, this.softwareVersion,
-            this.machineConfig, this.tagMapVersion, this.machineSerial,
+            this.machineConfig, this.tagMapVersion, this.machineSerial, this.scrapProtection,
         };
 
         this.measuringChannel = new DiagnosticRowViewModel("Diag_MeasuringChannel", localizer);
@@ -450,6 +454,17 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
     public override void OnTick(DateTimeOffset nowUtc)
     {
         MachineStateSnapshot snapshot = this.monitor.Current;
+
+        // 报废直径映射了才下发；NC 回报"已启用"就是双保险，没回报只能说"已下发"。
+        bool scrapMapped = this.tagMap.TryResolve(MachineTagKeys.JobScrapDiameterMm, out _);
+        this.scrapProtection.ValueText = !scrapMapped
+            ? Localizer["Diag_ScrapProtectionOff"]
+            : snapshot.GetNumberOrNull(MachineTagKeys.ScrapProtectionActive) switch
+            {
+                double active when active != 0.0 => Localizer["Diag_ScrapProtectionActive"],
+                double => Localizer["Diag_ScrapProtectionInactive"],
+                _ => Localizer["Diag_ScrapProtectionSent"],
+            };
 
         this.connection.ValueText = Localizer["ConnectionState_" + snapshot.ConnectionState];
         this.connection.IsGood = snapshot.ConnectionState == GatewayConnectionState.Connected;

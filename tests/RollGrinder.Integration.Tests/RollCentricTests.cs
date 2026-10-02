@@ -327,6 +327,31 @@ public sealed class RollCentricTests : IDisposable
     // ───────────── 待磨清单、改计划、返磨、中断 ─────────────
 
     [Fact]
+    public async Task The_overview_lists_rolls_near_scrap_failed_rolls_and_todays_plan_changes()
+    {
+        await using ServiceProvider services = await BuildAsync();
+        // R-NEAR：磨后只剩不到两次标准余量；R-OK：远着呢。
+        await SeedAsync(services, Roll("R-NEAR", current: 585.5, scrap: 585.0), Roll("R-OK"), Roll("R-FAIL"));
+        var planning = services.GetRequiredService<IRollPlanningService>();
+        var jobs = services.GetRequiredService<IJobRepository>();
+        var records = services.GetRequiredService<IGrindingRecordRepository>();
+        GrindingJob failedJob = GrindingJob.Create("J-F", "R-FAIL", RollGeometry.FromDiameter(1800.0, 600.0), CrownWithTapers(), Program().Steps);
+        await jobs.SaveAsync(failedJob, JobState.Completed, CancellationToken.None);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        await records.AddAsync(new GrindingRecord("REC-F", "J-F", now.AddHours(-1), now, JobState.Completed, null), CancellationToken.None);
+        await records.SetVerdictAsync("REC-F", false, CancellationToken.None);
+        await planning.ChangePlanAsync(new[] { "R-OK" }, "P-1", null, null, "admin", CancellationToken.None);
+
+        RollOverview overview = await planning.OverviewAsync(now.AddDays(-1), CancellationToken.None);
+
+        overview.NearScrap.Select(item => item.RollId).Should().Equal("R-NEAR");
+        overview.Failed.Should().ContainSingle(item => item.RollId == "R-FAIL" && !item.RegrindCreated);
+        await planning.CreateRegrindAsync("J-F", CancellationToken.None);
+        (await planning.OverviewAsync(now.AddDays(-1), CancellationToken.None)).Failed
+            .Should().ContainSingle(item => item.RollId == "R-FAIL" && item.RegrindCreated);
+    }
+
+    [Fact]
     public async Task Interrupted_and_regrind_rolls_are_pinned_on_top_of_the_queue()
     {
         await using ServiceProvider services = await BuildAsync();

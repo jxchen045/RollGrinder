@@ -1045,6 +1045,27 @@
       "description": "尾架前进到位（地址待电气确认，Q7）"
     },
     {
+      "key": "status.door.closed",
+      "address": "ns=3;s=\"HMI_State\".\"door_closed\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "防护门关好（地址待电气确认）"
+    },
+    {
+      "key": "status.hydraulics.ok",
+      "address": "ns=3;s=\"HMI_State\".\"hydraulics_ok\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "液压建压正常（地址待电气确认）"
+    },
+    {
+      "key": "status.lubrication.ok",
+      "address": "ns=3;s=\"HMI_State\".\"lubrication_ok\"",
+      "dataType": "Boolean",
+      "access": "Read",
+      "description": "润滑正常（地址待电气确认）"
+    },
+    {
       "key": "wheel.diameterMm",
       "address": "ns=2;s=/Plc/DB100.DBD12",
       "dataType": "Double",

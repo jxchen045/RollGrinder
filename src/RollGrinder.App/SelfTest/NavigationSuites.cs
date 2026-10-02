@@ -284,8 +284,8 @@ internal sealed class PageSweepSuite : ISelfTestSuite
     /// </summary>
     private static readonly HashSet<string> Excluded = new(System.StringComparer.Ordinal)
     {
-        "Fn_Empty", "Fn_Coolant", "Fn_Pause", "Vk_ExportUsb", "Vk_ImportUsb", "Vk_ExportAll", "Vk_Print", "Vk_ExportExcel",
-        "Vk_Backup", "Vk_ExportSnapshot", "Vk_TestRead",
+        "Fn_Empty", "Vk_Coolant", "Fn_Pause", "Vk_ExportUsb", "Vk_ImportUsb", "Vk_ExportAll", "Vk_Print", "Vk_ExportExcel",
+        "Vk_Backup", "Vk_ExportSnapshot", "Vk_TestRead", "Fn_ExportExcel", "Fn_ExportFile", "Fn_ImportFile", "Fn_ExportAll", "Fn_ExportLedger", "Fn_ImportLedger", "Vk_ExportTemplate",
     };
 
     public string Name => "PageSweep";
@@ -450,10 +450,10 @@ internal sealed class RenderSuite : ISelfTestSuite
 
     private static readonly Dictionary<PageKey, string[]> SubViewKeys = new()
     {
-        [PageKey.Records] = new[] { "Vk_QueryAsk" },
+        [PageKey.Records] = new[] { "Vk_QueryAsk", "Fn_Overview" },
         [PageKey.Rolls] = new[] { "Vk_RegisterRoll", "Vk_MultiSelect" },
         [PageKey.Parameters] = new[] { "Vk_ChangeWheel" },
-        [PageKey.AutoGrinding] = new[] { "Fn_Compensation", "Fn_StatusOverview" },
+        [PageKey.AutoGrinding] = new[] { "Fn_Compensation", "Fn_ProgramBlock" },
     };
 
     public string Name => "Render";

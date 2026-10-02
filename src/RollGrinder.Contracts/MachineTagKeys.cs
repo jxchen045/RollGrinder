@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using RollGrinder.Contracts.Dtos;
 
@@ -85,6 +86,9 @@ public static class MachineTagKeys
         Status("softLanding.headstock.raised"),
         Status("softLanding.tailstock.raised"),
         Status("steadyRest.engaged"),
+        Status("door.closed"),
+        Status("hydraulics.ok"),
+        Status("lubrication.ok"),
     };
 
     /// <summary>本次作业的工序数。</summary>
@@ -306,6 +310,32 @@ public static class MachineTagKeys
     public static string AxisActualSpeedRpm(string axisName) =>
         Compose("axis", axisName, "actualSpeedRpm");
 
+    /// <summary>某根轴的剩余行程（mm，本程序段还要走多少）。可选：没映射时界面写 "--"。</summary>
+    public static string AxisDistanceToGoMm(string axisName) =>
+        Compose("axis", axisName, "distanceToGoMm");
+
+    /// <summary>某根直线轴的实际进给速度（mm/min）。可选。</summary>
+    public static string AxisActualFeedMmPerMin(string axisName) =>
+        Compose("axis", axisName, "actualFeedMmPerMin");
+
+    /// <summary>进给倍率（%）。可选。</summary>
+    public const string FeedOverridePercent = "machine.feedOverridePercent";
+
+    /// <summary>主轴（头架）倍率（%）。可选。</summary>
+    public const string SpindleOverridePercent = "machine.spindleOverridePercent";
+
+    /// <summary>砂轮转速倍率（%）。可选。</summary>
+    public const string WheelOverridePercent = "wheel.overridePercent";
+
+    /// <summary>NC 当前程序段的文字（自动页"程序段"子视图）。可选。</summary>
+    public const string CurrentBlock = "machine.currentBlock";
+
+    /// <summary>NC 下一程序段的文字。可选。</summary>
+    public const string NextBlock = "machine.nextBlock";
+
+    /// <summary>NC 侧报废保护是否已启用（下发的报废直径被 NC 拿来限位）。可选，诊断页显示。</summary>
+    public const string ScrapProtectionActive = "job.scrapProtectionActive";
+
     private static string Compose(string prefix, string axisName, string suffix)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(axisName);
@@ -459,9 +489,22 @@ public static class MachineTagKeys
         // 逻辑名在这里出现，物理地址在 tagmap.json 里——没映射就读不到，界面显示"--"。
         keys.AddRange(ManualToggleStateKeys);
 
-        // 状态带：操作方式与机构到位状态位（Q7）。
+        // 状态带：操作方式与机构到位状态位（Q7）；四态灯的"动作中 / 故障"位可选，没映射就只有开 / 关。
         keys.Add(OperatingMode);
         keys.AddRange(StatusIndicatorKeys);
+        foreach (string indicator in StatusIndicatorKeys.Concat(ManualToggleStateKeys))
+        {
+            keys.Add(indicator + ".moving");
+            keys.Add(indicator + ".fault");
+        }
+
+        // 上排三块的可选量（界面修订稿 v3 1.1）：倍率、当前 / 下一程序段、NC 报废保护。
+        keys.Add(FeedOverridePercent);
+        keys.Add(SpindleOverridePercent);
+        keys.Add(WheelOverridePercent);
+        keys.Add(CurrentBlock);
+        keys.Add(NextBlock);
+        keys.Add(ScrapProtectionActive);
 
         // 手动磨削页、通道行、急停（最终稿 7.2）。
         keys.AddRange(ManualGrindingKeys);
@@ -475,6 +518,8 @@ public static class MachineTagKeys
 
             keys.Add(AxisActualPositionMm(axis.Name));
             keys.Add(AxisActualSpeedRpm(axis.Name));
+            keys.Add(AxisDistanceToGoMm(axis.Name));
+            keys.Add(AxisActualFeedMmPerMin(axis.Name));
         }
 
         return keys;

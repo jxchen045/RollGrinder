@@ -4,29 +4,11 @@
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
              xmlns:vm="clr-namespace:RollGrinder.App.ViewModels"
+             xmlns:views="clr-namespace:RollGrinder.App.Views"
              xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
     <DockPanel>
-        <!-- 顶上常驻的状态带（修改稿 3③、5.5）：方式、通道、程序、X、Z、转速，四盏机构灯。 -->
-        <Border x:Name="StatusBand" DockPanel.Dock="Top" Style="{StaticResource Card}" Margin="0,0,0,12" Padding="14,6">
-            <DockPanel>
-                <ItemsControl DockPanel.Dock="Right" ItemsSource="{Binding StatusBand.Lamps}"
-                              ItemTemplate="{StaticResource StatusLampTemplate}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
-                <ItemsControl ItemsSource="{Binding StatusBand.Fields}" ItemTemplate="{StaticResource StatusFieldTemplate}"
-                              VerticalAlignment="Center">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
-            </DockPanel>
-        </Border>
+        <!-- 上排三块（界面修订稿 v3 1.1）：位置 · 主轴与进给 · 辅助功能；与 JOG 页同一个控件。 -->
+        <views:MachineTopRow x:Name="StatusBand" DockPanel.Dock="Top" DataContext="{Binding StatusBand}" Margin="0,0,0,10" />
 
         <Grid>
             <Grid.ColumnDefinitions>
@@ -356,23 +338,83 @@
                     </DockPanel>
                 </Border>
             </Grid>
-            <!-- 状态总览（最终稿 F3，横键"状态总览"）：全部机构到位灯，灯亮 = 到位，虚框 = 读不到。 -->
+            <!-- 程序段（界面修订稿 v3：取代"状态总览"，机构灯已在上排）：NC 当前段 / 下一段、作业、工序与道次。 -->
             <Border x:Name="StatusOverviewPanel" Grid.ColumnSpan="3" Style="{StaticResource Card}"
                     Visibility="{Binding IsStatusOverviewOpen, Converter={StaticResource BoolToVisibility}}">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
-                        <TextBlock Text="{loc:Loc SubView_StatusOverview}" Style="{StaticResource Text.CardTitle}" />
+                        <TextBlock Text="{loc:Loc SubView_ProgramBlock}" Style="{StaticResource Text.CardTitle}" />
                     </Border>
-                    <ItemsControl ItemsSource="{Binding StatusBand.Overview}" ItemTemplate="{StaticResource StatusLampTemplate}" Margin="16">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="4" VerticalAlignment="Top" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
+                    <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding BlockRows}" Margin="16,12">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,6">
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" />
+                                    <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <StackPanel Margin="16,4">
+                        <TextBlock Text="{loc:Loc Block_Current}" Style="{StaticResource Text.Label}" />
+                        <Border Background="{StaticResource Brush.SelectionFill}" Padding="12,8" Margin="0,4,0,12">
+                            <TextBlock Text="{Binding CurrentBlockText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Parameter}"
+                                       TextWrapping="Wrap" />
+                        </Border>
+                        <TextBlock Text="{loc:Loc Block_Next}" Style="{StaticResource Text.Label}" />
+                        <Border BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="1" Padding="12,8" Margin="0,4,0,0">
+                            <TextBlock Text="{Binding NextBlockText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Body}"
+                                       Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
+                        </Border>
+                    </StackPanel>
                 </DockPanel>
             </Border>
 
+            <!-- 结果横幅（界面修订稿 v3 U7）：磨完 ✓ 合格 / ✗ 不合格 + 判定依据；竖键 磨削记录 · 返磨… · 打印… · 下一支辊 ▸。 -->
+            <Border x:Name="FinishPanel" Grid.ColumnSpan="3" Style="{StaticResource Card}"
+                    Visibility="{Binding IsFinishOpen, Converter={StaticResource BoolToVisibility}}">
+                <DockPanel>
+                    <Border x:Name="FinishHeader" DockPanel.Dock="Top" Padding="20,14">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{StaticResource Brush.StepIdle}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding FinishPassedTrue}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource Brush.Normal}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding FinishPassedFalse}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource Brush.Alarm}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock x:Name="FinishTitleText" Text="{Binding FinishTitle}" FontSize="{StaticResource Size.Secondary}" FontWeight="Bold">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding FinishPassedTrue}" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding FinishPassedFalse}" Value="True">
+                                            <Setter Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                    <DataGrid ItemsSource="{Binding FinishRows}" AutoGenerateColumns="False" IsReadOnly="True" Margin="16"
+                              Style="{StaticResource DataTable}" HeadersVisibility="Column" VerticalAlignment="Top">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{loc:Loc Finish_ColItem}" Binding="{Binding ItemText}" Width="2*" />
+                            <DataGridTextColumn Header="{loc:Loc Finish_ColMeasured}" Binding="{Binding MeasuredText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Finish_ColAllowed}" Binding="{Binding AllowedText}" Width="*" />
+                            <DataGridTextColumn Header="{loc:Loc Finish_ColResult}" Binding="{Binding ResultText}" Width="0.6*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
             <!-- 补偿子视图（最终稿 5.3）：盖住本页根部内容，竖键 8"« 返回"。 -->
             <Border x:Name="CompensationPanel" Grid.ColumnSpan="3" Background="{StaticResource Brush.Background}">
                 <Border.Style>

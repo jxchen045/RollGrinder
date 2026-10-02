@@ -112,6 +112,7 @@ public partial class ProfileView : UserControl
 
         double[] composedX = this.viewModel.ComposedPoints.Select(point => point.BodyPositionMm).ToArray();
         double[] composedY = this.viewModel.ComposedPoints.Select(point => point.DiameterMm * 1000.0).ToArray();
+        PlotTheme.AxisTitles(PreviewPlot, this.viewModel.Localizer["Chart_AxisZ"], this.viewModel.Localizer["Chart_AxisDiameterUm"]);
         var composed = PreviewPlot.Plot.Add.Scatter(composedX, composedY);
         composed.LineWidth = 3f;
         composed.MarkerSize = 0;

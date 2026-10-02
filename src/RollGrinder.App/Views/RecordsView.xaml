@@ -43,12 +43,20 @@
                                         <TextBlock Text="{Binding StateText}" FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Right"
                                                    Foreground="{StaticResource Brush.Normal}" />
                                     </StackPanel>
+                                    <TextBlock x:Name="MarkCell" DockPanel.Dock="Right" Text="{Binding MarkText}" FontSize="{StaticResource Size.Caption}"
+                                               VerticalAlignment="Center" Margin="8,0,12,0" />
                                     <StackPanel>
                                         <TextBlock Text="{Binding RollCode}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Body}" FontWeight="SemiBold" />
                                         <TextBlock Text="{Binding ProfileTypeText}" Style="{StaticResource Text.Label}" FontSize="{StaticResource Size.Caption}" />
                                     </StackPanel>
                                 </DockPanel>
                             </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsFailed}" Value="True">
+                                    <Setter TargetName="MarkCell" Property="Foreground" Value="{StaticResource Brush.Alarm}" />
+                                    <Setter TargetName="MarkCell" Property="FontWeight" Value="Bold" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -176,5 +184,127 @@
                                           VerticalScrollBarVisibility="Auto" />
             </DockPanel>
         </Border>
+
+        <!-- 总览（界面修订稿 v3 6.8）：临近报废 · 今日计划变更 · 不合格待返磨，三块并排。 -->
+        <Grid Grid.ColumnSpan="3" Background="{StaticResource Brush.Background}"
+              Visibility="{Binding IsOverviewOpen, Converter={StaticResource BoolToVisibility}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                            <TextBlock Text="{Binding NearScrapTitle}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding NearScrapRows}" Margin="14,8">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,0,0,4">
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" />
+                                        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,6,0">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                            <TextBlock Text="{Binding PlanChangeTitle}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding PlanChangeRows}" Margin="14,8">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,0,0,4">
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" />
+                                        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                            <TextBlock Text="{Binding FailedTitle}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding FailedRows}" Margin="14,8">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,0,0,4">
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" />
+                                        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+        </Grid>
+
+        <!-- 下发参数：这份作业下发时留的快照（辊形 / 程序版本、磨前直径、磨削量、工序、核对结论）。 -->
+        <Grid Grid.ColumnSpan="3" Background="{StaticResource Brush.Background}"
+              Visibility="{Binding IsSnapshotOpen, Converter={StaticResource BoolToVisibility}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="1.4*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                            <TextBlock Text="{Binding SnapshotTitle}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding SnapshotRows}" Margin="14,8">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,0,0,4">
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" />
+                                        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,6,0">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                            <TextBlock Text="{loc:Loc Snapshot_Steps}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding SnapshotSteps}" Margin="14,8">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,0,0,4">
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" />
+                                        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                            <TextBlock Text="{loc:Loc Snapshot_Checks}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding SnapshotChecks}" Margin="14,8">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,0,0,4">
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" />
+                                        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+        </Grid>
     </Grid>
 </UserControl>

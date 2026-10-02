@@ -107,6 +107,7 @@ public sealed partial class ManualViewModel : PageViewModelBase
             alarms,
             CapturePointAsync);
 
+        StatusBand = new StatusBandViewModel(machine, localizer);
         BuildGroups();
         SetFunctionKeys(MachineAreaKeys.Create(Navigator, localizer, MachineAreaKeys.MeasuringArm));
         Select(Groups[0]);
@@ -118,6 +119,12 @@ public sealed partial class ManualViewModel : PageViewModelBase
 
     /// <summary>手动磨削页有帮助条目；动作页用同一条（位置、测量、状态灯的读法一样）。</summary>
     public override string? HelpTopicKey => "Help_ManualGrinding";
+
+    /// <summary>上排三块（与自动页同一个）：位置 · 主轴与进给 · 辅助功能。</summary>
+    public StatusBandViewModel StatusBand { get; }
+
+    /// <summary>动作条件表：这一页每个动作的联锁 ✓ / ✗ / —（界面修订稿 v3）。</summary>
+    public ObservableCollection<ActionConditionRowViewModel> Conditions { get; } = new();
 
     /// <summary>4 个动作页、测量对中、辅助循环。</summary>
     public ObservableCollection<ManualGroupViewModel> Groups { get; } = new();
@@ -202,6 +209,11 @@ public sealed partial class ManualViewModel : PageViewModelBase
         SelectedGroup = group;
         MachineAreaKeys.MarkActive(FunctionKeys, group.Key);
         SetVerticalKeys(group.VerticalKeys);
+        Conditions.Clear();
+        foreach (ActionConditionRowViewModel row in this.actionKeys.ConditionRows(group.VerticalKeys))
+        {
+            Conditions.Add(row);
+        }
     }
 
     [ObservableProperty]
@@ -257,6 +269,8 @@ public sealed partial class ManualViewModel : PageViewModelBase
             : Format((probeA.Value - probeB.Value) / 2.0, "F4", showSign: true);
 
         this.actionKeys.Refresh(Block);
+        this.actionKeys.RefreshConditions(Conditions);
+        StatusBand.Update(snapshot);
 
         if (SelectedGroup is { } group)
         {

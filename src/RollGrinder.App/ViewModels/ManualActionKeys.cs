@@ -13,6 +13,29 @@ using RollGrinder.Services.Session;
 
 namespace RollGrinder.App.ViewModels;
 
+/// <summary>"动作条件"表的一行：动作名、每条联锁 ✓ / ✗ / —，以及按得下去没有。</summary>
+public sealed partial class ActionConditionRowViewModel : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
+{
+    public ActionConditionRowViewModel(ManualCommandDescriptor descriptor, string actionText)
+    {
+        Descriptor = descriptor;
+        ActionText = actionText;
+    }
+
+    public ManualCommandDescriptor Descriptor { get; }
+
+    public string ActionText { get; }
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    private string conditionsText = string.Empty;
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    private bool ready;
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
+    private bool hasProblem;
+}
+
 /// <summary>
 /// 把手动目录里的动作做成竖键（最终稿 5.1、5.4），手动动作页与手动磨削页共用：
 /// 1. 要确认的动作标签带"…"，按下后对话行提问、竖键 7 / 8 确认才发（取代"再按一次确认"）；
@@ -90,6 +113,46 @@ public sealed class ManualActionKeys
             }
 
             key.LabelArgument = LabelArgument(descriptor, isOn);
+        }
+    }
+
+    /// <summary>"动作条件"表的行：给定这一页的竖键，逐个动作列联锁条件（界面修订稿 v3）。</summary>
+    public IReadOnlyList<ActionConditionRowViewModel> ConditionRows(IEnumerable<FunctionKeyViewModel?> pageKeys)
+    {
+        ArgumentNullException.ThrowIfNull(pageKeys);
+        var rows = new List<ActionConditionRowViewModel>();
+        foreach (FunctionKeyViewModel? key in pageKeys)
+        {
+            if (key is null)
+            {
+                continue;
+            }
+
+            foreach ((ManualCommandDescriptor descriptor, FunctionKeyViewModel candidate) in this.keys)
+            {
+                if (ReferenceEquals(candidate, key) && descriptor.Kind != ManualCommandKind.Local)
+                {
+                    rows.Add(new ActionConditionRowViewModel(descriptor, this.localizer[descriptor.ResourceKey]));
+                    break;
+                }
+            }
+        }
+
+        RefreshConditions(rows);
+        return rows;
+    }
+
+    /// <summary>每一拍刷新条件的 ✓ / ✗ / —。</summary>
+    public void RefreshConditions(IEnumerable<ActionConditionRowViewModel> rows)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        foreach (ActionConditionRowViewModel row in rows)
+        {
+            IReadOnlyList<ManualCondition> conditions = this.commands.Conditions(row.Descriptor);
+            row.ConditionsText = string.Join("   ", conditions.Select(condition =>
+                (condition.Met switch { true => "✓ ", false => "✗ ", _ => "— " }) + this.localizer[condition.ResourceKey]));
+            row.Ready = conditions.All(condition => !condition.Blocking || condition.Met == true);
+            row.HasProblem = conditions.Any(condition => condition.Met == false);
         }
     }
 

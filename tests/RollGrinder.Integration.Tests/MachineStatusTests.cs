@@ -57,6 +57,21 @@ public sealed class MachineStatusTests
     }
 
     [Fact]
+    public void Fault_and_moving_bits_override_on_and_off_and_the_five_groups_cover_every_indicator()
+    {
+        StatusIndicator tailstock = MachineStatusCatalog.Tailstock;
+        tailstock.Read(Snapshot((tailstock.TagKey, true), (tailstock.MovingTagKey, true))).Should().Be(IndicatorState.Moving);
+        tailstock.Read(Snapshot((tailstock.TagKey, true), (tailstock.MovingTagKey, true), (tailstock.FaultTagKey, true)))
+            .Should().Be(IndicatorState.Fault, "故障盖过一切");
+        tailstock.Read(Snapshot((tailstock.TagKey, false), (tailstock.FaultTagKey, false))).Should().Be(IndicatorState.Off);
+        StatusIndicator.Combine(new[] { IndicatorState.On, IndicatorState.Moving }).Should().Be(IndicatorState.Moving);
+
+        MachineStatusCatalog.Groups.Should().HaveCount(5);
+        MachineStatusCatalog.Groups.SelectMany(group => group.Indicators)
+            .Should().BeSubsetOf(MachineStatusCatalog.All).And.OnlyHaveUniqueItems();
+    }
+
+    [Fact]
     public void An_unmapped_or_bad_status_is_unknown_not_off()
     {
         StatusIndicator quill = MachineStatusCatalog.Quill;

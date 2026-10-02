@@ -386,6 +386,25 @@ public sealed class SimulatedMachine
             return (int)ChannelState;
         }
 
+        // 倍率：仿真按 100 %。
+        if (logicalName is MachineTagKeys.FeedOverridePercent or MachineTagKeys.SpindleOverridePercent or MachineTagKeys.WheelOverridePercent)
+        {
+            return 100.0;
+        }
+
+        // 程序段：运行时给一行像样的段文字（真机由 NC 的当前段变量来）。
+        if (logicalName is MachineTagKeys.CurrentBlock or MachineTagKeys.NextBlock)
+        {
+            if (ChannelState == NcChannelState.Reset || string.IsNullOrEmpty(ProgramName))
+            {
+                return string.Empty;
+            }
+
+            bool next = logicalName == MachineTagKeys.NextBlock;
+            return string.Create(System.Globalization.CultureInfo.InvariantCulture,
+                $"N{(next ? 20 : 10)} G1 Z={this.carriagePositionMm + (next ? 50.0 : 0.0):F3} F=R10   ; {ProgramName}");
+        }
+
         if (logicalName == MachineTagKeys.ProgramName)
         {
             return ProgramName;
@@ -410,6 +429,12 @@ public sealed class SimulatedMachine
             if (status == "steadyRest.engaged")
             {
                 return ChannelState != NcChannelState.Reset;
+            }
+
+            // 门、液压、润滑：仿真里一直正常。
+            if (status is "door.closed" or "hydraulics.ok" or "lubrication.ok")
+            {
+                return true;
             }
 
             return this.statuses.TryGetValue(status, out bool on) ? on : null;

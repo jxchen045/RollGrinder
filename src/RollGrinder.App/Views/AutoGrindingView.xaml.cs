@@ -88,8 +88,7 @@ public partial class AutoGrindingView : UserControl
         line.LineWidth = 2.5f;
         line.MarkerSize = 6;
         line.Color = PlotTheme.Curve(StrokePlot, "Color.CurveCompensation");
-        StrokePlot.Plot.Axes.Left.Label.Text = this.viewModel.Localizer["Comp_StrokeAxis"];
-        StrokePlot.Plot.Axes.Bottom.Label.Text = this.viewModel.Localizer["Comp_ColumnVersion"];
+        PlotTheme.AxisTitles(StrokePlot, this.viewModel.Localizer["Comp_ColumnVersion"], this.viewModel.Localizer["Comp_StrokeAxis"]);
         StrokePlot.Plot.Axes.AutoScale();
         StrokePlot.Refresh();
     }
@@ -147,7 +146,7 @@ public partial class AutoGrindingView : UserControl
         this.wheelLine = CurvePlot.Plot.Add.VerticalLine(this.viewModel.WheelPositionMm ?? 0.0, 2f, PlotTheme.Curve(CurvePlot, "Color.CurveWheel"));
         this.wheelLine.IsVisible = this.viewModel.WheelPositionMm is not null;
 
-        CurvePlot.Plot.Axes.Left.Label.Text = this.viewModel.CurveYAxisLabel;
+        PlotTheme.AxisTitles(CurvePlot, this.viewModel.Localizer["Chart_AxisZ"], this.viewModel.CurveYAxisLabel);
         // 边磨边刷新：人手缩放 / 拖过就保留人看的那一段，按图角"复位视图"再回到规范范围。
         // 五条曲线共用 4 : 1 的框，切换时框不跳；误差按偏差图（公差带居中），其余按数据取整。
         double length = positions.Max();

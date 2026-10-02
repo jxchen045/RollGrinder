@@ -33,6 +33,15 @@ public static class LayoutProfile
     public static GridLength TagStateColumn => new(Math.Round(120 * Scale));
 
     /// <summary>库列表的版本列宽（表头与行模板共用；模板里只能用 x:Static）。</summary>
+    /// <summary>上排位置 / 主轴块的轴名列。</summary>
+    public static GridLength AxisNameColumn => new(Math.Round(48 * Scale));
+
+    /// <summary>上排主轴块的倍率列。</summary>
+    public static GridLength OverrideColumn => new(Math.Round(64 * Scale));
+
+    /// <summary>上排辅助功能块的组名宽。</summary>
+    public static double StatusGroupColumnWidth => Math.Round(56 * Scale);
+
     public static GridLength LibraryVersionColumn => new(Math.Round(90 * Scale));
 
     /// <summary>库列表的概况列宽。</summary>

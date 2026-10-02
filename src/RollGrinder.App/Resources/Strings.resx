@@ -376,9 +376,6 @@
   <data name="Fn_BackupRestore" xml:space="preserve">
     <value>备份与恢复</value>
   </data>
-  <data name="Fn_Coolant" xml:space="preserve">
-    <value>冷却液</value>
-  </data>
   <data name="Fn_DailyReport" xml:space="preserve">
     <value>日报</value>
   </data>
@@ -2887,9 +2884,6 @@
   <data name="Fn_ShortcutFormat" xml:space="preserve">
     <value>F{0}</value>
   </data>
-  <data name="Fn_StatusOverview" xml:space="preserve">
-    <value>状态总览</value>
-  </data>
   <data name="Fn_System" xml:space="preserve">
     <value>系统</value>
   </data>
@@ -3241,9 +3235,6 @@
   <data name="ManualPage_tailstock" xml:space="preserve">
     <value>尾架</value>
   </data>
-  <data name="Manual_ActionsHint" xml:space="preserve">
-    <value>动作在右边竖键上；到位看状态灯</value>
-  </data>
   <data name="Manual_AskFormat" xml:space="preserve">
     <value>{0}？按"✓ 确认"发出</value>
   </data>
@@ -3261,9 +3252,6 @@
   </data>
   <data name="Manual_PointsHeader" xml:space="preserve">
     <value>测点</value>
-  </data>
-  <data name="Manual_PositionHeader" xml:space="preserve">
-    <value>位置</value>
   </data>
   <data name="Measurement_AskClear" xml:space="preserve">
     <value>清空已采的测点？</value>
@@ -3372,9 +3360,6 @@
   </data>
   <data name="SubView_Query" xml:space="preserve">
     <value>查询</value>
-  </data>
-  <data name="SubView_StatusOverview" xml:space="preserve">
-    <value>状态总览</value>
   </data>
   <data name="Sys_EditNote" xml:space="preserve">
     <value>这些值在 config/hmi.json 与 machine.json 里改（机床配置组）；改完重启上位机生效。语言也可以按 Ctrl+L 切换。</value>
@@ -4455,5 +4440,284 @@
   </data>
   <data name="Vk_Versions" xml:space="preserve">
     <value>版本记录</value>
+  </data>
+  <data name="Block_Current" xml:space="preserve">
+    <value>当前程序段</value>
+  </data>
+  <data name="Block_Next" xml:space="preserve">
+    <value>下一程序段</value>
+  </data>
+  <data name="Block_Job" xml:space="preserve">
+    <value>作业 · 辊号</value>
+  </data>
+  <data name="Block_Pass" xml:space="preserve">
+    <value>道次</value>
+  </data>
+  <data name="Block_Program" xml:space="preserve">
+    <value>NC 程序</value>
+  </data>
+  <data name="Block_Step" xml:space="preserve">
+    <value>工序</value>
+  </data>
+  <data name="CfgGroup_jobChecks" xml:space="preserve">
+    <value>作业核对</value>
+  </data>
+  <data name="CfgField_lengthTolerancePercent" xml:space="preserve">
+    <value>辊身长度容差 (%)</value>
+  </data>
+  <data name="CfgField_minWorkpieceSurfaceSpeedMPerMin" xml:space="preserve">
+    <value>工件线速度下限 (m/min)</value>
+  </data>
+  <data name="CfgField_maxWorkpieceSurfaceSpeedMPerMin" xml:space="preserve">
+    <value>工件线速度上限 (m/min)</value>
+  </data>
+  <data name="Chart_AxisX_BeforeAfterProfile" xml:space="preserve">
+    <value>辊身位置 Z (mm)</value>
+  </data>
+  <data name="Chart_AxisX_Deviation" xml:space="preserve">
+    <value>辊身位置 Z (mm)</value>
+  </data>
+  <data name="Chart_AxisX_Roundness" xml:space="preserve">
+    <value>辊身位置 Z (mm)</value>
+  </data>
+  <data name="Chart_AxisX_CompensationConvergence" xml:space="preserve">
+    <value>迭代次数</value>
+  </data>
+  <data name="Chart_AxisY_BeforeAfterProfile" xml:space="preserve">
+    <value>辊形 直径量 (µm)</value>
+  </data>
+  <data name="Chart_AxisY_Deviation" xml:space="preserve">
+    <value>偏差 直径量 (µm)</value>
+  </data>
+  <data name="Chart_AxisY_Roundness" xml:space="preserve">
+    <value>圆度 / 偏心 (µm)</value>
+  </data>
+  <data name="Chart_AxisY_CompensationConvergence" xml:space="preserve">
+    <value>最差偏差 (µm)</value>
+  </data>
+  <data name="Cond_ChannelIdle" xml:space="preserve">
+    <value>通道复位</value>
+  </data>
+  <data name="Cond_Connected" xml:space="preserve">
+    <value>已连接</value>
+  </data>
+  <data name="Cond_EmergencyReleased" xml:space="preserve">
+    <value>急停已松开</value>
+  </data>
+  <data name="Cond_MachineOn" xml:space="preserve">
+    <value>机床已起动</value>
+  </data>
+  <data name="Cond_Mapped" xml:space="preserve">
+    <value>变量已映射</value>
+  </data>
+  <data name="Cond_OppositeOff" xml:space="preserve">
+    <value>反向动作已停</value>
+  </data>
+  <data name="Diag_ScrapProtection" xml:space="preserve">
+    <value>NC 报废保护</value>
+  </data>
+  <data name="Diag_ScrapProtectionInactive" xml:space="preserve">
+    <value>已下发，NC 未启用</value>
+  </data>
+  <data name="Diag_ScrapProtectionOff" xml:space="preserve">
+    <value>未映射 job.scrapDiameterMm：只有上位机核对</value>
+  </data>
+  <data name="Diag_ScrapProtectionSent" xml:space="preserve">
+    <value>已下发（NC 未回报是否启用）</value>
+  </data>
+  <data name="Drive_Carriage" xml:space="preserve">
+    <value>拖板进给</value>
+  </data>
+  <data name="Drive_Headstock" xml:space="preserve">
+    <value>头架</value>
+  </data>
+  <data name="Drive_Infeed" xml:space="preserve">
+    <value>周期进给</value>
+  </data>
+  <data name="Drive_PerPass" xml:space="preserve">
+    <value>次</value>
+  </data>
+  <data name="Drive_Wheel" xml:space="preserve">
+    <value>砂轮</value>
+  </data>
+  <data name="Finish_AskRegrind" xml:space="preserve">
+    <value>为这支辊建返磨？同计划，在待磨清单置顶</value>
+  </data>
+  <data name="Finish_ColAllowed" xml:space="preserve">
+    <value>允许 (µm)</value>
+  </data>
+  <data name="Finish_ColItem" xml:space="preserve">
+    <value>项目</value>
+  </data>
+  <data name="Finish_ColMeasured" xml:space="preserve">
+    <value>实测 (µm)</value>
+  </data>
+  <data name="Finish_ColResult" xml:space="preserve">
+    <value>结论</value>
+  </data>
+  <data name="Finish_FailedFormat" xml:space="preserve">
+    <value>✗ {0} 不合格</value>
+  </data>
+  <data name="Finish_PassedFormat" xml:space="preserve">
+    <value>✓ {0} 合格</value>
+  </data>
+  <data name="Finish_UnknownFormat" xml:space="preserve">
+    <value>{0} 磨完：没量到，不下结论</value>
+  </data>
+  <data name="Finish_RegrindCreated" xml:space="preserve">
+    <value>返磨已建，在作业页待磨清单最前</value>
+  </data>
+  <data name="Fn_ExportExcel" xml:space="preserve">
+    <value>导出 Excel</value>
+  </data>
+  <data name="Fn_Overview" xml:space="preserve">
+    <value>总览</value>
+  </data>
+  <data name="Fn_ProgramBlock" xml:space="preserve">
+    <value>程序段</value>
+  </data>
+  <data name="Lamp_Fault" xml:space="preserve">
+    <value>故障</value>
+  </data>
+  <data name="Lamp_Moving" xml:space="preserve">
+    <value>动作中</value>
+  </data>
+  <data name="Manual_ConditionsHeader" xml:space="preserve">
+    <value>· 动作条件</value>
+  </data>
+  <data name="Overview_FailedFormat" xml:space="preserve">
+    <value>不合格待返磨 · {0}</value>
+  </data>
+  <data name="Overview_NearScrapFormat" xml:space="preserve">
+    <value>临近报废 · {0}</value>
+  </data>
+  <data name="Overview_PlanChangeFormat" xml:space="preserve">
+    <value>{0} → {1}（{2} {3}）</value>
+  </data>
+  <data name="Overview_PlanChangesFormat" xml:space="preserve">
+    <value>今日计划变更 · {0}</value>
+  </data>
+  <data name="Overview_RegrindCreated" xml:space="preserve">
+    <value>返磨已建</value>
+  </data>
+  <data name="Overview_RegrindPending" xml:space="preserve">
+    <value>待建返磨</value>
+  </data>
+  <data name="Records_NoSnapshot" xml:space="preserve">
+    <value>这份作业没有下发快照（旧版本下发的）</value>
+  </data>
+  <data name="Records_SnapshotTitleFormat" xml:space="preserve">
+    <value>下发参数 · {0} · {1}</value>
+  </data>
+  <data name="Snapshot_At" xml:space="preserve">
+    <value>下发时刻</value>
+  </data>
+  <data name="Snapshot_Checks" xml:space="preserve">
+    <value>当时的核对</value>
+  </data>
+  <data name="Snapshot_Operator" xml:space="preserve">
+    <value>操作者</value>
+  </data>
+  <data name="Snapshot_Points" xml:space="preserve">
+    <value>辊形点数</value>
+  </data>
+  <data name="Snapshot_Steps" xml:space="preserve">
+    <value>工序</value>
+  </data>
+  <data name="StatusGroup_cooling" xml:space="preserve">
+    <value>冷却</value>
+  </data>
+  <data name="StatusGroup_clamping" xml:space="preserve">
+    <value>装夹</value>
+  </data>
+  <data name="StatusGroup_support" xml:space="preserve">
+    <value>支承</value>
+  </data>
+  <data name="StatusGroup_measuring" xml:space="preserve">
+    <value>测量</value>
+  </data>
+  <data name="StatusGroup_machine" xml:space="preserve">
+    <value>机床</value>
+  </data>
+  <data name="Status_door" xml:space="preserve">
+    <value>防护门</value>
+  </data>
+  <data name="Status_door_On" xml:space="preserve">
+    <value>关好</value>
+  </data>
+  <data name="Status_door_Off" xml:space="preserve">
+    <value>未关</value>
+  </data>
+  <data name="Status_hydraulics" xml:space="preserve">
+    <value>液压</value>
+  </data>
+  <data name="Status_hydraulics_On" xml:space="preserve">
+    <value>正常</value>
+  </data>
+  <data name="Status_hydraulics_Off" xml:space="preserve">
+    <value>未建压</value>
+  </data>
+  <data name="Status_lubrication" xml:space="preserve">
+    <value>润滑</value>
+  </data>
+  <data name="Status_lubrication_On" xml:space="preserve">
+    <value>正常</value>
+  </data>
+  <data name="Status_lubrication_Off" xml:space="preserve">
+    <value>异常</value>
+  </data>
+  <data name="SubView_DownloadSnapshot" xml:space="preserve">
+    <value>下发参数</value>
+  </data>
+  <data name="SubView_Finish" xml:space="preserve">
+    <value>磨削结果</value>
+  </data>
+  <data name="SubView_Overview" xml:space="preserve">
+    <value>总览</value>
+  </data>
+  <data name="SubView_ProgramBlock" xml:space="preserve">
+    <value>程序段</value>
+  </data>
+  <data name="Top_Aux" xml:space="preserve">
+    <value>辅助功能</value>
+  </data>
+  <data name="Top_Drives" xml:space="preserve">
+    <value>主轴与进给</value>
+  </data>
+  <data name="Top_Position" xml:space="preserve">
+    <value>位置 (mm)</value>
+  </data>
+  <data name="Top_Remaining" xml:space="preserve">
+    <value>剩余</value>
+  </data>
+  <data name="Verdict_ProfileError" xml:space="preserve">
+    <value>辊形误差峰值</value>
+  </data>
+  <data name="Verdict_Roundness" xml:space="preserve">
+    <value>圆度</value>
+  </data>
+  <data name="Verdict_Taper" xml:space="preserve">
+    <value>锥度</value>
+  </data>
+  <data name="Vk_Coolant" xml:space="preserve">
+    <value>冷却</value>
+  </data>
+  <data name="Vk_DownloadSnapshot" xml:space="preserve">
+    <value>下发参数</value>
+  </data>
+  <data name="Vk_FinishPrint" xml:space="preserve">
+    <value>打印…</value>
+  </data>
+  <data name="Vk_FinishRecords" xml:space="preserve">
+    <value>磨削记录</value>
+  </data>
+  <data name="Vk_NextRoll" xml:space="preserve">
+    <value>下一支辊 ▸</value>
+  </data>
+  <data name="Vk_Regrind" xml:space="preserve">
+    <value>返磨…</value>
+  </data>
+  <data name="Diag_ScrapProtectionActive" xml:space="preserve">
+    <value>已启用（NC 按报废直径限位）</value>
   </data>
 </root>

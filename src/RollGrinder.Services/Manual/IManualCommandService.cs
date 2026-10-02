@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -56,4 +57,16 @@ public interface IManualCommandService
 
     /// <summary>保持型动作的当前状态；拿不到返回 null（界面显示"--"而不是假装关着）。</summary>
     bool? ReadState(ManualCommandDescriptor command);
+
+    /// <summary>
+    /// 动作条件（界面修订稿 v3"动作条件"表）：这个动作的每一条联锁现在满足没有，
+    /// 灰键不再"不知道为什么"。读不到的条件为 null（画"—"），不当成满足。
+    /// </summary>
+    IReadOnlyList<ManualCondition> Conditions(ManualCommandDescriptor command);
 }
+
+/// <summary>动作的一条联锁条件。</summary>
+/// <param name="ResourceKey">条件名的资源键（"Cond_" + 名字）。</param>
+/// <param name="Met">满足 / 不满足；读不到为 null。</param>
+/// <param name="Blocking">不满足时这一条会把键压暗（其余只是提醒）。</param>
+public sealed record ManualCondition(string ResourceKey, bool? Met, bool Blocking);

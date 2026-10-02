@@ -39,6 +39,15 @@ public sealed record QueueEntry(RollRecord Roll, QueueMark Mark, string? JobId, 
     public double? RemainingMm => Roll.ScrapDiameterMm is double scrap ? Roll.StartDiameterMm - scrap : null;
 }
 
+/// <summary>记录区总览（界面修订稿 v3 6.8）：临近报废 · 今日计划变更 · 不合格待返磨。</summary>
+/// <param name="NearScrap">剩余可磨量不到两次标准余量的辊（辊号、剩余 mm）。</param>
+/// <param name="PlanChanges">指定时刻以来的计划变更（改动记录原样）。</param>
+/// <param name="Failed">上次不合格的辊：辊号、那份作业、返磨是否已建。</param>
+public sealed record RollOverview(
+    IReadOnlyList<(string RollId, double RemainingMm)> NearScrap,
+    IReadOnlyList<ChangeLogEntry> PlanChanges,
+    IReadOnlyList<(string RollId, string? JobId, bool RegrindCreated)> Failed);
+
 /// <summary>改计划时一支辊的结论。</summary>
 /// <param name="RollId">辊号。</param>
 /// <param name="Changed">改了。</param>
@@ -71,6 +80,9 @@ public interface IRollPlanningService
 
     /// <summary>台账里已有的用途（去重、排序），竖键里列出来让人选，避免同一用途两种写法。</summary>
     Task<IReadOnlyList<string>> PurposesAsync(CancellationToken cancellationToken);
+
+    /// <summary>记录区总览：临近报废、<paramref name="sinceUtc"/> 以来的计划变更、不合格待返磨。</summary>
+    Task<RollOverview> OverviewAsync(DateTimeOffset sinceUtc, CancellationToken cancellationToken);
 
     /// <summary>改计划前逐支核对：作废的、长度差太多的、类型不符的列出来不改。</summary>
     Task<IReadOnlyList<PlanChangeOutcome>> PreviewPlanChangeAsync(
@@ -177,6 +189,45 @@ public sealed class RollPlanningService : IRollPlanningService
 
         // 最近下线（上次磨削）在前；从没磨过的新辊按登记时间。
         return pinned.Concat(rest.OrderByDescending(entry => entry.LastGroundAtUtc ?? entry.Roll.CreatedAtUtc)).ToArray();
+    }
+
+    public async Task<RollOverview> OverviewAsync(DateTimeOffset sinceUtc, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<QueueEntry> queue = await LoadQueueAsync(int.MaxValue, cancellationToken).ConfigureAwait(false);
+        var perGrind = new Dictionary<string, double>(StringComparer.Ordinal);
+        var nearScrap = new List<(string, double)>();
+        foreach (QueueEntry entry in queue)
+        {
+            if (entry.RemainingMm is not double remaining || entry.Roll.ProgramId is not { } programId)
+            {
+                continue;
+            }
+
+            if (!perGrind.TryGetValue(programId, out double stockMm))
+            {
+                GrindingProgram? program = await this.programs.GetAsync(programId, cancellationToken).ConfigureAwait(false);
+                stockMm = program is null ? 0.0
+                    : (program.StandardStockMicrometer ?? StockAdjustment.Apply(program.Steps, 1.0).ProgramStockMicrometer) / 1000.0;
+                perGrind[programId] = stockMm;
+            }
+
+            if (stockMm > 0.0 && remaining < JobChecklist.LowLifeFactor * stockMm)
+            {
+                nearScrap.Add((entry.Roll.RollId, remaining));
+            }
+        }
+
+        IReadOnlyList<ChangeLogEntry> changes = (await this.changeLog.ListAsync(1000, cancellationToken).ConfigureAwait(false))
+            .Where(entry => entry.Area == ChangeLogAreas.RollPlan && entry.ChangedAtUtc >= sinceUtc)
+            .OrderByDescending(entry => entry.ChangedAtUtc)
+            .ToArray();
+
+        var failed = queue
+            .Where(entry => entry.Mark == QueueMark.Regrind || (entry.LastPassed == false && entry.Mark != QueueMark.Interrupted))
+            .Select(entry => (entry.Roll.RollId, entry.JobId, entry.Mark == QueueMark.Regrind))
+            .ToArray();
+
+        return new RollOverview(nearScrap.OrderBy(item => item.Item2).ToArray(), changes, failed);
     }
 
     public async Task<IReadOnlyList<string>> PurposesAsync(CancellationToken cancellationToken) =>

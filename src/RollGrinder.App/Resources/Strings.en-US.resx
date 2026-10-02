@@ -376,9 +376,6 @@
   <data name="Fn_BackupRestore" xml:space="preserve">
     <value>Backup / restore</value>
   </data>
-  <data name="Fn_Coolant" xml:space="preserve">
-    <value>Coolant</value>
-  </data>
   <data name="Fn_DailyReport" xml:space="preserve">
     <value>Daily report</value>
   </data>
@@ -2887,9 +2884,6 @@
   <data name="Fn_ShortcutFormat" xml:space="preserve">
     <value>F{0}</value>
   </data>
-  <data name="Fn_StatusOverview" xml:space="preserve">
-    <value>Status overview</value>
-  </data>
   <data name="Fn_System" xml:space="preserve">
     <value>System</value>
   </data>
@@ -3241,9 +3235,6 @@
   <data name="ManualPage_tailstock" xml:space="preserve">
     <value>Tailstock</value>
   </data>
-  <data name="Manual_ActionsHint" xml:space="preserve">
-    <value>Actions are on the vertical keys; watch the lamps for position</value>
-  </data>
   <data name="Manual_AskFormat" xml:space="preserve">
     <value>{0}? Press "✓ Confirm" to send</value>
   </data>
@@ -3261,9 +3252,6 @@
   </data>
   <data name="Manual_PointsHeader" xml:space="preserve">
     <value>Points</value>
-  </data>
-  <data name="Manual_PositionHeader" xml:space="preserve">
-    <value>Position</value>
   </data>
   <data name="Measurement_AskClear" xml:space="preserve">
     <value>Clear the captured points?</value>
@@ -3372,9 +3360,6 @@
   </data>
   <data name="SubView_Query" xml:space="preserve">
     <value>Query</value>
-  </data>
-  <data name="SubView_StatusOverview" xml:space="preserve">
-    <value>Status overview</value>
   </data>
   <data name="Sys_EditNote" xml:space="preserve">
     <value>These values live in config/hmi.json and machine.json (Machine config group) and take effect after restarting the HMI. Ctrl+L also switches the language.</value>
@@ -4455,5 +4440,284 @@
   </data>
   <data name="Vk_Versions" xml:space="preserve">
     <value>Versions</value>
+  </data>
+  <data name="Block_Current" xml:space="preserve">
+    <value>Current block</value>
+  </data>
+  <data name="Block_Next" xml:space="preserve">
+    <value>Next block</value>
+  </data>
+  <data name="Block_Job" xml:space="preserve">
+    <value>Job · roll</value>
+  </data>
+  <data name="Block_Pass" xml:space="preserve">
+    <value>Pass</value>
+  </data>
+  <data name="Block_Program" xml:space="preserve">
+    <value>NC program</value>
+  </data>
+  <data name="Block_Step" xml:space="preserve">
+    <value>Step</value>
+  </data>
+  <data name="CfgGroup_jobChecks" xml:space="preserve">
+    <value>Job checks</value>
+  </data>
+  <data name="CfgField_lengthTolerancePercent" xml:space="preserve">
+    <value>Body length tolerance (%)</value>
+  </data>
+  <data name="CfgField_minWorkpieceSurfaceSpeedMPerMin" xml:space="preserve">
+    <value>Min. workpiece surface speed (m/min)</value>
+  </data>
+  <data name="CfgField_maxWorkpieceSurfaceSpeedMPerMin" xml:space="preserve">
+    <value>Max. workpiece surface speed (m/min)</value>
+  </data>
+  <data name="Chart_AxisX_BeforeAfterProfile" xml:space="preserve">
+    <value>Body position Z (mm)</value>
+  </data>
+  <data name="Chart_AxisX_Deviation" xml:space="preserve">
+    <value>Body position Z (mm)</value>
+  </data>
+  <data name="Chart_AxisX_Roundness" xml:space="preserve">
+    <value>Body position Z (mm)</value>
+  </data>
+  <data name="Chart_AxisX_CompensationConvergence" xml:space="preserve">
+    <value>Iteration</value>
+  </data>
+  <data name="Chart_AxisY_BeforeAfterProfile" xml:space="preserve">
+    <value>Profile, diameter (µm)</value>
+  </data>
+  <data name="Chart_AxisY_Deviation" xml:space="preserve">
+    <value>Deviation, diameter (µm)</value>
+  </data>
+  <data name="Chart_AxisY_Roundness" xml:space="preserve">
+    <value>Roundness / eccentricity (µm)</value>
+  </data>
+  <data name="Chart_AxisY_CompensationConvergence" xml:space="preserve">
+    <value>Worst deviation (µm)</value>
+  </data>
+  <data name="Cond_ChannelIdle" xml:space="preserve">
+    <value>Channel reset</value>
+  </data>
+  <data name="Cond_Connected" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="Cond_EmergencyReleased" xml:space="preserve">
+    <value>E-stop released</value>
+  </data>
+  <data name="Cond_MachineOn" xml:space="preserve">
+    <value>Machine on</value>
+  </data>
+  <data name="Cond_Mapped" xml:space="preserve">
+    <value>Tag mapped</value>
+  </data>
+  <data name="Cond_OppositeOff" xml:space="preserve">
+    <value>Opposite action off</value>
+  </data>
+  <data name="Diag_ScrapProtection" xml:space="preserve">
+    <value>NC scrap protection</value>
+  </data>
+  <data name="Diag_ScrapProtectionInactive" xml:space="preserve">
+    <value>Sent, not active in the NC</value>
+  </data>
+  <data name="Diag_ScrapProtectionOff" xml:space="preserve">
+    <value>job.scrapDiameterMm not mapped: HMI check only</value>
+  </data>
+  <data name="Diag_ScrapProtectionSent" xml:space="preserve">
+    <value>Sent (NC does not report activation)</value>
+  </data>
+  <data name="Drive_Carriage" xml:space="preserve">
+    <value>Carriage feed</value>
+  </data>
+  <data name="Drive_Headstock" xml:space="preserve">
+    <value>Headstock</value>
+  </data>
+  <data name="Drive_Infeed" xml:space="preserve">
+    <value>Infeed per pass</value>
+  </data>
+  <data name="Drive_PerPass" xml:space="preserve">
+    <value>pass</value>
+  </data>
+  <data name="Drive_Wheel" xml:space="preserve">
+    <value>Wheel</value>
+  </data>
+  <data name="Finish_AskRegrind" xml:space="preserve">
+    <value>Create a regrind for this roll? Same plan, pinned on the queue</value>
+  </data>
+  <data name="Finish_ColAllowed" xml:space="preserve">
+    <value>Allowed (µm)</value>
+  </data>
+  <data name="Finish_ColItem" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Finish_ColMeasured" xml:space="preserve">
+    <value>Measured (µm)</value>
+  </data>
+  <data name="Finish_ColResult" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Finish_FailedFormat" xml:space="preserve">
+    <value>✗ {0} failed</value>
+  </data>
+  <data name="Finish_PassedFormat" xml:space="preserve">
+    <value>✓ {0} passed</value>
+  </data>
+  <data name="Finish_UnknownFormat" xml:space="preserve">
+    <value>{0} finished: not measured, no verdict</value>
+  </data>
+  <data name="Finish_RegrindCreated" xml:space="preserve">
+    <value>Regrind created; it is first on the job queue</value>
+  </data>
+  <data name="Fn_ExportExcel" xml:space="preserve">
+    <value>Export Excel</value>
+  </data>
+  <data name="Fn_Overview" xml:space="preserve">
+    <value>Overview</value>
+  </data>
+  <data name="Fn_ProgramBlock" xml:space="preserve">
+    <value>Program block</value>
+  </data>
+  <data name="Lamp_Fault" xml:space="preserve">
+    <value>Fault</value>
+  </data>
+  <data name="Lamp_Moving" xml:space="preserve">
+    <value>Moving</value>
+  </data>
+  <data name="Manual_ConditionsHeader" xml:space="preserve">
+    <value>· Action conditions</value>
+  </data>
+  <data name="Overview_FailedFormat" xml:space="preserve">
+    <value>Failed, awaiting regrind · {0}</value>
+  </data>
+  <data name="Overview_NearScrapFormat" xml:space="preserve">
+    <value>Near scrap · {0}</value>
+  </data>
+  <data name="Overview_PlanChangeFormat" xml:space="preserve">
+    <value>{0} → {1} ({2} {3})</value>
+  </data>
+  <data name="Overview_PlanChangesFormat" xml:space="preserve">
+    <value>Plan changes today · {0}</value>
+  </data>
+  <data name="Overview_RegrindCreated" xml:space="preserve">
+    <value>Regrind created</value>
+  </data>
+  <data name="Overview_RegrindPending" xml:space="preserve">
+    <value>Regrind pending</value>
+  </data>
+  <data name="Records_NoSnapshot" xml:space="preserve">
+    <value>No download snapshot for this job (downloaded by an older version)</value>
+  </data>
+  <data name="Records_SnapshotTitleFormat" xml:space="preserve">
+    <value>Download parameters · {0} · {1}</value>
+  </data>
+  <data name="Snapshot_At" xml:space="preserve">
+    <value>Downloaded at</value>
+  </data>
+  <data name="Snapshot_Checks" xml:space="preserve">
+    <value>Checks at download</value>
+  </data>
+  <data name="Snapshot_Operator" xml:space="preserve">
+    <value>Operator</value>
+  </data>
+  <data name="Snapshot_Points" xml:space="preserve">
+    <value>Profile points</value>
+  </data>
+  <data name="Snapshot_Steps" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="StatusGroup_cooling" xml:space="preserve">
+    <value>Cooling</value>
+  </data>
+  <data name="StatusGroup_clamping" xml:space="preserve">
+    <value>Clamping</value>
+  </data>
+  <data name="StatusGroup_support" xml:space="preserve">
+    <value>Support</value>
+  </data>
+  <data name="StatusGroup_measuring" xml:space="preserve">
+    <value>Measuring</value>
+  </data>
+  <data name="StatusGroup_machine" xml:space="preserve">
+    <value>Machine</value>
+  </data>
+  <data name="Status_door" xml:space="preserve">
+    <value>Door</value>
+  </data>
+  <data name="Status_door_On" xml:space="preserve">
+    <value>Closed</value>
+  </data>
+  <data name="Status_door_Off" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Status_hydraulics" xml:space="preserve">
+    <value>Hydraulics</value>
+  </data>
+  <data name="Status_hydraulics_On" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Status_hydraulics_Off" xml:space="preserve">
+    <value>No pressure</value>
+  </data>
+  <data name="Status_lubrication" xml:space="preserve">
+    <value>Lubrication</value>
+  </data>
+  <data name="Status_lubrication_On" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Status_lubrication_Off" xml:space="preserve">
+    <value>Fault</value>
+  </data>
+  <data name="SubView_DownloadSnapshot" xml:space="preserve">
+    <value>Download parameters</value>
+  </data>
+  <data name="SubView_Finish" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="SubView_Overview" xml:space="preserve">
+    <value>Overview</value>
+  </data>
+  <data name="SubView_ProgramBlock" xml:space="preserve">
+    <value>Program block</value>
+  </data>
+  <data name="Top_Aux" xml:space="preserve">
+    <value>Auxiliary</value>
+  </data>
+  <data name="Top_Drives" xml:space="preserve">
+    <value>Spindles and feed</value>
+  </data>
+  <data name="Top_Position" xml:space="preserve">
+    <value>Position (mm)</value>
+  </data>
+  <data name="Top_Remaining" xml:space="preserve">
+    <value>To go</value>
+  </data>
+  <data name="Verdict_ProfileError" xml:space="preserve">
+    <value>Profile error peak</value>
+  </data>
+  <data name="Verdict_Roundness" xml:space="preserve">
+    <value>Roundness</value>
+  </data>
+  <data name="Verdict_Taper" xml:space="preserve">
+    <value>Taper</value>
+  </data>
+  <data name="Vk_Coolant" xml:space="preserve">
+    <value>Coolant</value>
+  </data>
+  <data name="Vk_DownloadSnapshot" xml:space="preserve">
+    <value>Download params</value>
+  </data>
+  <data name="Vk_FinishPrint" xml:space="preserve">
+    <value>Print…</value>
+  </data>
+  <data name="Vk_FinishRecords" xml:space="preserve">
+    <value>Records</value>
+  </data>
+  <data name="Vk_NextRoll" xml:space="preserve">
+    <value>Next roll ▸</value>
+  </data>
+  <data name="Vk_Regrind" xml:space="preserve">
+    <value>Regrind…</value>
+  </data>
+  <data name="Diag_ScrapProtectionActive" xml:space="preserve">
+    <value>Active (the NC limits at the scrap diameter)</value>
   </data>
 </root>

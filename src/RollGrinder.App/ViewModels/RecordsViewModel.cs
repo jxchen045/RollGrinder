@@ -14,6 +14,8 @@ using RollGrinder.Core.Time;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Records;
+using RollGrinder.Data;
+using RollGrinder.Services.Jobs;
 
 namespace RollGrinder.App.ViewModels;
 
@@ -30,7 +32,35 @@ public sealed class RecordRowViewModel
         ProfileTypeText = string.IsNullOrEmpty(view.ProfileTypeKey)
             ? string.Empty
             : localizer["ProfileType_" + view.ProfileTypeKey];
+
+        // 标记列（界面修订稿 v3 6.8）：✓ / ✗ 合格判定、返磨、仅本次、改计划、中断。
+        var marks = new List<string>();
+        if (view.Passed is bool passed)
+        {
+            marks.Add(localizer[passed ? "Result_Pass" : "Result_Fail"]);
+        }
+
+        if (view.RegrindOfJobId is not null)
+        {
+            marks.Add(localizer["Mark_Regrind"]);
+        }
+
+        if (view.Deviation == RollGrinder.Core.Steps.JobDeviation.ThisTimeOnly)
+        {
+            marks.Add(localizer["Mark_ThisTime"]);
+        }
+        else if (view.Deviation == RollGrinder.Core.Steps.JobDeviation.PlanChanged)
+        {
+            marks.Add(localizer["Mark_PlanChanged"]);
+        }
+
+        MarkText = string.Join(" ", marks);
+        IsFailed = view.Passed == false;
     }
+
+    public string MarkText { get; }
+
+    public bool IsFailed { get; }
 
     public GrindingRecordView View { get; }
 
@@ -60,6 +90,8 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     private readonly IRecordService recordService;
     private readonly IReportService reportService;
     private readonly JobDraft jobDraft;
+    private readonly IRollPlanningService planning;
+    private readonly FunctionKeyViewModel overviewKey;
     private readonly Dictionary<RecordCurveKind, FunctionKeyViewModel> curveKeys = new();
     private readonly FunctionKeyViewModel recordsKey;
     private readonly FunctionKeyViewModel cancelQueryKey;
@@ -68,6 +100,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     public RecordsViewModel(
         IRecordService recordService,
         IReportService reportService,
+        IRollPlanningService planning,
         JobDraft jobDraft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
@@ -78,17 +111,20 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         this.recordService = recordService ?? throw new ArgumentNullException(nameof(recordService));
         this.reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
+        this.planning = planning ?? throw new ArgumentNullException(nameof(planning));
 
         this.toDate = DateTime.Today;
         this.fromDate = DateTime.Today.AddDays(-7);
 
-        // 横键（最终稿 5.11）：磨削记录 · 磨前报表 · 空 · 日报 · 月报。轧辊台账挪去了库区。
+        // 横键（界面修订稿 v3 5.1）：总览 · 磨削记录 · 磨前报表 · 空 · 日报 · 月报。轧辊台账在轧辊区。
         this.recordsKey = FunctionKeyViewModel.ForAction("Fn_GrindingRecords", localizer, () => Navigator.CloseSubView());
+        this.overviewKey = FunctionKeyViewModel.ForAction("Fn_Overview", localizer, () => _ = OpenOverviewAsync());
         SetFunctionKeys(new FunctionKeyViewModel?[]
         {
+            this.overviewKey,
             this.recordsKey,
             new FunctionKeyViewModel("Fn_PreGrindReport", PreviewPreGrindReportCommand, localizer),
-            null,
+            new FunctionKeyViewModel("Fn_ExportExcel", RequestExportCommand, localizer),
             new FunctionKeyViewModel("Fn_DailyReport", ShowDailySummaryCommand, localizer),
             new FunctionKeyViewModel("Fn_MonthlyReport", ShowMonthlySummaryCommand, localizer),
         });
@@ -119,6 +155,130 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         ApplyVerticalKeys();
     }
 
+    /// <summary>总览（界面修订稿 v3 6.8）：临近报废 · 今日计划变更 · 不合格待返磨。</summary>
+    public const string OverviewSubView = "SubView_Overview";
+
+    /// <summary>下发参数：这一份作业下发时留的快照。</summary>
+    public const string SnapshotSubView = "SubView_DownloadSnapshot";
+
+    public bool IsOverviewOpen => ActiveSubViewKey == OverviewSubView;
+
+    public bool IsSnapshotOpen => ActiveSubViewKey == SnapshotSubView;
+
+    public ObservableCollection<LabelValueViewModel> NearScrapRows { get; } = new();
+
+    public ObservableCollection<LabelValueViewModel> PlanChangeRows { get; } = new();
+
+    public ObservableCollection<LabelValueViewModel> FailedRows { get; } = new();
+
+    [ObservableProperty]
+    private string nearScrapTitle = string.Empty;
+
+    [ObservableProperty]
+    private string planChangeTitle = string.Empty;
+
+    [ObservableProperty]
+    private string failedTitle = string.Empty;
+
+    /// <summary>下发参数子视图：头（时刻、操作者、辊形 / 程序版本、磨前直径、磨削量）+ 工序 + 核对结论。</summary>
+    public ObservableCollection<LabelValueViewModel> SnapshotRows { get; } = new();
+
+    public ObservableCollection<LabelValueViewModel> SnapshotSteps { get; } = new();
+
+    public ObservableCollection<LabelValueViewModel> SnapshotChecks { get; } = new();
+
+    [ObservableProperty]
+    private string snapshotTitle = string.Empty;
+
+    private async Task OpenOverviewAsync()
+    {
+        await RunGuardedAsync(
+            async token =>
+            {
+                RollOverview overview = await this.planning.OverviewAsync(
+                    new DateTimeOffset(DateTime.Today).ToUniversalTime(), token).ConfigureAwait(true);
+                NearScrapRows.Clear();
+                foreach ((string rollId, double remaining) in overview.NearScrap)
+                {
+                    NearScrapRows.Add(LabelValueViewModel.Raw(rollId, Localizer.Format("Rolls_RemainingFormat", remaining)));
+                }
+
+                PlanChangeRows.Clear();
+                foreach (ChangeLogEntry entry in overview.PlanChanges)
+                {
+                    PlanChangeRows.Add(LabelValueViewModel.Raw(
+                        entry.Item,
+                        Localizer.Format("Overview_PlanChangeFormat", entry.OldValue ?? "--", entry.NewValue ?? "--",
+                            entry.ChangedBy, entry.ChangedAtUtc.ToLocalTime().ToString("HH:mm", CultureInfo.CurrentCulture))));
+                }
+
+                FailedRows.Clear();
+                foreach ((string rollId, string? _, bool created) in overview.Failed)
+                {
+                    FailedRows.Add(LabelValueViewModel.Raw(rollId, Localizer[created ? "Overview_RegrindCreated" : "Overview_RegrindPending"]));
+                }
+
+                NearScrapTitle = Localizer.Format("Overview_NearScrapFormat", NearScrapRows.Count);
+                PlanChangeTitle = Localizer.Format("Overview_PlanChangesFormat", PlanChangeRows.Count);
+                FailedTitle = Localizer.Format("Overview_FailedFormat", FailedRows.Count);
+                Navigator.OpenSubView(OverviewSubView);
+            },
+            CancellationToken.None).ConfigureAwait(true);
+    }
+
+    /// <summary>下发参数：照下发时留的快照列出来——作业当时按什么磨的，事后可查、可对账。</summary>
+    private async Task OpenSnapshotAsync()
+    {
+        if (SelectedRecord is not { } row)
+        {
+            Interaction.Refuse(Localizer["Records_NoSelection"]);
+            return;
+        }
+
+        await RunGuardedAsync(
+            async token =>
+            {
+                DownloadSnapshot? snapshot = await this.recordService.LoadDownloadSnapshotAsync(row.RecordId, token).ConfigureAwait(true);
+                if (snapshot is null)
+                {
+                    Interaction.Refuse(Localizer["Records_NoSnapshot"]);
+                    return;
+                }
+
+                SnapshotTitle = Localizer.Format("Records_SnapshotTitleFormat", row.RollCode, row.View.JobId);
+                SnapshotRows.Clear();
+                SnapshotRows.Add(new LabelValueViewModel("Snapshot_At", snapshot.DownloadedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.CurrentCulture), Localizer));
+                SnapshotRows.Add(new LabelValueViewModel("Snapshot_Operator", string.IsNullOrEmpty(snapshot.Operator) ? "--" : snapshot.Operator, Localizer));
+                SnapshotRows.Add(new LabelValueViewModel("Job_PlanProfile", Versioned(snapshot.ProfileName, snapshot.ProfileVersion), Localizer));
+                SnapshotRows.Add(new LabelValueViewModel("Job_PlanProgram", Versioned(snapshot.ProgramName, snapshot.ProgramVersion), Localizer));
+                SnapshotRows.Add(new LabelValueViewModel("Job_StartDiameter", snapshot.StartDiameterMm?.ToString("F3", CultureInfo.CurrentCulture) ?? "--", Localizer));
+                SnapshotRows.Add(new LabelValueViewModel("Job_StockMm", snapshot.StockMicrometer is double um ? (um / 1000.0).ToString("F3", CultureInfo.CurrentCulture) : "--", Localizer));
+                SnapshotRows.Add(new LabelValueViewModel("Snapshot_Points", snapshot.Points.Count.ToString(CultureInfo.CurrentCulture), Localizer));
+
+                SnapshotSteps.Clear();
+                foreach (RollGrinder.Core.Steps.GrindingJobStep step in snapshot.Steps)
+                {
+                    SnapshotSteps.Add(new LabelValueViewModel(
+                        "StepType_" + step.StepTypeKey,
+                        string.Join("  ", step.Parameters.Keys.Take(6).Select(key => Localizer["Parameter_" + key] + " " + step.Parameters.Get(key))),
+                        Localizer));
+                }
+
+                SnapshotChecks.Clear();
+                foreach ((string item, string status, string messageKey) in snapshot.Checks)
+                {
+                    string glyph = status switch { "Pass" => "✓", "Notice" => "!", _ => "✕" };
+                    SnapshotChecks.Add(new LabelValueViewModel("CheckItem_" + item, glyph + " " + Localizer[messageKey], Localizer));
+                }
+
+                Navigator.OpenSubView(SnapshotSubView);
+            },
+            CancellationToken.None).ConfigureAwait(true);
+    }
+
+    private string Versioned(string? name, int? version) =>
+        name is null ? "--" : version is int v ? Localizer.Format("Lib_NameVersionFormat", name, v) : name;
+
     /// <summary>查询子功能（竖键"查询…"）：起止日期，竖键 7 / 8 = 取消 / 查询。</summary>
     public const string QuerySubView = "SubView_Query";
 
@@ -131,6 +291,21 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     private void ApplyVerticalKeys()
     {
         OnPropertyChanged(nameof(IsQueryOpen));
+        OnPropertyChanged(nameof(IsOverviewOpen));
+        OnPropertyChanged(nameof(IsSnapshotOpen));
+        this.overviewKey.IsActive = IsOverviewOpen;
+        this.recordsKey.IsActive = !IsOverviewOpen;
+        if (IsOverviewOpen || IsSnapshotOpen)
+        {
+            SetCommitPair(null, null);
+            SetVerticalKeys(new FunctionKeyViewModel?[]
+            {
+                null, null, null, null, null, null, null,
+                new FunctionKeyViewModel("Vk_Back", new RelayCommand(Navigator.CloseSubView), Localizer, FunctionKeyKind.Navigation),
+            });
+            return;
+        }
+
         if (ActiveSubViewKey == ReportSubView)
         {
             SetCommitPair(null, null);
@@ -151,8 +326,8 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             this.curveKeys[RecordCurveKind.CompensationConvergence],
             FunctionKeyViewModel.ForAction("Vk_QueryAsk", Localizer, () => Navigator.OpenSubView(QuerySubView)),
             new FunctionKeyViewModel("Vk_MarkFinished", new RelayCommand(AskFinish), Localizer) { PreconditionResourceKey = "Records_NoSelection" },
+            new FunctionKeyViewModel("Vk_DownloadSnapshot", new AsyncRelayCommand(OpenSnapshotAsync), Localizer) { PreconditionResourceKey = "Records_NoSelection" },
             new FunctionKeyViewModel("Vk_Print", PreviewPostGrindReportCommand, Localizer),
-            new FunctionKeyViewModel("Vk_ExportExcel", RequestExportCommand, Localizer),
         });
         MarkCurve();
         SetCommitPair(IsQueryOpen ? this.cancelQueryKey : null, IsQueryOpen ? this.confirmQueryKey : null);

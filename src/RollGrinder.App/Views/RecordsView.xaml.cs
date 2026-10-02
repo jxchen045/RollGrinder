@@ -90,8 +90,11 @@ public partial class RecordsView : UserControl
             line.LegendText = this.viewModel.Localizer[series.LabelResourceKey];
         }
 
-        RecordPlot.Plot.Axes.Bottom.Label.Text = this.viewModel.Localizer[curve.AxisUnitResourceKey];
-        RecordPlot.Plot.Axes.Left.Label.Text = this.viewModel.Localizer[curve.ValueUnitResourceKey];
+        // 图表通则：两轴写名称 + 单位（横轴按曲线是辊身位置还是迭代次数，纵轴按曲线的量）。
+        PlotTheme.AxisTitles(
+            RecordPlot,
+            this.viewModel.Localizer["Chart_AxisX_" + curve.Kind],
+            this.viewModel.Localizer["Chart_AxisY_" + curve.Kind]);
         RecordPlot.Plot.ShowLegend();
 
         // 磨前 / 磨后是辊形图：按磨后（目标）那条定范围，和辊形页同一个样；误差按偏差图；其余自动。

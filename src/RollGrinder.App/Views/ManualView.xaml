@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
              xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
+             xmlns:views="clr-namespace:RollGrinder.App.Views"
              xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
     <!--
         手动动作页（界面最终稿 5.4、5.5）。版式：上面是本页相关的位置（L1）和测量，下面是本页机构的状态格；
@@ -18,19 +19,47 @@
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="{ctl:Px 560}" />
+                <ColumnDefinition Width="{ctl:Px 480}" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,6">
+            <!-- 上排三块：与自动页同一个控件（位置 · 主轴与进给 · 辅助功能）。 -->
+            <views:MachineTopRow Grid.ColumnSpan="2" DataContext="{Binding StatusBand}" Margin="0,0,0,10" />
+
+            <!-- 动作条件：这一页每个动作的联锁 ✓ / ✗ / —，灰键不再"不知道为什么"。动作本身只在右侧竖键上。 -->
+            <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,6,0">
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                        <TextBlock Text="{loc:Loc Manual_PositionHeader}" Style="{StaticResource Text.CardTitle}" />
+                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding SelectedGroup.Title}" Style="{StaticResource Text.CardTitle}" />
+                            <TextBlock Text="{loc:Loc Manual_ConditionsHeader}" Style="{StaticResource Text.CardTitle}" Margin="12,0,0,0" />
+                        </StackPanel>
                     </Border>
-                    <ItemsControl ItemsSource="{Binding SelectedGroup.Axes}" ItemTemplate="{StaticResource AxisReadoutTemplate}" Margin="6" />
+                    <ItemsControl ItemsSource="{Binding Conditions}" Margin="12,6">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="CondRow" Padding="8,8" BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="0,0,0,1">
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding ActionText}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}"
+                                                   Style="{StaticResource Text.Body}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="CondText" Text="{Binding ConditionsText}" Style="{StaticResource Text.Label}"
+                                                   TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding HasProblem}" Value="True">
+                                        <Setter TargetName="CondRow" Property="Background" Value="{StaticResource Brush.WarningFill}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Ready}" Value="False">
+                                        <Setter TargetName="CondText" Property="Foreground" Value="{StaticResource Brush.Alarm}" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </DockPanel>
             </Border>
 
-            <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,0,6">
+            <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                         <TextBlock Text="{loc:Loc Manual_MeasureHeader}" Style="{StaticResource Text.CardTitle}" />
@@ -49,25 +78,6 @@
                             </StackPanel>
                         </UniformGrid>
                     </StackPanel>
-                </DockPanel>
-            </Border>
-
-            <Border Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource Card}">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding SelectedGroup.Title}" Style="{StaticResource Text.CardTitle}" />
-                            <TextBlock Text="{loc:Loc Manual_ActionsHint}" Style="{StaticResource Text.Label}"
-                                       Foreground="{StaticResource Brush.OnAccent}" Margin="16,0,0,0" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-                    <ItemsControl ItemsSource="{Binding SelectedGroup.Lamps}" ItemTemplate="{StaticResource StatusLampTemplate}" Margin="16">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="4" VerticalAlignment="Top" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
                 </DockPanel>
             </Border>
         </Grid>

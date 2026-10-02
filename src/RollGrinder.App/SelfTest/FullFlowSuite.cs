@@ -167,8 +167,8 @@ internal sealed class FullFlowSuite : ISelfTestSuite
 
         await h.StepAsync("Run", "Coolant", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_Coolant");
-            await h.PressKeyAsync(ctx, "Fn_Coolant");
+            await h.PressVerticalKeyAsync(ctx, "Vk_Coolant");
+            await h.PressVerticalKeyAsync(ctx, "Vk_Coolant");
         }, new StepOptions(Tolerant: true));
 
         await h.StepAsync("Run", "EndEarlyConfirmationExpires", async ctx =>
