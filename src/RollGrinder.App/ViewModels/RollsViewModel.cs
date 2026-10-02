@@ -292,6 +292,12 @@ public sealed partial class RollsViewModel : PageViewModelBase
     {
         (this.retireKey.Command as IRelayCommand)?.NotifyCanExecuteChanged();
         this.retireKey.LabelResourceKey = value?.IsRetired == true ? "Vk_Restore" : "Vk_Retire";
+        if (ActiveSubViewKey is null && !IsPicking)
+        {
+            // 根画面的键按选中的那支辊重排（下作业、编辑、复制登记……能不能按跟着变）。
+            ApplyKeys();
+        }
+
         if (value is not null)
         {
             _ = RunGuardedAsync(token => ShowCardAsync(value.Roll, token), CancellationToken.None);
