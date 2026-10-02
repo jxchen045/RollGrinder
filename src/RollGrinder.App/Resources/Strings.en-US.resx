@@ -451,12 +451,6 @@
   <data name="Job_ParametersInvalid" xml:space="preserve">
     <value>One of the parameters is not valid</value>
   </data>
-  <data name="Job_ReadyToHandOver" xml:space="preserve">
-    <value>Parameters are ready to hand over</value>
-  </data>
-  <data name="Job_RollIdLabel" xml:space="preserve">
-    <value>Roll ID</value>
-  </data>
   <data name="Job_TagMapIncomplete" xml:space="preserve">
     <value>tagmap.json is incomplete; nothing was written</value>
   </data>
@@ -616,18 +610,6 @@
   <data name="ProfileType_Taper" xml:space="preserve">
     <value>Taper</value>
   </data>
-  <data name="Profile_Library" xml:space="preserve">
-    <value>Profile library</value>
-  </data>
-  <data name="Profile_LibraryColumnModified" xml:space="preserve">
-    <value>Modified</value>
-  </data>
-  <data name="Profile_LibraryColumnName" xml:space="preserve">
-    <value>Name</value>
-  </data>
-  <data name="Profile_LibraryColumnSegments" xml:space="preserve">
-    <value>Segments</value>
-  </data>
   <data name="Profile_Name" xml:space="preserve">
     <value>Profile name</value>
   </data>
@@ -639,15 +621,6 @@
   </data>
   <data name="Profile_SegmentMirrored" xml:space="preserve">
     <value>Mirrored</value>
-  </data>
-  <data name="Program_ColumnModified" xml:space="preserve">
-    <value>Modified</value>
-  </data>
-  <data name="Program_ColumnName" xml:space="preserve">
-    <value>Name</value>
-  </data>
-  <data name="Program_ColumnSteps" xml:space="preserve">
-    <value>Steps</value>
   </data>
   <data name="Program_Name" xml:space="preserve">
     <value>Program name</value>
@@ -1582,20 +1555,11 @@
   <data name="Ledger_Code" xml:space="preserve">
     <value>Roll code</value>
   </data>
-  <data name="Ledger_Diameter" xml:space="preserve">
-    <value>Diameter (mm)</value>
-  </data>
   <data name="Ledger_BodyLength" xml:space="preserve">
     <value>Body (mm)</value>
   </data>
   <data name="Ledger_Material" xml:space="preserve">
     <value>Material</value>
-  </data>
-  <data name="Ledger_GrindCount" xml:space="preserve">
-    <value>Grinds</value>
-  </data>
-  <data name="Ledger_LastGround" xml:space="preserve">
-    <value>Last ground</value>
   </data>
   <data name="Diag_InspectorHeader" xml:space="preserve">
     <value>Read-only view</value>
@@ -1623,12 +1587,6 @@
   </data>
   <data name="RollData_NetWeight" xml:space="preserve">
     <value>Roll net weight (kg)</value>
-  </data>
-  <data name="RollData_HeadBoxWeight" xml:space="preserve">
-    <value>Head-end box weight (kg)</value>
-  </data>
-  <data name="RollData_TailBoxWeight" xml:space="preserve">
-    <value>Tail-end box weight (kg)</value>
   </data>
   <data name="Action_ManualGrinding" xml:space="preserve">
     <value>Manual grinding</value>
@@ -1888,53 +1846,17 @@
   <data name="Ledger_CurrentDiameter" xml:space="preserve">
     <value>Current dia. (mm)</value>
   </data>
-  <data name="Ledger_BodyLengthLabel" xml:space="preserve">
-    <value>Body length mm</value>
-  </data>
-  <data name="Ledger_DiameterLabel" xml:space="preserve">
-    <value>Nominal dia. mm</value>
-  </data>
-  <data name="Ledger_CurrentDiameterLabel" xml:space="preserve">
-    <value>Current dia. mm</value>
-  </data>
-  <data name="Ledger_TotalWeight" xml:space="preserve">
-    <value>Total lift weight kg</value>
-  </data>
-  <data name="Ledger_HistoryHeader" xml:space="preserve">
-    <value>Grinding history</value>
-  </data>
-  <data name="Ledger_HistoryStarted" xml:space="preserve">
-    <value>Started</value>
-  </data>
-  <data name="Ledger_HistoryJob" xml:space="preserve">
-    <value>Job</value>
-  </data>
-  <data name="Ledger_HistoryState" xml:space="preserve">
-    <value>State</value>
-  </data>
-  <data name="Ledger_HistoryDuration" xml:space="preserve">
-    <value>Duration</value>
-  </data>
   <data name="Ledger_Saved" xml:space="preserve">
     <value>Saved to the ledger</value>
   </data>
   <data name="Ledger_Problem_NotANumber" xml:space="preserve">
-    <value>Some fields are not numbers: body length and nominal diameter are required, the rest may be left empty</value>
+    <value>A field is not a number (body and nominal diameter are required)</value>
   </data>
   <data name="Ledger_Problem_MissingRollId" xml:space="preserve">
     <value>Enter a roll number</value>
   </data>
   <data name="Ledger_Problem_RollIdTaken" xml:space="preserve">
     <value>This roll number is already in the ledger</value>
-  </data>
-  <data name="Ledger_Problem_BodyLength" xml:space="preserve">
-    <value>The body length is outside what this machine can grind</value>
-  </data>
-  <data name="Ledger_Problem_Diameter" xml:space="preserve">
-    <value>The nominal diameter is outside what this machine can grind</value>
-  </data>
-  <data name="Ledger_Problem_CurrentDiameter" xml:space="preserve">
-    <value>The current diameter is outside what this machine can grind</value>
   </data>
   <data name="Ledger_Problem_NegativeWeight" xml:space="preserve">
     <value>Weights cannot be negative</value>
@@ -1956,90 +1878,6 @@
   </data>
   <data name="Fn_UseForJob" xml:space="preserve">
     <value>Use for a job</value>
-  </data>
-  <data name="Job_StepsHeader" xml:space="preserve">
-    <value>Steps</value>
-  </data>
-  <data name="Job_StepRoll" xml:space="preserve">
-    <value>Roll</value>
-  </data>
-  <data name="Job_StepProfile" xml:space="preserve">
-    <value>Profile</value>
-  </data>
-  <data name="Job_StepProgram" xml:space="preserve">
-    <value>Process program</value>
-  </data>
-  <data name="Job_StepOptions" xml:space="preserve">
-    <value>Stock</value>
-  </data>
-  <data name="Job_StepReview" xml:space="preserve">
-    <value>Check and download</value>
-  </data>
-  <data name="Job_StepHint" xml:space="preserve">
-    <value>F1 previous, F2 next; download only after step 5 finds no errors</value>
-  </data>
-  <data name="Job_PickRoll" xml:space="preserve">
-    <value>Pick the roll from the ledger (press F4 to register a new one)</value>
-  </data>
-  <data name="Job_PickProfile" xml:space="preserve">
-    <value>Pick a profile from the library</value>
-  </data>
-  <data name="Job_PickProgram" xml:space="preserve">
-    <value>Pick a process program from the library</value>
-  </data>
-  <data name="Job_PickOptions" xml:space="preserve">
-    <value>Program steps for this job (defaults come from the program)</value>
-  </data>
-  <data name="Job_DesignLengthColumn" xml:space="preserve">
-    <value>Design length</value>
-  </data>
-  <data name="Job_FitStretch" xml:space="preserve">
-    <value>Stretch to fit</value>
-  </data>
-  <data name="Job_FitCenter" xml:space="preserve">
-    <value>Centre, no stretch</value>
-  </data>
-  <data name="Job_RollSummaryFormat" xml:space="preserve">
-    <value>Body {0:0} mm · nominal dia. {1:0.#} mm · start dia. {2:0.#} mm</value>
-  </data>
-  <data name="Job_LengthMatchFormat" xml:space="preserve">
-    <value>Profile design length {0:0} mm matches the body</value>
-  </data>
-  <data name="Job_LengthMismatchFormat" xml:space="preserve">
-    <value>Profile design length {0:0} mm, body {1:0} mm: they differ; choose stretch or centre (or pick another profile)</value>
-  </data>
-  <data name="Job_LengthStretchFormat" xml:space="preserve">
-    <value>Profile {0:0} mm stretched to the {1:0} mm body</value>
-  </data>
-  <data name="Job_LengthCenterFormat" xml:space="preserve">
-    <value>Profile {0:0} mm centred on the {1:0} mm body without stretching (ends held or cropped)</value>
-  </data>
-  <data name="Job_OptionsOnFormat" xml:space="preserve">
-    <value>{0} on</value>
-  </data>
-  <data name="Job_Incomplete" xml:space="preserve">
-    <value>The job is incomplete: roll, profile (with length handling) and program are needed</value>
-  </data>
-  <data name="Job_ReviewRollSize" xml:space="preserve">
-    <value>Roll size</value>
-  </data>
-  <data name="Job_ReviewProfile" xml:space="preserve">
-    <value>Profile</value>
-  </data>
-  <data name="Job_ReviewLength" xml:space="preserve">
-    <value>Length check</value>
-  </data>
-  <data name="Job_ReviewProgram" xml:space="preserve">
-    <value>Process program</value>
-  </data>
-  <data name="Job_ReviewDuration" xml:space="preserve">
-    <value>Estimated time</value>
-  </data>
-  <data name="Job_ReviewOptions" xml:space="preserve">
-    <value>Program steps on</value>
-  </data>
-  <data name="Job_ListSeparator" xml:space="preserve">
-    <value>, </value>
   </data>
   <data name="Program_Header" xml:space="preserve">
     <value>Process program</value>
@@ -3112,20 +2950,8 @@
   <data name="Help_Title" xml:space="preserve">
     <value>Help</value>
   </data>
-  <data name="Job_AskCancel" xml:space="preserve">
-    <value>Cancel this job and start again? The chosen roll, profile and program are cleared</value>
-  </data>
-  <data name="Job_NextNeedsSelection" xml:space="preserve">
-    <value>Make a choice on this step first</value>
-  </data>
   <data name="Job_NothingSelected" xml:space="preserve">
     <value>Nothing chosen yet</value>
-  </data>
-  <data name="Job_ReviewCurveAxis" xml:space="preserve">
-    <value>Diameter µm</value>
-  </data>
-  <data name="Job_ReviewCurveHeader" xml:space="preserve">
-    <value>Target profile (at job length)</value>
   </data>
   <data name="Key_EmergencyStop" xml:space="preserve">
     <value>Emergency stop: no machine commands are sent</value>
@@ -3211,12 +3037,6 @@
   <data name="Lib_ImportedFormat" xml:space="preserve">
     <value>Imported {0} profile(s) and {1} program(s) (clashing names got "(2)")</value>
   </data>
-  <data name="Lib_Jobs" xml:space="preserve">
-    <value>Jobs</value>
-  </data>
-  <data name="Lib_Ledger" xml:space="preserve">
-    <value>Roll ledger</value>
-  </data>
   <data name="Lib_NothingSelected" xml:space="preserve">
     <value>Select an entry first</value>
   </data>
@@ -3226,14 +3046,8 @@
   <data name="Lib_PreviewHeader" xml:space="preserve">
     <value>Preview</value>
   </data>
-  <data name="Lib_PreviewJob" xml:space="preserve">
-    <value>Job</value>
-  </data>
   <data name="Lib_PreviewSegments" xml:space="preserve">
     <value>Segments</value>
-  </data>
-  <data name="Lib_PreviewStepFormat" xml:space="preserve">
-    <value>Step</value>
   </data>
   <data name="Lib_ProfileDetailFormat" xml:space="preserve">
     <value>{0} segment(s) · {1} mm</value>
@@ -3255,12 +3069,6 @@
   </data>
   <data name="Lib_TitleFormat" xml:space="preserve">
     <value>{0} · {1}</value>
-  </data>
-  <data name="Lib_Usb" xml:space="preserve">
-    <value>USB</value>
-  </data>
-  <data name="Lib_UsbHelp" xml:space="preserve">
-    <value>Export the selected profile or program as one .rgxlib file ("Export to USB"), or the whole library at once ("Export all"); on another machine use "Import from USB". Imports never overwrite: clashing names get "(2)".</value>
   </data>
   <data name="MG_ArmLowered" xml:space="preserve">
     <value>lowered</value>
@@ -3478,9 +3286,6 @@
   <data name="Page_Commissioning" xml:space="preserve">
     <value>Commissioning</value>
   </data>
-  <data name="Page_Library" xml:space="preserve">
-    <value>Library</value>
-  </data>
   <data name="Page_ManualGrinding" xml:space="preserve">
     <value>Manual grinding</value>
   </data>
@@ -3513,9 +3318,6 @@
   </data>
   <data name="Quick_Diagnostics" xml:space="preserve">
     <value>Diag</value>
-  </data>
-  <data name="Quick_Library" xml:space="preserve">
-    <value>Library</value>
   </data>
   <data name="Quick_Machine" xml:space="preserve">
     <value>Machine</value>
@@ -3613,9 +3415,6 @@
   <data name="Vk_Cancel" xml:space="preserve">
     <value>✕ Cancel</value>
   </data>
-  <data name="Vk_CancelJob" xml:space="preserve">
-    <value>Cancel job…</value>
-  </data>
   <data name="Vk_ChangeLog" xml:space="preserve">
     <value>Change log</value>
   </data>
@@ -3673,17 +3472,8 @@
   <data name="Vk_New" xml:space="preserve">
     <value>New</value>
   </data>
-  <data name="Vk_NewJob" xml:space="preserve">
-    <value>New job</value>
-  </data>
-  <data name="Vk_NewRoll" xml:space="preserve">
-    <value>New roll</value>
-  </data>
   <data name="Vk_NextPage" xml:space="preserve">
     <value>≡▸</value>
-  </data>
-  <data name="Vk_NextStep" xml:space="preserve">
-    <value>Next</value>
   </data>
   <data name="Vk_Open" xml:space="preserve">
     <value>Open</value>
@@ -3693,12 +3483,6 @@
   </data>
   <data name="Vk_OpenProgram" xml:space="preserve">
     <value>Open program</value>
-  </data>
-  <data name="Vk_OpenRecord" xml:space="preserve">
-    <value>Open record</value>
-  </data>
-  <data name="Vk_PreviousStep" xml:space="preserve">
-    <value>Previous</value>
   </data>
   <data name="Vk_Print" xml:space="preserve">
     <value>Print</value>
@@ -3729,12 +3513,6 @@
   </data>
   <data name="Vk_SaveAsk" xml:space="preserve">
     <value>✓ Save…</value>
-  </data>
-  <data name="Vk_SaveRoll" xml:space="preserve">
-    <value>Save roll</value>
-  </data>
-  <data name="Vk_UseForJob" xml:space="preserve">
-    <value>Use for job</value>
   </data>
   <data name="Vk_ViewMachineJson" xml:space="preserve">
     <value>View machine.json</value>
@@ -3768,9 +3546,6 @@
   </data>
   <data name="Area_Steps" xml:space="preserve">
     <value>Program</value>
-  </data>
-  <data name="Area_Library" xml:space="preserve">
-    <value>Library</value>
   </data>
   <data name="Area_Parameters" xml:space="preserve">
     <value>Parameters</value>
@@ -3820,36 +3595,6 @@
   <data name="Vk_ProfileChoiceFormat" xml:space="preserve">
     <value>{0}</value>
   </data>
-  <data name="Vk_PickProfileTitle" xml:space="preserve">
-    <value>Change linked profile</value>
-  </data>
-  <data name="Vk_PickProfileForNewTitle" xml:space="preserve">
-    <value>New program: pick the profile</value>
-  </data>
-  <data name="Fn_ChangeProfile" xml:space="preserve">
-    <value>Change profile…</value>
-  </data>
-  <data name="Program_LinkedProfile" xml:space="preserve">
-    <value>Linked profile</value>
-  </data>
-  <data name="Program_LinkedProfileFormat" xml:space="preserve">
-    <value>{0} · {1:0} mm</value>
-  </data>
-  <data name="Program_NoLinkedProfile" xml:space="preserve">
-    <value>None (press "Change profile…")</value>
-  </data>
-  <data name="Program_NoProfiles" xml:space="preserve">
-    <value>The profile library is empty: create a profile first — programs are written for a profile</value>
-  </data>
-  <data name="Program_NewForProfileFormat" xml:space="preserve">
-    <value>New program for profile {0}</value>
-  </data>
-  <data name="Program_ProfileChangedFormat" xml:space="preserve">
-    <value>Linked profile changed to {0}; save to keep it</value>
-  </data>
-  <data name="Program_LinkProfileFirst" xml:space="preserve">
-    <value>This program has no linked profile: press "Change profile…" before using it for a job</value>
-  </data>
   <data name="Stock_ActualInvalid" xml:space="preserve">
     <value>The stock must be above 0: check the start and target diameters</value>
   </data>
@@ -3862,43 +3607,853 @@
   <data name="Job_TargetDiameter" xml:space="preserve">
     <value>Target diameter (mm)</value>
   </data>
-  <data name="Job_StockSummaryFormat" xml:space="preserve">
-    <value>Stock {0:0} µm · program {1:0} µm · rough set to {2:0} µm (finishing unchanged)</value>
-  </data>
-  <data name="Job_ReviewStock" xml:space="preserve">
-    <value>Stock this time</value>
-  </data>
-  <data name="Job_ProgramNotLinked" xml:space="preserve">
-    <value>This program has no linked profile (older program): link one in the process area</value>
-  </data>
-  <data name="Job_ProgramLinkedHere" xml:space="preserve">
-    <value>✓ This program was written for this profile</value>
-  </data>
-  <data name="Job_ProgramBorrowedFormat" xml:space="preserve">
-    <value>Written for "{0}" with the same design length: may be used</value>
-  </data>
-  <data name="Job_ProgramOtherLengthFormat" xml:space="preserve">
-    <value>Written for "{0}" with a different design length: cannot be used here</value>
-  </data>
   <data name="Startup_AlreadyRunning" xml:space="preserve">
     <value>The HMI is already running; a second copy was not started.</value>
   </data>
-  <data name="Ledger_ScrapDiameterLabel" xml:space="preserve">
-    <value>Scrap diameter</value>
-  </data>
   <data name="Stock_BelowScrap" xml:space="preserve">
     <value>The target diameter is below the roll's scrap diameter</value>
-  </data>
-  <data name="Job_ReviewDiameterCheck" xml:space="preserve">
-    <value>Diameter check</value>
-  </data>
-  <data name="Job_DiameterMismatchFormat" xml:space="preserve">
-    <value>⚠ Profile designed for {0:0} mm, this roll is {1:0.0} mm (over 10% apart)</value>
   </data>
   <data name="Profile_NominalDiameter" xml:space="preserve">
     <value>Diameter</value>
   </data>
   <data name="Profile_Tolerance" xml:space="preserve">
     <value>Tolerance</value>
+  </data>
+  <data name="Area_Rolls" xml:space="preserve">
+    <value>Rolls</value>
+  </data>
+  <data name="Quick_Rolls" xml:space="preserve">
+    <value>Rolls</value>
+  </data>
+  <data name="Page_Rolls" xml:space="preserve">
+    <value>Rolls</value>
+  </data>
+  <data name="Page_ProfileLibrary" xml:space="preserve">
+    <value>Profile library</value>
+  </data>
+  <data name="Page_ProgramLibrary" xml:space="preserve">
+    <value>Program library</value>
+  </data>
+  <data name="JobState_Interrupted" xml:space="preserve">
+    <value>Interrupted</value>
+  </data>
+  <data name="Alarm_LedgerNotUpdated" xml:space="preserve">
+    <value>The record was closed but the ledger diameter was not updated: {0}</value>
+  </data>
+  <data name="ChangeArea_rollPlan" xml:space="preserve">
+    <value>Roll plan</value>
+  </data>
+  <data name="ChangeArea_rollLedger" xml:space="preserve">
+    <value>Roll ledger</value>
+  </data>
+  <data name="ChangeArea_profileLibrary" xml:space="preserve">
+    <value>Profile library</value>
+  </data>
+  <data name="ChangeArea_programLibrary" xml:space="preserve">
+    <value>Program library</value>
+  </data>
+  <data name="Chart_AxisZ" xml:space="preserve">
+    <value>Body position Z (mm)</value>
+  </data>
+  <data name="Chart_AxisDiameterUm" xml:space="preserve">
+    <value>Diameter (µm)</value>
+  </data>
+  <data name="CheckItem_Roll" xml:space="preserve">
+    <value>Roll</value>
+  </data>
+  <data name="CheckItem_Library" xml:space="preserve">
+    <value>Library entry</value>
+  </data>
+  <data name="CheckItem_StartDiameter" xml:space="preserve">
+    <value>Start diameter</value>
+  </data>
+  <data name="CheckItem_Stock" xml:space="preserve">
+    <value>Stock</value>
+  </data>
+  <data name="CheckItem_StockSplit" xml:space="preserve">
+    <value>Stock split</value>
+  </data>
+  <data name="CheckItem_Length" xml:space="preserve">
+    <value>Body length</value>
+  </data>
+  <data name="CheckItem_RollKind" xml:space="preserve">
+    <value>Roll type</value>
+  </data>
+  <data name="CheckItem_Material" xml:space="preserve">
+    <value>Material</value>
+  </data>
+  <data name="CheckItem_WorkSpeed" xml:space="preserve">
+    <value>Surface speed</value>
+  </data>
+  <data name="CheckItem_WeightSpeed" xml:space="preserve">
+    <value>Weight speed limit</value>
+  </data>
+  <data name="CheckItem_Stroke" xml:space="preserve">
+    <value>Stroke</value>
+  </data>
+  <data name="CheckItem_Deviation" xml:space="preserve">
+    <value>Vs. plan</value>
+  </data>
+  <data name="CheckItem_RemainingLife" xml:space="preserve">
+    <value>Remaining life</value>
+  </data>
+  <data name="CheckItem_Parameters" xml:space="preserve">
+    <value>Step parameters</value>
+  </data>
+  <data name="Check_Roll_Ok" xml:space="preserve">
+    <value>{0} is in the ledger</value>
+  </data>
+  <data name="Check_Roll_Retired" xml:space="preserve">
+    <value>This roll is retired and cannot be ground</value>
+  </data>
+  <data name="Check_Library_Disabled" xml:space="preserve">
+    <value>"{0}" is disabled and cannot be used for new jobs</value>
+  </data>
+  <data name="Check_StartDiameter_Nominal" xml:space="preserve">
+    <value>Still the nominal {0:F3} mm (new roll?): measure first</value>
+  </data>
+  <data name="Check_StartDiameter_Ok" xml:space="preserve">
+    <value>{0:F3} mm</value>
+  </data>
+  <data name="Check_StartDiameter_MeasureAfterInterrupt" xml:space="preserve">
+    <value>Resuming after an interruption: measure the start diameter first</value>
+  </data>
+  <data name="Check_Stock_Invalid" xml:space="preserve">
+    <value>The stock must be a number not below 0</value>
+  </data>
+  <data name="Check_Stock_BelowScrap" xml:space="preserve">
+    <value>Target {0:F3} mm is below the scrap diameter {1:F1} mm; at most {2:F3} mm can be removed</value>
+  </data>
+  <data name="Check_Stock_Ok" xml:space="preserve">
+    <value>Remove {0:F3} mm → target {1:F3} mm</value>
+  </data>
+  <data name="Check_StockSplit_Ok" xml:space="preserve">
+    <value>Rough {0:F3} mm + finishing {1:F3} mm (rough absorbs the difference)</value>
+  </data>
+  <data name="Check_Stock_ActualInvalid" xml:space="preserve">
+    <value>The stock is invalid</value>
+  </data>
+  <data name="Check_Stock_BelowFinishing" xml:space="preserve">
+    <value>The stock is less than the finishing passes need</value>
+  </data>
+  <data name="Check_Stock_NoRoughStep" xml:space="preserve">
+    <value>The program has no rough pass to absorb the stock difference</value>
+  </data>
+  <data name="Check_Length_Exact" xml:space="preserve">
+    <value>Body {0:F0} mm matches the profile design length</value>
+  </data>
+  <data name="Check_Length_Adjusted" xml:space="preserve">
+    <value>Design {0:F0} mm → body {1:F0} mm ({2:F1}%): end tapers kept, middle adjusted</value>
+  </data>
+  <data name="Check_Length_TooDifferent" xml:space="preserve">
+    <value>Design {0:F0} mm vs body {1:F0} mm differ by {2:F1}% (over {3:F1}%): the middle shape would change, pick another profile</value>
+  </data>
+  <data name="Check_RollKind_Mismatch" xml:space="preserve">
+    <value>The program is for {0}, this is a {1}</value>
+  </data>
+  <data name="Check_RollKind_Ok" xml:space="preserve">
+    <value>Applicable</value>
+  </data>
+  <data name="Check_Material_Mismatch" xml:space="preserve">
+    <value>The program is for {0}, this roll is {1}</value>
+  </data>
+  <data name="Check_WorkSpeed_OutOfRange" xml:space="preserve">
+    <value>Surface speed {0:F0}–{1:F0} m/min is outside {2:F0}–{3:F0} m/min</value>
+  </data>
+  <data name="Check_WorkSpeed_Ok" xml:space="preserve">
+    <value>{0:F0}–{1:F0} m/min</value>
+  </data>
+  <data name="Check_WeightSpeed_NoWeight" xml:space="preserve">
+    <value>No net weight in the ledger: headstock speed cannot be checked by weight</value>
+  </data>
+  <data name="Check_WeightSpeed_TooHeavy" xml:space="preserve">
+    <value>Roll weight {0:F0} kg exceeds the table maximum {1:F0} kg</value>
+  </data>
+  <data name="Check_WeightSpeed_TooFast" xml:space="preserve">
+    <value>Headstock {0:F0} r/min exceeds the {1:F0} r/min limit for {2:F0} kg</value>
+  </data>
+  <data name="Check_WeightSpeed_Ok" xml:space="preserve">
+    <value>Max {0:F0} r/min ≤ limit {1:F0} r/min</value>
+  </data>
+  <data name="Check_Stroke_OutOfRange" xml:space="preserve">
+    <value>Body {0:F0} mm is outside {1:F0}–{2:F0} mm</value>
+  </data>
+  <data name="Check_Stroke_Ok" xml:space="preserve">
+    <value>Body {0:F0} mm is within the stroke</value>
+  </data>
+  <data name="Check_Deviation_NoReason" xml:space="preserve">
+    <value>This time only: pick a reason</value>
+  </data>
+  <data name="Check_Deviation_ThisTime" xml:space="preserve">
+    <value>This time only; the ledger plan stays</value>
+  </data>
+  <data name="Check_Deviation_PlanChanged" xml:space="preserve">
+    <value>Becomes the ledger plan after download</value>
+  </data>
+  <data name="Check_Deviation_Inferred" xml:space="preserve">
+    <value>The plan was inferred from the last job; downloading confirms it</value>
+  </data>
+  <data name="Check_RemainingLife_Low" xml:space="preserve">
+    <value>Only {0:F2} mm left to scrap after grinding (about {1:F0} grinds)</value>
+  </data>
+  <data name="Check_RemainingLife_Ok" xml:space="preserve">
+    <value>{0:F2} mm left to scrap after grinding (about {1:F0} grinds)</value>
+  </data>
+  <data name="Check_RemainingLife_NoScrap" xml:space="preserve">
+    <value>No scrap diameter in the ledger</value>
+  </data>
+  <data name="Check_Parameters_Violation" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Check_Parameters_ViolationFormat" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Check_Plan_Missing" xml:space="preserve">
+    <value>This roll has no plan: use "Change profile… / Change program…"</value>
+  </data>
+  <data name="Check_NotANumber" xml:space="preserve">
+    <value>Enter a number</value>
+  </data>
+  <data name="Fn_ApplicableKind" xml:space="preserve">
+    <value>Applies to ▸</value>
+  </data>
+  <data name="Fn_ExportAll" xml:space="preserve">
+    <value>Export all…</value>
+  </data>
+  <data name="Fn_ExportFile" xml:space="preserve">
+    <value>Export…</value>
+  </data>
+  <data name="Fn_ImportFile" xml:space="preserve">
+    <value>Import…</value>
+  </data>
+  <data name="Fn_ExportLedger" xml:space="preserve">
+    <value>Export…</value>
+  </data>
+  <data name="Fn_ImportLedger" xml:space="preserve">
+    <value>Import…</value>
+  </data>
+  <data name="Fn_Ledger" xml:space="preserve">
+    <value>Ledger</value>
+  </data>
+  <data name="Fn_ProfileEditor" xml:space="preserve">
+    <value>Profile editor</value>
+  </data>
+  <data name="Fn_ProgramEditor" xml:space="preserve">
+    <value>Program editor</value>
+  </data>
+  <data name="Import_Problem_Duplicate" xml:space="preserve">
+    <value>Duplicate roll number in the file</value>
+  </data>
+  <data name="Import_Problem_Kind" xml:space="preserve">
+    <value>Unknown roll type</value>
+  </data>
+  <data name="Import_Problem_MissingNumber" xml:space="preserve">
+    <value>A required number is missing</value>
+  </data>
+  <data name="Import_Problem_MissingRollId" xml:space="preserve">
+    <value>Roll number missing</value>
+  </data>
+  <data name="Import_Problem_NotANumber" xml:space="preserve">
+    <value>Not a number</value>
+  </data>
+  <data name="Import_Problem_UnknownProfile" xml:space="preserve">
+    <value>Profile not in the library</value>
+  </data>
+  <data name="Import_Problem_UnknownProgram" xml:space="preserve">
+    <value>Program not in the library</value>
+  </data>
+  <data name="ImportKind_Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="ImportKind_Update" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="ImportKind_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Job_AlreadyPlan" xml:space="preserve">
+    <value>Already the ledger plan</value>
+  </data>
+  <data name="Job_AskDeviationFormat" xml:space="preserve">
+    <value>"{0}" differs from the ledger plan: this time only (key 8) / make plan (key 6) / cancel</value>
+  </data>
+  <data name="Job_AskThisTimeFormat" xml:space="preserve">
+    <value>"{0}" differs from the ledger plan: use it this time only? (changing the plan needs an administrator)</value>
+  </data>
+  <data name="Job_AskEndInterrupted" xml:space="preserve">
+    <value>End the interrupted job of {0}? It is recorded as abandoned</value>
+  </data>
+  <data name="Job_CheckSummaryFormat" xml:space="preserve">
+    <value>✓ {0} · ! {1} · ✕ {2}</value>
+  </data>
+  <data name="Job_ColLastGround" xml:space="preserve">
+    <value>Last ground</value>
+  </data>
+  <data name="Job_Deviation" xml:space="preserve">
+    <value>Vs. plan</value>
+  </data>
+  <data name="Job_DeviationNone" xml:space="preserve">
+    <value>As planned</value>
+  </data>
+  <data name="Job_DeviationPlanChanged" xml:space="preserve">
+    <value>Make plan (written to the ledger after download)</value>
+  </data>
+  <data name="Job_DeviationThisTimeFormat" xml:space="preserve">
+    <value>This time only · {0}</value>
+  </data>
+  <data name="Job_InterruptedEnded" xml:space="preserve">
+    <value>The interrupted job of {0} was ended</value>
+  </data>
+  <data name="Job_MaxStockFormat" xml:space="preserve">
+    <value>At most {0:F3} mm (scrap diameter {1:F1} mm)</value>
+  </data>
+  <data name="Job_MaxStockUnknown" xml:space="preserve">
+    <value>No scrap diameter: the maximum stock is not checked</value>
+  </data>
+  <data name="Job_MeasureAfterInterrupt" xml:space="preserve">
+    <value>Resuming: measure and enter the start diameter</value>
+  </data>
+  <data name="Job_NoMatchFormat" xml:space="preserve">
+    <value>"{0}" is not in the ledger: press "Register roll"</value>
+  </data>
+  <data name="Job_NoPlan" xml:space="preserve">
+    <value>No plan</value>
+  </data>
+  <data name="Job_NotInterrupted" xml:space="preserve">
+    <value>The selected roll is not interrupted</value>
+  </data>
+  <data name="Job_PlanProfile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Job_PlanProgram" xml:space="preserve">
+    <value>Program</value>
+  </data>
+  <data name="Job_QueueMatchFormat" xml:space="preserve">
+    <value>Queue · "{0}" matches {1}</value>
+  </data>
+  <data name="Job_QueueTitleFormat" xml:space="preserve">
+    <value>Queue · {0} rolls ({1} pinned)</value>
+  </data>
+  <data name="Job_ReasonMissing" xml:space="preserve">
+    <value>No reason</value>
+  </data>
+  <data name="Job_ReasonOnlyThisTime" xml:space="preserve">
+    <value>Only "this time only" needs a reason</value>
+  </data>
+  <data name="Job_RegrindOfFormat" xml:space="preserve">
+    <value>(regrind of {0})</value>
+  </data>
+  <data name="Job_ReviewCurveTitle" xml:space="preserve">
+    <value>Target on this roll</value>
+  </data>
+  <data name="Job_ReviewTitleFormat" xml:space="preserve">
+    <value>Review · {0} · {1} · {2}</value>
+  </data>
+  <data name="Job_SearchHint" xml:space="preserve">
+    <value>Type the roll number or its tail, then Enter</value>
+  </data>
+  <data name="Job_SearchLabel" xml:space="preserve">
+    <value>Roll / tail no.</value>
+  </data>
+  <data name="Job_StartDiameter" xml:space="preserve">
+    <value>Start dia. (mm)</value>
+  </data>
+  <data name="Job_StockMm" xml:space="preserve">
+    <value>Stock (mm)</value>
+  </data>
+  <data name="Ledger_NominalDiameter" xml:space="preserve">
+    <value>Nominal dia. (mm)</value>
+  </data>
+  <data name="Ledger_Purpose" xml:space="preserve">
+    <value>Purpose</value>
+  </data>
+  <data name="Ledger_ScrapDiameter" xml:space="preserve">
+    <value>Scrap dia. (mm)</value>
+  </data>
+  <data name="Ledger_Problem_BodyLengthOutOfRange" xml:space="preserve">
+    <value>The body length is outside what this machine can grind</value>
+  </data>
+  <data name="Ledger_Problem_DiameterOutOfRange" xml:space="preserve">
+    <value>The nominal diameter is outside what this machine can grind</value>
+  </data>
+  <data name="Ledger_Problem_CurrentDiameterOutOfRange" xml:space="preserve">
+    <value>The current diameter is outside what this machine can grind</value>
+  </data>
+  <data name="Ledger_Problem_PlanMissing" xml:space="preserve">
+    <value>A plan is required: pick a profile and a program</value>
+  </data>
+  <data name="Ledger_Problem_ScrapNotBelowNominal" xml:space="preserve">
+    <value>The scrap diameter must be below the nominal diameter</value>
+  </data>
+  <data name="Ledger_Problem_WeightOutOfRange" xml:space="preserve">
+    <value>The weight is outside what this machine can carry</value>
+  </data>
+  <data name="Ledger_Problem_ProfileLengthMismatch" xml:space="preserve">
+    <value>The profile design length is too far from the body length</value>
+  </data>
+  <data name="Ledger_Problem_ProgramKindMismatch" xml:space="preserve">
+    <value>The program does not apply to this roll type</value>
+  </data>
+  <data name="Ledger_Problem_PlanDisabled" xml:space="preserve">
+    <value>The planned profile or program is disabled</value>
+  </data>
+  <data name="Lib_AskDisable" xml:space="preserve">
+    <value>Disable "{0}"? It can no longer be planned</value>
+  </data>
+  <data name="Lib_AskDisableInUse" xml:space="preserve">
+    <value>"{0}" is the plan of {1} rolls; their jobs will be blocked. Disable?</value>
+  </data>
+  <data name="Lib_AskEnable" xml:space="preserve">
+    <value>Enable "{0}"?</value>
+  </data>
+  <data name="Lib_AskSaveInUseFormat" xml:space="preserve">
+    <value>"{0}" is the plan of {1} rolls: saved as v{2}, they grind with it next time (old version archived). For new rolls only, cancel and use "Save as…"</value>
+  </data>
+  <data name="Lib_ColDetail" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="Lib_ColModified" xml:space="preserve">
+    <value>Modified</value>
+  </data>
+  <data name="Lib_ColName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Lib_ColReplacedAt" xml:space="preserve">
+    <value>Replaced at</value>
+  </data>
+  <data name="Lib_ColReplacedBy" xml:space="preserve">
+    <value>By</value>
+  </data>
+  <data name="Lib_ColUsers" xml:space="preserve">
+    <value>In use</value>
+  </data>
+  <data name="Lib_ColVersion" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Lib_DeleteRefusedInUse" xml:space="preserve">
+    <value>"{0}" is the plan of {1} rolls: it cannot be deleted, only disabled</value>
+  </data>
+  <data name="Lib_Disabled" xml:space="preserve">
+    <value>"{0}" disabled</value>
+  </data>
+  <data name="Lib_Enabled" xml:space="preserve">
+    <value>"{0}" enabled</value>
+  </data>
+  <data name="Lib_NameVersionFormat" xml:space="preserve">
+    <value>{0} v{1}</value>
+  </data>
+  <data name="Lib_NoVersionSelected" xml:space="preserve">
+    <value>Select an old version first</value>
+  </data>
+  <data name="Lib_PreviewApplicable" xml:space="preserve">
+    <value>Applies to</value>
+  </data>
+  <data name="Lib_PreviewStandardStock" xml:space="preserve">
+    <value>Standard stock</value>
+  </data>
+  <data name="Lib_PreviewSteps" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="Lib_PreviewTolerance" xml:space="preserve">
+    <value>Profile tolerance (µm)</value>
+  </data>
+  <data name="Lib_SaveVersionAsNewTitle" xml:space="preserve">
+    <value>Save this old version as a new entry</value>
+  </data>
+  <data name="Lib_UsersTitleFormat" xml:space="preserve">
+    <value>In use · {0} rolls</value>
+  </data>
+  <data name="Lib_VersionFormat" xml:space="preserve">
+    <value>v{0}</value>
+  </data>
+  <data name="Lib_VersionsTitleFormat" xml:space="preserve">
+    <value>Versions · {0} archived</value>
+  </data>
+  <data name="Library_VersionCopyNameFormat" xml:space="preserve">
+    <value>{0}-v{1}</value>
+  </data>
+  <data name="Mark_Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Mark_Inferred" xml:space="preserve">
+    <value>Inferred</value>
+  </data>
+  <data name="Mark_Interrupted" xml:space="preserve">
+    <value>Interrupted</value>
+  </data>
+  <data name="Mark_LowLife" xml:space="preserve">
+    <value>Near scrap</value>
+  </data>
+  <data name="Mark_PlanChanged" xml:space="preserve">
+    <value>Plan changed</value>
+  </data>
+  <data name="Mark_Regrind" xml:space="preserve">
+    <value>Regrind</value>
+  </data>
+  <data name="Mark_Retired" xml:space="preserve">
+    <value>Retired</value>
+  </data>
+  <data name="Mark_ThisTime" xml:space="preserve">
+    <value>This time</value>
+  </data>
+  <data name="Picker_Current" xml:space="preserve">
+    <value>Plan:</value>
+  </data>
+  <data name="Picker_Selected" xml:space="preserve">
+    <value>Selected:</value>
+  </data>
+  <data name="Picker_ProfileDetailFormat" xml:space="preserve">
+    <value>{0} mm</value>
+  </data>
+  <data name="Picker_ProfilesTitleFormat" xml:space="preserve">
+    <value>Pick profile · body {0} mm · fitting {1} / {2}</value>
+  </data>
+  <data name="Picker_ProgramsTitleFormat" xml:space="preserve">
+    <value>Pick program · body {0} mm · applicable {1} / {2}</value>
+  </data>
+  <data name="PlanCheck_Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="PlanNotice_Regrind" xml:space="preserve">
+    <value>OK; its pending regrind keeps the original job</value>
+  </data>
+  <data name="PlanProblem_Disabled" xml:space="preserve">
+    <value>Profile or program disabled</value>
+  </data>
+  <data name="PlanProblem_Kind" xml:space="preserve">
+    <value>The program does not apply to this roll type</value>
+  </data>
+  <data name="PlanProblem_Length" xml:space="preserve">
+    <value>Profile length too far from the body</value>
+  </data>
+  <data name="PlanProblem_Missing" xml:space="preserve">
+    <value>Roll not found</value>
+  </data>
+  <data name="PlanProblem_Retired" xml:space="preserve">
+    <value>Roll retired</value>
+  </data>
+  <data name="Plan_Unchanged" xml:space="preserve">
+    <value>unchanged</value>
+  </data>
+  <data name="Program_ApplicableKind" xml:space="preserve">
+    <value>Applies to roll type</value>
+  </data>
+  <data name="Program_ApplicableMaterial" xml:space="preserve">
+    <value>Applies to material</value>
+  </data>
+  <data name="Program_ReferenceBodyLength" xml:space="preserve">
+    <value>Reference body (mm)</value>
+  </data>
+  <data name="Reason_CustomerRequest" xml:space="preserve">
+    <value>Customer request</value>
+  </data>
+  <data name="Reason_Equipment" xml:space="preserve">
+    <value>Equipment</value>
+  </data>
+  <data name="Reason_Quality" xml:space="preserve">
+    <value>Quality rework</value>
+  </data>
+  <data name="Reason_ScheduleChange" xml:space="preserve">
+    <value>Schedule change</value>
+  </data>
+  <data name="Reason_Trial" xml:space="preserve">
+    <value>Trial</value>
+  </data>
+  <data name="Result_Fail" xml:space="preserve">
+    <value>✗</value>
+  </data>
+  <data name="Result_Pass" xml:space="preserve">
+    <value>✓</value>
+  </data>
+  <data name="Result_Interrupted" xml:space="preserve">
+    <value>Interrupted</value>
+  </data>
+  <data name="Result_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="RollKind_Any" xml:space="preserve">
+    <value>Any</value>
+  </data>
+  <data name="RollKind_Unspecified" xml:space="preserve">
+    <value>Unspecified</value>
+  </data>
+  <data name="RollKindFilter_Unspecified" xml:space="preserve">
+    <value>Any type</value>
+  </data>
+  <data name="RollKindFilter_WorkRoll" xml:space="preserve">
+    <value>Work roll</value>
+  </data>
+  <data name="RollKindFilter_BackupRoll" xml:space="preserve">
+    <value>Backup roll</value>
+  </data>
+  <data name="Rolls_AllPurposes" xml:space="preserve">
+    <value>All purposes</value>
+  </data>
+  <data name="Rolls_AskApplyPlanFormat" xml:space="preserve">
+    <value>Change the plan of {0} rolls? {1}</value>
+  </data>
+  <data name="Rolls_AskRestore" xml:space="preserve">
+    <value>Restore {0}?</value>
+  </data>
+  <data name="Rolls_AskRetire" xml:space="preserve">
+    <value>Retire {0}? It leaves the queue; records are kept</value>
+  </data>
+  <data name="Rolls_BodyNominal" xml:space="preserve">
+    <value>Body / nominal</value>
+  </data>
+  <data name="Rolls_CardTitleFormat" xml:space="preserve">
+    <value>{0} · {1} · {2}</value>
+  </data>
+  <data name="Rolls_ColCheck" xml:space="preserve">
+    <value>Check</value>
+  </data>
+  <data name="Rolls_ColDate" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Rolls_ColImportKind" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Rolls_ColLine" xml:space="preserve">
+    <value>Line</value>
+  </data>
+  <data name="Rolls_ColMark" xml:space="preserve">
+    <value>Mark</value>
+  </data>
+  <data name="Rolls_ColProblem" xml:space="preserve">
+    <value>Problem</value>
+  </data>
+  <data name="Rolls_ColRemaining" xml:space="preserve">
+    <value>Left (mm)</value>
+  </data>
+  <data name="Rolls_ColRemoved" xml:space="preserve">
+    <value>Removed (mm)</value>
+  </data>
+  <data name="Rolls_ColResult" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Rolls_CsvFilter" xml:space="preserve">
+    <value>CSV files|*.csv|All files|*.*</value>
+  </data>
+  <data name="Rolls_CurrentScrap" xml:space="preserve">
+    <value>Current / scrap</value>
+  </data>
+  <data name="Rolls_ExportedFormat" xml:space="preserve">
+    <value>Exported to {0}</value>
+  </data>
+  <data name="Rolls_FormHint" xml:space="preserve">
+    <value>The plan is required: which profile and program this roll is ground with. Jobs follow it unless changed for one time.</value>
+  </data>
+  <data name="Rolls_FormProblems" xml:space="preserve">
+    <value>Why it was not saved</value>
+  </data>
+  <data name="Rolls_FormTitleEdit" xml:space="preserve">
+    <value>Edit roll</value>
+  </data>
+  <data name="Rolls_FormTitleNew" xml:space="preserve">
+    <value>Register roll</value>
+  </data>
+  <data name="Rolls_GrindCount" xml:space="preserve">
+    <value>Grinds</value>
+  </data>
+  <data name="Rolls_History" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="Rolls_ImportTitleFormat" xml:space="preserve">
+    <value>Import preview · {0} · add {1} · update {2} · errors {3} (rows with errors are skipped)</value>
+  </data>
+  <data name="Rolls_ImportedFormat" xml:space="preserve">
+    <value>{0} rows imported</value>
+  </data>
+  <data name="Rolls_ListTitleFormat" xml:space="preserve">
+    <value>{0} · {1} rolls · {2}</value>
+  </data>
+  <data name="Rolls_NoneChecked" xml:space="preserve">
+    <value>Check the rolls to change first</value>
+  </data>
+  <data name="Rolls_NothingSelected" xml:space="preserve">
+    <value>Select a roll first</value>
+  </data>
+  <data name="Rolls_PairFormat" xml:space="preserve">
+    <value>{0} / {1} mm</value>
+  </data>
+  <data name="Rolls_PlanChangedFormat" xml:space="preserve">
+    <value>Plan changed for {0} rolls</value>
+  </data>
+  <data name="Rolls_PlanInferred" xml:space="preserve">
+    <value>Inferred from the last job; confirmed by the next job</value>
+  </data>
+  <data name="Rolls_PlanInferredLabel" xml:space="preserve">
+    <value>Plan source</value>
+  </data>
+  <data name="Rolls_PlanProfile" xml:space="preserve">
+    <value>Target profile</value>
+  </data>
+  <data name="Rolls_PlanProgram" xml:space="preserve">
+    <value>Program</value>
+  </data>
+  <data name="Rolls_PlanTitleFormat" xml:space="preserve">
+    <value>Change plan · {0} rolls → profile {1} · program {2}</value>
+  </data>
+  <data name="Rolls_PurposeItemFormat" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="Rolls_Reason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="Rolls_RemainingFormat" xml:space="preserve">
+    <value>{0:F2} mm left to scrap</value>
+  </data>
+  <data name="Rolls_RemainingUnknown" xml:space="preserve">
+    <value>No scrap diameter</value>
+  </data>
+  <data name="Rolls_RemovedTotal" xml:space="preserve">
+    <value>Removed in total</value>
+  </data>
+  <data name="Rolls_Restored" xml:space="preserve">
+    <value>{0} restored</value>
+  </data>
+  <data name="Rolls_Retired" xml:space="preserve">
+    <value>{0} retired</value>
+  </data>
+  <data name="Rolls_RetiredHidden" xml:space="preserve">
+    <value>retired hidden</value>
+  </data>
+  <data name="Rolls_RetiredShown" xml:space="preserve">
+    <value>retired shown</value>
+  </data>
+  <data name="SubView_ChangePlan" xml:space="preserve">
+    <value>Change plan</value>
+  </data>
+  <data name="SubView_ImportPreview" xml:space="preserve">
+    <value>Import preview</value>
+  </data>
+  <data name="SubView_JobReview" xml:space="preserve">
+    <value>Review</value>
+  </data>
+  <data name="SubView_MultiSelect" xml:space="preserve">
+    <value>Multi-select</value>
+  </data>
+  <data name="SubView_RollForm" xml:space="preserve">
+    <value>Register / edit</value>
+  </data>
+  <data name="Vk_ApplyPlanFormat" xml:space="preserve">
+    <value>✓ Change {0}</value>
+  </data>
+  <data name="Vk_ApplyPlanFormatShort" xml:space="preserve">
+    <value>✓ Change plan</value>
+  </data>
+  <data name="Vk_BackToQueue" xml:space="preserve">
+    <value>✕ Back to queue</value>
+  </data>
+  <data name="Vk_ChangePlan" xml:space="preserve">
+    <value>Change plan…</value>
+  </data>
+  <data name="Vk_ChangeProfile" xml:space="preserve">
+    <value>Change profile…</value>
+  </data>
+  <data name="Vk_ChangeProgram" xml:space="preserve">
+    <value>Change program…</value>
+  </data>
+  <data name="Vk_CheckAll" xml:space="preserve">
+    <value>Check all</value>
+  </data>
+  <data name="Vk_CheckNone" xml:space="preserve">
+    <value>Check none</value>
+  </data>
+  <data name="Vk_CopyRegister" xml:space="preserve">
+    <value>Register a copy</value>
+  </data>
+  <data name="Vk_Disable" xml:space="preserve">
+    <value>Disable…</value>
+  </data>
+  <data name="Vk_Enable" xml:space="preserve">
+    <value>Enable…</value>
+  </data>
+  <data name="Vk_EditRoll" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Vk_EndInterrupted" xml:space="preserve">
+    <value>End interrupted…</value>
+  </data>
+  <data name="Vk_ExportTemplate" xml:space="preserve">
+    <value>Export template…</value>
+  </data>
+  <data name="Vk_FilterPurpose" xml:space="preserve">
+    <value>By purpose ▸</value>
+  </data>
+  <data name="Vk_GoRolls" xml:space="preserve">
+    <value>To the ledger</value>
+  </data>
+  <data name="Vk_ImportRowsFormat" xml:space="preserve">
+    <value>✓ Import {0}</value>
+  </data>
+  <data name="Vk_MakePlan" xml:space="preserve">
+    <value>Make plan</value>
+  </data>
+  <data name="Vk_MultiSelect" xml:space="preserve">
+    <value>Multi-select</value>
+  </data>
+  <data name="Vk_NewPurpose" xml:space="preserve">
+    <value>New purpose…</value>
+  </data>
+  <data name="Vk_OnlyErrors" xml:space="preserve">
+    <value>Errors only</value>
+  </data>
+  <data name="Vk_PickKind" xml:space="preserve">
+    <value>Type ▸</value>
+  </data>
+  <data name="Vk_PickProfile" xml:space="preserve">
+    <value>Pick profile…</value>
+  </data>
+  <data name="Vk_PickProgram" xml:space="preserve">
+    <value>Pick program…</value>
+  </data>
+  <data name="Vk_PickPurpose" xml:space="preserve">
+    <value>Purpose ▸</value>
+  </data>
+  <data name="Vk_PickThis" xml:space="preserve">
+    <value>✓ Pick this</value>
+  </data>
+  <data name="Vk_Reason" xml:space="preserve">
+    <value>Reason ▸</value>
+  </data>
+  <data name="Vk_RegrindJob" xml:space="preserve">
+    <value>Regrind ▸</value>
+  </data>
+  <data name="Vk_Restore" xml:space="preserve">
+    <value>Restore…</value>
+  </data>
+  <data name="Vk_RestorePlan" xml:space="preserve">
+    <value>Back to plan</value>
+  </data>
+  <data name="Vk_ResumeJob" xml:space="preserve">
+    <value>Resume ▸</value>
+  </data>
+  <data name="Vk_Retire" xml:space="preserve">
+    <value>Retire…</value>
+  </data>
+  <data name="Vk_SaveNewVersion" xml:space="preserve">
+    <value>✓ Save new version</value>
+  </data>
+  <data name="Vk_SaveVersionAsNew" xml:space="preserve">
+    <value>Save as new…</value>
+  </data>
+  <data name="Vk_ShowAll" xml:space="preserve">
+    <value>Show all</value>
+  </data>
+  <data name="Vk_ShowFitting" xml:space="preserve">
+    <value>Fitting only</value>
+  </data>
+  <data name="Vk_ShowRetired" xml:space="preserve">
+    <value>Show retired</value>
+  </data>
+  <data name="Vk_ThisTimeOnly" xml:space="preserve">
+    <value>✓ This time only</value>
+  </data>
+  <data name="Vk_ToJob" xml:space="preserve">
+    <value>To job ▸</value>
+  </data>
+  <data name="Vk_Versions" xml:space="preserve">
+    <value>Versions</value>
   </data>
 </root>

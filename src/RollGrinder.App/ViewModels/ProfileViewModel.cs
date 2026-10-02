@@ -21,6 +21,7 @@ using RollGrinder.Core.Profiles;
 using RollGrinder.Data;
 using RollGrinder.Core.Units;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Library;
 using RollGrinder.Services.Session;
 
 namespace RollGrinder.App.ViewModels;
@@ -102,6 +103,8 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     private readonly MachineDescription machine;
     private readonly HmiSettings settings;
     private readonly IRollProfileRepository library;
+    private readonly ILibraryService libraryService;
+    private readonly IUserSession session;
     private readonly AsyncRelayCommand saveKeyCommand;
 
     /// <summary>"插值方式 ▸"：只有选中的是点表段才按得下去。</summary>
@@ -146,6 +149,8 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         MachineDescription machine,
         HmiSettings settings,
         IRollProfileRepository library,
+        ILibraryService libraryService,
+        IUserSession session,
         JobDraft draft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
@@ -157,6 +162,8 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.library = library ?? throw new ArgumentNullException(nameof(library));
+        this.libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
+        this.session = session ?? throw new ArgumentNullException(nameof(session));
         this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
         NamePrompt = new NamePromptViewModel(localizer);
         AttachPrompt(NamePrompt);
@@ -203,7 +210,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         // 辊形库在库区（找东西只有一个地方）；要选文件的三个键对话框在视图里，这里只负责触发与收结果。
         SetFunctionKeys(new FunctionKeyViewModel?[]
         {
-            FunctionKeyViewModel.ForAction("Fn_ProfileLibrary", localizer, () => Navigator.GoToArea(AreaKey.Library, "profiles")),
+            FunctionKeyViewModel.ForAction("Fn_ProfileLibrary", localizer, () => Navigator.GoTo(PageKey.ProfileLibrary)),
             new FunctionKeyViewModel("Fn_Save", this.saveKeyCommand, localizer, requiresEditable: true) { PreconditionResourceKey = "Profile_HasErrors" },
             new FunctionKeyViewModel("Fn_SaveAs", SaveAsCommand, localizer, requiresEditable: true) { PreconditionResourceKey = "Profile_HasErrors" },
             null,
@@ -1132,7 +1139,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             : NamePromptOutcome.Refused(Localizer["Library_SaveFailed"]);
     }
 
-    private async Task<bool> StoreAsync(string profileId, string name, CancellationToken cancellationToken)
+    private async Task<bool> StoreAsync(string profileId, string name, CancellationToken cancellationToken, bool inUseConfirmed = false)
     {
         name = (name ?? string.Empty).Trim();
         if (name.Length == 0)
@@ -1161,8 +1168,22 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             DateTimeOffset now = DateTimeOffset.UtcNow;
             RollProfileDefinition? existing = await this.library.GetAsync(profileId, cancellationToken).ConfigureAwait(true);
 
-            // 存的是展开后的整条辊形：对称只是编辑辅助，不落库。
-            await this.library.SaveAsync(
+            // 改在用的辊形：先说清楚影响几支辊（关系设计 5.3）——更新后它们下次按新版磨；只给新辊用请改用"另存为…"。
+            if (existing is not null && !inUseConfirmed)
+            {
+                int users = (await this.libraryService.ProfileUsersAsync(profileId, cancellationToken).ConfigureAwait(true)).Count;
+                if (users > 0)
+                {
+                    Interaction.Choose(
+                        Localizer.Format("Lib_AskSaveInUseFormat", name, users, existing.Version + 1),
+                        "Vk_SaveNewVersion",
+                        () => StoreAsync(profileId, name, CancellationToken.None, inUseConfirmed: true));
+                    return false;
+                }
+            }
+
+            // 存的是展开后的整条辊形：对称只是编辑辅助，不落库。版本 +1、旧版留档由库服务做。
+            await this.libraryService.SaveProfileAsync(
                 new RollProfileDefinition(
                     profileId,
                     name,
@@ -1173,7 +1194,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
                 {
                     NominalDiameterMm = OptionalNumber(NominalDiameterText),
                     ToleranceMicrometer = OptionalNumber(ToleranceText),
+                    Disabled = existing?.Disabled ?? false,
                 },
+                this.session.CurrentUser?.UserName ?? string.Empty,
                 cancellationToken).ConfigureAwait(true);
 
             ProfileId = profileId;

@@ -47,6 +47,33 @@ public sealed record GrindingJob(
     /// <summary>调出来时那支程序叫什么。同上，记录要记当时的名字。</summary>
     public string? ProgramName { get; init; }
 
+    /// <summary>用的是辊形库第几版（快照追溯）。</summary>
+    public int? ProfileVersion { get; init; }
+
+    /// <summary>用的是程序库第几版（快照追溯）。</summary>
+    public int? ProgramVersion { get; init; }
+
+    /// <summary>磨前直径（mm）：台账当前直径或实测值。</summary>
+    public double? StartDiameterMm { get; init; }
+
+    /// <summary>本次磨削量（直径量 µm）。目标直径 = 磨前直径 − 磨削量。</summary>
+    public double? StockMicrometer { get; init; }
+
+    /// <summary>这一次与台账计划的关系：按计划、仅本次例外、变更了这支辊的计划（关系设计 5.3）。</summary>
+    public JobDeviation Deviation { get; init; }
+
+    /// <summary>仅本次例外的原因（常用项资源键或人写的话）。</summary>
+    public string? DeviationReason { get; init; }
+
+    /// <summary>返磨：按哪一次作业的结果返工；不是返磨为 null。</summary>
+    public string? RegrindOfJobId { get; init; }
+
+    /// <summary>报废直径（mm），随作业下发给 NC（tagmap 登记了 job.scrapDiameterMm 时）。</summary>
+    public double? ScrapDiameterMm { get; init; }
+
+    /// <summary>目标直径（mm）；缺磨前直径或磨削量时为 null。</summary>
+    public double? TargetDiameterMm => StartDiameterMm is double start && StockMicrometer is double stock ? start - (stock / 1000.0) : null;
+
     /// <summary>
     /// 主辊形（第一段）的曲线类型键。列表显示与旧库的 <c>job.profile_type_key</c> 列用它，
     /// 下发与补偿一律走合成后的整条 <see cref="Profile"/>。
@@ -130,3 +157,17 @@ public sealed record GrindingJob(
             ProgramOptionCatalog.Schema.ApplyDefaults(programOptions ?? ParameterSet.Empty));
     }
 }
+
+/// <summary>作业与这支辊台账计划的关系。</summary>
+public enum JobDeviation
+{
+    /// <summary>按计划。</summary>
+    None = 0,
+
+    /// <summary>仅本次例外：台账不改，要写原因。</summary>
+    ThisTimeOnly = 1,
+
+    /// <summary>变更了这支辊的工艺：下发成功后写回台账、记改动。</summary>
+    PlanChanged = 2,
+}
+

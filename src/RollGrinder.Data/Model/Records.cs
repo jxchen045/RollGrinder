@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using RollGrinder.Core.Compensation;
 using RollGrinder.Core.Geometry;
 
+using RollGrinder.Core;
+
 namespace RollGrinder.Data.Model;
 
 /// <summary>一支辊件。</summary>
@@ -34,19 +36,27 @@ public sealed record RollRecord(
 
     /// <summary>报废直径（mm）：磨到比它小这支辊就不能用了。作业的目标直径不能小于它；没登记为 null。</summary>
     public double? ScrapDiameterMm { get; init; }
-}
 
-/// <summary>轧辊类型。</summary>
-public enum RollKind
-{
-    /// <summary>没登记。</summary>
-    Unspecified = 0,
+    /// <summary>计划：这支辊正常按哪条辊形磨（辊形库标识）。登记新辊必填；旧库升级时按最近一次作业推断。</summary>
+    public string? TargetProfileId { get; init; }
 
-    /// <summary>工作辊。</summary>
-    WorkRoll = 1,
+    /// <summary>计划：这支辊正常用哪支磨削程序（程序库标识）。</summary>
+    public string? ProgramId { get; init; }
 
-    /// <summary>支承辊。</summary>
-    BackupRoll = 2,
+    /// <summary>用途（如"F3 上辊"）：从已有值里选，按它筛选、批量改计划。</summary>
+    public string? Purpose { get; init; }
+
+    /// <summary>已作废：灰显、默认不列，不能再下作业。有记录的辊不能删，只能作废。</summary>
+    public bool Retired { get; init; }
+
+    /// <summary>计划是升级旧库时按最近一次作业推断的，还没人确认过（核对页标黄）。</summary>
+    public bool PlanInferred { get; init; }
+
+    /// <summary>辊重（kg）：净重；没登记为 null。按辊重限头架转速用它。</summary>
+    public double? WeightKg => Data.NetWeightKg;
+
+    /// <summary>磨前直径的默认值：当前直径，没登记用公称直径。</summary>
+    public double StartDiameterMm => CurrentDiameterMm ?? Geometry.NominalDiameterMm;
 }
 
 /// <summary>
@@ -94,6 +104,11 @@ public enum JobState
 
     /// <summary>已放弃。</summary>
     Abandoned = 3,
+
+    /// <summary>
+    /// 中断：下发后没有磨完就停了（急停、断电、复位）。出现在待磨清单顶部，可续磨（先测量）或结束并记录。
+    /// </summary>
+    Interrupted = 4,
 }
 
 /// <summary>一次磨削记录。</summary>
@@ -118,6 +133,9 @@ public sealed record GrindingRecord(
     /// 事后回头查这支辊是用多大的砂轮磨的，只能靠当时记下来。
     /// </summary>
     public double? WheelDiameterMm { get; init; }
+
+    /// <summary>合格判定：合格 true / 不合格 false / 没判（没量到）null。</summary>
+    public bool? Passed { get; init; }
 }
 
 /// <summary>一次测量。</summary>

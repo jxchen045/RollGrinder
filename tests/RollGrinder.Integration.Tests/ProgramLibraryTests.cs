@@ -78,20 +78,36 @@ public sealed class ProgramLibraryTests : IDisposable
     }
 
     [Fact]
-    public async Task The_linked_profile_and_standard_stock_round_trip()
+    public async Task Version_disable_flag_applicability_and_standard_stock_round_trip()
     {
-        // 流程调整方案第 6 节：程序绑定一条关联辊形、带标准余量；列表里也带出关联辊形，作业向导按它排序。
+        // 关系设计第 4 节：程序与辊形无关（不再绑定关联辊形），有版本、停用、适用类型 / 材质与标准余量。
         await MigratedAsync();
         var library = new SqliteProgramRepository(this.database);
-        await library.SaveAsync(Program() with { ProfileId = "P-7", StandardStockMicrometer = 350.0 }, CancellationToken.None);
+        await library.SaveAsync(
+            Program() with
+            {
+                StandardStockMicrometer = 350.0,
+                Version = 4,
+                Disabled = true,
+                ApplicableRollKind = RollKind.WorkRoll,
+                ApplicableMaterial = "高铬铁",
+            },
+            CancellationToken.None);
 
         GrindingProgram? loaded = await library.GetAsync("G-1", CancellationToken.None);
-        loaded!.ProfileId.Should().Be("P-7");
-        loaded.StandardStockMicrometer.Should().Be(350.0);
-        (await library.ListAsync(10, CancellationToken.None)).Single().ProfileId.Should().Be("P-7");
+        loaded!.StandardStockMicrometer.Should().Be(350.0);
+        loaded.Version.Should().Be(4);
+        loaded.Disabled.Should().BeTrue();
+        loaded.ApplicableRollKind.Should().Be(RollKind.WorkRoll);
+        loaded.ApplicableMaterial.Should().Be("高铬铁");
+        ProgramSummary summary = (await library.ListAsync(10, CancellationToken.None)).Single();
+        summary.Version.Should().Be(4);
+        summary.Disabled.Should().BeTrue();
 
         await library.SaveAsync(Program(), CancellationToken.None);
-        (await library.GetAsync("G-1", CancellationToken.None))!.ProfileId.Should().BeNull("没关联的旧程序照样存得进、读得出");
+        loaded = await library.GetAsync("G-1", CancellationToken.None);
+        loaded!.ApplicableRollKind.Should().Be(RollKind.Unspecified, "不填就是不限类型");
+        loaded.Version.Should().Be(1);
     }
 
     [Fact]

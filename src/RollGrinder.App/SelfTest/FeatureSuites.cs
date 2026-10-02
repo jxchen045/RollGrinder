@@ -74,11 +74,22 @@ internal static class SelfTestNames
         return !prompt.IsOpen;
     }
 
-    /// <summary>到库区某一组，等列表载完，选中名为 <paramref name="name"/> 的一条。没有返回 false。</summary>
+    /// <summary>辊形库 / 程序库（两页各一个实例）。</summary>
+    public const string ProfilesGroup = "profiles";
+
+    public const string ProgramsGroup = "programs";
+
+    public static LibraryViewModel Library(SelfTestHarness h, string group) =>
+        h.Services.GetServices<PageViewModelBase>().OfType<LibraryViewModel>()
+            .Single(l => l.Kind == (group == ProfilesGroup ? LibraryKind.Profiles : LibraryKind.Programs));
+
+    public static PageKey LibraryPage(string group) => group == ProfilesGroup ? PageKey.ProfileLibrary : PageKey.ProgramLibrary;
+
+    /// <summary>到辊形库 / 程序库，等列表载完，选中名为 <paramref name="name"/> 的一条。没有返回 false。</summary>
     public static async Task<bool> SelectAsync(SelfTestHarness h, string group, string name)
     {
-        LibraryViewModel library = h.Page<LibraryViewModel>();
-        await h.GoToAsync(PageKey.Library, groupKey: group);
+        LibraryViewModel library = Library(h, group);
+        await h.GoToAsync(LibraryPage(group));
         if (!await h.WaitUntilAsync(() => library.Entries.Any(e => e.Name == name), TimeSpan.FromSeconds(5)))
         {
             return false;
@@ -95,7 +106,7 @@ internal static class SelfTestNames
         ctx.Check(await SelectAsync(h, group, name), name + " should be listed in the library");
         await h.PressVerticalKeyAsync(ctx, "Vk_Open");
         await h.SettleAsync(400);
-        PageKey expected = group == LibraryViewModel.ProfilesGroup ? PageKey.Profile : PageKey.Steps;
+        PageKey expected = group == SelfTestNames.ProfilesGroup ? PageKey.Profile : PageKey.Steps;
         ctx.Check(h.Shell.CurrentPage.Key == expected, "'open' should go to " + expected);
     }
 
@@ -105,7 +116,7 @@ internal static class SelfTestNames
         ctx.Check(await SelectAsync(h, group, name), name + " should be listed in the library");
         await h.PressVerticalKeyAsync(ctx, "Vk_Delete");
         await h.ConfirmAsync(ctx);
-        LibraryViewModel library = h.Page<LibraryViewModel>();
+        LibraryViewModel library = Library(h, group);
         ctx.Check(await h.WaitUntilAsync(() => library.Entries.All(e => e.Name != name), TimeSpan.FromSeconds(5)), name + " should disappear");
     }
 }
@@ -354,7 +365,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
             await h.RunAsync(page.NamePrompt.ConfirmCommand);
             ctx.Check(!page.NamePrompt.IsOpen, "a free name should be stored and close the box, error: " + page.NamePrompt.ErrorText);
             ctx.Check(!page.IsDirty && page.ProfileId is not null, "save-as should store and clear the dirty flag");
-            await SelfTestNames.OpenFromLibraryAsync(h, ctx, LibraryViewModel.ProfilesGroup, SelfTestNames.ProfileA);
+            await SelfTestNames.OpenFromLibraryAsync(h, ctx, SelfTestNames.ProfilesGroup, SelfTestNames.ProfileA);
             ctx.Check(page.Segments.Count == segments, Invariant($"reloaded profile should have {segments} segments, has {page.Segments.Count}"));
             ctx.Check(!page.IsDirty, "a freshly loaded profile is clean");
         }, StepOptions.Expect("Profile_Saved"));
@@ -387,7 +398,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
                     "P-SELFTEST-OLD", SelfTestNames.OldProfile, 2000.0, old, DateTimeOffset.UtcNow),
                 System.Threading.CancellationToken.None);
 
-            await SelfTestNames.OpenFromLibraryAsync(h, ctx, LibraryViewModel.ProfilesGroup, SelfTestNames.OldProfile);
+            await SelfTestNames.OpenFromLibraryAsync(h, ctx, SelfTestNames.ProfilesGroup, SelfTestNames.OldProfile);
             ctx.Check(page.StatusResourceKey == "Profile_LegacyConverted", "the operator should be told it was converted");
             ctx.Check(page.Composite?.Segments.Count == 1 && page.Composite.Segments[0].ProfileTypeKey == ProfileTypeKeys.PointTable,
                 "an old profile should open as one point table");
@@ -399,11 +410,11 @@ internal sealed class ProfileSuite : ISelfTestSuite
         {
             ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveAsCommand, page.NamePrompt, SelfTestNames.ProfileB),
                 "save-as B should go through, error: " + page.NamePrompt.ErrorText);
-            await SelfTestNames.DeleteFromLibraryAsync(h, ctx, LibraryViewModel.ProfilesGroup, SelfTestNames.ProfileB);
+            await SelfTestNames.DeleteFromLibraryAsync(h, ctx, SelfTestNames.ProfilesGroup, SelfTestNames.ProfileB);
             ctx.Check(h.Page<LibraryViewModel>().Entries.Any(e => e.Name == SelfTestNames.ProfileA), "the other profile must stay");
 
             // 把 A 调回编辑器，后面工序页要从库里选它。
-            await SelfTestNames.OpenFromLibraryAsync(h, ctx, LibraryViewModel.ProfilesGroup, SelfTestNames.ProfileA);
+            await SelfTestNames.OpenFromLibraryAsync(h, ctx, SelfTestNames.ProfilesGroup, SelfTestNames.ProfileA);
         }, StepOptions.Expect("Profile_Saved"));
 
         string? generated = null;
@@ -817,9 +828,9 @@ internal sealed class StepsSuite : ISelfTestSuite
             ctx.Check(page.Steps.Count == 2, "a new program keeps only start and end");
             ctx.Check(page.ProgramId is null && string.IsNullOrEmpty(page.ProgramName), "a new program must not keep the old program's identity");
             await h.PressKeyAsync(ctx, "Fn_ProgramLibrary");
-            ctx.Check(h.Shell.CurrentPage.Key == PageKey.Library, "'program library' should open the library area");
+            ctx.Check(h.Shell.CurrentPage.Key == PageKey.ProgramLibrary, "'program library' should open the program library");
             h.TryScreenshot("steps-program-library");
-            await SelfTestNames.OpenFromLibraryAsync(h, ctx, LibraryViewModel.ProgramsGroup, SelfTestNames.ProgramA);
+            await SelfTestNames.OpenFromLibraryAsync(h, ctx, SelfTestNames.ProgramsGroup, SelfTestNames.ProgramA);
             ctx.Check(page.Steps.Count == steps, Invariant($"loaded program should have {steps} steps, has {page.Steps.Count}"));
             ctx.Check(!page.IsDirty, "a freshly loaded program is clean");
         }, StepOptions.Expect("Program_Saved"));
@@ -828,7 +839,7 @@ internal sealed class StepsSuite : ISelfTestSuite
         {
             ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveProgramAsCommand, page.NamePrompt, SelfTestNames.ProgramB),
                 "save-as B should go through, error: " + page.NamePrompt.ErrorText);
-            await SelfTestNames.DeleteFromLibraryAsync(h, ctx, LibraryViewModel.ProgramsGroup, SelfTestNames.ProgramB);
+            await SelfTestNames.DeleteFromLibraryAsync(h, ctx, SelfTestNames.ProgramsGroup, SelfTestNames.ProgramB);
             await h.GoToAsync(PageKey.Steps, ctx);
         }, StepOptions.Expect("Program_Saved"));
 
@@ -1341,8 +1352,8 @@ internal sealed class RecordsSuite : ISelfTestSuite
 }
 
 /// <summary>
-/// 库（最终稿 5.9）：辊形库、程序库、作业、轧辊台账、U 盘。条目的新建、打开、复制、重命名、删除（问一句），
-/// 导出到 U 盘再导入（撞名加"(2)"），台账登记与编辑、重号拒绝。
+/// 辊形库与程序库（界面修订稿 v3 6.5.2、6.6.2）：列表与预览、在用清单、版本记录；复制、重命名、停用 / 启用、删除（问一句）；
+/// 导出文件再导入（撞名加"(2)"）。
 /// </summary>
 internal sealed class LibrarySuite : ISelfTestSuite
 {
@@ -1350,29 +1361,33 @@ internal sealed class LibrarySuite : ISelfTestSuite
 
     public async Task RunAsync(SelfTestHarness h)
     {
-        LibraryViewModel page = h.Page<LibraryViewModel>();
+        LibraryViewModel page = SelfTestNames.Library(h, SelfTestNames.ProfilesGroup);
 
-        foreach (string group in new[] { LibraryViewModel.ProfilesGroup, LibraryViewModel.ProgramsGroup, LibraryViewModel.JobsGroup })
+        foreach (string group in new[] { SelfTestNames.ProfilesGroup, SelfTestNames.ProgramsGroup })
         {
-            await h.StepAsync("Groups", group, async ctx =>
+            await h.StepAsync("Pages", group, async ctx =>
             {
-                await h.GoToAsync(PageKey.Library, ctx, group);
-                ctx.Check(page.Group == group && page.IsListGroup, "the group key should show the " + group + " list");
-                await h.WaitUntilAsync(() => !page.IsBusy, TimeSpan.FromSeconds(5));
-                if (page.Entries.Count > 0)
+                LibraryViewModel library = SelfTestNames.Library(h, group);
+                await h.GoToAsync(SelfTestNames.LibraryPage(group), ctx);
+                await library.Loading;
+                if (library.Entries.Count > 0)
                 {
-                    page.SelectedEntry = page.Entries[0];
+                    library.SelectedEntry = library.Entries[0];
                     await h.SettleAsync(200);
-                    ctx.Note(Invariant($"{page.Entries.Count} entries, preview rows {page.PreviewRows.Count}, curve points {page.PreviewCurve.Count}"));
+                    ctx.Note(Invariant($"{library.Entries.Count} entries, preview rows {library.PreviewRows.Count}, users {library.Users.Count}"));
                 }
 
+                await h.PressVerticalKeyAsync(ctx, "Vk_Versions");
+                ctx.Check(library.ShowingVersions, "'versions' should switch the lower card to the version list");
+                h.TryScreenshot("library-" + group + "-versions");
+                await h.PressVerticalKeyAsync(ctx, "Vk_Versions");
                 h.TryScreenshot("library-" + group);
             }, StepOptions.Shot);
         }
 
-        await h.StepAsync("Entries", "CopyRenameDelete", async ctx =>
+        await h.StepAsync("Entries", "CopyRenameDisableDelete", async ctx =>
         {
-            if (!await SelfTestNames.SelectAsync(h, LibraryViewModel.ProfilesGroup, SelfTestNames.ProfileA))
+            if (!await SelfTestNames.SelectAsync(h, SelfTestNames.ProfilesGroup, SelfTestNames.ProfileA))
             {
                 ctx.Skip("profile A was not saved by the profile suite");
             }
@@ -1397,23 +1412,33 @@ internal sealed class LibrarySuite : ISelfTestSuite
                 "the renamed entry should be listed");
 
             page.SelectedEntry = page.Entries.First(e => e.Name == SelfTestNames.ProfileB + " R");
+            await h.PressVerticalKeyAsync(ctx, "Vk_Disable");
+            if (h.HasPendingConfirmation)
+            {
+                await h.ConfirmAsync(ctx);
+            }
+
+            ctx.Check(await h.WaitUntilAsync(() => page.Entries.Any(e => e.Name == SelfTestNames.ProfileB + " R" && e.IsDisabled), TimeSpan.FromSeconds(5)),
+                "a disabled entry stays listed, greyed");
+
+            page.SelectedEntry = page.Entries.First(e => e.Name == SelfTestNames.ProfileB + " R");
             await h.PressVerticalKeyAsync(ctx, "Vk_Delete");
             ctx.Check(h.HasPendingConfirmation, "delete should ask first");
             await h.ConfirmAsync(ctx);
             ctx.Check(await h.WaitUntilAsync(() => page.Entries.All(e => e.Name != SelfTestNames.ProfileB + " R"), TimeSpan.FromSeconds(5)),
-                "the deleted entry should disappear");
+                "an entry no roll uses can be deleted");
             ctx.Check(page.Entries.Any(e => e.Name == SelfTestNames.ProfileA), "the other profile must stay");
         });
 
-        await h.StepAsync("Usb", "ExportAndImportRenamesClashes", async ctx =>
+        await h.StepAsync("Files", "ExportAndImportRenamesClashes", async ctx =>
         {
-            if (!await SelfTestNames.SelectAsync(h, LibraryViewModel.ProfilesGroup, SelfTestNames.ProfileA))
+            if (!await SelfTestNames.SelectAsync(h, SelfTestNames.ProfilesGroup, SelfTestNames.ProfileA))
             {
                 ctx.Skip("profile A was not saved by the profile suite");
             }
 
             int produced = h.Interaction.Produced.Count;
-            await h.PressVerticalKeyAsync(ctx, "Vk_ExportUsb");
+            await h.PressKeyAsync(ctx, "Fn_ExportFile");
             ctx.Check(await h.WaitUntilAsync(() => h.Interaction.Produced.Count > produced, TimeSpan.FromSeconds(5)), "an exchange file should be written");
             string file = h.Interaction.LastProduced!;
             ctx.Check(File.Exists(file) && file.EndsWith(RollGrinder.Data.LibraryExchangeFile.Extension, StringComparison.OrdinalIgnoreCase),
@@ -1421,7 +1446,7 @@ internal sealed class LibrarySuite : ISelfTestSuite
 
             int before = page.Entries.Count;
             h.Interaction.OpenAnswers.Enqueue(file);
-            await h.PressVerticalKeyAsync(ctx, "Vk_ImportUsb");
+            await h.PressKeyAsync(ctx, "Fn_ImportFile");
             ctx.Check(await h.WaitUntilAsync(() => page.Entries.Count == before + 1, TimeSpan.FromSeconds(5)), "the imported profile should be added");
             LibraryEntryViewModel? imported = page.Entries.FirstOrDefault(e => e.Name == SelfTestNames.ProfileA + " (2)");
             ctx.Check(imported is not null, "a clashing name should get a '(2)' suffix");
@@ -1429,42 +1454,138 @@ internal sealed class LibrarySuite : ISelfTestSuite
             await h.PressVerticalKeyAsync(ctx, "Vk_Delete");
             await h.ConfirmAsync(ctx);
         }, StepOptions.Expect("*"));
-
-        await h.StepAsync("Ledger", "RegisterEditAndRefuseDuplicate", async ctx =>
-        {
-            await h.GoToAsync(PageKey.Library, ctx, LibraryViewModel.LedgerGroup);
-            await h.PressVerticalKeyAsync(ctx, "Vk_NewRoll");
-            ctx.Check(page.IsNewLedgerRoll && page.LedgerRollId.Length == 0, "a new roll starts from an empty form");
-            page.LedgerRollId = SelfTestNames.LedgerRollId;
-            page.SetLedgerKindCommand.Execute(RollGrinder.Data.Model.RollKind.BackupRoll);
-            page.LedgerBodyLengthText = "2000";
-            page.LedgerDiameterText = "1200";
-            page.LedgerCurrentDiameterText = "1188";
-            page.LedgerNetWeightText = "30000";
-            page.LedgerHeadBoxWeightText = "2500";
-            page.LedgerTailBoxWeightText = "2400";
-            ctx.Check(page.LedgerTotalWeightText.Length > 2, "the total lift weight should be summed");
-            await h.PressVerticalKeyAsync(ctx, "Vk_SaveRoll");
-            ctx.Check(page.LedgerProblems.Count == 0, "a valid roll should be saved: " + string.Join(" | ", page.LedgerProblems));
-            ctx.Check(page.SelectedLedgerRow?.RollId == SelfTestNames.LedgerRollId && !page.IsNewLedgerRoll,
-                "the saved roll should be selected for editing");
-            h.TryScreenshot("library-ledger-edit");
-
-            page.LedgerCurrentDiameterText = "1180";
-            await h.PressVerticalKeyAsync(ctx, "Vk_SaveRoll");
-            ctx.Check(page.LedgerProblems.Count == 0 && page.SelectedLedgerRow?.CurrentDiameterText.StartsWith("1180", StringComparison.Ordinal) == true,
-                "editing an existing roll should be saved");
-
-            await h.PressVerticalKeyAsync(ctx, "Vk_NewRoll");
-            page.LedgerRollId = SelfTestNames.LedgerRollId;
-            page.LedgerBodyLengthText = "2000";
-            page.LedgerDiameterText = "650";
-            await h.PressVerticalKeyAsync(ctx, "Vk_SaveRoll");
-            ctx.Check(page.LedgerProblems.Count == 1, "a duplicate roll number must be refused with its reason");
-        });
     }
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
+}
+
+/// <summary>轧辊区（界面修订稿 v3 6.4）：台账与卡片、新登记（计划必填、重号拒绝）、编辑、多选、改计划逐支核对、作废与恢复、导出。</summary>
+internal sealed class RollsSuite : ISelfTestSuite
+{
+    public string Name => "Rolls";
+
+    public async Task RunAsync(SelfTestHarness h)
+    {
+        RollsViewModel page = h.Page<RollsViewModel>();
+
+        StepStatus shown = await h.StepAsync("Ledger", "ListAndCard", async ctx =>
+        {
+            await h.GoToAsync(PageKey.Rolls, ctx);
+            await page.Loading;
+            ctx.Check(page.IsLedger, "the rolls area opens on the ledger");
+            if (page.SelectedRow is not null)
+            {
+                await h.WaitUntilAsync(() => page.CardRows.Count > 0, TimeSpan.FromSeconds(5));
+                ctx.Check(page.CardRows.Count > 0, "the selected roll should show its card");
+            }
+
+            ctx.Note(page.ListTitle);
+        }, StepOptions.Shot);
+
+        if (shown != StepStatus.Pass && shown != StepStatus.Warn)
+        {
+            return;
+        }
+
+        await h.StepAsync("Register", "PlanRequiredAndDuplicateRefused", async ctx =>
+        {
+            await h.PressVerticalKeyAsync(ctx, "Vk_RegisterRoll");
+            ctx.Check(page.IsForm && page.IsNewRoll, "'register' opens an empty form");
+            page.FormRollId = SelfTestNames.LedgerRollId;
+            page.FormBodyLengthText = "2000";
+            page.FormNominalText = "1200";
+            page.FormCurrentText = "1188";
+            page.FormScrapText = "1100";
+            await h.PressVerticalKeyAsync(ctx, "Vk_Save");
+            bool exists = page.FormProblems.Any(p => p == page.Localizer["Ledger_Problem_RollIdTaken"]);
+            ctx.Check(page.IsForm, "a roll without a plan (or a duplicate) must not be saved");
+            ctx.Note("problems: " + string.Join(" | ", page.FormProblems));
+            if (!exists)
+            {
+                ctx.Check(page.FormProblems.Any(p => p == page.Localizer["Ledger_Problem_PlanMissing"]), "a missing plan should be named");
+                await JobFlow.PickAsync(h, ctx, page, "Vk_PickProfile", SelfTestNames.ProfileA, () => page.FormProfileText);
+                await JobFlow.PickAsync(h, ctx, page, "Vk_PickProgram", SelfTestNames.ProgramA, () => page.FormProgramText);
+                await h.PressVerticalKeyAsync(ctx, "Vk_Save");
+                ctx.Check(await h.WaitUntilAsync(() => page.IsLedger, TimeSpan.FromSeconds(5)), "with a plan the roll is saved: " + string.Join(" | ", page.FormProblems));
+            }
+            else
+            {
+                await h.PressVerticalKeyAsync(ctx, "Vk_Cancel");
+            }
+        }, StepOptions.Shot);
+
+        await h.StepAsync("Edit", "CurrentDiameterSaved", async ctx =>
+        {
+            page.SelectedRow = page.Rows.FirstOrDefault(r => r.RollId == SelfTestNames.LedgerRollId);
+            if (page.SelectedRow is null)
+            {
+                ctx.Skip("the self-test roll is not in the ledger");
+            }
+
+            await h.SettleAsync();
+            await h.PressVerticalKeyAsync(ctx, "Vk_EditRoll");
+            ctx.Check(page.IsForm && !page.IsNewRoll, "'edit' opens the form for the selected roll");
+            page.FormCurrentText = "1180";
+            await h.PressVerticalKeyAsync(ctx, "Vk_Save");
+            ctx.Check(await h.WaitUntilAsync(() => page.IsLedger, TimeSpan.FromSeconds(5)), "the edit should be saved: " + string.Join(" | ", page.FormProblems));
+            ctx.Check(page.Rows.FirstOrDefault(r => r.RollId == SelfTestNames.LedgerRollId)?.CurrentText.StartsWith("1180", StringComparison.Ordinal) == true,
+                "the new current diameter should be listed");
+        });
+
+        await h.StepAsync("Multi", "ChangePlanChecksEachRoll", async ctx =>
+        {
+            await h.PressVerticalKeyAsync(ctx, "Vk_MultiSelect");
+            ctx.Check(page.IsMulti, "'multi-select' shows the check boxes");
+            RollRowViewModel? row = page.Rows.FirstOrDefault(r => r.RollId == SelfTestNames.LedgerRollId);
+            if (row is null)
+            {
+                ctx.Skip("the self-test roll is not in the ledger");
+            }
+
+            row!.IsChecked = true;
+            await h.SettleAsync();
+            ctx.Check(page.CheckedCount == 1, "one roll should be checked");
+            await h.PressVerticalKeyAsync(ctx, "Vk_ChangePlan");
+            ctx.Check(await h.WaitUntilAsync(() => page.IsChangePlan && page.IsPicking, TimeSpan.FromSeconds(5)), "'change plan' opens the picker");
+            h.TryScreenshot("rolls-change-plan-picker");
+            page.TryDismissPrompt();
+            await h.SettleAsync();
+            await h.PressVerticalKeyAsync(ctx, "Vk_Cancel");
+            ctx.Check(await h.WaitUntilAsync(() => page.IsLedger, TimeSpan.FromSeconds(5)), "cancel goes back to the ledger");
+        }, StepOptions.Shot);
+
+        await h.StepAsync("Retire", "RetireAndRestore", async ctx =>
+        {
+            page.SelectedRow = page.Rows.FirstOrDefault(r => r.RollId == SelfTestNames.LedgerRollId);
+            if (page.SelectedRow is null)
+            {
+                ctx.Skip("the self-test roll is not in the ledger");
+            }
+
+            await h.SettleAsync();
+            await h.PressVerticalKeyAsync(ctx, "Vk_Retire");
+            await h.ConfirmAsync(ctx);
+            ctx.Check(await h.WaitUntilAsync(() => page.Rows.All(r => r.RollId != SelfTestNames.LedgerRollId), TimeSpan.FromSeconds(5)),
+                "a retired roll leaves the list");
+            await h.PressVerticalKeyAsync(ctx, "Vk_ShowRetired");
+            ctx.Check(await h.WaitUntilAsync(() => page.Rows.Any(r => r.RollId == SelfTestNames.LedgerRollId && r.IsRetired), TimeSpan.FromSeconds(5)),
+                "'show retired' lists it greyed");
+            page.SelectedRow = page.Rows.First(r => r.RollId == SelfTestNames.LedgerRollId);
+            await h.SettleAsync();
+            await h.PressVerticalKeyAsync(ctx, "Vk_Restore");
+            await h.ConfirmAsync(ctx);
+            await h.PressVerticalKeyAsync(ctx, "Vk_ShowRetired");
+            ctx.Check(await h.WaitUntilAsync(() => page.Rows.Any(r => r.RollId == SelfTestNames.LedgerRollId && !r.IsRetired), TimeSpan.FromSeconds(5)),
+                "a restored roll is back in the list");
+        });
+
+        await h.StepAsync("Files", "ExportLedger", async ctx =>
+        {
+            int produced = h.Interaction.Produced.Count;
+            await h.PressKeyAsync(ctx, "Fn_ExportLedger");
+            ctx.Check(await h.WaitUntilAsync(() => h.Interaction.Produced.Count > produced, TimeSpan.FromSeconds(5)), "a CSV should be written");
+        });
+    }
 }
 
 /// <summary>诊断（最终稿 5.12）：七个横键组都渲染；报警详情与消除方法；清除上位机报警…（问一句）；改动记录；运行日志；导出快照；整机备份。</summary>

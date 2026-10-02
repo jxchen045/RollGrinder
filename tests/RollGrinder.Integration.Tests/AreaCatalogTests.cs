@@ -18,7 +18,7 @@ public sealed class AreaCatalogTests
     public void The_area_menu_lists_all_eight_areas_once_in_the_final_order()
     {
         AreaCatalog.MenuOrder.Should().Equal(
-            AreaKey.Machine, AreaKey.Profile, AreaKey.Steps, AreaKey.Library,
+            AreaKey.Machine, AreaKey.Rolls, AreaKey.Profile, AreaKey.Steps,
             AreaKey.Parameters, AreaKey.Records, AreaKey.Diagnostics, AreaKey.Commissioning);
         AreaCatalog.MenuOrder.Should().BeEquivalentTo(Enum.GetValues<AreaKey>());
         AreaCatalog.MenuOrder.Count.Should().Be(AreaCatalog.MenuSlotCount);
@@ -99,7 +99,7 @@ public sealed class AreaCatalogTests
     {
         IReadOnlyList<QuickBarEntry> entries = QuickBarCatalog.Resolve(null, out IReadOnlyList<string> rejected);
 
-        entries.Select(e => e.Id).Should().Equal("machine", "profile", "steps", "wheel", "library", "records", "diagnostics");
+        entries.Select(e => e.Id).Should().Equal("machine", "rolls", "profile", "steps", "wheel", "records", "diagnostics");
         entries.Single(e => e.Id == "wheel").Should().Match<QuickBarEntry>(
             e => e.Area == AreaKey.Parameters && e.GroupKey == QuickBarCatalog.WheelGroup);
         rejected.Should().BeEmpty();
@@ -112,7 +112,8 @@ public sealed class AreaCatalogTests
             new[] { "records", "Machine", "records", "commissioning", "nonsense", "profile", "steps", "wheel", "library", "parameters", "diagnostics" },
             out IReadOnlyList<string> rejected);
 
-        entries.Select(e => e.Id).Should().Equal("records", "machine", "profile", "steps", "wheel", "library", "parameters");
+        // 旧配置里的 "library" 按 "rolls" 认（库区拆开后左栏那一格给轧辊）。
+        entries.Select(e => e.Id).Should().Equal("records", "machine", "profile", "steps", "wheel", "rolls", "parameters");
         rejected.Should().Equal("records", "commissioning", "nonsense", "diagnostics");
     }
 

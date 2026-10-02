@@ -4,6 +4,7 @@ using System.Linq;
 using RollGrinder.Core.Compensation;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Profiles;
+using RollGrinder.Core.Steps;
 using RollGrinder.Core.Units;
 using RollGrinder.Data.Model;
 
@@ -134,7 +135,32 @@ public sealed record GrindingOutcome(
             Crown(postGrind),
             record.WheelDiameterMm,
             record.FinishedAtUtc is null ? null : record.FinishedAtUtc.Value - record.StartedAtUtc,
-            compensationIterations);
+            compensationIterations)
+        {
+            ProfilePeakMicrometer = ProfilePeak(postGrind, targetProfile, job),
+        };
+    }
+
+    /// <summary>
+    /// 辊形误差峰值（直径量 µm）：|磨后实测 − 目标| 的最大值。合格判定按它与辊形公差比（关系设计 Q1）。
+    /// </summary>
+    public double? ProfilePeakMicrometer { get; init; }
+
+    /// <summary>按辊形公差与验收公差判合格；一项都没量到时不下结论。</summary>
+    public GrindingVerdict Verdict(double profileToleranceMicrometer, double roundnessToleranceMicrometer) =>
+        GrindingVerdict.Evaluate(ProfilePeakMicrometer, profileToleranceMicrometer, RoundnessMicrometer, roundnessToleranceMicrometer);
+
+    private static double? ProfilePeak(MeasurementRecord? measurement, RollProfile? target, RollGeometry? geometry)
+    {
+        if (measurement is null || target is null || geometry is null || measurement.Profile.Points.Count < 2)
+        {
+            return null;
+        }
+
+        RollProfile deviation = CompensationCalculator.ComputeDeviation(measurement.Profile, target, geometry);
+        return deviation.Points.Count == 0
+            ? null
+            : deviation.Points.Max(point => Math.Abs(UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)));
     }
 
     /// <summary>

@@ -29,4 +29,16 @@ public static class ChangeLogAreas
     public const string MachineConfig = "machineConfig";
 
     public const string TagMap = "tagMap";
+
+    /// <summary>轧辊计划（目标辊形、磨削程序）：作业里"变更"、台账改计划、多选改计划。</summary>
+    public const string RollPlan = "rollPlan";
+
+    /// <summary>台账（登记、作废、导入）。</summary>
+    public const string RollLedger = "rollLedger";
+
+    /// <summary>辊形库（保存版本、停用、删除）。</summary>
+    public const string ProfileLibrary = "profileLibrary";
+
+    /// <summary>程序库（保存版本、停用、删除）。</summary>
+    public const string ProgramLibrary = "programLibrary";
 }

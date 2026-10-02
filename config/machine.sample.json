@@ -107,7 +107,10 @@
     "positioningFeedMmPerMin": 2000.0,
     "positionX1AtRollMm": 180.0,
     "positionX1HomeMm": 0.0,
-    "positionXSafeMm": 300.0
+    "positionXSafeMm": 300.0,
+    "lengthTolerancePercent": 2.0,
+    "minWorkpieceSurfaceSpeedMPerMin": 30.0,
+    "maxWorkpieceSurfaceSpeedMPerMin": 120.0
   },
   "workpiece": {
     "minBodyLengthMm": 300.0,
@@ -139,7 +142,19 @@
     "tailstockLock": 3,
     "measuringArm": 4
   },
-  "quickBar": [ "machine", "profile", "steps", "wheel", "library", "records", "diagnostics" ],
-  "panelActions": [ "cycleStart", "feedHold" ],
-  "manualStrokeMarginMm": 60.0
+  "quickBar": [
+    "machine",
+    "rolls",
+    "profile",
+    "steps",
+    "wheel",
+    "records",
+    "diagnostics"
+  ],
+  "panelActions": [
+    "cycleStart",
+    "feedHold"
+  ],
+  "manualStrokeMarginMm": 60.0,
+  "headstockRpmByWeight": []
 }

@@ -69,6 +69,8 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<Audit.IChangeLog, Audit.ChangeLog>();
         services.AddSingleton<IRecordService, RecordService>();
         services.AddSingleton<IRollLedgerService, RollLedgerService>();
+        services.AddSingleton<Jobs.IRollPlanningService, Jobs.RollPlanningService>();
+        services.AddSingleton<Library.ILibraryService, Library.LibraryService>();
         services.AddSingleton<IReportService, ReportService>();
         services.AddSingleton<IReportPrintQueue, ReportPrintQueue>();
         services.AddSingleton<Diagnostics.IDiagnosticsExportService, Diagnostics.DiagnosticsExportService>();

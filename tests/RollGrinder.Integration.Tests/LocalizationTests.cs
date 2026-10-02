@@ -121,7 +121,28 @@ public sealed class LocalizationTests
         "JobState_", "StepSlot_", "Option_", "Role_", "Severity_", "Violation_",
         "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_", "WheelEvent_", "WheelSource_", "Status_", "MeasurementStage_", "ChangeArea_", "ManualPage_", "CfgField_", "CfgGroup_",
         "Area_", "Mode_", "Help_", "Language_", "Keypad_Error_", "Pendant_Axis",
+        "CheckItem_", "Check_Stock_", "ImportKind_", "Ledger_Problem_", "RollKindFilter_", "RollKind_",
     };
+
+    [Fact]
+    public void Every_roll_centric_label_composed_from_an_enum_or_constant_exists_in_both_languages()
+    {
+        IReadOnlySet<string> chinese = NeutralKeys;
+        IReadOnlySet<string> english = LoadKeys("Strings.en-US.resx");
+        IEnumerable<string> keys = Enum.GetNames<RollGrinder.Services.Records.RollLedgerProblem>().Select(name => "Ledger_Problem_" + name)
+            .Concat(Enum.GetNames<RollGrinder.Services.Jobs.LedgerImportKind>().Select(name => "ImportKind_" + name))
+            .Concat(Enum.GetNames<RollGrinder.Core.RollKind>().SelectMany(name => new[] { "RollKind_" + name, "RollKindFilter_" + name }))
+            .Concat(typeof(RollGrinder.Services.Jobs.JobCheckItems)
+                .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                .Select(field => "CheckItem_" + (string)field.GetValue(null)!))
+            .Concat(new[] { "Stock_ActualInvalid", "Stock_BelowFinishing", "Stock_NoRoughStep" }.Select(key => "Check_" + key));
+
+        foreach (string key in keys)
+        {
+            chinese.Should().Contain(key);
+            english.Should().Contain(key);
+        }
+    }
 
     [Fact]
     public void Every_status_lamp_has_a_name_and_both_states_in_both_languages()

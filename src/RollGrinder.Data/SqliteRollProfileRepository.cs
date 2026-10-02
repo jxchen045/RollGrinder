@@ -29,7 +29,8 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             SELECT p.profile_id, p.name, p.body_length_mm, p.modified_at_utc,
                    (SELECT COUNT(*) FROM roll_profile_segment s WHERE s.profile_id = p.profile_id),
                    (SELECT s.profile_type_key FROM roll_profile_segment s
-                    WHERE s.profile_id = p.profile_id ORDER BY s.segment_order LIMIT 1)
+                    WHERE s.profile_id = p.profile_id ORDER BY s.segment_order LIMIT 1),
+                   p.version, p.disabled, p.tolerance_um
             FROM roll_profile p
             ORDER BY p.modified_at_utc DESC
             LIMIT $limit;
@@ -46,7 +47,12 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
                 reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
                 reader.GetInt32(4),
                 reader.GetDouble(2),
-                SqlMapping.ToTimestamp(reader.GetString(3))));
+                SqlMapping.ToTimestamp(reader.GetString(3)))
+            {
+                Version = reader.GetInt32(6),
+                Disabled = reader.GetInt32(7) != 0,
+                ToleranceMicrometer = reader.IsDBNull(8) ? null : reader.GetDouble(8),
+            });
         }
 
         return summaries;
@@ -64,11 +70,13 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
         DateTimeOffset modifiedAtUtc;
         double? nominalDiameter;
         double? tolerance;
+        int version;
+        bool disabled;
 
         await using (SqliteCommand command = connection.CreateCommand())
         {
             command.CommandText =
-                "SELECT name, body_length_mm, created_at_utc, modified_at_utc, nominal_diameter_mm, tolerance_um FROM roll_profile WHERE profile_id = $id;";
+                "SELECT name, body_length_mm, created_at_utc, modified_at_utc, nominal_diameter_mm, tolerance_um, version, disabled FROM roll_profile WHERE profile_id = $id;";
             SqlMapping.AddParameter(command, "$id", profileId);
 
             await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -83,6 +91,8 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             modifiedAtUtc = SqlMapping.ToTimestamp(reader.GetString(3));
             nominalDiameter = reader.IsDBNull(4) ? null : reader.GetDouble(4);
             tolerance = reader.IsDBNull(5) ? null : reader.GetDouble(5);
+            version = reader.GetInt32(6);
+            disabled = reader.GetInt32(7) != 0;
         }
 
         CompositeRollProfile? profile = await ProfileSegmentMapping
@@ -98,6 +108,8 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
         {
             NominalDiameterMm = nominalDiameter,
             ToleranceMicrometer = tolerance,
+            Version = version,
+            Disabled = disabled,
         };
     }
 
@@ -114,13 +126,16 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             command.Transaction = transaction;
             command.CommandText =
                 """
-                INSERT INTO roll_profile (profile_id, name, body_length_mm, created_at_utc, modified_at_utc, nominal_diameter_mm, tolerance_um)
-                VALUES ($id, $name, $length, $created, $modified, $diameter, $tolerance)
+                INSERT INTO roll_profile (profile_id, name, body_length_mm, created_at_utc, modified_at_utc, nominal_diameter_mm, tolerance_um,
+                                          version, disabled)
+                VALUES ($id, $name, $length, $created, $modified, $diameter, $tolerance, $version, $disabled)
                 ON CONFLICT(profile_id) DO UPDATE SET
                     name = excluded.name,
                     body_length_mm = excluded.body_length_mm,
                     nominal_diameter_mm = excluded.nominal_diameter_mm,
                     tolerance_um = excluded.tolerance_um,
+                    version = excluded.version,
+                    disabled = excluded.disabled,
                     modified_at_utc = excluded.modified_at_utc;
                 """;
             SqlMapping.AddParameter(command, "$id", profile.ProfileId);
@@ -128,6 +143,8 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             SqlMapping.AddParameter(command, "$length", profile.BodyLengthMm);
             SqlMapping.AddParameter(command, "$diameter", profile.NominalDiameterMm);
             SqlMapping.AddParameter(command, "$tolerance", profile.ToleranceMicrometer);
+            SqlMapping.AddParameter(command, "$version", profile.Version);
+            SqlMapping.AddParameter(command, "$disabled", profile.Disabled ? 1 : 0);
             SqlMapping.AddParameter(command, "$created", SqlMapping.ToText(profile.CreatedAtUtc));
             SqlMapping.AddParameter(command, "$modified", SqlMapping.ToText(profile.ModifiedAtUtc));
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);

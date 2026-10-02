@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -122,6 +123,7 @@ public sealed class RecordService : IRecordService
     private readonly IAlarmSink alarmSink;
     private readonly HmiSettings settings;
     private readonly TimeProvider timeProvider;
+    private readonly IRollProfileRepository profiles;
 
     public RecordService(
         IGrindingRecordRepository records,
@@ -138,8 +140,10 @@ public sealed class RecordService : IRecordService
         IReportPrintQueue printQueue,
         IAlarmSink alarmSink,
         HmiSettings settings,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IRollProfileRepository profiles)
     {
+        this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
         this.records = records ?? throw new ArgumentNullException(nameof(records));
         this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
@@ -419,11 +423,76 @@ public sealed class RecordService : IRecordService
             .ConfigureAwait(false);
 
         await SaveRoundnessAsync(recordId, cancellationToken).ConfigureAwait(false);
+        await CloseJobAsync(recordId, state, cancellationToken).ConfigureAwait(false);
 
         // 磨后报告只给磨完的辊出：半路被复位的辊出一张"磨削报告"只会让人以为它磨好了。
         if (state == JobState.Completed)
         {
             await QueuePostGrindReportAsync(recordId, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// 磨完之后系统自动做的事（关系设计 5.6）：作业状态跟着记录走；磨完的按辊形公差与验收公差判合格；
+    /// 台账的当前直径改成磨后实测（中断的按最后一次测量）。记账失败不影响机床，报一声即可。
+    /// </summary>
+    private async Task CloseJobAsync(string recordId, JobState state, CancellationToken cancellationToken)
+    {
+        try
+        {
+            GrindingRecord? record = await this.records.GetAsync(recordId, cancellationToken).ConfigureAwait(false);
+            (Core.Steps.GrindingJob Job, JobState State)? stored = record is null
+                ? null
+                : await this.jobs.GetAsync(record.JobId, cancellationToken).ConfigureAwait(false);
+            if (record is null || stored is null)
+            {
+                return;
+            }
+
+            Core.Steps.GrindingJob job = stored.Value.Job;
+            await this.jobs.SetStateAsync(job.JobId, state, cancellationToken).ConfigureAwait(false);
+
+            if (state == JobState.Completed)
+            {
+                GrindingOutcome outcome = await LoadOutcomeAsync(recordId, cancellationToken).ConfigureAwait(false);
+                double tolerance = job.ProfileId is null
+                    ? this.calibration.Current.ProfileToleranceMicrometer
+                    : (await this.profiles.GetAsync(job.ProfileId, cancellationToken).ConfigureAwait(false))?.ToleranceMicrometer
+                      ?? this.calibration.Current.ProfileToleranceMicrometer;
+                Core.Steps.GrindingVerdict verdict = outcome.Verdict(tolerance, this.calibration.Current.RoundnessToleranceMicrometer);
+                await this.records.SetVerdictAsync(recordId, verdict.Passed, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (state is JobState.Completed or JobState.Interrupted)
+            {
+                await UpdateLedgerDiameterAsync(job, state, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex) when (ex is DataStoreException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            this.alarmSink.Raise(AlarmSeverity.Warning, "Alarm_LedgerNotUpdated", ex.Message, AlarmCodes.HandoverNotArchived);
+        }
+    }
+
+    /// <summary>台账当前直径 = 磨后实测两端平均；没量到时磨完的按目标直径，中断的不动。</summary>
+    private async Task UpdateLedgerDiameterAsync(Core.Steps.GrindingJob job, JobState state, CancellationToken cancellationToken)
+    {
+        RollRecord? roll = await this.rolls.GetAsync(job.RollId, cancellationToken).ConfigureAwait(false);
+        if (roll is null)
+        {
+            return;
+        }
+
+        MeasurementRecord? measured = await this.measurements
+            .GetLatestByStageAsync(job.JobId, state == JobState.Completed ? MeasurementStage.PostGrind : MeasurementStage.InProcess, cancellationToken)
+            .ConfigureAwait(false)
+            ?? await this.measurements.GetLatestByJobAsync(job.JobId, cancellationToken).ConfigureAwait(false);
+        double? diameter = measured is { Profile.Points.Count: > 0 }
+            ? measured.Profile.Points.Average(point => point.MeasuredRadiusMm) * 2.0
+            : state == JobState.Completed ? job.TargetDiameterMm : null;
+        if (diameter is double value && value > 0.0)
+        {
+            await this.rolls.UpsertAsync(roll with { CurrentDiameterMm = Math.Round(value, 3) }, cancellationToken).ConfigureAwait(false);
         }
     }
 

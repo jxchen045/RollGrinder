@@ -223,6 +223,12 @@ public static class MachineTagKeys
     /// </summary>
     public const string JobCycleComplete = "job.cycleComplete";
 
+    /// <summary>
+    /// 报废直径（mm，可选，关系设计 V4）：随作业下发，NC 在磨前测量后自己判断、超限停机报警。
+    /// tagmap 没登记时只做上位机下发前核对，诊断里显示"NC 侧报废保护：未启用"。
+    /// </summary>
+    public const string JobScrapDiameterMm = "job.scrapDiameterMm";
+
     /// <summary>当前工序的第几次走刀。</summary>
     public const string JobCurrentPass = "job.currentPass";
 

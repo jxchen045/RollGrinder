@@ -29,11 +29,17 @@ public sealed record GrindingProgram(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset ModifiedAtUtc)
 {
-    /// <summary>
-    /// 关联辊形（流程调整方案第 6 节）：新建程序先选这支程序磨哪条辊形；行程、余量、估时都按它算。
-    /// 旧库里的程序没有，为 null——打开时提示先选关联辊形。
-    /// </summary>
-    public string? ProfileId { get; init; }
+    /// <summary>版本号：每保存一次 +1（关系设计第 4 节），作业快照记下用的是第几版。</summary>
+    public int Version { get; init; } = 1;
+
+    /// <summary>停用：被引用的程序不能删，只能停用；停用后不出现在登记、换程序的列表里。</summary>
+    public bool Disabled { get; init; }
+
+    /// <summary>适用轧辊类型；<see cref="RollKind.Unspecified"/> 表示不限。作业核对时类型不符拦住。</summary>
+    public RollKind ApplicableRollKind { get; init; }
+
+    /// <summary>适用材质（可空，如"高铬铁"）。作业核对时不符只提示。</summary>
+    public string? ApplicableMaterial { get; init; }
 
     /// <summary>标准余量（直径量 µm）：余量分配按它分；作业里本次余量与它不同时差额由粗磨吸收。没填为 null。</summary>
     public double? StandardStockMicrometer { get; init; }

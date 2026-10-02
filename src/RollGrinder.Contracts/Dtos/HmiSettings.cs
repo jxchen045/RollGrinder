@@ -21,6 +21,9 @@ namespace RollGrinder.Contracts.Dtos;
 /// <param name="ManualPulseMs">手动动作脉冲命令的脉宽（ms）。</param>
 /// <param name="Layout">版面档位：auto（按屏幕选）、standard（1920×1080）、compact（1366×768）。</param>
 /// <param name="FullScreen">全屏、盖住任务栏（现场 kiosk）；调试时可关。</param>
+/// <param name="PlanChangePermission">
+/// 作业里"变更这支辊的工艺"谁能做（关系设计 M2）：operator（默认，操作者即可）或 administrator（只有管理员及以上）。
+/// </param>
 public sealed record HmiSettings(
     int SchemaVersion,
     string Culture,
@@ -35,4 +38,10 @@ public sealed record HmiSettings(
     UserRole DefaultRole,
     int ManualPulseMs = 300,
     string Layout = "auto",
-    bool FullScreen = true);
+    bool FullScreen = true,
+    string PlanChangePermission = "operator")
+{
+    /// <summary>变更计划只许管理员及以上。</summary>
+    public bool PlanChangeNeedsAdministrator =>
+        string.Equals(PlanChangePermission, "administrator", System.StringComparison.OrdinalIgnoreCase);
+}

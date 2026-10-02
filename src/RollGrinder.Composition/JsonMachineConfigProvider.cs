@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
@@ -152,7 +153,9 @@ public sealed class JsonMachineConfigProvider : IMachineConfigProvider
             json.AuxiliaryActionCodes ?? new Dictionary<string, int>(),
             json.QuickBar,
             json.PanelActions,
-            json.ManualStrokeMarginMm);
+            json.ManualStrokeMarginMm,
+            json.HeadstockRpmByWeight?.Select(row => new HeadstockSpeedLimit(row.MaxWeightKg, row.MaxRpm))
+                .OrderBy(row => row.MaxWeightKg).ToArray());
     }
 
     internal static ITagMap MapTagMap(TagMapJson json, string path)

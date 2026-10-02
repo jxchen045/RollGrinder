@@ -80,7 +80,7 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT record_id, job_id, started_at_utc, finished_at_utc, state, note, wheel_diameter_mm
+            SELECT record_id, job_id, started_at_utc, finished_at_utc, state, note, wheel_diameter_mm, passed
             FROM grinding_record WHERE record_id = $id;
             """;
         SqlMapping.AddParameter(command, "$id", recordId);
@@ -99,7 +99,7 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT record_id, job_id, started_at_utc, finished_at_utc, state, note, wheel_diameter_mm
+            SELECT record_id, job_id, started_at_utc, finished_at_utc, state, note, wheel_diameter_mm, passed
             FROM grinding_record
             WHERE started_at_utc >= $from AND started_at_utc <= $to
             ORDER BY started_at_utc DESC
@@ -117,6 +117,58 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         }
 
         return records;
+    }
+
+    public async Task SetVerdictAsync(string recordId, bool? passed, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "UPDATE grinding_record SET passed = $passed WHERE record_id = $id;";
+        SqlMapping.AddParameter(command, "$passed", passed is bool value ? (value ? 1 : 0) : null);
+        SqlMapping.AddParameter(command, "$id", recordId);
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task SetSnapshotAsync(string recordId, string snapshotJson, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "UPDATE grinding_record SET download_snapshot = $snapshot WHERE record_id = $id;";
+        SqlMapping.AddParameter(command, "$snapshot", snapshotJson);
+        SqlMapping.AddParameter(command, "$id", recordId);
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<string?> GetSnapshotAsync(string recordId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT download_snapshot FROM grinding_record WHERE record_id = $id;";
+        SqlMapping.AddParameter(command, "$id", recordId);
+        return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) as string;
+    }
+
+    public async Task<GrindingRecord?> GetLatestByJobAsync(string jobId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(jobId);
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT record_id, job_id, started_at_utc, finished_at_utc, state, note, wheel_diameter_mm, passed
+            FROM grinding_record WHERE job_id = $job ORDER BY started_at_utc DESC LIMIT 1;
+            """;
+        SqlMapping.AddParameter(command, "$job", jobId);
+
+        await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? Map(reader) : null;
     }
 
     public async Task<int> PurgeOlderThanAsync(DateTimeOffset thresholdUtc, CancellationToken cancellationToken)
@@ -140,7 +192,7 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         // 辊号挂在作业上，记录只指向作业，所以得连一次。
         command.CommandText =
             """
-            SELECT r.record_id, r.job_id, r.started_at_utc, r.finished_at_utc, r.state, r.note, r.wheel_diameter_mm
+            SELECT r.record_id, r.job_id, r.started_at_utc, r.finished_at_utc, r.state, r.note, r.wheel_diameter_mm, r.passed
             FROM grinding_record r
             JOIN job j ON j.job_id = r.job_id
             WHERE j.roll_id = $roll
@@ -168,6 +220,7 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
         (JobState)reader.GetInt32(4),
         reader.IsDBNull(5) ? null : reader.GetString(5))
     {
+        Passed = reader.IsDBNull(7) ? null : reader.GetInt32(7) != 0,
         WheelDiameterMm = reader.IsDBNull(6) ? null : reader.GetDouble(6),
     };
 }

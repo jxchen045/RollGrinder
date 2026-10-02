@@ -451,12 +451,6 @@
   <data name="Job_ParametersInvalid" xml:space="preserve">
     <value>参数填写有误</value>
   </data>
-  <data name="Job_ReadyToHandOver" xml:space="preserve">
-    <value>参数可用，可以下发</value>
-  </data>
-  <data name="Job_RollIdLabel" xml:space="preserve">
-    <value>辊件号</value>
-  </data>
   <data name="Job_TagMapIncomplete" xml:space="preserve">
     <value>tagmap.json 缺少必需变量，未写入任何参数</value>
   </data>
@@ -616,18 +610,6 @@
   <data name="ProfileType_Taper" xml:space="preserve">
     <value>锥度</value>
   </data>
-  <data name="Profile_Library" xml:space="preserve">
-    <value>辊形库</value>
-  </data>
-  <data name="Profile_LibraryColumnModified" xml:space="preserve">
-    <value>修改时间</value>
-  </data>
-  <data name="Profile_LibraryColumnName" xml:space="preserve">
-    <value>辊形名</value>
-  </data>
-  <data name="Profile_LibraryColumnSegments" xml:space="preserve">
-    <value>段数</value>
-  </data>
   <data name="Profile_Name" xml:space="preserve">
     <value>辊形名</value>
   </data>
@@ -639,15 +621,6 @@
   </data>
   <data name="Profile_SegmentMirrored" xml:space="preserve">
     <value>镜像</value>
-  </data>
-  <data name="Program_ColumnModified" xml:space="preserve">
-    <value>修改时间</value>
-  </data>
-  <data name="Program_ColumnName" xml:space="preserve">
-    <value>程序名</value>
-  </data>
-  <data name="Program_ColumnSteps" xml:space="preserve">
-    <value>工序数</value>
   </data>
   <data name="Program_Name" xml:space="preserve">
     <value>程序名</value>
@@ -1582,20 +1555,11 @@
   <data name="Ledger_Code" xml:space="preserve">
     <value>辊号</value>
   </data>
-  <data name="Ledger_Diameter" xml:space="preserve">
-    <value>直径 (mm)</value>
-  </data>
   <data name="Ledger_BodyLength" xml:space="preserve">
     <value>辊身 (mm)</value>
   </data>
   <data name="Ledger_Material" xml:space="preserve">
     <value>材质</value>
-  </data>
-  <data name="Ledger_GrindCount" xml:space="preserve">
-    <value>磨削次数</value>
-  </data>
-  <data name="Ledger_LastGround" xml:space="preserve">
-    <value>最近一次</value>
   </data>
   <data name="Diag_InspectorHeader" xml:space="preserve">
     <value>只读查看</value>
@@ -1623,12 +1587,6 @@
   </data>
   <data name="RollData_NetWeight" xml:space="preserve">
     <value>轧辊净重 (kg)</value>
-  </data>
-  <data name="RollData_HeadBoxWeight" xml:space="preserve">
-    <value>头架端箱重 (kg)</value>
-  </data>
-  <data name="RollData_TailBoxWeight" xml:space="preserve">
-    <value>尾架端箱重 (kg)</value>
   </data>
   <data name="Action_ManualGrinding" xml:space="preserve">
     <value>手动磨削</value>
@@ -1888,53 +1846,17 @@
   <data name="Ledger_CurrentDiameter" xml:space="preserve">
     <value>当前直径 (mm)</value>
   </data>
-  <data name="Ledger_BodyLengthLabel" xml:space="preserve">
-    <value>辊身长度 mm</value>
-  </data>
-  <data name="Ledger_DiameterLabel" xml:space="preserve">
-    <value>公称直径 mm</value>
-  </data>
-  <data name="Ledger_CurrentDiameterLabel" xml:space="preserve">
-    <value>当前直径 mm</value>
-  </data>
-  <data name="Ledger_TotalWeight" xml:space="preserve">
-    <value>吊装总重 kg</value>
-  </data>
-  <data name="Ledger_HistoryHeader" xml:space="preserve">
-    <value>磨削履历</value>
-  </data>
-  <data name="Ledger_HistoryStarted" xml:space="preserve">
-    <value>开始</value>
-  </data>
-  <data name="Ledger_HistoryJob" xml:space="preserve">
-    <value>作业</value>
-  </data>
-  <data name="Ledger_HistoryState" xml:space="preserve">
-    <value>状态</value>
-  </data>
-  <data name="Ledger_HistoryDuration" xml:space="preserve">
-    <value>用时</value>
-  </data>
   <data name="Ledger_Saved" xml:space="preserve">
     <value>已存入台账</value>
   </data>
   <data name="Ledger_Problem_NotANumber" xml:space="preserve">
-    <value>有格子不是数：辊身长度与公称直径必填，其余可空</value>
+    <value>有格子不是数字（辊身、公称直径必填）</value>
   </data>
   <data name="Ledger_Problem_MissingRollId" xml:space="preserve">
     <value>请填辊号</value>
   </data>
   <data name="Ledger_Problem_RollIdTaken" xml:space="preserve">
     <value>台账里已经有这个辊号了</value>
-  </data>
-  <data name="Ledger_Problem_BodyLength" xml:space="preserve">
-    <value>辊身长度超出本机能磨的范围</value>
-  </data>
-  <data name="Ledger_Problem_Diameter" xml:space="preserve">
-    <value>公称直径超出本机能磨的范围</value>
-  </data>
-  <data name="Ledger_Problem_CurrentDiameter" xml:space="preserve">
-    <value>当前直径超出本机能磨的范围</value>
   </data>
   <data name="Ledger_Problem_NegativeWeight" xml:space="preserve">
     <value>重量不能是负数</value>
@@ -1956,90 +1878,6 @@
   </data>
   <data name="Fn_UseForJob" xml:space="preserve">
     <value>用于作业</value>
-  </data>
-  <data name="Job_StepsHeader" xml:space="preserve">
-    <value>步骤</value>
-  </data>
-  <data name="Job_StepRoll" xml:space="preserve">
-    <value>轧辊</value>
-  </data>
-  <data name="Job_StepProfile" xml:space="preserve">
-    <value>辊形</value>
-  </data>
-  <data name="Job_StepProgram" xml:space="preserve">
-    <value>工艺程序</value>
-  </data>
-  <data name="Job_StepOptions" xml:space="preserve">
-    <value>本次余量</value>
-  </data>
-  <data name="Job_StepReview" xml:space="preserve">
-    <value>核对并下发</value>
-  </data>
-  <data name="Job_StepHint" xml:space="preserve">
-    <value>F1 上一步、F2 下一步；第 ⑤ 步核对无误才能下发</value>
-  </data>
-  <data name="Job_PickRoll" xml:space="preserve">
-    <value>从轧辊台账里选这支辊（没有就按 F4 新登记）</value>
-  </data>
-  <data name="Job_PickProfile" xml:space="preserve">
-    <value>从辊形库里选辊形</value>
-  </data>
-  <data name="Job_PickProgram" xml:space="preserve">
-    <value>从程序库里选工艺程序</value>
-  </data>
-  <data name="Job_PickOptions" xml:space="preserve">
-    <value>这一次的程序步骤（默认照程序里存的）</value>
-  </data>
-  <data name="Job_DesignLengthColumn" xml:space="preserve">
-    <value>设计长度</value>
-  </data>
-  <data name="Job_FitStretch" xml:space="preserve">
-    <value>按比例拉伸</value>
-  </data>
-  <data name="Job_FitCenter" xml:space="preserve">
-    <value>中心对齐、不拉伸</value>
-  </data>
-  <data name="Job_RollSummaryFormat" xml:space="preserve">
-    <value>辊身 {0:0} mm · 公称直径 {1:0.#} mm · 磨削起始直径 {2:0.#} mm</value>
-  </data>
-  <data name="Job_LengthMatchFormat" xml:space="preserve">
-    <value>辊形设计长度 {0:0} mm，与辊身一样长</value>
-  </data>
-  <data name="Job_LengthMismatchFormat" xml:space="preserve">
-    <value>辊形设计长度 {0:0} mm，辊身 {1:0} mm：对不上，请选按比例拉伸还是中心对齐（不合适就换一条辊形）</value>
-  </data>
-  <data name="Job_LengthStretchFormat" xml:space="preserve">
-    <value>辊形 {0:0} mm 按比例拉伸到辊身 {1:0} mm</value>
-  </data>
-  <data name="Job_LengthCenterFormat" xml:space="preserve">
-    <value>辊形 {0:0} mm 放在辊身 {1:0} mm 正中，不拉伸（多出的两端按端点值延伸、不够的两端截掉）</value>
-  </data>
-  <data name="Job_OptionsOnFormat" xml:space="preserve">
-    <value>开 {0} 项</value>
-  </data>
-  <data name="Job_Incomplete" xml:space="preserve">
-    <value>作业还没选全：轧辊、辊形（含长度处理）、工艺程序</value>
-  </data>
-  <data name="Job_ReviewRollSize" xml:space="preserve">
-    <value>轧辊尺寸</value>
-  </data>
-  <data name="Job_ReviewProfile" xml:space="preserve">
-    <value>辊形</value>
-  </data>
-  <data name="Job_ReviewLength" xml:space="preserve">
-    <value>长度核对</value>
-  </data>
-  <data name="Job_ReviewProgram" xml:space="preserve">
-    <value>工艺程序</value>
-  </data>
-  <data name="Job_ReviewDuration" xml:space="preserve">
-    <value>预计时间</value>
-  </data>
-  <data name="Job_ReviewOptions" xml:space="preserve">
-    <value>开着的程序步骤</value>
-  </data>
-  <data name="Job_ListSeparator" xml:space="preserve">
-    <value>、</value>
   </data>
   <data name="Program_Header" xml:space="preserve">
     <value>工艺程序</value>
@@ -3112,20 +2950,8 @@
   <data name="Help_Title" xml:space="preserve">
     <value>帮助</value>
   </data>
-  <data name="Job_AskCancel" xml:space="preserve">
-    <value>取消这个作业、从第一步重来？已选的辊、辊形、程序都清掉</value>
-  </data>
-  <data name="Job_NextNeedsSelection" xml:space="preserve">
-    <value>这一步还没选好</value>
-  </data>
   <data name="Job_NothingSelected" xml:space="preserve">
     <value>还没选</value>
-  </data>
-  <data name="Job_ReviewCurveAxis" xml:space="preserve">
-    <value>直径量 µm</value>
-  </data>
-  <data name="Job_ReviewCurveHeader" xml:space="preserve">
-    <value>目标辊形（按作业长度）</value>
   </data>
   <data name="Key_EmergencyStop" xml:space="preserve">
     <value>急停中，机床动作都不发</value>
@@ -3211,12 +3037,6 @@
   <data name="Lib_ImportedFormat" xml:space="preserve">
     <value>已导入辊形 {0} 条、程序 {1} 条（重名的加了"(2)"）</value>
   </data>
-  <data name="Lib_Jobs" xml:space="preserve">
-    <value>作业</value>
-  </data>
-  <data name="Lib_Ledger" xml:space="preserve">
-    <value>轧辊台账</value>
-  </data>
   <data name="Lib_NothingSelected" xml:space="preserve">
     <value>先选中一条</value>
   </data>
@@ -3226,14 +3046,8 @@
   <data name="Lib_PreviewHeader" xml:space="preserve">
     <value>预览</value>
   </data>
-  <data name="Lib_PreviewJob" xml:space="preserve">
-    <value>作业</value>
-  </data>
   <data name="Lib_PreviewSegments" xml:space="preserve">
     <value>段数</value>
-  </data>
-  <data name="Lib_PreviewStepFormat" xml:space="preserve">
-    <value>工序</value>
   </data>
   <data name="Lib_ProfileDetailFormat" xml:space="preserve">
     <value>{0} 段 · {1} mm</value>
@@ -3255,12 +3069,6 @@
   </data>
   <data name="Lib_TitleFormat" xml:space="preserve">
     <value>{0} · {1} 条</value>
-  </data>
-  <data name="Lib_Usb" xml:space="preserve">
-    <value>U 盘</value>
-  </data>
-  <data name="Lib_UsbHelp" xml:space="preserve">
-    <value>把选中的辊形或程序导出成一个 .rgxlib 文件（竖键"导出到 U 盘"），或把整个库一次导出（"全部导出"）；在另一台机上"从 U 盘导入"。导入时同名的不覆盖，自动在名字后加"(2)"。</value>
   </data>
   <data name="MG_ArmLowered" xml:space="preserve">
     <value>放下</value>
@@ -3478,9 +3286,6 @@
   <data name="Page_Commissioning" xml:space="preserve">
     <value>调试</value>
   </data>
-  <data name="Page_Library" xml:space="preserve">
-    <value>库</value>
-  </data>
   <data name="Page_ManualGrinding" xml:space="preserve">
     <value>手动磨削</value>
   </data>
@@ -3513,9 +3318,6 @@
   </data>
   <data name="Quick_Diagnostics" xml:space="preserve">
     <value>诊断</value>
-  </data>
-  <data name="Quick_Library" xml:space="preserve">
-    <value>库</value>
   </data>
   <data name="Quick_Machine" xml:space="preserve">
     <value>机床</value>
@@ -3613,9 +3415,6 @@
   <data name="Vk_Cancel" xml:space="preserve">
     <value>✕ 取消</value>
   </data>
-  <data name="Vk_CancelJob" xml:space="preserve">
-    <value>取消作业…</value>
-  </data>
   <data name="Vk_ChangeLog" xml:space="preserve">
     <value>改动记录</value>
   </data>
@@ -3673,17 +3472,8 @@
   <data name="Vk_New" xml:space="preserve">
     <value>新建</value>
   </data>
-  <data name="Vk_NewJob" xml:space="preserve">
-    <value>新作业</value>
-  </data>
-  <data name="Vk_NewRoll" xml:space="preserve">
-    <value>登记新辊</value>
-  </data>
   <data name="Vk_NextPage" xml:space="preserve">
     <value>≡▸</value>
-  </data>
-  <data name="Vk_NextStep" xml:space="preserve">
-    <value>下一步</value>
   </data>
   <data name="Vk_Open" xml:space="preserve">
     <value>打开</value>
@@ -3693,12 +3483,6 @@
   </data>
   <data name="Vk_OpenProgram" xml:space="preserve">
     <value>打开程序</value>
-  </data>
-  <data name="Vk_OpenRecord" xml:space="preserve">
-    <value>打开记录</value>
-  </data>
-  <data name="Vk_PreviousStep" xml:space="preserve">
-    <value>上一步</value>
   </data>
   <data name="Vk_Print" xml:space="preserve">
     <value>打印</value>
@@ -3729,12 +3513,6 @@
   </data>
   <data name="Vk_SaveAsk" xml:space="preserve">
     <value>✓ 保存…</value>
-  </data>
-  <data name="Vk_SaveRoll" xml:space="preserve">
-    <value>保存这支辊</value>
-  </data>
-  <data name="Vk_UseForJob" xml:space="preserve">
-    <value>用于作业</value>
   </data>
   <data name="Vk_ViewMachineJson" xml:space="preserve">
     <value>看 machine.json</value>
@@ -3768,9 +3546,6 @@
   </data>
   <data name="Area_Steps" xml:space="preserve">
     <value>工艺程序</value>
-  </data>
-  <data name="Area_Library" xml:space="preserve">
-    <value>库</value>
   </data>
   <data name="Area_Parameters" xml:space="preserve">
     <value>参数</value>
@@ -3820,36 +3595,6 @@
   <data name="Vk_ProfileChoiceFormat" xml:space="preserve">
     <value>{0}</value>
   </data>
-  <data name="Vk_PickProfileTitle" xml:space="preserve">
-    <value>换关联辊形</value>
-  </data>
-  <data name="Vk_PickProfileForNewTitle" xml:space="preserve">
-    <value>新建程序：先选辊形</value>
-  </data>
-  <data name="Fn_ChangeProfile" xml:space="preserve">
-    <value>换关联辊形…</value>
-  </data>
-  <data name="Program_LinkedProfile" xml:space="preserve">
-    <value>关联辊形</value>
-  </data>
-  <data name="Program_LinkedProfileFormat" xml:space="preserve">
-    <value>{0} · {1:0} mm</value>
-  </data>
-  <data name="Program_NoLinkedProfile" xml:space="preserve">
-    <value>未选（按横键换关联辊形…）</value>
-  </data>
-  <data name="Program_NoProfiles" xml:space="preserve">
-    <value>辊形库是空的：先到辊形区编一条辊形，程序要按辊形编</value>
-  </data>
-  <data name="Program_NewForProfileFormat" xml:space="preserve">
-    <value>新程序，关联辊形：{0}</value>
-  </data>
-  <data name="Program_ProfileChangedFormat" xml:space="preserve">
-    <value>关联辊形改为 {0}，保存后生效</value>
-  </data>
-  <data name="Program_LinkProfileFirst" xml:space="preserve">
-    <value>这支程序还没有关联辊形：按换关联辊形…选一条再用于作业</value>
-  </data>
   <data name="Stock_ActualInvalid" xml:space="preserve">
     <value>本次余量要大于 0：检查磨前直径与目标直径</value>
   </data>
@@ -3862,43 +3607,853 @@
   <data name="Job_TargetDiameter" xml:space="preserve">
     <value>目标直径（mm）</value>
   </data>
-  <data name="Job_StockSummaryFormat" xml:space="preserve">
-    <value>本次余量 {0:0} µm · 程序 {1:0} µm · 粗磨调为 {2:0} µm（精磨、光磨不变）</value>
-  </data>
-  <data name="Job_ReviewStock" xml:space="preserve">
-    <value>本次余量</value>
-  </data>
-  <data name="Job_ProgramNotLinked" xml:space="preserve">
-    <value>这支程序没有关联辊形（旧程序）：建议到工艺区选一条关联辊形再用</value>
-  </data>
-  <data name="Job_ProgramLinkedHere" xml:space="preserve">
-    <value>✓ 这支程序就是按这条辊形编的</value>
-  </data>
-  <data name="Job_ProgramBorrowedFormat" xml:space="preserve">
-    <value>这支程序按「{0}」编制，设计长度相同，可以借用</value>
-  </data>
-  <data name="Job_ProgramOtherLengthFormat" xml:space="preserve">
-    <value>这支程序按「{0}」编制，设计长度不同，不能用于这条辊形</value>
-  </data>
   <data name="Startup_AlreadyRunning" xml:space="preserve">
     <value>上位机已经在运行，不再启动第二个。</value>
   </data>
-  <data name="Ledger_ScrapDiameterLabel" xml:space="preserve">
-    <value>报废直径</value>
-  </data>
   <data name="Stock_BelowScrap" xml:space="preserve">
     <value>目标直径小于台账登记的报废直径：这支辊不能再磨到这个尺寸</value>
-  </data>
-  <data name="Job_ReviewDiameterCheck" xml:space="preserve">
-    <value>辊径核对</value>
-  </data>
-  <data name="Job_DiameterMismatchFormat" xml:space="preserve">
-    <value>⚠ 辊形按公称直径 {0:0} mm 设计，这支辊 {1:0.0} mm，相差超过 10%</value>
   </data>
   <data name="Profile_NominalDiameter" xml:space="preserve">
     <value>适用直径</value>
   </data>
   <data name="Profile_Tolerance" xml:space="preserve">
     <value>辊形公差</value>
+  </data>
+  <data name="Area_Rolls" xml:space="preserve">
+    <value>轧辊</value>
+  </data>
+  <data name="Quick_Rolls" xml:space="preserve">
+    <value>轧辊</value>
+  </data>
+  <data name="Page_Rolls" xml:space="preserve">
+    <value>轧辊</value>
+  </data>
+  <data name="Page_ProfileLibrary" xml:space="preserve">
+    <value>辊形库</value>
+  </data>
+  <data name="Page_ProgramLibrary" xml:space="preserve">
+    <value>程序库</value>
+  </data>
+  <data name="JobState_Interrupted" xml:space="preserve">
+    <value>中断</value>
+  </data>
+  <data name="Alarm_LedgerNotUpdated" xml:space="preserve">
+    <value>磨削记录已收尾，但台账当前直径没更新：{0}</value>
+  </data>
+  <data name="ChangeArea_rollPlan" xml:space="preserve">
+    <value>轧辊计划</value>
+  </data>
+  <data name="ChangeArea_rollLedger" xml:space="preserve">
+    <value>轧辊台账</value>
+  </data>
+  <data name="ChangeArea_profileLibrary" xml:space="preserve">
+    <value>辊形库</value>
+  </data>
+  <data name="ChangeArea_programLibrary" xml:space="preserve">
+    <value>程序库</value>
+  </data>
+  <data name="Chart_AxisZ" xml:space="preserve">
+    <value>辊身位置 Z (mm)</value>
+  </data>
+  <data name="Chart_AxisDiameterUm" xml:space="preserve">
+    <value>直径量 (µm)</value>
+  </data>
+  <data name="CheckItem_Roll" xml:space="preserve">
+    <value>轧辊</value>
+  </data>
+  <data name="CheckItem_Library" xml:space="preserve">
+    <value>库条目</value>
+  </data>
+  <data name="CheckItem_StartDiameter" xml:space="preserve">
+    <value>磨前直径</value>
+  </data>
+  <data name="CheckItem_Stock" xml:space="preserve">
+    <value>磨削量</value>
+  </data>
+  <data name="CheckItem_StockSplit" xml:space="preserve">
+    <value>余量分配</value>
+  </data>
+  <data name="CheckItem_Length" xml:space="preserve">
+    <value>辊身长度</value>
+  </data>
+  <data name="CheckItem_RollKind" xml:space="preserve">
+    <value>轧辊类型</value>
+  </data>
+  <data name="CheckItem_Material" xml:space="preserve">
+    <value>材质</value>
+  </data>
+  <data name="CheckItem_WorkSpeed" xml:space="preserve">
+    <value>工件线速度</value>
+  </data>
+  <data name="CheckItem_WeightSpeed" xml:space="preserve">
+    <value>按辊重限速</value>
+  </data>
+  <data name="CheckItem_Stroke" xml:space="preserve">
+    <value>行程</value>
+  </data>
+  <data name="CheckItem_Deviation" xml:space="preserve">
+    <value>与计划</value>
+  </data>
+  <data name="CheckItem_RemainingLife" xml:space="preserve">
+    <value>剩余寿命</value>
+  </data>
+  <data name="CheckItem_Parameters" xml:space="preserve">
+    <value>工序参数</value>
+  </data>
+  <data name="Check_Roll_Ok" xml:space="preserve">
+    <value>{0} 在台账中</value>
+  </data>
+  <data name="Check_Roll_Retired" xml:space="preserve">
+    <value>这支辊已作废，不能下作业</value>
+  </data>
+  <data name="Check_Library_Disabled" xml:space="preserve">
+    <value>"{0}" 已停用，不能用于新作业</value>
+  </data>
+  <data name="Check_StartDiameter_Nominal" xml:space="preserve">
+    <value>仍是公称直径 {0:F3} mm（新辊？）：请先实测</value>
+  </data>
+  <data name="Check_StartDiameter_Ok" xml:space="preserve">
+    <value>{0:F3} mm</value>
+  </data>
+  <data name="Check_StartDiameter_MeasureAfterInterrupt" xml:space="preserve">
+    <value>中断后续磨：请先实测磨前直径再下发</value>
+  </data>
+  <data name="Check_Stock_Invalid" xml:space="preserve">
+    <value>磨削量必须是不小于 0 的数</value>
+  </data>
+  <data name="Check_Stock_BelowScrap" xml:space="preserve">
+    <value>目标直径 {0:F3} mm 低于报废直径 {1:F1} mm；最多可磨 {2:F3} mm</value>
+  </data>
+  <data name="Check_Stock_Ok" xml:space="preserve">
+    <value>磨 {0:F3} mm → 目标直径 {1:F3} mm</value>
+  </data>
+  <data name="Check_StockSplit_Ok" xml:space="preserve">
+    <value>粗磨 {0:F3} mm + 精工序 {1:F3} mm（差额由粗磨吸收）</value>
+  </data>
+  <data name="Check_Stock_ActualInvalid" xml:space="preserve">
+    <value>磨削量无效</value>
+  </data>
+  <data name="Check_Stock_BelowFinishing" xml:space="preserve">
+    <value>磨削量比精工序之和还少：不能靠少磨精磨凑数</value>
+  </data>
+  <data name="Check_Stock_NoRoughStep" xml:space="preserve">
+    <value>程序没有粗磨，本次余量又和程序不同：没法吸收差额</value>
+  </data>
+  <data name="Check_Length_Exact" xml:space="preserve">
+    <value>辊身 {0:F0} mm 与辊形设计长度一致</value>
+  </data>
+  <data name="Check_Length_Adjusted" xml:space="preserve">
+    <value>设计 {0:F0} mm → 辊身 {1:F0} mm（差 {2:F1}%）：两端锥度不动，中间段伸缩</value>
+  </data>
+  <data name="Check_Length_TooDifferent" xml:space="preserve">
+    <value>设计 {0:F0} mm 与辊身 {1:F0} mm 差 {2:F1}%，超过 {3:F1}%：中间段形状会变，请换辊形</value>
+  </data>
+  <data name="Check_RollKind_Mismatch" xml:space="preserve">
+    <value>程序适用于{0}，这支是{1}</value>
+  </data>
+  <data name="Check_RollKind_Ok" xml:space="preserve">
+    <value>适用</value>
+  </data>
+  <data name="Check_Material_Mismatch" xml:space="preserve">
+    <value>程序适用材质 {0}，这支辊是 {1}</value>
+  </data>
+  <data name="Check_WorkSpeed_OutOfRange" xml:space="preserve">
+    <value>工件线速度 {0:F0}–{1:F0} m/min，超出 {2:F0}–{3:F0} m/min</value>
+  </data>
+  <data name="Check_WorkSpeed_Ok" xml:space="preserve">
+    <value>{0:F0}–{1:F0} m/min</value>
+  </data>
+  <data name="Check_WeightSpeed_NoWeight" xml:space="preserve">
+    <value>台账没登记净重，不能按辊重核对头架转速</value>
+  </data>
+  <data name="Check_WeightSpeed_TooHeavy" xml:space="preserve">
+    <value>辊重 {0:F0} kg 超过限速表最大 {1:F0} kg</value>
+  </data>
+  <data name="Check_WeightSpeed_TooFast" xml:space="preserve">
+    <value>头架 {0:F0} r/min 超过 {2:F0} kg 辊重的限速 {1:F0} r/min</value>
+  </data>
+  <data name="Check_WeightSpeed_Ok" xml:space="preserve">
+    <value>最高 {0:F0} r/min ≤ 限速 {1:F0} r/min</value>
+  </data>
+  <data name="Check_Stroke_OutOfRange" xml:space="preserve">
+    <value>辊身 {0:F0} mm 超出本机 {1:F0}–{2:F0} mm</value>
+  </data>
+  <data name="Check_Stroke_Ok" xml:space="preserve">
+    <value>辊身 {0:F0} mm 在行程内</value>
+  </data>
+  <data name="Check_Deviation_NoReason" xml:space="preserve">
+    <value>仅本次改用：请选原因</value>
+  </data>
+  <data name="Check_Deviation_ThisTime" xml:space="preserve">
+    <value>仅本次改用，台账计划不变</value>
+  </data>
+  <data name="Check_Deviation_PlanChanged" xml:space="preserve">
+    <value>下发后改为台账计划</value>
+  </data>
+  <data name="Check_Deviation_Inferred" xml:space="preserve">
+    <value>计划是按上次作业推断的，下发即确认</value>
+  </data>
+  <data name="Check_RemainingLife_Low" xml:space="preserve">
+    <value>磨后距报废只剩 {0:F2} mm（约 {1:F0} 次）</value>
+  </data>
+  <data name="Check_RemainingLife_Ok" xml:space="preserve">
+    <value>磨后距报废 {0:F2} mm（约 {1:F0} 次）</value>
+  </data>
+  <data name="Check_RemainingLife_NoScrap" xml:space="preserve">
+    <value>台账没登记报废直径</value>
+  </data>
+  <data name="Check_Parameters_Violation" xml:space="preserve">
+    <value>{0}：{1}</value>
+  </data>
+  <data name="Check_Parameters_ViolationFormat" xml:space="preserve">
+    <value>{0}：{1}</value>
+  </data>
+  <data name="Check_Plan_Missing" xml:space="preserve">
+    <value>这支辊还没有计划：用"换辊形… / 换程序…"选</value>
+  </data>
+  <data name="Check_NotANumber" xml:space="preserve">
+    <value>请输入数字</value>
+  </data>
+  <data name="Fn_ApplicableKind" xml:space="preserve">
+    <value>适用类型 ▸</value>
+  </data>
+  <data name="Fn_ExportAll" xml:space="preserve">
+    <value>全部导出…</value>
+  </data>
+  <data name="Fn_ExportFile" xml:space="preserve">
+    <value>导出…</value>
+  </data>
+  <data name="Fn_ImportFile" xml:space="preserve">
+    <value>导入…</value>
+  </data>
+  <data name="Fn_ExportLedger" xml:space="preserve">
+    <value>导出…</value>
+  </data>
+  <data name="Fn_ImportLedger" xml:space="preserve">
+    <value>导入…</value>
+  </data>
+  <data name="Fn_Ledger" xml:space="preserve">
+    <value>台账</value>
+  </data>
+  <data name="Fn_ProfileEditor" xml:space="preserve">
+    <value>辊形编辑</value>
+  </data>
+  <data name="Fn_ProgramEditor" xml:space="preserve">
+    <value>工序编程</value>
+  </data>
+  <data name="Import_Problem_Duplicate" xml:space="preserve">
+    <value>文件里辊号重复</value>
+  </data>
+  <data name="Import_Problem_Kind" xml:space="preserve">
+    <value>类型无法识别</value>
+  </data>
+  <data name="Import_Problem_MissingNumber" xml:space="preserve">
+    <value>缺少必填数值</value>
+  </data>
+  <data name="Import_Problem_MissingRollId" xml:space="preserve">
+    <value>缺辊号</value>
+  </data>
+  <data name="Import_Problem_NotANumber" xml:space="preserve">
+    <value>数值格式不对</value>
+  </data>
+  <data name="Import_Problem_UnknownProfile" xml:space="preserve">
+    <value>辊形库里没有这个辊形</value>
+  </data>
+  <data name="Import_Problem_UnknownProgram" xml:space="preserve">
+    <value>程序库里没有这个程序</value>
+  </data>
+  <data name="ImportKind_Add" xml:space="preserve">
+    <value>新增</value>
+  </data>
+  <data name="ImportKind_Update" xml:space="preserve">
+    <value>更新</value>
+  </data>
+  <data name="ImportKind_Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="Job_AlreadyPlan" xml:space="preserve">
+    <value>已经是台账计划</value>
+  </data>
+  <data name="Job_AskDeviationFormat" xml:space="preserve">
+    <value>"{0}" 与台账计划不同：仅本次（第 8 键）/ 改为计划（第 6 键）/ 取消</value>
+  </data>
+  <data name="Job_AskThisTimeFormat" xml:space="preserve">
+    <value>"{0}" 与台账计划不同：仅本次使用？（改计划需管理员）</value>
+  </data>
+  <data name="Job_AskEndInterrupted" xml:space="preserve">
+    <value>结束 {0} 的中断作业？它记为放弃，下次从新作业开始</value>
+  </data>
+  <data name="Job_CheckSummaryFormat" xml:space="preserve">
+    <value>✓ {0} · ! {1} · ✕ {2}</value>
+  </data>
+  <data name="Job_ColLastGround" xml:space="preserve">
+    <value>上次磨削</value>
+  </data>
+  <data name="Job_Deviation" xml:space="preserve">
+    <value>与计划</value>
+  </data>
+  <data name="Job_DeviationNone" xml:space="preserve">
+    <value>按台账计划</value>
+  </data>
+  <data name="Job_DeviationPlanChanged" xml:space="preserve">
+    <value>改为计划（下发后写回台账）</value>
+  </data>
+  <data name="Job_DeviationThisTimeFormat" xml:space="preserve">
+    <value>仅本次 · {0}</value>
+  </data>
+  <data name="Job_InterruptedEnded" xml:space="preserve">
+    <value>{0} 的中断作业已结束</value>
+  </data>
+  <data name="Job_MaxStockFormat" xml:space="preserve">
+    <value>最多可磨 {0:F3} mm（报废直径 {1:F1} mm）</value>
+  </data>
+  <data name="Job_MaxStockUnknown" xml:space="preserve">
+    <value>台账没登记报废直径，最大磨削量不核对</value>
+  </data>
+  <data name="Job_MeasureAfterInterrupt" xml:space="preserve">
+    <value>中断续磨：请先实测磨前直径填入</value>
+  </data>
+  <data name="Job_NoMatchFormat" xml:space="preserve">
+    <value>台账里没有 "{0}"：按"新登记轧辊"登记</value>
+  </data>
+  <data name="Job_NoPlan" xml:space="preserve">
+    <value>无计划</value>
+  </data>
+  <data name="Job_NotInterrupted" xml:space="preserve">
+    <value>选中的辊不是中断待续</value>
+  </data>
+  <data name="Job_PlanProfile" xml:space="preserve">
+    <value>辊形</value>
+  </data>
+  <data name="Job_PlanProgram" xml:space="preserve">
+    <value>程序</value>
+  </data>
+  <data name="Job_QueueMatchFormat" xml:space="preserve">
+    <value>待磨清单 · "{0}" 匹配 {1} 支</value>
+  </data>
+  <data name="Job_QueueTitleFormat" xml:space="preserve">
+    <value>待磨清单 · {0} 支（置顶 {1}）</value>
+  </data>
+  <data name="Job_ReasonMissing" xml:space="preserve">
+    <value>未选原因</value>
+  </data>
+  <data name="Job_ReasonOnlyThisTime" xml:space="preserve">
+    <value>只有"仅本次"需要原因</value>
+  </data>
+  <data name="Job_RegrindOfFormat" xml:space="preserve">
+    <value>（返磨 {0}）</value>
+  </data>
+  <data name="Job_ReviewCurveTitle" xml:space="preserve">
+    <value>磨成什么样</value>
+  </data>
+  <data name="Job_ReviewTitleFormat" xml:space="preserve">
+    <value>核对 · {0} · {1} · {2}</value>
+  </data>
+  <data name="Job_SearchHint" xml:space="preserve">
+    <value>输入辊号或尾号，回车</value>
+  </data>
+  <data name="Job_SearchLabel" xml:space="preserve">
+    <value>辊号 / 尾号</value>
+  </data>
+  <data name="Job_StartDiameter" xml:space="preserve">
+    <value>磨前直径 (mm)</value>
+  </data>
+  <data name="Job_StockMm" xml:space="preserve">
+    <value>磨削量 (mm)</value>
+  </data>
+  <data name="Ledger_NominalDiameter" xml:space="preserve">
+    <value>公称直径 (mm)</value>
+  </data>
+  <data name="Ledger_Purpose" xml:space="preserve">
+    <value>用途</value>
+  </data>
+  <data name="Ledger_ScrapDiameter" xml:space="preserve">
+    <value>报废直径 (mm)</value>
+  </data>
+  <data name="Ledger_Problem_BodyLengthOutOfRange" xml:space="preserve">
+    <value>辊身长度超出本机能磨的范围</value>
+  </data>
+  <data name="Ledger_Problem_DiameterOutOfRange" xml:space="preserve">
+    <value>公称直径超出本机能磨的范围</value>
+  </data>
+  <data name="Ledger_Problem_CurrentDiameterOutOfRange" xml:space="preserve">
+    <value>当前直径超出本机能磨的范围</value>
+  </data>
+  <data name="Ledger_Problem_PlanMissing" xml:space="preserve">
+    <value>计划必填：请选辊形与程序</value>
+  </data>
+  <data name="Ledger_Problem_ScrapNotBelowNominal" xml:space="preserve">
+    <value>报废直径必须小于公称直径</value>
+  </data>
+  <data name="Ledger_Problem_WeightOutOfRange" xml:space="preserve">
+    <value>重量超出本机能承载的范围</value>
+  </data>
+  <data name="Ledger_Problem_ProfileLengthMismatch" xml:space="preserve">
+    <value>辊形设计长度与辊身差得太多</value>
+  </data>
+  <data name="Ledger_Problem_ProgramKindMismatch" xml:space="preserve">
+    <value>程序不适用于这种轧辊</value>
+  </data>
+  <data name="Ledger_Problem_PlanDisabled" xml:space="preserve">
+    <value>计划里的辊形或程序已停用</value>
+  </data>
+  <data name="Lib_AskDisable" xml:space="preserve">
+    <value>停用"{0}"？停用后不能用于新计划</value>
+  </data>
+  <data name="Lib_AskDisableInUse" xml:space="preserve">
+    <value>"{0}" 还是 {1} 支辊的计划；停用后这些辊下作业会被拦住。停用？</value>
+  </data>
+  <data name="Lib_AskEnable" xml:space="preserve">
+    <value>启用"{0}"？</value>
+  </data>
+  <data name="Lib_AskSaveInUseFormat" xml:space="preserve">
+    <value>"{0}" 是 {1} 支辊的计划：保存为 v{2} 后它们下次按新版磨（旧版留档）。只给新辊用请取消后"另存为…"</value>
+  </data>
+  <data name="Lib_ColDetail" xml:space="preserve">
+    <value>内容</value>
+  </data>
+  <data name="Lib_ColModified" xml:space="preserve">
+    <value>修改时间</value>
+  </data>
+  <data name="Lib_ColName" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="Lib_ColReplacedAt" xml:space="preserve">
+    <value>被替换时间</value>
+  </data>
+  <data name="Lib_ColReplacedBy" xml:space="preserve">
+    <value>修改人</value>
+  </data>
+  <data name="Lib_ColUsers" xml:space="preserve">
+    <value>在用</value>
+  </data>
+  <data name="Lib_ColVersion" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="Lib_DeleteRefusedInUse" xml:space="preserve">
+    <value>"{0}" 是 {1} 支辊的计划，不能删除，只能停用</value>
+  </data>
+  <data name="Lib_Disabled" xml:space="preserve">
+    <value>"{0}" 已停用</value>
+  </data>
+  <data name="Lib_Enabled" xml:space="preserve">
+    <value>"{0}" 已启用</value>
+  </data>
+  <data name="Lib_NameVersionFormat" xml:space="preserve">
+    <value>{0} v{1}</value>
+  </data>
+  <data name="Lib_NoVersionSelected" xml:space="preserve">
+    <value>先选一个旧版本</value>
+  </data>
+  <data name="Lib_PreviewApplicable" xml:space="preserve">
+    <value>适用</value>
+  </data>
+  <data name="Lib_PreviewStandardStock" xml:space="preserve">
+    <value>标准余量</value>
+  </data>
+  <data name="Lib_PreviewSteps" xml:space="preserve">
+    <value>工序</value>
+  </data>
+  <data name="Lib_PreviewTolerance" xml:space="preserve">
+    <value>辊形公差 (µm)</value>
+  </data>
+  <data name="Lib_SaveVersionAsNewTitle" xml:space="preserve">
+    <value>把这个旧版另存为新条目</value>
+  </data>
+  <data name="Lib_UsersTitleFormat" xml:space="preserve">
+    <value>在用 · {0} 支辊</value>
+  </data>
+  <data name="Lib_VersionFormat" xml:space="preserve">
+    <value>v{0}</value>
+  </data>
+  <data name="Lib_VersionsTitleFormat" xml:space="preserve">
+    <value>版本记录 · {0} 个旧版</value>
+  </data>
+  <data name="Library_VersionCopyNameFormat" xml:space="preserve">
+    <value>{0}-v{1}</value>
+  </data>
+  <data name="Mark_Disabled" xml:space="preserve">
+    <value>已停用</value>
+  </data>
+  <data name="Mark_Inferred" xml:space="preserve">
+    <value>推断</value>
+  </data>
+  <data name="Mark_Interrupted" xml:space="preserve">
+    <value>中断</value>
+  </data>
+  <data name="Mark_LowLife" xml:space="preserve">
+    <value>临报废</value>
+  </data>
+  <data name="Mark_PlanChanged" xml:space="preserve">
+    <value>改计划</value>
+  </data>
+  <data name="Mark_Regrind" xml:space="preserve">
+    <value>返磨</value>
+  </data>
+  <data name="Mark_Retired" xml:space="preserve">
+    <value>作废</value>
+  </data>
+  <data name="Mark_ThisTime" xml:space="preserve">
+    <value>仅本次</value>
+  </data>
+  <data name="Picker_Current" xml:space="preserve">
+    <value>现计划：</value>
+  </data>
+  <data name="Picker_Selected" xml:space="preserve">
+    <value>选中：</value>
+  </data>
+  <data name="Picker_ProfileDetailFormat" xml:space="preserve">
+    <value>{0} mm</value>
+  </data>
+  <data name="Picker_ProfilesTitleFormat" xml:space="preserve">
+    <value>选辊形 · 辊身 {0} mm · 适合 {1} / {2}</value>
+  </data>
+  <data name="Picker_ProgramsTitleFormat" xml:space="preserve">
+    <value>选程序 · 辊身 {0} mm · 适用 {1} / {2}</value>
+  </data>
+  <data name="PlanCheck_Ok" xml:space="preserve">
+    <value>可以改</value>
+  </data>
+  <data name="PlanNotice_Regrind" xml:space="preserve">
+    <value>可以改；它有返磨待做，返磨仍按原作业</value>
+  </data>
+  <data name="PlanProblem_Disabled" xml:space="preserve">
+    <value>辊形或程序已停用</value>
+  </data>
+  <data name="PlanProblem_Kind" xml:space="preserve">
+    <value>程序不适用于这种轧辊</value>
+  </data>
+  <data name="PlanProblem_Length" xml:space="preserve">
+    <value>辊形长度与辊身差得太多</value>
+  </data>
+  <data name="PlanProblem_Missing" xml:space="preserve">
+    <value>辊号不存在</value>
+  </data>
+  <data name="PlanProblem_Retired" xml:space="preserve">
+    <value>这支辊已作废</value>
+  </data>
+  <data name="Plan_Unchanged" xml:space="preserve">
+    <value>不变</value>
+  </data>
+  <data name="Program_ApplicableKind" xml:space="preserve">
+    <value>适用轧辊类型</value>
+  </data>
+  <data name="Program_ApplicableMaterial" xml:space="preserve">
+    <value>适用材质</value>
+  </data>
+  <data name="Program_ReferenceBodyLength" xml:space="preserve">
+    <value>参考辊身 (mm)</value>
+  </data>
+  <data name="Reason_CustomerRequest" xml:space="preserve">
+    <value>用户要求</value>
+  </data>
+  <data name="Reason_Equipment" xml:space="preserve">
+    <value>设备原因</value>
+  </data>
+  <data name="Reason_Quality" xml:space="preserve">
+    <value>质量返修</value>
+  </data>
+  <data name="Reason_ScheduleChange" xml:space="preserve">
+    <value>排产变更</value>
+  </data>
+  <data name="Reason_Trial" xml:space="preserve">
+    <value>试磨</value>
+  </data>
+  <data name="Result_Fail" xml:space="preserve">
+    <value>✗</value>
+  </data>
+  <data name="Result_Pass" xml:space="preserve">
+    <value>✓</value>
+  </data>
+  <data name="Result_Interrupted" xml:space="preserve">
+    <value>中断</value>
+  </data>
+  <data name="Result_Running" xml:space="preserve">
+    <value>进行中</value>
+  </data>
+  <data name="RollKind_Any" xml:space="preserve">
+    <value>不限</value>
+  </data>
+  <data name="RollKind_Unspecified" xml:space="preserve">
+    <value>未定</value>
+  </data>
+  <data name="RollKindFilter_Unspecified" xml:space="preserve">
+    <value>不限</value>
+  </data>
+  <data name="RollKindFilter_WorkRoll" xml:space="preserve">
+    <value>工作辊</value>
+  </data>
+  <data name="RollKindFilter_BackupRoll" xml:space="preserve">
+    <value>支承辊</value>
+  </data>
+  <data name="Rolls_AllPurposes" xml:space="preserve">
+    <value>全部用途</value>
+  </data>
+  <data name="Rolls_AskApplyPlanFormat" xml:space="preserve">
+    <value>改 {0} 支辊的计划？{1}</value>
+  </data>
+  <data name="Rolls_AskRestore" xml:space="preserve">
+    <value>恢复 {0}？</value>
+  </data>
+  <data name="Rolls_AskRetire" xml:space="preserve">
+    <value>作废 {0}？作废后不在待磨清单里，记录保留</value>
+  </data>
+  <data name="Rolls_BodyNominal" xml:space="preserve">
+    <value>辊身 / 公称直径</value>
+  </data>
+  <data name="Rolls_CardTitleFormat" xml:space="preserve">
+    <value>{0} · {1} · {2}</value>
+  </data>
+  <data name="Rolls_ColCheck" xml:space="preserve">
+    <value>核对</value>
+  </data>
+  <data name="Rolls_ColDate" xml:space="preserve">
+    <value>日期</value>
+  </data>
+  <data name="Rolls_ColImportKind" xml:space="preserve">
+    <value>动作</value>
+  </data>
+  <data name="Rolls_ColLine" xml:space="preserve">
+    <value>行</value>
+  </data>
+  <data name="Rolls_ColMark" xml:space="preserve">
+    <value>标记</value>
+  </data>
+  <data name="Rolls_ColProblem" xml:space="preserve">
+    <value>问题</value>
+  </data>
+  <data name="Rolls_ColRemaining" xml:space="preserve">
+    <value>剩余 (mm)</value>
+  </data>
+  <data name="Rolls_ColRemoved" xml:space="preserve">
+    <value>磨去 (mm)</value>
+  </data>
+  <data name="Rolls_ColResult" xml:space="preserve">
+    <value>结果</value>
+  </data>
+  <data name="Rolls_CsvFilter" xml:space="preserve">
+    <value>CSV 文件|*.csv|所有文件|*.*</value>
+  </data>
+  <data name="Rolls_CurrentScrap" xml:space="preserve">
+    <value>当前 / 报废直径</value>
+  </data>
+  <data name="Rolls_ExportedFormat" xml:space="preserve">
+    <value>已导出到 {0}</value>
+  </data>
+  <data name="Rolls_FormHint" xml:space="preserve">
+    <value>计划必填：这支辊磨哪条辊形、用哪支程序。下作业时默认按它，可仅本次改用。</value>
+  </data>
+  <data name="Rolls_FormProblems" xml:space="preserve">
+    <value>没存进去的原因</value>
+  </data>
+  <data name="Rolls_FormTitleEdit" xml:space="preserve">
+    <value>编辑轧辊</value>
+  </data>
+  <data name="Rolls_FormTitleNew" xml:space="preserve">
+    <value>新登记轧辊</value>
+  </data>
+  <data name="Rolls_GrindCount" xml:space="preserve">
+    <value>磨削次数</value>
+  </data>
+  <data name="Rolls_History" xml:space="preserve">
+    <value>磨削履历</value>
+  </data>
+  <data name="Rolls_ImportTitleFormat" xml:space="preserve">
+    <value>导入预览 · {0} · 新增 {1} · 更新 {2} · 错误 {3}（有错的行不导入）</value>
+  </data>
+  <data name="Rolls_ImportedFormat" xml:space="preserve">
+    <value>已导入 {0} 条</value>
+  </data>
+  <data name="Rolls_ListTitleFormat" xml:space="preserve">
+    <value>{0} · {1} 支 · {2}</value>
+  </data>
+  <data name="Rolls_NoneChecked" xml:space="preserve">
+    <value>先勾选要改的辊</value>
+  </data>
+  <data name="Rolls_NothingSelected" xml:space="preserve">
+    <value>先选一支辊</value>
+  </data>
+  <data name="Rolls_PairFormat" xml:space="preserve">
+    <value>{0} / {1} mm</value>
+  </data>
+  <data name="Rolls_PlanChangedFormat" xml:space="preserve">
+    <value>已改 {0} 支辊的计划</value>
+  </data>
+  <data name="Rolls_PlanInferred" xml:space="preserve">
+    <value>按上次作业推断，下次下作业时确认</value>
+  </data>
+  <data name="Rolls_PlanInferredLabel" xml:space="preserve">
+    <value>计划来源</value>
+  </data>
+  <data name="Rolls_PlanProfile" xml:space="preserve">
+    <value>目标辊形</value>
+  </data>
+  <data name="Rolls_PlanProgram" xml:space="preserve">
+    <value>磨削程序</value>
+  </data>
+  <data name="Rolls_PlanTitleFormat" xml:space="preserve">
+    <value>改计划 · {0} 支 → 辊形 {1} · 程序 {2}</value>
+  </data>
+  <data name="Rolls_PurposeItemFormat" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="Rolls_Reason" xml:space="preserve">
+    <value>原因</value>
+  </data>
+  <data name="Rolls_RemainingFormat" xml:space="preserve">
+    <value>剩余可磨 {0:F2} mm</value>
+  </data>
+  <data name="Rolls_RemainingUnknown" xml:space="preserve">
+    <value>没登记报废直径</value>
+  </data>
+  <data name="Rolls_RemovedTotal" xml:space="preserve">
+    <value>累计磨去</value>
+  </data>
+  <data name="Rolls_Restored" xml:space="preserve">
+    <value>{0} 已恢复</value>
+  </data>
+  <data name="Rolls_Retired" xml:space="preserve">
+    <value>{0} 已作废</value>
+  </data>
+  <data name="Rolls_RetiredHidden" xml:space="preserve">
+    <value>不含作废</value>
+  </data>
+  <data name="Rolls_RetiredShown" xml:space="preserve">
+    <value>含作废</value>
+  </data>
+  <data name="SubView_ChangePlan" xml:space="preserve">
+    <value>改计划</value>
+  </data>
+  <data name="SubView_ImportPreview" xml:space="preserve">
+    <value>导入预览</value>
+  </data>
+  <data name="SubView_JobReview" xml:space="preserve">
+    <value>核对</value>
+  </data>
+  <data name="SubView_MultiSelect" xml:space="preserve">
+    <value>多选</value>
+  </data>
+  <data name="SubView_RollForm" xml:space="preserve">
+    <value>登记 / 编辑</value>
+  </data>
+  <data name="Vk_ApplyPlanFormat" xml:space="preserve">
+    <value>✓ 改 {0} 支</value>
+  </data>
+  <data name="Vk_ApplyPlanFormatShort" xml:space="preserve">
+    <value>✓ 改计划</value>
+  </data>
+  <data name="Vk_BackToQueue" xml:space="preserve">
+    <value>✕ 返回清单</value>
+  </data>
+  <data name="Vk_ChangePlan" xml:space="preserve">
+    <value>改计划…</value>
+  </data>
+  <data name="Vk_ChangeProfile" xml:space="preserve">
+    <value>换辊形…</value>
+  </data>
+  <data name="Vk_ChangeProgram" xml:space="preserve">
+    <value>换程序…</value>
+  </data>
+  <data name="Vk_CheckAll" xml:space="preserve">
+    <value>全选</value>
+  </data>
+  <data name="Vk_CheckNone" xml:space="preserve">
+    <value>全不选</value>
+  </data>
+  <data name="Vk_CopyRegister" xml:space="preserve">
+    <value>照此复制登记</value>
+  </data>
+  <data name="Vk_Disable" xml:space="preserve">
+    <value>停用…</value>
+  </data>
+  <data name="Vk_Enable" xml:space="preserve">
+    <value>启用…</value>
+  </data>
+  <data name="Vk_EditRoll" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="Vk_EndInterrupted" xml:space="preserve">
+    <value>结束中断…</value>
+  </data>
+  <data name="Vk_ExportTemplate" xml:space="preserve">
+    <value>导出模板…</value>
+  </data>
+  <data name="Vk_FilterPurpose" xml:space="preserve">
+    <value>按用途 ▸</value>
+  </data>
+  <data name="Vk_GoRolls" xml:space="preserve">
+    <value>到轧辊台账</value>
+  </data>
+  <data name="Vk_ImportRowsFormat" xml:space="preserve">
+    <value>✓ 导入 {0} 条</value>
+  </data>
+  <data name="Vk_MakePlan" xml:space="preserve">
+    <value>改为计划</value>
+  </data>
+  <data name="Vk_MultiSelect" xml:space="preserve">
+    <value>多选</value>
+  </data>
+  <data name="Vk_NewPurpose" xml:space="preserve">
+    <value>新用途…</value>
+  </data>
+  <data name="Vk_OnlyErrors" xml:space="preserve">
+    <value>只看错误</value>
+  </data>
+  <data name="Vk_PickKind" xml:space="preserve">
+    <value>选类型 ▸</value>
+  </data>
+  <data name="Vk_PickProfile" xml:space="preserve">
+    <value>选辊形…</value>
+  </data>
+  <data name="Vk_PickProgram" xml:space="preserve">
+    <value>选程序…</value>
+  </data>
+  <data name="Vk_PickPurpose" xml:space="preserve">
+    <value>选用途 ▸</value>
+  </data>
+  <data name="Vk_PickThis" xml:space="preserve">
+    <value>✓ 选这条</value>
+  </data>
+  <data name="Vk_Reason" xml:space="preserve">
+    <value>原因 ▸</value>
+  </data>
+  <data name="Vk_RegrindJob" xml:space="preserve">
+    <value>返磨 ▸</value>
+  </data>
+  <data name="Vk_Restore" xml:space="preserve">
+    <value>恢复…</value>
+  </data>
+  <data name="Vk_RestorePlan" xml:space="preserve">
+    <value>回到计划</value>
+  </data>
+  <data name="Vk_ResumeJob" xml:space="preserve">
+    <value>续磨 ▸</value>
+  </data>
+  <data name="Vk_Retire" xml:space="preserve">
+    <value>作废…</value>
+  </data>
+  <data name="Vk_SaveNewVersion" xml:space="preserve">
+    <value>✓ 保存新版</value>
+  </data>
+  <data name="Vk_SaveVersionAsNew" xml:space="preserve">
+    <value>另存为新…</value>
+  </data>
+  <data name="Vk_ShowAll" xml:space="preserve">
+    <value>显示全部</value>
+  </data>
+  <data name="Vk_ShowFitting" xml:space="preserve">
+    <value>只看适合的</value>
+  </data>
+  <data name="Vk_ShowRetired" xml:space="preserve">
+    <value>显示作废</value>
+  </data>
+  <data name="Vk_ThisTimeOnly" xml:space="preserve">
+    <value>✓ 仅本次</value>
+  </data>
+  <data name="Vk_ToJob" xml:space="preserve">
+    <value>下作业 ▸</value>
+  </data>
+  <data name="Vk_Versions" xml:space="preserve">
+    <value>版本记录</value>
   </data>
 </root>

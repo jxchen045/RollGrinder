@@ -16,6 +16,9 @@ public static class ChartRanges
     /// <summary>绘图区宽 : 高（不含坐标轴）。</summary>
     public const double PlotAspect = 4.0;
 
+    /// <summary>偏差图绘图区最宽的宽高比（铺满宽度时不超过它）。</summary>
+    public const double DeviationMaxAspect = 8.0;
+
     /// <summary>辊形图 Y 的最小跨度（直径量 µm）：平辊也不至于把 1 µm 的起伏放成一座山。</summary>
     public const double MinProfileSpanMicrometer = 100.0;
 

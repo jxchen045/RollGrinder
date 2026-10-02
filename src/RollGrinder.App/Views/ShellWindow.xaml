@@ -56,6 +56,9 @@
         <DataTemplate DataType="{x:Type vm:LibraryViewModel}">
             <views:LibraryView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:RollsViewModel}">
+            <views:RollsView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:CommissioningViewModel}">
             <views:CommissioningView />
         </DataTemplate>

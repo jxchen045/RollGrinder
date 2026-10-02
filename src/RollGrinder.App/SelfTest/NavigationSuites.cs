@@ -191,8 +191,8 @@ internal sealed class NavigationSuite : ISelfTestSuite
 
         await h.StepAsync("SoftKeys", "UnavailableKeySaysWhy", async ctx =>
         {
-            await h.GoToAsync(PageKey.Library, ctx, LibraryViewModel.ProgramsGroup);
-            LibraryViewModel library = h.Page<LibraryViewModel>();
+            await h.GoToAsync(PageKey.ProgramLibrary, ctx);
+            LibraryViewModel library = SelfTestNames.Library(h, SelfTestNames.ProgramsGroup);
             library.SelectedEntry = null;
             await h.SettleAsync();
             int open = h.IndexOfVerticalKey("Vk_Open");
@@ -438,7 +438,6 @@ internal sealed class RenderSuite : ISelfTestSuite
     /// <summary>每个画面要渲染的功能组（横键）与子视图入口（竖键）。</summary>
     private static readonly Dictionary<PageKey, string[]> Groups = new()
     {
-        [PageKey.Library] = new[] { LibraryViewModel.ProfilesGroup, LibraryViewModel.ProgramsGroup, LibraryViewModel.JobsGroup, LibraryViewModel.LedgerGroup, LibraryViewModel.UsbGroup },
         [PageKey.Parameters] = new[] { ParametersViewModel.WheelGroup, ParametersViewModel.CalibrationGroup, ParametersViewModel.AuditGroup },
         [PageKey.Diagnostics] = new[]
         {
@@ -452,6 +451,7 @@ internal sealed class RenderSuite : ISelfTestSuite
     private static readonly Dictionary<PageKey, string[]> SubViewKeys = new()
     {
         [PageKey.Records] = new[] { "Vk_QueryAsk" },
+        [PageKey.Rolls] = new[] { "Vk_RegisterRoll", "Vk_MultiSelect" },
         [PageKey.Parameters] = new[] { "Vk_ChangeWheel" },
         [PageKey.AutoGrinding] = new[] { "Fn_Compensation", "Fn_StatusOverview" },
     };

@@ -25,7 +25,7 @@ public sealed class PermissionPolicyTests
         PermissionPolicy.GrantedTo(UserRole.Administrator).Should().BeEquivalentTo(new[]
         {
             Permission.RunMachine, Permission.EditJobs, Permission.EditProfiles, Permission.EditPrograms,
-            Permission.EditCalibration, Permission.ManageUsers,
+            Permission.EditCalibration, Permission.ManageUsers, Permission.EditRollPlans,
         });
     }
 

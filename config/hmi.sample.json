@@ -12,5 +12,6 @@
   "defaultRole": "Operator",
   "manualPulseMs": 300,
   "layout": "auto",
-  "fullScreen": true
+  "fullScreen": true,
+  "planChangePermission": "operator"
 }

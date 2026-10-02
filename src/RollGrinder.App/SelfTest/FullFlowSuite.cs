@@ -91,17 +91,8 @@ internal sealed class FullFlowSuite : ISelfTestSuite
 
         await h.StepAsync("Prepare", "BuildJob", async ctx =>
         {
-            await JobWizard.EnterFromProgramAsync(h, ctx, SelfTestNames.FlowProgram);
-            await JobWizard.NewJobAsync(h, ctx);
-            await JobWizard.RegisterRollAsync(h, ctx, SelfTestNames.FlowRollId, 2000, 600, 600);
-            await h.PressVerticalKeyAsync(ctx, "Vk_NextStep");
-            await JobWizard.ChooseProfileAsync(h, ctx, SelfTestNames.ProfileA);
-            await h.PressVerticalKeyAsync(ctx, "Vk_NextStep");
-            job.SelectedProgram = job.Programs.FirstOrDefault(p => p.Name == SelfTestNames.FlowProgram);
-            await h.SettleAsync(300);
-            await JobWizard.NextUntilReviewAsync(h, ctx);
-            ctx.Check(job.StatusResourceKey == "Job_ReadyToHandOver", "job should validate, status " + job.StatusResourceKey
-                + (job.Violations.Count > 0 ? ", first violation " + job.Violations[0].ParameterText + " " + job.Violations[0].ReasonText : string.Empty));
+            await JobFlow.RegisterAndOpenAsync(h, ctx, SelfTestNames.FlowRollId, 2000, 600, 600, SelfTestNames.ProfileA, SelfTestNames.FlowProgram);
+            ctx.Check(job.CanDownload, "job should pass the checklist, first block: " + JobFlow.FirstBlock(job));
             ctx.Note("job " + job.JobId + ", " + job.TotalDurationText);
         }, StepOptions.Shot);
 
@@ -109,9 +100,7 @@ internal sealed class FullFlowSuite : ISelfTestSuite
         {
             await h.PressVerticalKeyAsync(ctx, "Vk_ConfirmDownload");
             bool moved = await h.WaitUntilAsync(() => shell.CurrentPage.Key == PageKey.AutoGrinding, TimeSpan.FromSeconds(10));
-            ctx.Check(moved, "a successful download should open the auto page, status " + job.StatusResourceKey
-                + (job.Violations.Count > 0 ? ", first violation " + job.Violations[0].ParameterText + " " + job.Violations[0].ReasonText : string.Empty));
-            ctx.Check(job.StatusResourceKey == "Job_HandedOver", "status should say handed over, is " + job.StatusResourceKey);
+            ctx.Check(moved, "a successful download should open the auto page, first block: " + JobFlow.FirstBlock(job));
         }, StepOptions.Shot);
 
         if (download != StepStatus.Pass && download != StepStatus.Warn)

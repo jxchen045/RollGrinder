@@ -30,9 +30,9 @@ public static class AreaCatalog
     public static IReadOnlyList<AreaKey> MenuOrder { get; } = new[]
     {
         AreaKey.Machine,
+        AreaKey.Rolls,
         AreaKey.Profile,
         AreaKey.Steps,
-        AreaKey.Library,
         AreaKey.Parameters,
         AreaKey.Records,
         AreaKey.Diagnostics,
@@ -43,9 +43,9 @@ public static class AreaCatalog
     public static AreaKey AreaOf(PageKey page) => page switch
     {
         PageKey.AutoGrinding or PageKey.ManualGrinding or PageKey.Manual or PageKey.Job => AreaKey.Machine,
-        PageKey.Profile => AreaKey.Profile,
-        PageKey.Steps => AreaKey.Steps,
-        PageKey.Library => AreaKey.Library,
+        PageKey.Profile or PageKey.ProfileLibrary => AreaKey.Profile,
+        PageKey.Steps or PageKey.ProgramLibrary => AreaKey.Steps,
+        PageKey.Rolls => AreaKey.Rolls,
         PageKey.Parameters => AreaKey.Parameters,
         PageKey.Records => AreaKey.Records,
         PageKey.Diagnostics => AreaKey.Diagnostics,
@@ -66,7 +66,7 @@ public static class AreaCatalog
         AreaKey.Machine => mode == MachineMode.Auto ? PageKey.AutoGrinding : PageKey.ManualGrinding,
         AreaKey.Profile => PageKey.Profile,
         AreaKey.Steps => PageKey.Steps,
-        AreaKey.Library => PageKey.Library,
+        AreaKey.Rolls => PageKey.Rolls,
         AreaKey.Parameters => PageKey.Parameters,
         AreaKey.Records => PageKey.Records,
         AreaKey.Diagnostics => PageKey.Diagnostics,
@@ -89,7 +89,7 @@ public static class AreaCatalog
         AreaKey.Machine => "⚙",
         AreaKey.Profile => "⌒",
         AreaKey.Steps => "≡",
-        AreaKey.Library => "☰",
+        AreaKey.Rolls => "◍",
         AreaKey.Parameters => "▦",
         AreaKey.Records => "▤",
         AreaKey.Diagnostics => "⚠",

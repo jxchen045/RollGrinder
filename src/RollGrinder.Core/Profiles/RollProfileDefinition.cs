@@ -29,6 +29,12 @@ public sealed record RollProfileDefinition(
     /// <summary>辊形公差（直径量 µm）：形状规格的一部分，不属于某一支辊。没填为 null。</summary>
     public double? ToleranceMicrometer { get; init; }
 
+    /// <summary>版本号：每保存一次 +1，作业快照记下用的是第几版。</summary>
+    public int Version { get; init; } = 1;
+
+    /// <summary>停用：被引用的辊形不能删，只能停用；停用后不出现在登记、换辊形的列表里。</summary>
+    public bool Disabled { get; init; }
+
     /// <summary>主辊形（第一段）的曲线类型键，列表上显示用。</summary>
     public string ProfileTypeKey => Profile.Segments[0].ProfileTypeKey;
 

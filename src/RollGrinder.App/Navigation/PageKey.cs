@@ -27,17 +27,23 @@ public enum PageKey
     /// <summary>参数：砂轮、标定、标定审计（原"设置"）。</summary>
     Parameters = 6,
 
-    /// <summary>作业向导（机床区横键"作业"）：选轧辊、辊形、工艺程序，核对后下发。</summary>
+    /// <summary>作业（机床区横键"作业"，第 1 格）：待磨清单 → 一页核对 → 下发。</summary>
     Job = 7,
 
     /// <summary>手动磨削：机床区 JOG 方式的基本画面（位置、测量、砂轮、头架、拖板）。</summary>
     ManualGrinding = 8,
 
-    /// <summary>库：辊形库、程序库、作业、轧辊台账、U 盘。</summary>
-    Library = 9,
+    /// <summary>轧辊：台账（计划、寿命、履历）、新登记、多选改计划、导入 / 导出。原"库"区的位置。</summary>
+    Rolls = 9,
 
     /// <summary>调试：机床配置、标签映射、系统（只从区域菜单进，制造商）。</summary>
     Commissioning = 10,
+
+    /// <summary>辊形库（辊形区横键"辊形库"）：版本、在用清单、停用。</summary>
+    ProfileLibrary = 11,
+
+    /// <summary>程序库（工艺区横键"程序库"）：同上。</summary>
+    ProgramLibrary = 12,
 }
 
 /// <summary>
@@ -55,8 +61,8 @@ public enum AreaKey
     /// <summary>工艺程序。</summary>
     Steps = 2,
 
-    /// <summary>库。</summary>
-    Library = 3,
+    /// <summary>轧辊（以轧辊为中心：台账、计划、导入导出）。原"库"区的位置。</summary>
+    Rolls = 3,
 
     /// <summary>参数。</summary>
     Parameters = 4,

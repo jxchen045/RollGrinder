@@ -48,6 +48,13 @@ public sealed class ShellInteraction
         string cancelLabelKey = ConfirmationService.DefaultCancelLabelKey) =>
         Confirmations.Request(question, action, closed, confirmLabelKey, cancelLabelKey);
 
+    /// <summary>
+    /// 选择题（不自动取消）：对话行黄底提问，竖键 8 / 回车 = 稳妥项（<paramref name="safeLabelKey"/>），7 / Esc = 取消；
+    /// 有后果的另一项由页面放在竖键 6（界面修订稿 4.2"三选一"）。
+    /// </summary>
+    public void Choose(string question, string safeLabelKey, Func<Task> safe, Action<ConfirmationOutcome>? closed = null) =>
+        Confirmations.Request(question, safe, closed, safeLabelKey, ConfirmationService.DefaultCancelLabelKey, expires: false);
+
     /// <summary>消息：动作已发出、已保存（3 秒后消失）。</summary>
     public void Say(string text) => DialogLine.Show(text, DialogLineKind.Info);
 

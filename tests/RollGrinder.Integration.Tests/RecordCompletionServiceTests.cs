@@ -143,7 +143,7 @@ public sealed class RecordCompletionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_reset_before_completion_closes_the_record_as_abandoned_without_a_report()
+    public async Task A_reset_before_completion_closes_the_record_as_interrupted_without_a_report()
     {
         await using ServiceProvider services = await BuildAsync();
         await SeedOpenRecordAsync(services);
@@ -154,7 +154,7 @@ public sealed class RecordCompletionServiceTests : IDisposable
         decision.Should().Be(CycleCompletionDecision.Abandoned);
         await service.ApplyAsync(decision, CancellationToken.None);
 
-        (await RecordAsync(services))!.State.Should().Be(JobState.Abandoned);
+        (await RecordAsync(services))!.State.Should().Be(JobState.Interrupted, "没磨完就停了：进待磨清单顶部，续磨或结束（关系设计 O4）");
         services.GetRequiredService<IReportPrintQueue>().Drain().Should().BeEmpty("半路停下的辊不出磨削报告");
     }
 

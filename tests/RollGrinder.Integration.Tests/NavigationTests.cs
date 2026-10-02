@@ -93,9 +93,9 @@ public sealed class NavigationTests
         var model = new NavigationModel();
         model.GoTo(PageKey.Steps);
 
-        // 工艺程序 →「用于作业」→ 作业向导 →「新登记轧辊」→ 库 › 轧辊台账。
+        // 工艺程序 → 作业 →「新登记轧辊」→ 轧辊 › 新登记。
         model.StartTask(PageKey.Job, PageKey.Steps);
-        model.StartTask(PageKey.Library, PageKey.Job);
+        model.StartTask(PageKey.Rolls, PageKey.Job);
         model.OpenSubView("SubView_RollLedger");
         model.DescribeBack().Role.Should().Be(BackRole.CloseSubView);
 

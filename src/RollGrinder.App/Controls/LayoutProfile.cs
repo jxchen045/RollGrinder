@@ -32,6 +32,21 @@ public static class LayoutProfile
     /// <summary>诊断 › 变量监视的"状态"列宽。</summary>
     public static GridLength TagStateColumn => new(Math.Round(120 * Scale));
 
+    /// <summary>库列表的版本列宽（表头与行模板共用；模板里只能用 x:Static）。</summary>
+    public static GridLength LibraryVersionColumn => new(Math.Round(90 * Scale));
+
+    /// <summary>库列表的概况列宽。</summary>
+    public static GridLength LibraryDetailColumn => new(Math.Round(280 * Scale));
+
+    /// <summary>库列表的"在用"列宽。</summary>
+    public static GridLength LibraryUsersColumn => new(Math.Round(80 * Scale));
+
+    /// <summary>库列表的修改时刻列宽。</summary>
+    public static GridLength LibraryModifiedColumn => new(Math.Round(180 * Scale));
+
+    /// <summary>"标签 + 值"两列表的标签宽（模板里用）。</summary>
+    public static double LabelColumnWidth => Math.Round(160 * Scale);
+
     /// <summary>记录页 12 项指标的列数：标准档在右栏 2 列；紧凑档挪到曲线下面，4 列 × 3 行。模板里用 x:Static 取。</summary>
     public static int MetricColumns => Kind == LayoutKind.Compact ? 4 : 2;
 

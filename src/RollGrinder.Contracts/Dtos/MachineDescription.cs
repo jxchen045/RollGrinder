@@ -110,6 +110,9 @@ public sealed record WorkpieceLimits(
 /// 装在按钮板上的动作（界面最终稿 Q18）：cycleStart、feedHold。登记了的，屏幕上就不放这个键——停止类不依赖上位机。
 /// </param>
 /// <param name="ManualStrokeMarginMm">手动往复的默认行程在辊身两端各留多少（mm，界面最终稿 M8），不写按 60。</param>
+/// <param name="HeadstockRpmByWeight">
+/// 按辊重限头架转速（关系设计 V1）：辊重 ≤ 某值时头架最高多少 r/min，按重量升序。为空时作业核对跳过这一项。
+/// </param>
 public sealed record MachineDescription(
     int SchemaVersion,
     string MachineId,
@@ -124,8 +127,21 @@ public sealed record MachineDescription(
     IReadOnlyDictionary<string, int>? AuxiliaryActionCodes = null,
     IReadOnlyList<string>? QuickBar = null,
     IReadOnlyList<string>? PanelActions = null,
-    double? ManualStrokeMarginMm = null)
+    double? ManualStrokeMarginMm = null,
+    IReadOnlyList<HeadstockSpeedLimit>? HeadstockRpmByWeight = null)
 {
+    /// <summary>作业核对：辊形设计长度与辊身长度允许差多少（%），阈值键。不写按 2。</summary>
+    public const string LengthTolerancePercentKey = "lengthTolerancePercent";
+
+    /// <summary>作业核对：工件线速度下限（m/min），阈值键。不写不查。</summary>
+    public const string MinWorkpieceSurfaceSpeedKey = "minWorkpieceSurfaceSpeedMPerMin";
+
+    /// <summary>作业核对：工件线速度上限（m/min），阈值键。不写不查。</summary>
+    public const string MaxWorkpieceSurfaceSpeedKey = "maxWorkpieceSurfaceSpeedMPerMin";
+
+    /// <summary>某阈值；没写为 null。</summary>
+    public double? Threshold(string key) => Thresholds.TryGetValue(key, out double value) ? value : null;
+
     /// <summary>手动往复默认行程两端留量的缺省值（mm）。</summary>
     public const double DefaultManualStrokeMarginMm = 60.0;
 
@@ -139,3 +155,9 @@ public sealed record MachineDescription(
     public bool IsOnPanel(string action) =>
         PanelActions?.Any(a => string.Equals(a, action, StringComparison.OrdinalIgnoreCase)) == true;
 }
+
+/// <summary>按辊重限头架转速表的一行：辊重不超过 <paramref name="MaxWeightKg"/> 时头架最高 <paramref name="MaxRpm"/>。</summary>
+/// <param name="MaxWeightKg">辊重上限（kg，含）。</param>
+/// <param name="MaxRpm">头架最高转速（r/min）。</param>
+public sealed record HeadstockSpeedLimit(double MaxWeightKg, double MaxRpm);
+

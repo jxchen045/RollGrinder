@@ -353,6 +353,59 @@ public sealed class SqliteDatabase
         ALTER TABLE roll_profile ADD COLUMN nominal_diameter_mm REAL NULL;
         ALTER TABLE roll_profile ADD COLUMN tolerance_um REAL NULL;
         """,
+
+        // 以轧辊为中心（轧辊、辊形、程序与作业的关系 · 最终版，五期一次建好）：
+        // 台账带计划（目标辊形、磨削程序）、用途、作废；库条目有版本与停用、程序有适用类型 / 材质；
+        // 作业记版本、磨前直径、本次磨削量、例外 / 变更、返磨；记录有合格判定与下发快照；旧版本留档。
+        // 程序"关联辊形"（program.profile_id）停用：列留着不读不写。
+        // 旧辊的计划按最近一次作业推断（库里还在的那条辊形 / 程序），标 plan_inferred，核对页上请人确认。
+        """
+        ALTER TABLE roll ADD COLUMN target_profile_id TEXT NULL;
+        ALTER TABLE roll ADD COLUMN program_id        TEXT NULL;
+        ALTER TABLE roll ADD COLUMN purpose           TEXT NULL;
+        ALTER TABLE roll ADD COLUMN retired           INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE roll ADD COLUMN plan_inferred     INTEGER NOT NULL DEFAULT 0;
+
+        ALTER TABLE roll_profile ADD COLUMN version  INTEGER NOT NULL DEFAULT 1;
+        ALTER TABLE roll_profile ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE program ADD COLUMN version              INTEGER NOT NULL DEFAULT 1;
+        ALTER TABLE program ADD COLUMN disabled             INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE program ADD COLUMN applicable_roll_kind INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE program ADD COLUMN applicable_material  TEXT NULL;
+        UPDATE program SET profile_id = NULL;
+
+        ALTER TABLE job ADD COLUMN profile_version   INTEGER NULL;
+        ALTER TABLE job ADD COLUMN program_version   INTEGER NULL;
+        ALTER TABLE job ADD COLUMN start_diameter_mm REAL NULL;
+        ALTER TABLE job ADD COLUMN stock_um          REAL NULL;
+        ALTER TABLE job ADD COLUMN deviation_kind    INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE job ADD COLUMN deviation_reason  TEXT NULL;
+        ALTER TABLE job ADD COLUMN regrind_of        TEXT NULL;
+        ALTER TABLE job ADD COLUMN scrap_diameter_mm REAL NULL;
+
+        ALTER TABLE grinding_record ADD COLUMN passed            INTEGER NULL;
+        ALTER TABLE grinding_record ADD COLUMN download_snapshot TEXT NULL;
+
+        CREATE TABLE library_version (
+            kind               TEXT    NOT NULL,
+            item_id            TEXT    NOT NULL,
+            version            INTEGER NOT NULL,
+            name               TEXT    NOT NULL,
+            saved_at_utc       TEXT    NOT NULL,
+            saved_by           TEXT    NOT NULL,
+            payload            TEXT    NOT NULL,
+            PRIMARY KEY (kind, item_id, version)
+        );
+
+        UPDATE roll SET
+            target_profile_id = (SELECT j.profile_id FROM job j
+                                 WHERE j.roll_id = roll.roll_id AND j.profile_id IN (SELECT profile_id FROM roll_profile)
+                                 ORDER BY j.created_at_utc DESC LIMIT 1),
+            program_id = (SELECT j.program_id FROM job j
+                          WHERE j.roll_id = roll.roll_id AND j.program_id IN (SELECT program_id FROM program)
+                          ORDER BY j.created_at_utc DESC LIMIT 1);
+        UPDATE roll SET plan_inferred = 1 WHERE target_profile_id IS NOT NULL OR program_id IS NOT NULL;
+        """,
     };
 
     private readonly string connectionString;
@@ -401,7 +454,10 @@ public sealed class SqliteDatabase
     }
 
     /// <summary>把结构迁移到最新版本；已是最新则什么都不做。升级不丢现场数据。</summary>
-    public async Task<int> MigrateAsync(CancellationToken cancellationToken)
+    public Task<int> MigrateAsync(CancellationToken cancellationToken) => MigrateToAsync(Migrations.Length, cancellationToken);
+
+    /// <summary>只迁到第 <paramref name="targetVersion"/> 条为止。升级测试用它造一个"旧版本"的库。</summary>
+    public async Task<int> MigrateToAsync(int targetVersion, CancellationToken cancellationToken)
     {
         await using SqliteConnection connection = await OpenAsync(cancellationToken).ConfigureAwait(false);
 
@@ -412,7 +468,7 @@ public sealed class SqliteDatabase
                 $"Database '{DatabaseFilePath}' has schema version {currentVersion}, newer than this build supports ({Migrations.Length}).");
         }
 
-        for (int version = currentVersion; version < Migrations.Length; version++)
+        for (int version = currentVersion; version < Math.Min(targetVersion, Migrations.Length); version++)
         {
             await using SqliteTransaction transaction = (SqliteTransaction)await connection
                 .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken).ConfigureAwait(false);
@@ -427,7 +483,7 @@ public sealed class SqliteDatabase
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return Migrations.Length;
+        return Math.Max(currentVersion, Math.Min(targetVersion, Migrations.Length));
     }
 
     /// <summary>读取数据库当前的结构版本。</summary>

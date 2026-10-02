@@ -37,6 +37,9 @@ public enum Permission
 
     /// <summary>标签映射（tagmap.json）。</summary>
     EditTagMap = 8,
+
+    /// <summary>台账改计划（逐支、多选）、导入、作废（关系设计第 8 节）。作业里"变更这支辊的工艺"另按 hmi.json 定。</summary>
+    EditRollPlans = 9,
 }
 
 /// <summary>
@@ -56,6 +59,7 @@ public static class PermissionPolicy
         [Permission.EditCompensation] = UserRole.Manufacturer,
         [Permission.EditMachineConfig] = UserRole.Manufacturer,
         [Permission.EditTagMap] = UserRole.Manufacturer,
+        [Permission.EditRollPlans] = UserRole.Administrator,
     };
 
     /// <summary>这项权限最低要哪一级。</summary>

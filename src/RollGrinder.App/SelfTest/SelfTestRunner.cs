@@ -116,6 +116,7 @@ internal sealed class SelfTestRunner
         yield return new ProfileSuite();
         yield return new StepsSuite();
         yield return new LibrarySuite();
+        yield return new RollsSuite();
         yield return new JobSuite();
         yield return new ParametersSuite();
         if (!offline)

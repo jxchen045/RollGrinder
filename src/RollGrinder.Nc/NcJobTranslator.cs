@@ -85,6 +85,10 @@ public sealed class NcJobTranslator
         AddNumber(writes, MachineTagKeys.JobBodyLengthMm, job.Geometry.BodyLengthMm, timestampUtc);
         AddInteger(writes, MachineTagKeys.JobStepCount, plans.Length, timestampUtc);
         AddInteger(writes, MachineTagKeys.JobProfilePointCount, targetProfile.Points.Count, timestampUtc);
+        if (job.ScrapDiameterMm is double scrap)
+        {
+            AddNumber(writes, MachineTagKeys.JobScrapDiameterMm, scrap, timestampUtc);
+        }
 
         // 首道磨削工序的进给同时写到通用进给变量，方便老程序直接引用。
         //

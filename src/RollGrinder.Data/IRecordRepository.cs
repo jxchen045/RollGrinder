@@ -35,6 +35,18 @@ public interface IGrindingRecordRepository
     Task<IReadOnlyList<GrindingRecord>> QueryByRollAsync(
         string rollId, int limit, CancellationToken cancellationToken);
 
+    /// <summary>写合格判定（null = 没判）。</summary>
+    Task SetVerdictAsync(string recordId, bool? passed, CancellationToken cancellationToken);
+
+    /// <summary>写下发快照（JSON）：调整后的工序参数、合成辊形点列、核对结果（关系设计 V3）。</summary>
+    Task SetSnapshotAsync(string recordId, string snapshotJson, CancellationToken cancellationToken);
+
+    /// <summary>读下发快照；没有为 null。</summary>
+    Task<string?> GetSnapshotAsync(string recordId, CancellationToken cancellationToken);
+
+    /// <summary>某作业最近一条记录（续磨、结束中断时用）；没有为 null。</summary>
+    Task<GrindingRecord?> GetLatestByJobAsync(string jobId, CancellationToken cancellationToken);
+
     /// <summary>删除早于给定时刻的记录，返回删除条数。</summary>
     Task<int> PurgeOlderThanAsync(DateTimeOffset thresholdUtc, CancellationToken cancellationToken);
 }

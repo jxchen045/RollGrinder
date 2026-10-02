@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using RollGrinder.Core;
 using RollGrinder.Core.Steps;
 
 namespace RollGrinder.Data;
@@ -11,12 +12,17 @@ namespace RollGrinder.Data;
 /// <param name="Name">程序名。</param>
 /// <param name="StepCount">有几道工序。</param>
 /// <param name="ModifiedAtUtc">最后修改时刻。</param>
+/// <param name="Version">版本号。</param>
+/// <param name="Disabled">已停用。</param>
+/// <param name="ApplicableRollKind">适用轧辊类型（Unspecified = 不限）。</param>
 public sealed record ProgramSummary(
     string ProgramId,
     string Name,
     int StepCount,
     DateTimeOffset ModifiedAtUtc,
-    string? ProfileId = null);
+    int Version = 1,
+    bool Disabled = false,
+    RollKind ApplicableRollKind = RollKind.Unspecified);
 
 /// <summary>
 /// 程序库。程序是**可复用的模板**，不属于任何一支辊——

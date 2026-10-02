@@ -216,9 +216,15 @@ public static class Program
         builder.Services.AddSingleton<PageViewModelBase, ParametersViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, JobViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, ManualGrindingViewModel>();
-        builder.Services.AddSingleton<PageViewModelBase, LibraryViewModel>();
+        // 辊形库、程序库：同一个类两份，各归各的区（界面修订稿 v3：库回到各自的区）。
+        builder.Services.AddSingleton<PageViewModelBase>(provider => ActivatorUtilities.CreateInstance<LibraryViewModel>(provider, LibraryKind.Profiles));
+        builder.Services.AddSingleton<PageViewModelBase>(provider => ActivatorUtilities.CreateInstance<LibraryViewModel>(provider, LibraryKind.Programs));
+        builder.Services.AddSingleton<PageViewModelBase, RollsViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, CommissioningViewModel>();
         builder.Services.AddSingleton<JobDraft>();
+
+        // 选辊形 / 选程序子视图：作业页与轧辊区各有一份（各自的选中与过滤互不干扰）。
+        builder.Services.AddTransient<PlanPickerViewModel>();
 
         builder.Services.AddSingleton<ShellViewModel>();
         builder.Services.AddSingleton<ShellWindow>();

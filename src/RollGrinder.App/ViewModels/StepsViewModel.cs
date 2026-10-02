@@ -24,6 +24,7 @@ using RollGrinder.Services.Calibration;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Jobs;
+using RollGrinder.Services.Library;
 
 namespace RollGrinder.App.ViewModels;
 
@@ -274,12 +275,16 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private StepsSnapshot committed = StepsSnapshot.Empty;
 
     /// <summary>回退期间不要把恢复动作本身算成修改。</summary>
+    private readonly ILibraryService libraryService;
+    private readonly IUserSession session;
     private bool suppressDirty;
 
     public StepsViewModel(
         GrindingStepTypeRegistry stepTypes,
         IProgramRepository programs,
         IRollProfileRepository profiles,
+        ILibraryService libraryService,
+        IUserSession session,
         ICalibrationService calibration,
         JobDraft jobDraft,
         GrindingJobValidator validator,
@@ -297,6 +302,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.stepTypes = stepTypes ?? throw new ArgumentNullException(nameof(stepTypes));
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
         this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
+        this.libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
+        this.session = session ?? throw new ArgumentNullException(nameof(session));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
@@ -355,20 +362,18 @@ public sealed partial class StepsViewModel : PageViewModelBase
             }
         };
 
-        // 横键（最终稿 5.8）：程序库 · 保存 · 另存为… · 空 · 新建程序 · 校验 · 空 · 用于作业。和辊形编辑同构（C5）。
+        // 横键（界面修订稿 v3 6.6）：程序库 · 保存 · 另存为… · 新建程序 · 适用类型 ▸ · 校验。
+        // 程序与辊形不再互相关联：一支辊磨哪条辊形、用哪支程序是台账里的计划（关系设计第 3 节）。
         SetFunctionKeys(new FunctionKeyViewModel?[]
         {
-            FunctionKeyViewModel.ForAction("Fn_ProgramLibrary", localizer, () => Navigator.GoToArea(AreaKey.Library, "programs")),
+            FunctionKeyViewModel.ForAction("Fn_ProgramLibrary", localizer, () => Navigator.GoTo(PageKey.ProgramLibrary)),
             new FunctionKeyViewModel("Fn_SaveProgram", new AsyncRelayCommand(
                 () => SaveAsync(CancellationToken.None)), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_SaveAs", SaveProgramAsCommand, localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Fn_ChangeProfile", new AsyncRelayCommand(() => PickProfileAsync(newProgram: false)), localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Fn_NewProgram", new AsyncRelayCommand(() => PickProfileAsync(newProgram: true)), localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
             null,
-
-            // 用这支程序去拼一份作业：派到作业向导，路径条上"« 返回 工艺程序"。
-            new FunctionKeyViewModel("Fn_UseForJob", UseForJobCommand, localizer),
+            new FunctionKeyViewModel("Fn_NewProgram", NewProgramCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Fn_ApplicableKind", new RelayCommand(OpenApplicableKindMenu), localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
         });
 
         ResetToEmptyProgram();
@@ -846,89 +851,29 @@ public sealed partial class StepsViewModel : PageViewModelBase
         MarkEdited();
     }
 
-    /// <summary>关联辊形（流程调整方案第 6 节）：这支程序磨哪条辊形。行程、余量、估时都按它算。</summary>
+    /// <summary>适用轧辊类型：作业核对按它拦（工作辊程序不给支承辊用）；不限 = 任何辊。</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasLinkedProfile))]
-    private string? linkedProfileId;
+    [NotifyPropertyChangedFor(nameof(ApplicableKindText))]
+    private RollKind applicableRollKind;
 
-    /// <summary>关联辊形的名称与设计长度；没选时写"未选"。</summary>
+    /// <summary>适用材质：与台账材质不一致时作业核对提示，不拦。</summary>
     [ObservableProperty]
-    private string linkedProfileText = string.Empty;
+    private string applicableMaterial = string.Empty;
 
-    public bool HasLinkedProfile => LinkedProfileId is not null;
+    public string ApplicableKindText => ApplicableRollKind == RollKind.Unspecified
+        ? Localizer["RollKind_Any"]
+        : Localizer["RollKind_" + ApplicableRollKind];
 
-    /// <summary>
-    /// "新建程序…"先选辊形再给空程序；"换关联辊形…"只换关联。竖键列出辊形库，一条一个键。
-    /// 库里没有辊形时说原因：先去辊形区编一条。
-    /// </summary>
-    private async Task PickProfileAsync(bool newProgram)
+    partial void OnApplicableRollKindChanged(RollKind value) => MarkEdited();
+
+    partial void OnApplicableMaterialChanged(string value) => MarkEdited();
+
+    private void OpenApplicableKindMenu() => OpenVerticalMenu("Fn_ApplicableKind", new FunctionKeyViewModel?[]
     {
-        IReadOnlyList<RollProfileSummary> list;
-        try
-        {
-            list = await this.profiles.ListAsync(200, CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-            return;
-        }
-
-        if (list.Count == 0)
-        {
-            Interaction.Refuse(Localizer["Program_NoProfiles"]);
-            return;
-        }
-
-        OpenVerticalMenu(newProgram ? "Vk_PickProfileForNewTitle" : "Vk_PickProfileTitle", list.Select(entry => MenuChoice(
-            "Vk_ProfileChoiceFormat",
-            () =>
-            {
-                if (newProgram)
-                {
-                    ResetToEmptyProgram();
-                }
-
-                LinkProfile(entry.ProfileId, entry.Name, entry.BodyLengthMm);
-                MarkEdited();
-                Say(newProgram ? "Program_NewForProfileFormat" : "Program_ProfileChangedFormat", entry.Name);
-            },
-            labelArgument: entry.Name)));
-    }
-
-    private void LinkProfile(string? profileId, string? name, double? bodyLengthMm)
-    {
-        LinkedProfileId = profileId;
-        LinkedProfileText = profileId is null
-            ? Localizer["Program_NoLinkedProfile"]
-            : Localizer.Format("Program_LinkedProfileFormat", name ?? profileId, bodyLengthMm ?? 0.0);
-        if (bodyLengthMm is > 0.0)
-        {
-            // 估时按关联辊形的设计长度算，不再手填"参考辊身"。
-            BodyLengthMmText = bodyLengthMm.Value.ToString("F0", CultureInfo.CurrentCulture);
-        }
-    }
-
-    /// <summary>打开的程序带关联辊形标识：到库里找名称与长度（辊形被删了就写"未选"并提示）。</summary>
-    private async Task ResolveLinkedProfileAsync(string? profileId)
-    {
-        if (profileId is null)
-        {
-            LinkProfile(null, null, null);
-            Say("Program_LinkProfileFirst");
-            return;
-        }
-
-        try
-        {
-            RollProfileDefinition? profile = await this.profiles.GetAsync(profileId, CancellationToken.None).ConfigureAwait(true);
-            LinkProfile(profile?.ProfileId, profile?.Name, profile?.BodyLengthMm);
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-        }
-    }
+        MenuChoice("RollKind_Any", () => ApplicableRollKind = RollKind.Unspecified),
+        MenuChoice("RollKind_WorkRoll", () => ApplicableRollKind = RollKind.WorkRoll),
+        MenuChoice("RollKind_BackupRoll", () => ApplicableRollKind = RollKind.BackupRoll),
+    });
 
     private void ResetToEmptyProgram()
     {
@@ -938,7 +883,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
             ProgramId = null;
             ProgramName = string.Empty;
             TotalStockText = string.Empty;
-            LinkProfile(null, null, null);
+            ApplicableRollKind = RollKind.Unspecified;
+            ApplicableMaterial = string.Empty;
             Steps.Clear();
             foreach (GrindingJobStep step in ProgramFrame.Normalize(Array.Empty<GrindingJobStep>(), this.stepTypes))
             {
@@ -971,31 +917,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
         {
             StatusResourceKey = "Program_Valid";
         }
-    }
-
-    /// <summary>
-    /// 用这支程序拼一份作业。程序得先存进库里——作业引用的是库里那一支，
-    /// 没存或改了没存，作业里用的就不是眼前这一份了。
-    /// </summary>
-    [RelayCommand]
-    private void UseForJob()
-    {
-        if (ProgramId is null || IsDirty)
-        {
-            StatusResourceKey = "Program_SaveBeforeUse";
-            return;
-        }
-
-        if (LinkedProfileId is null)
-        {
-            Interaction.Refuse(Localizer["Program_LinkProfileFirst"]);
-            return;
-        }
-
-        // 作业向导带着关联辊形过去：② 辊形直接选好。
-        this.jobDraft.PendingProgramId = ProgramId;
-        this.jobDraft.PendingProfileId = LinkedProfileId;
-        Navigator.StartTask(PageKey.Job, PageKey.Steps);
     }
 
     // ── 程序库 ────────────────────────────────────────────────────────────────
@@ -1172,7 +1093,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         return steps;
     }
 
-    private async Task<bool> StoreProgramAsync(string programId, string name, CancellationToken cancellationToken)
+    private async Task<bool> StoreProgramAsync(string programId, string name, CancellationToken cancellationToken, bool inUseConfirmed = false)
     {
         name = (name ?? string.Empty).Trim();
         if (name.Length == 0)
@@ -1199,14 +1120,32 @@ public sealed partial class StepsViewModel : PageViewModelBase
             DateTimeOffset now = DateTimeOffset.UtcNow;
             GrindingProgram? existing = await this.programs.GetAsync(programId, cancellationToken).ConfigureAwait(true);
 
-            await this.programs.SaveAsync(
+            // 改在用的程序：先说清楚影响几支辊（关系设计 5.3）——更新后它们下次按新版磨；只给新辊用请改用"另存为…"。
+            if (existing is not null && !inUseConfirmed)
+            {
+                int users = (await this.libraryService.ProgramUsersAsync(programId, cancellationToken).ConfigureAwait(true)).Count;
+                if (users > 0)
+                {
+                    Interaction.Choose(
+                        Localizer.Format("Lib_AskSaveInUseFormat", name, users, existing.Version + 1),
+                        "Vk_SaveNewVersion",
+                        () => StoreProgramAsync(programId, name, CancellationToken.None, inUseConfirmed: true));
+                    return false;
+                }
+            }
+
+            // 版本 +1、旧版留档由库服务做。
+            await this.libraryService.SaveProgramAsync(
                 GrindingProgram.Create(programId, name, steps, existing?.CreatedAtUtc ?? now, CollectProgramOptions())
                     with
                     {
                         ModifiedAtUtc = now,
-                        ProfileId = LinkedProfileId,
                         StandardStockMicrometer = TryParseDouble(TotalStockText, out double stock) && stock > 0.0 ? stock : null,
+                        ApplicableRollKind = ApplicableRollKind,
+                        ApplicableMaterial = string.IsNullOrWhiteSpace(ApplicableMaterial) ? null : ApplicableMaterial.Trim(),
+                        Disabled = existing?.Disabled ?? false,
                     },
+                this.session.CurrentUser?.UserName ?? string.Empty,
                 cancellationToken).ConfigureAwait(true);
 
             ProgramId = programId;
@@ -1257,7 +1196,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
             TotalStockText = program.StandardStockMicrometer is double stock
                 ? stock.ToString("0.#", CultureInfo.CurrentCulture)
                 : string.Empty;
-            _ = ResolveLinkedProfileAsync(program.ProfileId);
+            ApplicableRollKind = program.ApplicableRollKind;
+            ApplicableMaterial = program.ApplicableMaterial ?? string.Empty;
 
             // 以前存的程序可能没有开始 / 结束，或者不在首尾：整理成"开始 … 结束"，并提示存一次。
             framed = ProgramFrame.IsNormalized(program.Steps);

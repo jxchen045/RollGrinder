@@ -115,7 +115,7 @@ public sealed class RecordCompletionService : IHostedService
 
                 case CycleCompletionDecision.Abandoned:
                     await this.recordService
-                        .FinishAsync(open.RecordId, JobState.Abandoned, note: null, cancellationToken).ConfigureAwait(false);
+                        .FinishAsync(open.RecordId, JobState.Interrupted, note: null, cancellationToken).ConfigureAwait(false);
                     this.alarms.Raise(AlarmSeverity.Warning, AbandonedResourceKey, open.JobId, AlarmCodes.RecordAbandoned);
                     break;
 

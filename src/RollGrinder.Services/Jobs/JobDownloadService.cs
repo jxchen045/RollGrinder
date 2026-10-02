@@ -8,6 +8,7 @@ using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Steps;
+using RollGrinder.Core.Units;
 using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Nc;
@@ -39,6 +40,12 @@ public interface IJobDownloadService
     /// 标志写完之后磨削由 NC 与 PLC 负责，上位机即使被强制结束，这支辊也能磨完。
     /// </summary>
     Task<JobDownloadResult> DownloadAsync(GrindingJob job, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 同上，并把下发快照（调整后的工序、合成辊形点列、核对结果）存进这次的磨削记录（关系设计 V3）。
+    /// </summary>
+    Task<JobDownloadResult> DownloadAsync(
+        GrindingJob job, IReadOnlyList<JobCheck> checks, string operatorName, CancellationToken cancellationToken);
 }
 
 /// <inheritdoc cref="IJobDownloadService"/>
@@ -100,9 +107,14 @@ public sealed class JobDownloadService : IJobDownloadService
         this.plausibility = plausibility ?? throw new ArgumentNullException(nameof(plausibility));
     }
 
-    public async Task<JobDownloadResult> DownloadAsync(GrindingJob job, CancellationToken cancellationToken)
+    public Task<JobDownloadResult> DownloadAsync(GrindingJob job, CancellationToken cancellationToken) =>
+        DownloadAsync(job, Array.Empty<JobCheck>(), string.Empty, cancellationToken);
+
+    public async Task<JobDownloadResult> DownloadAsync(
+        GrindingJob job, IReadOnlyList<JobCheck> checks, string operatorName, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(job);
+        ArgumentNullException.ThrowIfNull(checks);
 
         ParameterValidationResult validation = this.validator.Validate(job, this.capability);
         if (!validation.IsValid)
@@ -131,6 +143,17 @@ public sealed class JobDownloadService : IJobDownloadService
             await this.jobs.SaveAsync(job, JobState.Handed, cancellationToken).ConfigureAwait(false);
             await this.records.AddAsync(
                 new GrindingRecord(recordId, job.JobId, now, null, JobState.Handed, null),
+                cancellationToken).ConfigureAwait(false);
+            await this.records.SetSnapshotAsync(
+                recordId,
+                LibrarySnapshotJson.WriteDownload(
+                    job,
+                    download.TargetProfile.Points
+                        .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)))
+                        .ToArray(),
+                    checks.Select(check => (check.Item, check.Status.ToString(), check.MessageKey)).ToArray(),
+                    operatorName,
+                    now),
                 cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is DataStoreException or Microsoft.Data.Sqlite.SqliteException)

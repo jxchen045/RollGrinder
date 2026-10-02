@@ -45,7 +45,9 @@ internal static class PlotTheme
         }
 
         plot.Legend.FontSize = LegendFontSize;
+        // 图表通则（界面修订稿 v3 1.2）：只画主刻度网格、浅色、在数据下层；不画次网格。
         plot.Grid.MajorLineColor = PaletteColor(control, "Color.PlotGridMinor");
+        plot.Grid.MinorLineWidth = 0;
         plot.DataBackground.Color = PaletteColor(control, "Color.PlotBackground");
         plot.FigureBackground.Color = PaletteColor(control, "Color.Surface");
 
@@ -121,20 +123,36 @@ internal static class PlotTheme
     public static void ShowProfile(WpfPlot control, double bodyLengthMm, IEnumerable<double> targetMicrometer)
     {
         (double low, double high) = ChartRanges.Profile(targetMicrometer);
+        Views.GetOrCreateValue(control).MaxAspect = ChartRanges.PlotAspect;
         SetHome(control, bodyLengthMm, low, high);
     }
 
-    /// <summary>偏差图（误差等）：X 整根辊身，Y 以 0 为中心对称，半幅 = max(2 × 公差, 数据)，绘图区同样 4 : 1。</summary>
+    /// <summary>
+    /// 偏差图（误差等）：X 整根辊身，Y 以 0 为中心对称，半幅 = max(2 × 公差, 数据)。
+    /// 绘图区铺满宽度，宽高比 4 : 1 – 8 : 1（纵轴按公差定，不比形状，不必死守 4 : 1）。
+    /// </summary>
     public static void ShowDeviation(WpfPlot control, double bodyLengthMm, double toleranceMicrometer, IEnumerable<double> values)
     {
         (double low, double high) = ChartRanges.Deviation(toleranceMicrometer, values);
+        Views.GetOrCreateValue(control).MaxAspect = ChartRanges.DeviationMaxAspect;
         SetHome(control, bodyLengthMm, low, high);
+    }
+
+    /// <summary>
+    /// 两根轴的名称与单位（图表通则）：X 写在刻度下方正中，Y 写在纵轴旁。每张图都要写，
+    /// 不写就分不清是直径量还是半径量、mm 还是 µm。
+    /// </summary>
+    public static void AxisTitles(WpfPlot control, string bottom, string left)
+    {
+        control.Plot.Axes.Bottom.Label.Text = bottom;
+        control.Plot.Axes.Left.Label.Text = left;
     }
 
     /// <summary>其他沿辊身的量（圆度、偏心、电流）：X 整根辊身，Y 按数据取整，绘图区 4 : 1。</summary>
     public static void ShowAlongBody(WpfPlot control, double bodyLengthMm, IEnumerable<double> values)
     {
         (double low, double high) = ChartRanges.Data(values);
+        Views.GetOrCreateValue(control).MaxAspect = ChartRanges.PlotAspect;
         SetHome(control, bodyLengthMm, low, high);
     }
 
@@ -166,8 +184,9 @@ internal static class PlotTheme
         const float right = 20f;
         double availableWidth = Math.Max(control.ActualWidth - left - right, 10.0);
         double availableHeight = Math.Max(control.ActualHeight - top - bottom, 10.0);
-        double width = Math.Min(availableWidth, availableHeight * ChartRanges.PlotAspect);
-        double height = width / ChartRanges.PlotAspect;
+        double maxAspect = Math.Max(Views.GetOrCreateValue(control).MaxAspect, ChartRanges.PlotAspect);
+        double width = Math.Min(availableWidth, availableHeight * maxAspect);
+        double height = Math.Min(availableHeight, width / ChartRanges.PlotAspect);
         float padX = (float)((availableWidth - width) / 2.0);
         float padY = (float)((availableHeight - height) / 2.0);
         control.Plot.Layout.Fixed(new PixelPadding(left + padX, right + padX, bottom + padY, top + padY));
@@ -296,6 +315,9 @@ internal static class PlotTheme
         public bool FixedAspect { get; set; }
 
         public bool HasResetButton { get; set; }
+
+        /// <summary>绘图区最宽的宽高比：辊形图 4（固定），偏差图 8（铺满宽度）。</summary>
+        public double MaxAspect { get; set; } = ChartRanges.PlotAspect;
     }
 
     /// <summary>

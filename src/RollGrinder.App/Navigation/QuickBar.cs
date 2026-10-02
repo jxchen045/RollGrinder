@@ -19,7 +19,7 @@ public sealed record QuickBarEntry(string Id, AreaKey Area, string? GroupKey, st
 
 /// <summary>
 /// 左栏：最多 7 个快捷入口（Ctrl+1…7），由 machine.json 的 quickBar 决定，
-/// 不写就用最终稿 D2 的默认（机床、辊形、工艺、砂轮、库、记录、诊断）。
+/// 不写就用默认（机床、轧辊、辊形、工艺、砂轮、记录、诊断）。
 /// 纯逻辑，写错的名字不让它进左栏，由调用方记日志。
 /// </summary>
 public static class QuickBarCatalog
@@ -34,20 +34,24 @@ public static class QuickBarCatalog
     public static IReadOnlyList<QuickBarEntry> Known { get; } = new[]
     {
         new QuickBarEntry("machine", AreaKey.Machine, null, "Quick_Machine", AreaCatalog.Glyph(AreaKey.Machine)),
+        new QuickBarEntry("rolls", AreaKey.Rolls, null, "Quick_Rolls", AreaCatalog.Glyph(AreaKey.Rolls)),
         new QuickBarEntry("profile", AreaKey.Profile, null, "Quick_Profile", AreaCatalog.Glyph(AreaKey.Profile)),
         new QuickBarEntry("steps", AreaKey.Steps, null, "Quick_Steps", AreaCatalog.Glyph(AreaKey.Steps)),
         new QuickBarEntry("wheel", AreaKey.Parameters, WheelGroup, "Quick_Wheel", "◎"),
-        new QuickBarEntry("library", AreaKey.Library, null, "Quick_Library", AreaCatalog.Glyph(AreaKey.Library)),
         new QuickBarEntry("records", AreaKey.Records, null, "Quick_Records", AreaCatalog.Glyph(AreaKey.Records)),
         new QuickBarEntry("diagnostics", AreaKey.Diagnostics, null, "Quick_Diagnostics", AreaCatalog.Glyph(AreaKey.Diagnostics)),
         new QuickBarEntry("parameters", AreaKey.Parameters, null, "Quick_Parameters", AreaCatalog.Glyph(AreaKey.Parameters)),
     };
 
-    /// <summary>最终稿 D2 的默认左栏。</summary>
+    /// <summary>默认左栏（界面修订稿 v3 4.1）：机床 · 轧辊 · 辊形 · 工艺 · 砂轮 · 记录 · 诊断。</summary>
     public static IReadOnlyList<string> DefaultIds { get; } = new[]
     {
-        "machine", "profile", "steps", "wheel", "library", "records", "diagnostics",
+        "machine", "rolls", "profile", "steps", "wheel", "records", "diagnostics",
     };
+
+    /// <summary>旧配置里的名字 → 现在的名字（旧现场的 machine.json 不用改）。"库"区已拆开，左栏那一格给轧辊。</summary>
+    private static readonly IReadOnlyDictionary<string, string> Aliases =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["library"] = "rolls" };
 
     /// <summary>
     /// 按配置排出左栏。未知的名字、重复的名字、超出 7 个的都不要，放进 <paramref name="rejected"/>。
@@ -60,7 +64,13 @@ public static class QuickBarCatalog
 
         foreach (string id in ids ?? Array.Empty<string>())
         {
-            QuickBarEntry? entry = Known.FirstOrDefault(e => string.Equals(e.Id, id?.Trim(), StringComparison.OrdinalIgnoreCase));
+            string? name = id?.Trim();
+            if (name is not null && Aliases.TryGetValue(name, out string? alias))
+            {
+                name = alias;
+            }
+
+            QuickBarEntry? entry = Known.FirstOrDefault(e => string.Equals(e.Id, name, StringComparison.OrdinalIgnoreCase));
             if (entry is null || entries.Contains(entry) || entries.Count == MaxEntries)
             {
                 refused.Add(id ?? string.Empty);

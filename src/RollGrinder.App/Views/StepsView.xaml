@@ -71,7 +71,7 @@
                         <ItemsControl Background="{StaticResource Brush.GridLine}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <UniformGrid Columns="4" />
+                                    <UniformGrid Columns="6" />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <Border Style="{StaticResource ParameterCell}">
@@ -84,10 +84,25 @@
                             </Border>
                             <Border Style="{StaticResource ParameterCell}">
                                 <StackPanel>
-                                    <!-- 关联辊形（流程调整方案第 6 节）：新建程序先选；横键"换关联辊形…"改。估时的辊身长度随它。 -->
-                                    <TextBlock Text="{loc:Loc Program_LinkedProfile}" Style="{StaticResource Text.Label}" />
-                                    <TextBlock Text="{Binding LinkedProfileText}" Style="{StaticResource Text.Body}" FontWeight="SemiBold"
-                                               TextWrapping="Wrap" Margin="0,8,0,0" />
+                                    <!-- 适用轧辊类型（横键"适用类型 ▸"改）：作业核对按它拦；不限时任何辊都能用。 -->
+                                    <TextBlock Text="{loc:Loc Program_ApplicableKind}" Style="{StaticResource Text.Label}" />
+                                    <TextBlock Text="{Binding ApplicableKindText}" Style="{StaticResource Text.Body}" FontWeight="SemiBold" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ParameterCell}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Program_ApplicableMaterial}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding ApplicableMaterial, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource ParameterCell}">
+                                <StackPanel>
+                                    <!-- 估时用的参考辊身长度：程序与具体轧辊无关，作业里按那支辊重算。 -->
+                                    <TextBlock Text="{loc:Loc Program_ReferenceBodyLength}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
                                 </StackPanel>
                             </Border>
                             <Border Style="{StaticResource ParameterCell}">

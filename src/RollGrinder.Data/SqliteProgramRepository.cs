@@ -4,6 +4,7 @@ using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
+using RollGrinder.Core;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Steps;
 
@@ -29,7 +30,7 @@ public sealed class SqliteProgramRepository : IProgramRepository
             """
             SELECT p.program_id, p.name, p.modified_at_utc,
                    (SELECT COUNT(*) FROM program_step s WHERE s.program_id = p.program_id),
-                   p.profile_id
+                   p.version, p.disabled, p.applicable_roll_kind
             FROM program p
             ORDER BY p.modified_at_utc DESC
             LIMIT $limit;
@@ -45,7 +46,9 @@ public sealed class SqliteProgramRepository : IProgramRepository
                 reader.GetString(1),
                 reader.GetInt32(3),
                 SqlMapping.ToTimestamp(reader.GetString(2)),
-                reader.IsDBNull(4) ? null : reader.GetString(4)));
+                reader.GetInt32(4),
+                reader.GetInt32(5) != 0,
+                (RollKind)reader.GetInt32(6)));
         }
 
         return summaries;
@@ -60,12 +63,15 @@ public sealed class SqliteProgramRepository : IProgramRepository
         string name;
         DateTimeOffset createdAtUtc;
         DateTimeOffset modifiedAtUtc;
-        string? profileId;
         double? standardStock;
+        int version;
+        bool disabled;
+        RollKind applicableKind;
+        string? applicableMaterial;
 
         await using (SqliteCommand command = connection.CreateCommand())
         {
-            command.CommandText = "SELECT name, created_at_utc, modified_at_utc, profile_id, standard_stock_um FROM program WHERE program_id = $id;";
+            command.CommandText = "SELECT name, created_at_utc, modified_at_utc, standard_stock_um, version, disabled, applicable_roll_kind, applicable_material FROM program WHERE program_id = $id;";
             SqlMapping.AddParameter(command, "$id", programId);
 
             await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -77,8 +83,11 @@ public sealed class SqliteProgramRepository : IProgramRepository
             name = reader.GetString(0);
             createdAtUtc = SqlMapping.ToTimestamp(reader.GetString(1));
             modifiedAtUtc = SqlMapping.ToTimestamp(reader.GetString(2));
-            profileId = reader.IsDBNull(3) ? null : reader.GetString(3);
-            standardStock = reader.IsDBNull(4) ? null : reader.GetDouble(4);
+            standardStock = reader.IsDBNull(3) ? null : reader.GetDouble(3);
+            version = reader.GetInt32(4);
+            disabled = reader.GetInt32(5) != 0;
+            applicableKind = (RollKind)reader.GetInt32(6);
+            applicableMaterial = reader.IsDBNull(7) ? null : reader.GetString(7);
         }
 
         Dictionary<int, ParameterSet> parameters = await SqlMapping
@@ -119,8 +128,11 @@ public sealed class SqliteProgramRepository : IProgramRepository
         return GrindingProgram.Create(programId, name, steps, createdAtUtc, programOptions) with
         {
             ModifiedAtUtc = modifiedAtUtc,
-            ProfileId = profileId,
             StandardStockMicrometer = standardStock,
+            Version = version,
+            Disabled = disabled,
+            ApplicableRollKind = applicableKind,
+            ApplicableMaterial = applicableMaterial,
         };
     }
 
@@ -137,20 +149,27 @@ public sealed class SqliteProgramRepository : IProgramRepository
             command.Transaction = transaction;
             command.CommandText =
                 """
-                INSERT INTO program (program_id, name, created_at_utc, modified_at_utc, profile_id, standard_stock_um)
-                VALUES ($id, $name, $created, $modified, $profile, $stock)
+                INSERT INTO program (program_id, name, created_at_utc, modified_at_utc, standard_stock_um,
+                                     version, disabled, applicable_roll_kind, applicable_material)
+                VALUES ($id, $name, $created, $modified, $stock, $version, $disabled, $kind, $material)
                 ON CONFLICT(program_id) DO UPDATE SET
                     name = excluded.name,
                     modified_at_utc = excluded.modified_at_utc,
-                    profile_id = excluded.profile_id,
-                    standard_stock_um = excluded.standard_stock_um;
+                    standard_stock_um = excluded.standard_stock_um,
+                    version = excluded.version,
+                    disabled = excluded.disabled,
+                    applicable_roll_kind = excluded.applicable_roll_kind,
+                    applicable_material = excluded.applicable_material;
                 """;
             SqlMapping.AddParameter(command, "$id", program.ProgramId);
             SqlMapping.AddParameter(command, "$name", program.Name);
             SqlMapping.AddParameter(command, "$created", SqlMapping.ToText(program.CreatedAtUtc));
             SqlMapping.AddParameter(command, "$modified", SqlMapping.ToText(program.ModifiedAtUtc));
-            command.Parameters.AddWithValue("$profile", (object?)program.ProfileId ?? DBNull.Value);
             command.Parameters.AddWithValue("$stock", (object?)program.StandardStockMicrometer ?? DBNull.Value);
+            SqlMapping.AddParameter(command, "$version", program.Version);
+            SqlMapping.AddParameter(command, "$disabled", program.Disabled ? 1 : 0);
+            SqlMapping.AddParameter(command, "$kind", (int)program.ApplicableRollKind);
+            SqlMapping.AddParameter(command, "$material", program.ApplicableMaterial);
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 

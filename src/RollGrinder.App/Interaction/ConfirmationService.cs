@@ -8,11 +8,15 @@ namespace RollGrinder.App.Interaction;
 /// <param name="ConfirmLabelKey">第 8 格确认键的字（资源键），例如"✓ 确认""✓ 确认下发"。</param>
 /// <param name="CancelLabelKey">第 7 格取消键的字（资源键）。</param>
 /// <param name="RequestedAt">提问的时刻；5 秒不答自动取消。</param>
+/// <param name="Expires">
+/// 5 秒不答自动取消。只用于会让机床动的确认；"仅本次 / 变更""更新 / 另存为新"这类选择题不自动取消（界面修订稿 4.2）。
+/// </param>
 public sealed record PendingConfirmation(
     string Question,
     string ConfirmLabelKey,
     string CancelLabelKey,
-    DateTimeOffset RequestedAt);
+    DateTimeOffset RequestedAt,
+    bool Expires = true);
 
 /// <summary>一件待确认的事是怎么结束的。</summary>
 public enum ConfirmationOutcome
@@ -66,7 +70,7 @@ public sealed class ConfirmationService
     public PendingConfirmation? Pending { get; private set; }
 
     /// <summary>还剩多少时间自动取消；没有待确认的事时为零。</summary>
-    public TimeSpan Remaining => Pending is null
+    public TimeSpan Remaining => Pending is null || !Pending.Expires
         ? TimeSpan.Zero
         : Max(TimeSpan.Zero, Timeout - (this.time.GetUtcNow() - Pending.RequestedAt));
 
@@ -84,7 +88,8 @@ public sealed class ConfirmationService
         Func<Task> confirm,
         Action<ConfirmationOutcome>? closed = null,
         string confirmLabelKey = DefaultConfirmLabelKey,
-        string cancelLabelKey = DefaultCancelLabelKey)
+        string cancelLabelKey = DefaultCancelLabelKey,
+        bool expires = true)
     {
         ArgumentException.ThrowIfNullOrEmpty(question);
         ArgumentNullException.ThrowIfNull(confirm);
@@ -92,7 +97,7 @@ public sealed class ConfirmationService
         Close(ConfirmationOutcome.Superseded, raise: false);
         this.onConfirm = confirm;
         this.onClosed = closed;
-        Pending = new PendingConfirmation(question, confirmLabelKey, cancelLabelKey, this.time.GetUtcNow());
+        Pending = new PendingConfirmation(question, confirmLabelKey, cancelLabelKey, this.time.GetUtcNow(), expires);
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -151,7 +156,7 @@ public sealed class ConfirmationService
 
     private bool ExpireIfDue()
     {
-        if (Pending is null || this.time.GetUtcNow() - Pending.RequestedAt < Timeout)
+        if (Pending is null || !Pending.Expires || this.time.GetUtcNow() - Pending.RequestedAt < Timeout)
         {
             return false;
         }

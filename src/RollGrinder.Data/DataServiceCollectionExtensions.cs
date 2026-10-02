@@ -28,6 +28,7 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<IHmiSettingRepository, SqliteHmiSettingRepository>();
         services.AddSingleton<ICompensationRepository, SqliteCompensationRepository>();
         services.AddSingleton<IAlarmRepository, SqliteAlarmRepository>();
+        services.AddSingleton<ILibraryVersionRepository, SqliteLibraryVersionRepository>();
 
         return services;
     }

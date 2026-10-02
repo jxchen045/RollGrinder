@@ -7,7 +7,7 @@ using ScottPlot;
 
 namespace RollGrinder.App.Views;
 
-/// <summary>作业向导：五步拼一份作业，第 5 步画出"磨成什么样"，核对后下发。</summary>
+/// <summary>作业：待磨清单 + 一页核对，核对页画出"磨成什么样"。</summary>
 public partial class JobView : UserControl
 {
     private JobViewModel? viewModel;
@@ -54,7 +54,7 @@ public partial class JobView : UserControl
             target.LineWidth = 3f;
             target.MarkerSize = 0;
             target.Color = PlotTheme.Curve(ReviewPlot, "Color.CurveTarget");
-            ReviewPlot.Plot.Axes.Left.Label.Text = vm.Localizer["Job_ReviewCurveAxis"];
+            PlotTheme.AxisTitles(ReviewPlot, vm.Localizer["Chart_AxisZ"], vm.Localizer["Chart_AxisDiameterUm"]);
             PlotTheme.ShowProfile(ReviewPlot, vm.ReviewCurve.Max(point => point.BodyPositionMm), vm.ReviewCurve.Select(point => point.DiameterMicrometer));
         }
 

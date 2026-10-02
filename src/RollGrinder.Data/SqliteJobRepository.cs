@@ -35,9 +35,13 @@ public sealed class SqliteJobRepository : IJobRepository
             transaction,
             """
             INSERT INTO job (job_id, roll_id, profile_type_key, body_length_mm, nominal_radius_mm, state,
-                             created_at_utc, profile_id, profile_name, program_id, program_name)
+                             created_at_utc, profile_id, profile_name, program_id, program_name,
+                             profile_version, program_version, start_diameter_mm, stock_um,
+                             deviation_kind, deviation_reason, regrind_of, scrap_diameter_mm)
             VALUES ($job, $roll, $profile, $length, $radius, $state, $created,
-                    $profileId, $profileName, $programId, $programName)
+                    $profileId, $profileName, $programId, $programName,
+                    $profileVersion, $programVersion, $start, $stock,
+                    $deviation, $reason, $regrindOf, $scrap)
             ON CONFLICT(job_id) DO UPDATE SET
                 roll_id = excluded.roll_id,
                 profile_type_key = excluded.profile_type_key,
@@ -47,7 +51,15 @@ public sealed class SqliteJobRepository : IJobRepository
                 profile_id = excluded.profile_id,
                 profile_name = excluded.profile_name,
                 program_id = excluded.program_id,
-                program_name = excluded.program_name;
+                program_name = excluded.program_name,
+                profile_version = excluded.profile_version,
+                program_version = excluded.program_version,
+                start_diameter_mm = excluded.start_diameter_mm,
+                stock_um = excluded.stock_um,
+                deviation_kind = excluded.deviation_kind,
+                deviation_reason = excluded.deviation_reason,
+                regrind_of = excluded.regrind_of,
+                scrap_diameter_mm = excluded.scrap_diameter_mm;
             """,
             cancellationToken,
             command =>
@@ -65,6 +77,14 @@ public sealed class SqliteJobRepository : IJobRepository
                 SqlMapping.AddParameter(command, "$radius", job.Geometry.NominalRadiusMm);
                 SqlMapping.AddParameter(command, "$state", (int)state);
                 SqlMapping.AddParameter(command, "$created", SqlMapping.ToText(DateTimeOffset.UtcNow));
+                SqlMapping.AddParameter(command, "$profileVersion", job.ProfileVersion);
+                SqlMapping.AddParameter(command, "$programVersion", job.ProgramVersion);
+                SqlMapping.AddParameter(command, "$start", job.StartDiameterMm);
+                SqlMapping.AddParameter(command, "$stock", job.StockMicrometer);
+                SqlMapping.AddParameter(command, "$deviation", (int)job.Deviation);
+                SqlMapping.AddParameter(command, "$reason", job.DeviationReason);
+                SqlMapping.AddParameter(command, "$regrindOf", job.RegrindOfJobId);
+                SqlMapping.AddParameter(command, "$scrap", job.ScrapDiameterMm);
             }).ConfigureAwait(false);
 
         await ExecuteAsync(connection, transaction, "DELETE FROM job_step WHERE job_id = $job;", cancellationToken,
@@ -115,13 +135,16 @@ public sealed class SqliteJobRepository : IJobRepository
         string? programName;
         RollGeometry geometry;
         JobState state;
+        JobExtras extras;
 
         await using (SqliteCommand command = connection.CreateCommand())
         {
             command.CommandText =
                 """
                 SELECT roll_id, profile_type_key, body_length_mm, nominal_radius_mm, state,
-                       profile_id, profile_name, program_id, program_name
+                       profile_id, profile_name, program_id, program_name,
+                       profile_version, program_version, start_diameter_mm, stock_um,
+                       deviation_kind, deviation_reason, regrind_of, scrap_diameter_mm
                 FROM job WHERE job_id = $job;
                 """;
             SqlMapping.AddParameter(command, "$job", jobId);
@@ -140,6 +163,15 @@ public sealed class SqliteJobRepository : IJobRepository
             profileName = reader.IsDBNull(6) ? null : reader.GetString(6);
             programId = reader.IsDBNull(7) ? null : reader.GetString(7);
             programName = reader.IsDBNull(8) ? null : reader.GetString(8);
+            extras = new JobExtras(
+                reader.IsDBNull(9) ? null : reader.GetInt32(9),
+                reader.IsDBNull(10) ? null : reader.GetInt32(10),
+                reader.IsDBNull(11) ? null : reader.GetDouble(11),
+                reader.IsDBNull(12) ? null : reader.GetDouble(12),
+                (JobDeviation)reader.GetInt32(13),
+                reader.IsDBNull(14) ? null : reader.GetString(14),
+                reader.IsDBNull(15) ? null : reader.GetString(15),
+                reader.IsDBNull(16) ? null : reader.GetDouble(16));
         }
 
         CompositeRollProfile? storedProfile = await ProfileSegmentMapping
@@ -185,6 +217,14 @@ public sealed class SqliteJobRepository : IJobRepository
             ProfileName = profileName,
             ProgramId = programId,
             ProgramName = programName,
+            ProfileVersion = extras.ProfileVersion,
+            ProgramVersion = extras.ProgramVersion,
+            StartDiameterMm = extras.StartDiameterMm,
+            StockMicrometer = extras.StockMicrometer,
+            Deviation = extras.Deviation,
+            DeviationReason = extras.DeviationReason,
+            RegrindOfJobId = extras.RegrindOf,
+            ScrapDiameterMm = extras.ScrapDiameterMm,
         };
         return (job, state);
     }
@@ -226,6 +266,40 @@ public sealed class SqliteJobRepository : IJobRepository
 
         return jobIds;
     }
+
+    public async Task<IReadOnlyList<JobListEntry>> ListByStateAsync(JobState state, int limit, CancellationToken cancellationToken)
+    {
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT job_id, roll_id, created_at_utc, regrind_of FROM job
+            WHERE state = $state ORDER BY created_at_utc DESC LIMIT $limit;
+            """;
+        SqlMapping.AddParameter(command, "$state", (int)state);
+        SqlMapping.AddParameter(command, "$limit", limit);
+
+        var jobs = new List<JobListEntry>();
+        await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            jobs.Add(new JobListEntry(
+                reader.GetString(0), reader.GetString(1), SqlMapping.ToTimestamp(reader.GetString(2)), state,
+                reader.IsDBNull(3) ? null : reader.GetString(3)));
+        }
+
+        return jobs;
+    }
+
+    private sealed record JobExtras(
+        int? ProfileVersion,
+        int? ProgramVersion,
+        double? StartDiameterMm,
+        double? StockMicrometer,
+        JobDeviation Deviation,
+        string? DeviationReason,
+        string? RegrindOf,
+        double? ScrapDiameterMm);
 
     private static async Task ExecuteAsync(
         SqliteConnection connection,

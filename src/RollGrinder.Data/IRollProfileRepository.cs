@@ -18,7 +18,17 @@ public sealed record RollProfileSummary(
     string ProfileTypeKey,
     int SegmentCount,
     double BodyLengthMm,
-    System.DateTimeOffset ModifiedAtUtc);
+    System.DateTimeOffset ModifiedAtUtc)
+{
+    /// <summary>版本号。</summary>
+    public int Version { get; init; } = 1;
+
+    /// <summary>已停用。</summary>
+    public bool Disabled { get; init; }
+
+    /// <summary>辊形公差（直径量 µm）；没填为 null。</summary>
+    public double? ToleranceMicrometer { get; init; }
+}
 
 /// <summary>
 /// 辊形库。辊形是**可复用的模板**，不属于任何一支辊——

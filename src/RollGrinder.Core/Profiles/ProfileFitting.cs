@@ -103,3 +103,117 @@ public static class ProfileFitting
             0.0, new[] { new SequentialSegment(ProfileTypeKeys.PointTable, bodyLengthMm, parameters) });
     }
 }
+
+/// <summary>辊形设计长度套到辊身上的结果（关系设计第 4 节"2% 规则"）。</summary>
+public enum BodyFitKind
+{
+    /// <summary>一样长，原样用。</summary>
+    Exact = 0,
+
+    /// <summary>两端锥度段保持绝对长度，中间段伸缩铺满（一般辊形不限差多少；CVC / 点表差 ≤ 容差）。</summary>
+    MiddleAdjusted = 1,
+
+    /// <summary>差得太多：中间段是 CVC 或点表（形状随长度走），长度差超过容差。拦住。</summary>
+    TooDifferent = 2,
+}
+
+/// <summary>套到辊身上的结果。</summary>
+/// <param name="Kind">怎么套的。</param>
+/// <param name="DesignLengthMm">辊形设计长度。</param>
+/// <param name="BodyLengthMm">辊身长度。</param>
+/// <param name="DifferencePercent">长度差占设计长度的百分比（带符号：辊身更长为正）。</param>
+/// <param name="Profile">套好的辊形；<see cref="BodyFitKind.TooDifferent"/> 时为 null。</param>
+public sealed record BodyFitResult(
+    BodyFitKind Kind,
+    double DesignLengthMm,
+    double BodyLengthMm,
+    double DifferencePercent,
+    CompositeRollProfile? Profile);
+
+/// <summary>
+/// 2% 规则：库里的辊形与具体轧辊无关——两端的锥度段按绝对 mm 保持不动，中间段伸缩铺满辊身。
+/// 中间段是 CVC 或点表时，形状本身随长度走，长度差超过容差（machine.json 的 lengthTolerancePercent，默认 2%）就拦住。
+/// 取代以前的"拉伸 / 居中"二选一：规则确定，不用人选。
+/// </summary>
+public static class BodyLengthFit
+{
+    /// <summary>默认长度容差（%）。</summary>
+    public const double DefaultTolerancePercent = 2.0;
+
+    public static BodyFitResult Fit(CompositeRollProfile profile, double designLengthMm, double bodyLengthMm, double tolerancePercent)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        if (designLengthMm <= 0.0 || bodyLengthMm <= 0.0)
+        {
+            throw new DomainException("Design length and body length must be positive.");
+        }
+
+        double percent = (bodyLengthMm - designLengthMm) / designLengthMm * 100.0;
+        if (ProfileFitting.LengthsMatch(designLengthMm, bodyLengthMm))
+        {
+            return new BodyFitResult(BodyFitKind.Exact, designLengthMm, bodyLengthMm, percent, profile);
+        }
+
+        RollProfileSegment[] segments = profile.Segments.ToArray();
+
+        // 两端紧贴端面的锥度段不动；剩下的是"中间段"，按原比例分掉长度差。
+        bool headTaper = segments.Length > 1 && segments[0].ProfileTypeKey == ProfileTypeKeys.Taper;
+        bool tailTaper = segments.Length > 1 && segments[^1].ProfileTypeKey == ProfileTypeKeys.Taper;
+        int first = headTaper ? 1 : 0;
+        int last = tailTaper ? segments.Length - 2 : segments.Length - 1;
+        if (profile.Layout != ProfileLayout.Sequential || first > last)
+        {
+            // 旧的叠加辊形分不出段的先后：整条按比例伸缩。
+            first = 0;
+            last = segments.Length - 1;
+        }
+
+        bool shapeFollowsLength = segments[first..(last + 1)]
+            .Any(segment => segment.ProfileTypeKey is ProfileTypeKeys.Cvc or ProfileTypeKeys.PointTable);
+        if (shapeFollowsLength && Math.Abs(percent) > tolerancePercent + 1e-9)
+        {
+            return new BodyFitResult(BodyFitKind.TooDifferent, designLengthMm, bodyLengthMm, percent, null);
+        }
+
+        double fixedLength = segments.Take(first).Sum(s => s.LengthMm) + segments.Skip(last + 1).Sum(s => s.LengthMm);
+        double middleDesign = designLengthMm - fixedLength;
+        double middleBody = bodyLengthMm - fixedLength;
+        if (middleDesign <= 0.0 || middleBody <= 0.0)
+        {
+            return new BodyFitResult(BodyFitKind.TooDifferent, designLengthMm, bodyLengthMm, percent, null);
+        }
+
+        double ratio = middleBody / middleDesign;
+        CompositeRollProfile fitted;
+        if (profile.Layout == ProfileLayout.Sequential)
+        {
+            IEnumerable<SequentialSegment> parts = segments.Select((segment, i) => i < first || i > last
+                ? SequentialSegment.From(segment)
+                : new SequentialSegment(segment.ProfileTypeKey, segment.LengthMm * ratio, ScalePoints(segment.Parameters, ratio), segment.IsMirrored));
+            fitted = CompositeRollProfile.Sequential(profile.StartZMm, parts);
+        }
+        else
+        {
+            double whole = bodyLengthMm / designLengthMm;
+            fitted = new CompositeRollProfile(
+                segments.Select(segment => RollProfileSegment.Create(
+                    segment.Order, segment.ProfileTypeKey, segment.FromMm * whole, segment.ToMm * whole,
+                    ScalePoints(segment.Parameters, whole), segment.IsMirrored)),
+                profile.Layout);
+        }
+
+        return new BodyFitResult(BodyFitKind.MiddleAdjusted, designLengthMm, bodyLengthMm, percent, fitted);
+    }
+
+    private static ParameterSet ScalePoints(ParameterSet parameters, double ratio)
+    {
+        if (!parameters.TryGet(PointTableProfileType.PointsKey, out ParameterValue? value) || value is not { Kind: ParameterValueKind.Points })
+        {
+            return parameters;
+        }
+
+        return parameters.With(
+            PointTableProfileType.PointsKey,
+            ParameterValue.FromPoints(value.Points.Select(point => point with { X = point.X * ratio })));
+    }
+}

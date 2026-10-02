@@ -37,6 +37,16 @@ internal sealed class MachineJson
 
     /// <summary>手动往复默认行程两端留量（mm）。</summary>
     public double? ManualStrokeMarginMm { get; set; }
+
+    /// <summary>按辊重限头架转速（关系设计 V1）。</summary>
+    public List<HeadstockSpeedLimitJson>? HeadstockRpmByWeight { get; set; }
+}
+
+internal sealed class HeadstockSpeedLimitJson
+{
+    public double MaxWeightKg { get; set; }
+
+    public double MaxRpm { get; set; }
 }
 
 internal sealed class ControllerJson
