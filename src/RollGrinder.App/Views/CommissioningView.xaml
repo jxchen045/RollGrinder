@@ -51,8 +51,7 @@
             <DockPanel>
                 <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                     <DockPanel>
-                        <TextBlock DockPanel.Dock="Right" Text="{Binding ConfigStatusText}" FontSize="{StaticResource Size.Caption}" VerticalAlignment="Center"
-                                   Foreground="{StaticResource Brush.TextSecondary}" />
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding ConfigStatusText}" FontSize="{StaticResource Size.Caption}" VerticalAlignment="Center" />
                         <TextBlock Text="{loc:Loc Cfg_MachineHeader}" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center" />
                     </DockPanel>
                 </Border>
@@ -95,7 +94,7 @@
                 <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Right" Text="{Binding ConfigStatusText}" FontSize="{StaticResource Size.Caption}" VerticalAlignment="Center"
-                                   Foreground="{StaticResource Brush.TextSecondary}" TextTrimming="CharacterEllipsis" MaxWidth="{ctl:Px 900}" />
+                                   TextTrimming="CharacterEllipsis" MaxWidth="{ctl:Px 900}" />
                         <TextBlock Text="{loc:Loc Cfg_TagMapHeader}" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center" />
                     </DockPanel>
                 </Border>

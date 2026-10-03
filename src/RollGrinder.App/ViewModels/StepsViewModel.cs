@@ -711,6 +711,19 @@ public sealed partial class StepsViewModel : PageViewModelBase
         for (int i = 0; i < targets.Count; i++)
         {
             targets[i].Stock.Text = shares[i].ToString("0.#", CultureInfo.InvariantCulture);
+
+            // 只走周期进给的工序：道次 × 每道次必须等于磨削量（校验按这个对账），磨削量变了道次跟着重算。
+            ParameterRowViewModel? passes = targets[i].Row.Parameters.FirstOrDefault(row => row.Key == StepParameterKeys.PassCount);
+            ParameterRowViewModel? infeed = targets[i].Row.Parameters.FirstOrDefault(row => row.Key == StepParameterKeys.InfeedPerPassDiameterMicrometer);
+            ParameterRowViewModel? continuous = targets[i].Row.Parameters.FirstOrDefault(row => row.Key == StepParameterKeys.ContinuousInfeedDiameterMicrometerPerMin);
+            bool periodicOnly = continuous is null || !TryParseDouble(continuous.Text, out double rate) || rate <= 0.0;
+            if (periodicOnly && passes is not null && infeed is not null
+                && TryParseDouble(infeed.Text, out double perPass)
+                && ProgramChecks.FitPasses(shares[i], perPass) is { } fitted)
+            {
+                passes.Text = fitted.Passes.ToString(CultureInfo.InvariantCulture);
+                infeed.Text = fitted.InfeedPerPassDiameterMicrometer.ToString("0.#", CultureInfo.InvariantCulture);
+            }
         }
 
         StatusResourceKey = "Program_StockAllocated";

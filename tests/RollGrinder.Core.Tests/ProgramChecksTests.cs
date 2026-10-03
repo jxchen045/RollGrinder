@@ -92,4 +92,26 @@ public sealed class ProgramChecksTests
 
         shares.Should().Equal(60.0, 10.0);
     }
+
+    [Theory]
+    [InlineData(300.0, 24.0, 13, 23.1)]
+    [InlineData(20.0, 12.0, 2, 10.0)]
+    [InlineData(5.0, 12.0, 1, 5.0)]
+    [InlineData(600.0, 12.0, 50, 12.0)]
+    public void Allocated_stock_refits_the_passes_so_passes_times_infeed_matches(double stock, double infeed, int passes, double perPass)
+    {
+        (int Passes, double InfeedPerPassDiameterMicrometer)? fitted = ProgramChecks.FitPasses(stock, infeed);
+
+        fitted.Should().NotBeNull();
+        fitted!.Value.Passes.Should().Be(passes);
+        fitted.Value.InfeedPerPassDiameterMicrometer.Should().BeApproximately(perPass, 0.05);
+        (fitted.Value.Passes * fitted.Value.InfeedPerPassDiameterMicrometer).Should().BeApproximately(stock, 0.05 * passes + 0.01);
+    }
+
+    [Fact]
+    public void Nothing_is_refitted_without_a_positive_infeed()
+    {
+        ProgramChecks.FitPasses(300.0, 0.0).Should().BeNull();
+        ProgramChecks.FitPasses(0.0, 12.0).Should().BeNull();
+    }
 }

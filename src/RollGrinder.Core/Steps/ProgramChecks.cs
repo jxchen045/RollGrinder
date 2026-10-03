@@ -168,4 +168,25 @@ public static class ProgramChecks
 
         return -1;
     }
+
+    /// <summary>
+    /// 只走周期进给的工序：磨削量改了，道次跟着重算——道次 = 磨削量 ÷ 原每道次切深（四舍五入，至少 1），
+    /// 每道次切深再按"磨削量 ÷ 道次"微调（0.1 µm），保证"道次 × 每道次 = 磨削量"，合计一点不差。
+    /// </summary>
+    /// <param name="stockDiameterMicrometer">新的磨削量（直径量 µm）。</param>
+    /// <param name="infeedPerPassDiameterMicrometer">原来的每道次切深（直径量 µm）。</param>
+    /// <returns>道次与每道次切深；原切深不是正数时返回 null（不动）。</returns>
+    public static (int Passes, double InfeedPerPassDiameterMicrometer)? FitPasses(
+        double stockDiameterMicrometer, double infeedPerPassDiameterMicrometer)
+    {
+        if (!double.IsFinite(stockDiameterMicrometer) || stockDiameterMicrometer <= 0.0
+            || !double.IsFinite(infeedPerPassDiameterMicrometer) || infeedPerPassDiameterMicrometer <= 0.0)
+        {
+            return null;
+        }
+
+        int passes = Math.Max(1, (int)Math.Round(stockDiameterMicrometer / infeedPerPassDiameterMicrometer, MidpointRounding.AwayFromZero));
+        double infeed = Math.Round(stockDiameterMicrometer / passes, 1, MidpointRounding.AwayFromZero);
+        return (passes, infeed);
+    }
 }

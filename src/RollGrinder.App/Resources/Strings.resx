@@ -2696,7 +2696,7 @@
     <value>砂轮停止</value>
   </data>
   <data name="Alarm_ResetHmi" xml:space="preserve">
-    <value>上位机报警：在这里按"清除上位机报警…"清掉</value>
+    <value>上位机报警：在这里按"清除报警…"清掉</value>
   </data>
   <data name="Alarm_ResetNc" xml:space="preserve">
     <value>NC 报警：排除原因后按机床操作面板上的"复位"（RESET）</value>
@@ -3401,7 +3401,7 @@
     <value>换砂轮 ▸</value>
   </data>
   <data name="Vk_ClearHmiAlarms" xml:space="preserve">
-    <value>清除上位机报警…</value>
+    <value>清除报警…</value>
   </data>
   <data name="Vk_Confirm" xml:space="preserve">
     <value>✓ 确认</value>

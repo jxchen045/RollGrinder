@@ -496,16 +496,18 @@
 
   <!-- 状态灯（修改稿 5.5 状态带、5.6 手动页到位显示）：开为绿、关为灰、读不到画虚框。 -->
   <DataTemplate x:Key="StatusLampTemplate">
+    <!-- 文字放在填色的 Border 里面：对比度检查认得出底色（并排叠放时它只看得到页面底色）。 -->
     <Grid Margin="0,0,8,0" MinWidth="104" Height="46">
-      <Border x:Name="LampFill" Background="{StaticResource Brush.StepIdle}" />
       <Rectangle x:Name="LampDash" Stroke="{StaticResource Brush.TextMuted}" StrokeThickness="1.5"
                  StrokeDashArray="3 2" Visibility="Collapsed" />
-      <StackPanel Margin="10,2" VerticalAlignment="Center">
-        <TextBlock x:Name="LampLabel" Text="{Binding Label}" FontSize="{StaticResource Size.Caption}"
-                   Foreground="{StaticResource Brush.TextSecondary}" />
-        <TextBlock x:Name="LampState" Text="{Binding StateText}" FontSize="17" FontWeight="SemiBold"
-                   Foreground="{StaticResource Brush.TextPrimary}" />
-      </StackPanel>
+      <Border x:Name="LampFill" Background="{StaticResource Brush.StepIdle}">
+        <StackPanel Margin="10,2" VerticalAlignment="Center">
+          <TextBlock x:Name="LampLabel" Text="{Binding Label}" FontSize="{StaticResource Size.Caption}"
+                     Foreground="{StaticResource Brush.TextSecondary}" />
+          <TextBlock x:Name="LampState" Text="{Binding StateText}" FontSize="17" FontWeight="SemiBold"
+                     Foreground="{StaticResource Brush.TextPrimary}" />
+        </StackPanel>
+      </Border>
     </Grid>
     <DataTemplate.Triggers>
       <DataTrigger Binding="{Binding IsOn}" Value="True">
@@ -513,20 +515,20 @@
         <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
         <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
       </DataTrigger>
-      <DataTrigger Binding="{Binding IsUnknown}" Value="True">
-        <Setter TargetName="LampFill" Property="Background" Value="Transparent" />
-        <Setter TargetName="LampDash" Property="Visibility" Value="Visible" />
-        <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
-      </DataTrigger>
       <DataTrigger Binding="{Binding IsMoving}" Value="True">
         <Setter TargetName="LampFill" Property="Background" Value="{StaticResource Brush.Moving}" />
-        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
-        <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+        <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
       </DataTrigger>
       <DataTrigger Binding="{Binding IsFault}" Value="True">
         <Setter TargetName="LampFill" Property="Background" Value="{StaticResource Brush.Alarm}" />
         <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
         <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+      </DataTrigger>
+      <DataTrigger Binding="{Binding IsUnknown}" Value="True">
+        <Setter TargetName="LampFill" Property="Background" Value="Transparent" />
+        <Setter TargetName="LampDash" Property="Visibility" Value="Visible" />
+        <Setter TargetName="LampState" Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
       </DataTrigger>
     </DataTemplate.Triggers>
   </DataTemplate>

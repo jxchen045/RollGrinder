@@ -39,7 +39,8 @@
     offline 一轮的页面与 sim 一样，除非 -Shots all，否则只截失败的步骤。
 
 .PARAMETER MaxShots
-    每一轮最多存几张截图（失败的步骤不受限）。默认 120。
+    每一轮最多存几张截图（失败的步骤不受限）。默认 80；en-US 渲染巡检一轮最多 50。
+    截图按 1440×810、JPEG 65 存，一张约 100 KB；默认三轮的包约 10 MB，-Shots fail 约 2 MB。
 
 .PARAMETER Layout
     界面档位：standard（1920×1080，默认）或 compact（1366×768）。固定档位，截图在任何屏幕上都是同一尺寸。
@@ -70,7 +71,7 @@ param(
     [ValidateSet('key', 'fail', 'all')]
     [string] $Shots = 'key',
     [ValidateRange(0, 5000)]
-    [int] $MaxShots = 120,
+    [int] $MaxShots = 80,
     [ValidateSet('standard', 'compact')]
     [string] $Layout = 'standard',
     [switch] $IncludeData,
@@ -301,8 +302,10 @@ function Invoke-UiPass([string] $Pass) {
     # 截图策略：offline 的页面与 sim 一样，只截失败的；其余按 -Shots。
     $passShots = $Shots
     if ($Pass -eq 'offline' -and $Shots -ne 'all') { $passShots = 'fail' }
+    $passMax = $MaxShots
+    if ($Pass -eq 'en-US') { $passMax = [math]::Min($MaxShots, 50) }
     $arguments = @('--selftest', '--selftest-label', $Pass, '--data', $data, '--config', $config, '--selftest-out', $result,
-        '--selftest-shots', $passShots, '--selftest-max-shots', "$MaxShots")
+        '--selftest-shots', $passShots, '--selftest-max-shots', "$passMax")
 
     # 每一轮都放一份 hmi.json：固定界面档位（截图尺寸不随屏幕变）、自检不全屏；en-US 一轮再换语言。
     $hmi = Get-Content (Join-Path $RepoRoot 'config\hmi.sample.json') -Raw -Encoding UTF8

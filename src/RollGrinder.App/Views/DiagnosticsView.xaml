@@ -18,7 +18,7 @@
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                         <DockPanel>
-                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Text.Label}" VerticalAlignment="Center"
+                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center"
                                        Text="{Binding Events.Count, StringFormat={}{0}}" />
                             <TextBlock Text="{loc:Loc Diag_EventsHeader}" Style="{StaticResource Text.CardTitle}" />
                         </DockPanel>
