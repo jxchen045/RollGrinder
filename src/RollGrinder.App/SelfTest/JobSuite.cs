@@ -100,6 +100,7 @@ internal static class JobFlow
 
         if (item is null)
         {
+            rolls.TryDismissPrompt();
             ctx.Skip("'" + name + "' is not in the library");
         }
 
@@ -163,6 +164,11 @@ internal sealed class JobSuite : ISelfTestSuite
 
         await h.StepAsync("Review", "ChecklistPasses", ctx =>
         {
+            if (!job.IsReview)
+            {
+                ctx.Skip("no review is open (the registration step before did not get there)");
+            }
+
             ctx.Check(job.IsReview, "should be on the review");
             ctx.Check(job.Checks.Any(c => c.ItemText == job.Localizer["CheckItem_Length"]), "the length check (2% rule) should be listed");
             ctx.Check(job.CanDownload, "the job should pass, first block: " + JobFlow.FirstBlock(job));
@@ -174,6 +180,11 @@ internal sealed class JobSuite : ISelfTestSuite
 
         await h.StepAsync("Review", "StockEditsRecheck", async ctx =>
         {
+            if (!job.IsReview)
+            {
+                ctx.Skip("no review is open (the registration step before did not get there)");
+            }
+
             string before = job.StockText;
             job.StockText = "abc";
             await h.SettleAsync();
@@ -185,6 +196,11 @@ internal sealed class JobSuite : ISelfTestSuite
 
         await h.StepAsync("Review", "ChangeProfileThisTimeNeedsReason", async ctx =>
         {
+            if (!job.IsReview)
+            {
+                ctx.Skip("no review is open (the registration step before did not get there)");
+            }
+
             await h.PressVerticalKeyAsync(ctx, "Vk_ChangeProfile");
             await h.WaitUntilAsync(() => job.IsPicking, TimeSpan.FromSeconds(10));
             PlanPickItemViewModel? other = job.Picker.Items.FirstOrDefault(i => i.Name != SelfTestNames.ProfileA);
@@ -231,6 +247,11 @@ internal sealed class JobSuite : ISelfTestSuite
         {
             await h.StepAsync("Download", "RefusedWithoutMachine", async ctx =>
             {
+                if (!job.IsReview)
+                {
+                    ctx.Skip("no review is open");
+                }
+
                 await h.PressVerticalKeyAsync(ctx, "Vk_ConfirmDownload");
                 await h.SettleAsync(500);
                 ctx.Check(h.Shell.CurrentPage.Key == PageKey.Job && job.IsReview, "a refused download stays on the review");
@@ -239,6 +260,11 @@ internal sealed class JobSuite : ISelfTestSuite
 
         await h.StepAsync("Review", "BackToQueue", async ctx =>
         {
+            if (!job.IsReview)
+            {
+                ctx.Skip("no review is open");
+            }
+
             await h.PressVerticalKeyAsync(ctx, "Vk_BackToQueue");
             bool back = await h.WaitUntilAsync(() => job.IsQueue, TimeSpan.FromSeconds(5));
             ctx.Check(back, "'back to queue' should close the review");

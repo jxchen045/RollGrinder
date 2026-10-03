@@ -1873,9 +1873,6 @@
   <data name="Fn_NewProgram" xml:space="preserve">
     <value>新建程序…</value>
   </data>
-  <data name="Fn_UseForJob" xml:space="preserve">
-    <value>用于作业</value>
-  </data>
   <data name="Program_Header" xml:space="preserve">
     <value>工艺程序</value>
   </data>
@@ -1890,9 +1887,6 @@
   </data>
   <data name="Program_Valid" xml:space="preserve">
     <value>程序校验通过</value>
-  </data>
-  <data name="Program_SaveBeforeUse" xml:space="preserve">
-    <value>先把程序存进库里，作业用的是库里那一支</value>
   </data>
   <data name="Profile_MirrorNotForRelief" xml:space="preserve">
     <value>点表、CVC 等可以镜像；锥度按所在半边自动朝向端面，不用镜像</value>
@@ -3576,9 +3570,6 @@
   </data>
   <data name="Plot_ResetView" xml:space="preserve">
     <value>⟲ 复位视图</value>
-  </data>
-  <data name="Vk_ProfileChoiceFormat" xml:space="preserve">
-    <value>{0}</value>
   </data>
   <data name="Stock_ActualInvalid" xml:space="preserve">
     <value>本次余量要大于 0：检查磨前直径与目标直径</value>

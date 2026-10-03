@@ -473,7 +473,7 @@ internal sealed class RenderSuite : ISelfTestSuite
             {
                 await h.RunAsync(shell.ToggleAreaMenuCommand);
                 CheckTexts(h, ctx);
-                h.TryScreenshot("render-menu-" + page);
+                h.TryScreenshot("render-menu-" + page, ShotKind.Detail);
                 await h.RunAsync(shell.CloseAreaMenuCommand);
             });
 
@@ -481,7 +481,7 @@ internal sealed class RenderSuite : ISelfTestSuite
             {
                 await h.RunAsync(shell.ToggleHelpCommand);
                 CheckTexts(h, ctx);
-                h.TryScreenshot("render-help-" + page);
+                h.TryScreenshot("render-help-" + page, ShotKind.Detail);
                 shell.Help.Close();
                 await h.SettleAsync();
             });
@@ -501,6 +501,13 @@ internal sealed class RenderSuite : ISelfTestSuite
                 await h.StepAsync(page.ToString(), "SubView_" + key, async ctx =>
                 {
                     await h.GoToAsync(page, ctx);
+                    if (h.IndexOfKey(key) < 0 && h.IndexOfVerticalKey(key) < 0
+                        && Groups.TryGetValue(page, out string[]? pageGroups) && pageGroups.Length > 0)
+                    {
+                        // 上一步停在别的功能组（例如参数页的"标定审计"），这个键在第一组里。
+                        await h.GoToAsync(page, ctx, pageGroups[0]);
+                    }
+
                     if (h.IndexOfKey(key) >= 0)
                     {
                         await h.PressKeyAsync(ctx, key);

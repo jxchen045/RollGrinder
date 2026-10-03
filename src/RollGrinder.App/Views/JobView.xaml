@@ -22,7 +22,7 @@
                                 <KeyBinding Key="Enter" Command="{Binding SearchEnterCommand}" />
                             </TextBox.InputBindings>
                         </TextBox>
-                        <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Job_SearchLabel}" Style="{StaticResource Text.Label}"
+                        <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Job_SearchLabel}" Style="{StaticResource Text.CardTitle}"
                                    VerticalAlignment="Center" Margin="0,0,10,0" />
                         <TextBlock Text="{Binding QueueTitle}" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center" />
                     </DockPanel>

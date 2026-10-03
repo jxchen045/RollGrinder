@@ -80,7 +80,7 @@
                     <TextBlock Text="{Binding ShortcutText}"
                                FontFamily="{StaticResource Font.Mono}"
                                FontSize="{StaticResource Size.Caption}"
-                               Opacity="0.8" HorizontalAlignment="Center"
+                               HorizontalAlignment="Center"
                                Visibility="{Binding ShortcutText, Converter={StaticResource TextToVisibility}}" />
                 </StackPanel>
             </Button>
@@ -126,7 +126,7 @@
                                     <TextBlock Text="{Binding Glyph}" FontSize="{StaticResource Size.DataRow}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding ShortcutText}" FontFamily="{StaticResource Font.Mono}"
-                                               FontSize="{StaticResource Size.Caption}" Opacity="0.8" HorizontalAlignment="Center" />
+                                               FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Button>
                         </DataTemplate>

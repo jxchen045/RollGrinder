@@ -21,7 +21,7 @@
   <GridLength x:Key="Layout.PathHeight">28</GridLength>
   <GridLength x:Key="Layout.DialogHeight">28</GridLength>
   <GridLength x:Key="Layout.KeyBarHeight">64</GridLength>
-  <sys:Double x:Key="Layout.QuickItemHeight">76</sys:Double>
+  <sys:Double x:Key="Layout.QuickItemHeight">84</sys:Double>
   <sys:Double x:Key="Layout.SideScreenHeight">52</sys:Double>
   <sys:Double x:Key="Layout.TitleButtonHeight">36</sys:Double>
   <sys:Double x:Key="Layout.ChannelHeight">28</sys:Double>

@@ -37,9 +37,17 @@ public sealed partial class NumericKeypadViewModel : ObservableObject
     [ObservableProperty]
     private string rangeText = string.Empty;
 
-    /// <summary>缓冲里的字。</summary>
+    /// <summary>缓冲里的字。外面直接改它（实体键盘敲进显示格、粘贴）时，缓冲跟着换，范围校验照样生效。</summary>
     [ObservableProperty]
     private string text = string.Empty;
+
+    partial void OnTextChanged(string value)
+    {
+        if (this.entry is not null && !string.Equals(this.entry.Text, value, StringComparison.Ordinal))
+        {
+            this.entry = new NumericEntry(value, this.entry.Minimum, this.entry.Maximum, this.entry.Decimals);
+        }
+    }
 
     /// <summary>
     /// 弹出键盘。<paramref name="accept"/> 收下文本并写回输入框，写回失败（例如格子自己的校验不过）返回 false，键盘不关。

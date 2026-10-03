@@ -1873,9 +1873,6 @@
   <data name="Fn_NewProgram" xml:space="preserve">
     <value>New program…</value>
   </data>
-  <data name="Fn_UseForJob" xml:space="preserve">
-    <value>Use for a job</value>
-  </data>
   <data name="Program_Header" xml:space="preserve">
     <value>Process program</value>
   </data>
@@ -1890,9 +1887,6 @@
   </data>
   <data name="Program_Valid" xml:space="preserve">
     <value>Program is valid</value>
-  </data>
-  <data name="Program_SaveBeforeUse" xml:space="preserve">
-    <value>Save the program first; jobs use the program in the library</value>
   </data>
   <data name="Profile_MirrorNotForRelief" xml:space="preserve">
     <value>Point tables, CVC etc. can be mirrored; a taper always faces the end of the half it sits in</value>
@@ -3576,9 +3570,6 @@
   </data>
   <data name="Plot_ResetView" xml:space="preserve">
     <value>⟲ Reset view</value>
-  </data>
-  <data name="Vk_ProfileChoiceFormat" xml:space="preserve">
-    <value>{0}</value>
   </data>
   <data name="Stock_ActualInvalid" xml:space="preserve">
     <value>The stock must be above 0: check the start and target diameters</value>

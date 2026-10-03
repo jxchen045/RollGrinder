@@ -62,10 +62,10 @@
     <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
   </Style>
 
+  <!-- 卡片标题不写死颜色：继承标题栏给的前景（灰底标题栏深灰字、青底当前标题栏白字），青底上不会出现深字。 -->
   <Style x:Key="Text.CardTitle" TargetType="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource Font.Sans}" />
     <Setter Property="FontSize" Value="{StaticResource Size.CardTitle}" />
-    <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
 

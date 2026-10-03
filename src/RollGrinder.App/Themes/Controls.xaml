@@ -37,6 +37,7 @@
     <Setter Property="BorderBrush" Value="{StaticResource Brush.Divider}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
     <Setter Property="Padding" Value="14,0" />
+    <Setter Property="TextElement.Foreground" Value="{StaticResource Brush.TextSecondary}" />
   </Style>
 
   <!-- 当前窗口的标题栏：青底白字（最终稿 4.3）。 -->
@@ -585,12 +586,14 @@
   <!-- 状态带上的一格文字：小字标签在上，值在下。 -->
   <!-- 辅助功能块的小灯（一组一行）：名字写在灯里，绿 到位/开 · 灰 关 · 橙 动作中 · 红 故障 · 虚框 读不到。 -->
   <DataTemplate x:Key="StatusLampCompactTemplate">
+    <!-- 文字放在填色的 Border 里面（而不是并排叠放），对比度检查与读屏都认得出它的底色。 -->
     <Grid Margin="0,0,6,0" MinWidth="78" Height="28" ToolTip="{Binding StateText}">
-      <Border x:Name="LampFill" Background="{StaticResource Brush.StepIdle}" CornerRadius="2" />
       <Rectangle x:Name="LampDash" Stroke="{StaticResource Brush.TextMuted}" StrokeThickness="1.5"
                  StrokeDashArray="3 2" Visibility="Collapsed" />
-      <TextBlock x:Name="LampLabel" Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Margin="8,0"
-                 VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{StaticResource Brush.TextSecondary}" />
+      <Border x:Name="LampFill" Background="{StaticResource Brush.StepIdle}" CornerRadius="2">
+        <TextBlock x:Name="LampLabel" Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Margin="8,0"
+                   VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{StaticResource Brush.TextPrimary}" />
+      </Border>
     </Grid>
     <DataTemplate.Triggers>
       <DataTrigger Binding="{Binding IsOn}" Value="True">
@@ -599,7 +602,7 @@
       </DataTrigger>
       <DataTrigger Binding="{Binding IsMoving}" Value="True">
         <Setter TargetName="LampFill" Property="Background" Value="{StaticResource Brush.Moving}" />
-        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.OnCurrentStep}" />
+        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
       </DataTrigger>
       <DataTrigger Binding="{Binding IsFault}" Value="True">
         <Setter TargetName="LampFill" Property="Background" Value="{StaticResource Brush.Alarm}" />
@@ -608,7 +611,7 @@
       <DataTrigger Binding="{Binding IsUnknown}" Value="True">
         <Setter TargetName="LampFill" Property="Background" Value="Transparent" />
         <Setter TargetName="LampDash" Property="Visibility" Value="Visible" />
-        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter TargetName="LampLabel" Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
       </DataTrigger>
     </DataTemplate.Triggers>
   </DataTemplate>

@@ -28,20 +28,17 @@ internal static class SelfTestNames
     public const string ProfileB = "SelfTest Profile B";
 
     /// <summary>
-    /// "新建程序…"（流程调整方案第 6 节）：先在竖键里选关联辊形，再给空程序。
-    /// 优先选 <paramref name="profileName"/>；库里没有这条就选第一条。
+    /// "新建程序"：直接给一支只有开始与结束的空程序（程序不再绑辊形，适用类型另在"适用类型 ▸"里选）。
+    /// <paramref name="profileName"/> 保留给旧调用方，不再使用。
     /// </summary>
     public static async Task NewProgramAsync(SelfTestHarness h, StepContext ctx, string profileName = ProfileA)
     {
+        _ = profileName;
         await h.PressKeyAsync(ctx, "Fn_NewProgram");
-        FunctionKeyViewModel? choice = h.Shell.VerticalKeys.FirstOrDefault(k => k.LabelResourceKey == "Vk_ProfileChoiceFormat" && k.Label == profileName)
-            ?? h.Shell.VerticalKeys.FirstOrDefault(k => k.LabelResourceKey == "Vk_ProfileChoiceFormat");
-        ctx.Check(choice is not null, "'new program' should first list the profile library: " + h.DialogLineText);
-        if (choice is not null)
-        {
-            await h.PressAsync(choice);
-        }
+        StepsViewModel steps = h.Page<StepsViewModel>();
+        ctx.Check(steps.ProgramId is null && steps.Steps.Count == 2, "'new program' should give an empty program with start and end");
     }
+
     public const string OldProfile = "SelfTest Old Profile";
     public const string LedgerRollId = "SELFTEST-BR1";
     public const string ProgramA = "SelfTest Program A";
@@ -411,7 +408,7 @@ internal sealed class ProfileSuite : ISelfTestSuite
             ctx.Check(await SelfTestNames.SaveAsAsync(h, page.SaveAsCommand, page.NamePrompt, SelfTestNames.ProfileB),
                 "save-as B should go through, error: " + page.NamePrompt.ErrorText);
             await SelfTestNames.DeleteFromLibraryAsync(h, ctx, SelfTestNames.ProfilesGroup, SelfTestNames.ProfileB);
-            ctx.Check(h.Page<LibraryViewModel>().Entries.Any(e => e.Name == SelfTestNames.ProfileA), "the other profile must stay");
+            ctx.Check(SelfTestNames.Library(h, SelfTestNames.ProfilesGroup).Entries.Any(e => e.Name == SelfTestNames.ProfileA), "the other profile must stay");
 
             // 把 A 调回编辑器，后面工序页要从库里选它。
             await SelfTestNames.OpenFromLibraryAsync(h, ctx, SelfTestNames.ProfilesGroup, SelfTestNames.ProfileA);
@@ -727,6 +724,8 @@ internal sealed class StepsSuite : ISelfTestSuite
             ParameterRowViewModel stock = grinding!.Parameters.First(row => row.Key == StepParameterKeys.StockDiameterMicrometer);
             string defaultStock = grinding.StepType.Schema.Get(StepParameterKeys.StockDiameterMicrometer).DefaultValue.ToInvariantString();
             await h.PressVerticalKeyAsync(ctx, "Vk_StepDefaults");
+            ctx.Check(h.HasPendingConfirmation, "'defaults' should ask first");
+            await h.ConfirmAsync(ctx);
             ctx.Check(stock.Text == defaultStock, "defaults should put the stock back to " + defaultStock + ", is " + stock.Text);
 
             await h.PressVerticalKeyAsync(ctx, "Vk_ProgramOptions");
@@ -787,11 +786,15 @@ internal sealed class StepsSuite : ISelfTestSuite
             ctx.Check(toggled > 0, "at least one program option should be available");
         });
 
-        await h.StepAsync("UseForJob", "UnsavedProgramRefused", async ctx =>
+        await h.StepAsync("Program", "ApplicableKindMenu", async ctx =>
         {
-            await h.PressKeyAsync(ctx, "Fn_UseForJob");
-            ctx.Check(h.Shell.CurrentPage.Key == PageKey.Steps, "an unsaved program must not be handed to a job");
-            ctx.Check(page.StatusResourceKey == "Program_SaveBeforeUse", "status should ask to save first, is " + page.StatusResourceKey);
+            // 程序不再绑辊形：只写适用的轧辊类型，作业核对按它拦。
+            await h.PressKeyAsync(ctx, "Fn_ApplicableKind");
+            await h.PressVerticalKeyAsync(ctx, "RollKind_WorkRoll");
+            ctx.Check(page.ApplicableRollKind == RollGrinder.Core.RollKind.WorkRoll, "the program should now apply to work rolls");
+            await h.PressKeyAsync(ctx, "Fn_ApplicableKind");
+            await h.PressVerticalKeyAsync(ctx, "RollKind_Any");
+            ctx.Check(page.ApplicableRollKind == RollGrinder.Core.RollKind.Unspecified, "and back to any roll");
         });
 
         await h.StepAsync("ProgramLibrary", "SaveWithoutNameRefused", async ctx =>
@@ -1341,7 +1344,7 @@ internal sealed class RecordsSuite : ISelfTestSuite
         await h.StepAsync("Export", "Csv", async ctx =>
         {
             await h.RecoverAsync();
-            await h.PressVerticalKeyAsync(ctx, "Vk_ExportExcel");
+            await h.PressKeyAsync(ctx, "Fn_ExportExcel");
             string? file = h.Interaction.LastProduced;
             ctx.Check(file is not null && File.Exists(file) && file.EndsWith(".csv", StringComparison.OrdinalIgnoreCase), "a CSV export should be written");
             ctx.Note(Invariant($"{Path.GetFileName(file)} lines={File.ReadAllLines(file!).Length}"));
@@ -1375,6 +1378,12 @@ internal sealed class LibrarySuite : ISelfTestSuite
                     library.SelectedEntry = library.Entries[0];
                     await h.SettleAsync(200);
                     ctx.Note(Invariant($"{library.Entries.Count} entries, preview rows {library.PreviewRows.Count}, users {library.Users.Count}"));
+                }
+
+                if (library.SelectedEntry is null)
+                {
+                    ctx.Note("library is empty: versions not tried");
+                    return;
                 }
 
                 await h.PressVerticalKeyAsync(ctx, "Vk_Versions");
@@ -1445,6 +1454,7 @@ internal sealed class LibrarySuite : ISelfTestSuite
                 "the exchange file should carry the " + RollGrinder.Data.LibraryExchangeFile.Extension + " extension");
 
             int before = page.Entries.Count;
+            h.Interaction.OpenAnswers.Clear();
             h.Interaction.OpenAnswers.Enqueue(file);
             await h.PressKeyAsync(ctx, "Fn_ImportFile");
             ctx.Check(await h.WaitUntilAsync(() => page.Entries.Count == before + 1, TimeSpan.FromSeconds(5)), "the imported profile should be added");
@@ -1516,6 +1526,14 @@ internal sealed class RollsSuite : ISelfTestSuite
 
         await h.StepAsync("Edit", "CurrentDiameterSaved", async ctx =>
         {
+            // 前一步若半途跳过，页面可能还停在登记表或选择子视图上：先回到台账。
+            if (!page.IsLedger || page.IsPicking)
+            {
+                page.TryDismissPrompt();
+                await h.RecoverAsync();
+                await h.GoToAsync(PageKey.Rolls, ctx);
+            }
+
             page.SelectedRow = page.Rows.FirstOrDefault(r => r.RollId == SelfTestNames.LedgerRollId);
             if (page.SelectedRow is null)
             {
@@ -1534,6 +1552,14 @@ internal sealed class RollsSuite : ISelfTestSuite
 
         await h.StepAsync("Multi", "ChangePlanChecksEachRoll", async ctx =>
         {
+            // 前一步若半途跳过，页面可能还停在登记表或选择子视图上：先回到台账。
+            if (!page.IsLedger || page.IsPicking)
+            {
+                page.TryDismissPrompt();
+                await h.RecoverAsync();
+                await h.GoToAsync(PageKey.Rolls, ctx);
+            }
+
             await h.PressVerticalKeyAsync(ctx, "Vk_MultiSelect");
             ctx.Check(page.IsMulti, "'multi-select' shows the check boxes");
             RollRowViewModel? row = page.Rows.FirstOrDefault(r => r.RollId == SelfTestNames.LedgerRollId);
@@ -1556,6 +1582,14 @@ internal sealed class RollsSuite : ISelfTestSuite
 
         await h.StepAsync("Retire", "RetireAndRestore", async ctx =>
         {
+            // 前一步若半途跳过，页面可能还停在登记表或选择子视图上：先回到台账。
+            if (!page.IsLedger || page.IsPicking)
+            {
+                page.TryDismissPrompt();
+                await h.RecoverAsync();
+                await h.GoToAsync(PageKey.Rolls, ctx);
+            }
+
             page.SelectedRow = page.Rows.FirstOrDefault(r => r.RollId == SelfTestNames.LedgerRollId);
             if (page.SelectedRow is null)
             {

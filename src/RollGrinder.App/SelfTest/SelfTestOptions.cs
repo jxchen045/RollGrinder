@@ -25,7 +25,8 @@ public enum SelfTestScope
 ///   --selftest-label &lt;name&gt;  这一轮的名字，写进日志，便于区分 sim / offline / en-US 几轮
 ///   --selftest-shots fail|key|all  截图策略，默认 key（失败 + 关键画面；画面没变的不重复存）
 ///   --selftest-max-shots &lt;n&gt;   一轮最多存几张，默认 120
-///   --selftest-jpeg-quality &lt;q&gt; JPEG 质量 30–95，默认 70
+///   --selftest-jpeg-quality &lt;q&gt; JPEG 质量 30–95，默认 65
+///   --selftest-shot-scale &lt;s&gt;  截图缩放 0.5–1.0，默认 0.75（1440×810）
 ///
 /// 自检会点"启动""复位"、建用户、改口令、写记录——所以有两道闸，见 <see cref="Refuse"/>。
 /// </summary>
@@ -54,13 +55,16 @@ public sealed record SelfTestOptions(bool Enabled, string? OutputDirectory, Self
     public const string DataMarkerFileName = ".selftest-data";
 
     /// <summary>默认 JPEG 质量（与 WindowCapture 的默认一致；这个文件也编进不引用 WPF 的测试工程）。</summary>
-    public const int DefaultJpegQuality = 70;
+    public const int DefaultJpegQuality = 65;
 
     /// <summary>截图策略（--selftest-shots fail|key|all）。</summary>
     public ScreenshotPolicy Shots { get; init; } = ScreenshotPolicy.Key;
 
     /// <summary>一轮最多存几张截图（--selftest-max-shots）；到顶后只再截失败的步骤。</summary>
     public int MaxShots { get; init; } = 120;
+
+    /// <summary>截图缩放（--selftest-shot-scale，0.5–1.0）。默认 0.75：1920×1080 画成 1440×810，字照样看得清，体积约小四成。</summary>
+    public double ShotScale { get; init; } = 0.75;
 
     /// <summary>JPEG 质量（--selftest-jpeg-quality，30–95）。</summary>
     public int JpegQuality { get; init; } = DefaultJpegQuality;
@@ -81,6 +85,7 @@ public sealed record SelfTestOptions(bool Enabled, string? OutputDirectory, Self
         ScreenshotPolicy shots = ScreenshotPolicy.Key;
         int maxShots = 120;
         int quality = DefaultJpegQuality;
+        double scale = 0.75;
 
         for (int i = 0; i < args.Count; i++)
         {
@@ -127,13 +132,22 @@ public sealed record SelfTestOptions(bool Enabled, string? OutputDirectory, Self
                     quality = Number(args, ref i, 30, 95);
                     break;
 
+                case "--selftest-shot-scale":
+                    string option = args[i];
+                    string text = Value(args, ref i);
+                    scale = double.TryParse(text, System.Globalization.NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed)
+                        && parsed >= 0.5 && parsed <= 1.0
+                        ? parsed
+                        : throw new ArgumentException($"{option} expects 0.5–1.0, got '{text}'.", nameof(args));
+                    break;
+
                 default:
                     break;
             }
         }
 
         return enabled
-            ? new SelfTestOptions(true, output, scope, label) { Shots = shots, MaxShots = maxShots, JpegQuality = quality }
+            ? new SelfTestOptions(true, output, scope, label) { Shots = shots, MaxShots = maxShots, JpegQuality = quality, ShotScale = scale }
             : Disabled;
     }
 

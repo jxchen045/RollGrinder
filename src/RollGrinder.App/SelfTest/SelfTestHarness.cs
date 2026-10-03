@@ -874,7 +874,7 @@ internal sealed partial class SelfTestHarness
 
         try
         {
-            System.Windows.Media.Imaging.BitmapSource? bitmap = Controls.WindowCapture.Render(Window);
+            System.Windows.Media.Imaging.BitmapSource? bitmap = Controls.WindowCapture.Render(Window, this.options.ShotScale);
             if (bitmap is null)
             {
                 return null;

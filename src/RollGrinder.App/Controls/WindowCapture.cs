@@ -35,7 +35,7 @@ public static class WindowCapture
     /// 云端 Windows 构建机的屏幕只有 1024×768，照样截出 1:1 的图。没有画布时退回整个窗口内容。
     /// 先铺窗口底色再画内容：透明的缝隙存成 JPEG 会变成黑块。
     /// </summary>
-    public static BitmapSource? Render(Window window)
+    public static BitmapSource? Render(Window window, double scale = 1.0)
     {
         ArgumentNullException.ThrowIfNull(window);
 
@@ -45,29 +45,30 @@ public static class WindowCapture
             return null;
         }
 
+        // 缩小时按矢量直接画小（字是重新排出来的，不是把大图缩糊）。
+        scale = Math.Clamp(scale, 0.25, 1.0);
         double width = Math.Ceiling(target.ActualWidth);
         double height = Math.Ceiling(target.ActualHeight);
+        var source = new Rect(0, 0, width, height);
+        var output = new Rect(0, 0, Math.Ceiling(width * scale), Math.Ceiling(height * scale));
         var visual = new DrawingVisual();
         using (DrawingContext dc = visual.RenderOpen())
         {
-            var area = new Rect(0, 0, width, height);
-            dc.DrawRectangle(window.Background ?? Brushes.White, null, area);
+            dc.DrawRectangle(window.Background ?? Brushes.White, null, output);
 
             // VisualBrush 按元素自己的坐标画，祖先的缩放（Viewbox）不参与。
             dc.DrawRectangle(
                 new VisualBrush(target)
                 {
-                    Stretch = Stretch.None,
+                    Stretch = Stretch.Fill,
                     ViewboxUnits = BrushMappingMode.Absolute,
-                    Viewbox = area,
-                    AlignmentX = AlignmentX.Left,
-                    AlignmentY = AlignmentY.Top,
+                    Viewbox = source,
                 },
                 null,
-                area);
+                output);
         }
 
-        var bitmap = new RenderTargetBitmap((int)width, (int)height, 96, 96, PixelFormats.Pbgra32);
+        var bitmap = new RenderTargetBitmap((int)output.Width, (int)output.Height, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual);
         bitmap.Freeze();
         return bitmap;

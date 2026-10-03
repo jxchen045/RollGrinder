@@ -79,9 +79,8 @@
                                 <!-- 看哪条曲线由竖键 1–5 选（最终稿 D3），标题写当前这条。 -->
                                 <TextBlock Text="{Binding CurveTitle}" Style="{StaticResource Text.CardTitle}" FontWeight="Bold" />
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding ToleranceText}" Style="{StaticResource Text.Label}" Margin="0,0,20,0" />
-                                    <TextBlock Text="{Binding RmsText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
-                                               Foreground="{StaticResource Brush.CurrentStep}" />
+                                    <TextBlock Text="{Binding ToleranceText}" FontSize="{StaticResource Size.Label}" Margin="0,0,20,0" />
+                                    <TextBlock Text="{Binding RmsText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Label}" FontWeight="Bold" />
                                 </StackPanel>
                             </DockPanel>
                         </Border>
