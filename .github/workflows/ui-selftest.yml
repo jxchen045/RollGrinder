@@ -29,6 +29,10 @@ concurrency:
   group: ui-selftest-${{ github.ref }}
   cancel-in-progress: true
 
+# 结果另推到 selftest-results 分支（解压后的目录），云端会话用 git 就能取回来看截图与日志。
+permissions:
+  contents: write
+
 jobs:
   ui-selftest:
     runs-on: windows-latest
@@ -63,3 +67,23 @@ jobs:
           path: TestResults/RollGrinder-TestRun-*.zip
           retention-days: 14
           if-no-files-found: warn
+
+      # GITHUB_TOKEN 推的提交不会再触发工作流。分支只留最近一次（强推），不进主线历史。
+      - name: Publish results to branch selftest-results
+        if: always()
+        shell: bash
+        run: |
+          run_dir=$(ls -d TestResults/run-* 2>/dev/null | head -1)
+          [ -n "$run_dir" ] || { echo "no results"; exit 0; }
+          out="$RUNNER_TEMP/selftest-results"
+          rm -rf "$out" && mkdir -p "$out"
+          cp -r "$run_dir"/. "$out"/
+          cd "$out"
+          printf 'commit: %s\nbranch: %s\nrun: %s\n' "$GITHUB_SHA" "$GITHUB_REF_NAME" "$GITHUB_RUN_NUMBER" > SOURCE.txt
+          git init -q
+          git checkout -q -b selftest-results
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "UI self-test run ${GITHUB_RUN_NUMBER} for ${GITHUB_SHA::7} (${GITHUB_REF_NAME})"
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:refs/heads/selftest-results
