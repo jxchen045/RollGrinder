@@ -33,6 +33,23 @@
 .PARAMETER UiTimeoutMinutes
     每一轮界面自检的超时（分钟）。
 
+.PARAMETER Shots
+    截图策略：key（默认：失败 + 每页 / 子视图 / 菜单态各一张，画面没变的不重复存）、
+    fail（只截失败的步骤，包最小）、all（另外把巡检里每按一个键都截一张，排查具体按键时才用）。
+    offline 一轮的页面与 sim 一样，除非 -Shots all，否则只截失败的步骤。
+
+.PARAMETER MaxShots
+    每一轮最多存几张截图（失败的步骤不受限）。默认 120。
+
+.PARAMETER Layout
+    界面档位：standard（1920×1080，默认）或 compact（1366×768）。固定档位，截图在任何屏幕上都是同一尺寸。
+
+.PARAMETER IncludeData
+    把每一轮的自检数据库也打进 zip（复现问题时用）。默认不带：日志与结果已足够分析，数据库只会让包变大。
+
+.PARAMETER AllowNonInteractive
+    没有交互桌面也照样跑界面自检（云端 Windows 构建机用）。截图按画布原尺寸画，不依赖屏幕。
+
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-full-test.ps1
 
@@ -50,6 +67,14 @@ param(
     [ValidateSet('sim', 'offline', 'en-US')]
     [string[]] $UiPasses = @('sim', 'offline', 'en-US'),
     [int] $UiTimeoutMinutes = 25,
+    [ValidateSet('key', 'fail', 'all')]
+    [string] $Shots = 'key',
+    [ValidateRange(0, 5000)]
+    [int] $MaxShots = 120,
+    [ValidateSet('standard', 'compact')]
+    [string] $Layout = 'standard',
+    [switch] $IncludeData,
+    [switch] $AllowNonInteractive,
     [string] $Configuration = 'Release'
 )
 
@@ -129,7 +154,7 @@ $envLines.Add("screens          : $(Try-Run { Add-Type -AssemblyName System.Wind
 $envLines.Add("interactive      : $([Environment]::UserInteractive)")
 $envLines.Add("dotnet.sdks      : $(Try-Run { (dotnet --list-sdks) -join '; ' })")
 $envLines.Add("dotnet.runtimes  : $(Try-Run { ((dotnet --list-runtimes) | Where-Object { $_ -match 'WindowsDesktop|NETCore.App' }) -join '; ' })")
-$envLines.Add("params           : SimSpeed=$SimSpeed SkipBuild=$SkipBuild SkipUnitTests=$SkipUnitTests SkipUi=$SkipUi KeepStaleFiles=$KeepStaleFiles UiPasses=$($UiPasses -join ',')")
+$envLines.Add("params           : SimSpeed=$SimSpeed SkipBuild=$SkipBuild SkipUnitTests=$SkipUnitTests SkipUi=$SkipUi KeepStaleFiles=$KeepStaleFiles UiPasses=$($UiPasses -join ',') Shots=$Shots MaxShots=$MaxShots Layout=$Layout IncludeData=$IncludeData")
 $envLines | Set-Content -Path (Join-Path $Run 'environment.txt') -Encoding UTF8
 $envLines | ForEach-Object { Write-Host "  $_" }
 
@@ -273,17 +298,23 @@ function Invoke-UiPass([string] $Pass) {
     $result = Join-Path $passDir 'result'
     New-Item -ItemType Directory -Force -Path $config | Out-Null
 
-    $arguments = @('--selftest', '--selftest-label', $Pass, '--data', $data, '--config', $config, '--selftest-out', $result)
+    # 截图策略：offline 的页面与 sim 一样，只截失败的；其余按 -Shots。
+    $passShots = $Shots
+    if ($Pass -eq 'offline' -and $Shots -ne 'all') { $passShots = 'fail' }
+    $arguments = @('--selftest', '--selftest-label', $Pass, '--data', $data, '--config', $config, '--selftest-out', $result,
+        '--selftest-shots', $passShots, '--selftest-max-shots', "$MaxShots")
+
+    # 每一轮都放一份 hmi.json：固定界面档位（截图尺寸不随屏幕变）、自检不全屏；en-US 一轮再换语言。
+    $hmi = Get-Content (Join-Path $RepoRoot 'config\hmi.sample.json') -Raw -Encoding UTF8
+    $hmi = $hmi -replace '"layout"\s*:\s*"[^"]*"', ('"layout": "' + $Layout + '"')
+    $hmi = $hmi -replace '"fullScreen"\s*:\s*(true|false)', '"fullScreen": false'
+    if ($Pass -eq 'en-US') { $hmi = $hmi -replace '"culture"\s*:\s*"[^"]*"', '"culture": "en-US"' }
+    [System.IO.File]::WriteAllText((Join-Path $config 'hmi.json'), $hmi, (New-Object System.Text.UTF8Encoding $false))
+
     switch ($Pass) {
         'sim' { $arguments += @('--gateway', 'sim', '--sim-speed', "$SimSpeed", '--selftest-scope', 'full') }
         'offline' { $arguments += @('--offline', '--selftest-scope', 'full') }
-        'en-US' {
-            # 英文界面：先放一份 culture=en-US 的 hmi.json，其余配置照常从模板生成。
-            $sample = Get-Content (Join-Path $RepoRoot 'config\hmi.sample.json') -Raw -Encoding UTF8
-            $english = $sample -replace '"culture"\s*:\s*"[^"]*"', '"culture": "en-US"'
-            [System.IO.File]::WriteAllText((Join-Path $config 'hmi.json'), $english, (New-Object System.Text.UTF8Encoding $false))
-            $arguments += @('--gateway', 'sim', '--sim-speed', "$SimSpeed", '--selftest-scope', 'render')
-        }
+        'en-US' { $arguments += @('--gateway', 'sim', '--sim-speed', "$SimSpeed", '--selftest-scope', 'render') }
     }
 
     $quoted = $arguments | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }
@@ -304,6 +335,9 @@ function Invoke-UiPass([string] $Pass) {
     # 应用自己的运行日志（Serilog）一并带走：崩溃堆栈在这里面。
     $appLogs = Join-Path $data 'logs'
     if (Test-Path $appLogs) { Copy-Item $appLogs (Join-Path $passDir 'app-logs') -Recurse -Force }
+
+    # 自检数据库只有自检自己造的数据，日志与结果已足够分析；默认不打包（-IncludeData 才留）。
+    if (-not $IncludeData -and (Test-Path $data)) { Remove-Item $data -Recurse -Force -ErrorAction SilentlyContinue }
 
     if (-not $finished) { return }
     $exit = $process.ExitCode
@@ -335,7 +369,7 @@ elseif (-not $buildOk) {
 elseif (-not (Test-Path $exe)) {
     Add-Result 'UI' 'FAIL' "RollGrinder.App.exe not found under $binDir (build first)"
 }
-elseif (-not [Environment]::UserInteractive) {
+elseif (-not [Environment]::UserInteractive -and -not $AllowNonInteractive) {
     Add-Result 'UI' 'SKIP' 'no interactive desktop session: run this script from a logged-in desktop'
 }
 else {
@@ -365,15 +399,31 @@ $md.Add('- environment.txt, build.log')
 $md.Add('- unit\<project>.log / .trx / .failed.txt')
 $md.Add('- ui\<pass>\result\selftest.log (readable), selftest.jsonl (per step), summary.json, screenshots\, files\, prints\')
 $md.Add('- ui\<pass>\app-logs\ (application log incl. stack traces)')
+$md.Add("- screenshots: policy $Shots, max $MaxShots per pass, layout $Layout; data\ databases $(if ($IncludeData) { 'included' } else { 'left out (-IncludeData to keep)' })")
 $md | Set-Content -Path (Join-Path $Run 'SUMMARY.md') -Encoding UTF8
 $md | ForEach-Object { Write-Host "  $_" }
 
 # ─── 5. 打包 ──────────────────────────────────────────────────────────────────
 Write-Stage '5/5  Package'
 $zip = Join-Path $ResultsRoot "RollGrinder-TestRun-$Stamp.zip"
-# 自检数据库里只有自检自己造的数据；一并打包，便于复现。
 Compress-Archive -Path (Join-Path $Run '*') -DestinationPath $zip -CompressionLevel Optimal -Force
 $sizeMb = [math]::Round((Get-Item $zip).Length / 1MB, 1)
+
+# 体积账：哪一块占得多一目了然；超过 15 MB 提示怎么减。
+$sizes = Get-ChildItem -Path $Run -Directory | ForEach-Object {
+    $bytes = (Get-ChildItem $_.FullName -Recurse -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum).Sum
+    foreach ($sub in @(Get-ChildItem $_.FullName -Directory -ErrorAction SilentlyContinue)) {
+        $subBytes = (Get-ChildItem $sub.FullName -Recurse -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum).Sum
+        [pscustomobject]@{ Part = "$($_.Name)\$($sub.Name)"; MB = [math]::Round($subBytes / 1MB, 1) }
+    }
+    [pscustomobject]@{ Part = $_.Name; MB = [math]::Round($bytes / 1MB, 1) }
+} | Sort-Object MB -Descending | Select-Object -First 8
+$sizes | ForEach-Object { Write-Host ("    {0,6} MB  {1}" -f $_.MB, $_.Part) }
+$shotCount = @(Get-ChildItem -Path $Run -Recurse -Filter '*.jpg' -ErrorAction SilentlyContinue).Count
+Write-Host "  screenshots: $shotCount (policy $Shots, max $MaxShots per pass)"
+if ($sizeMb -gt 15) {
+    Write-Host "  包偏大：可加 -Shots fail 只截失败的步骤，或 -MaxShots 60，或 -UiPasses sim 只跑一轮。" -ForegroundColor Yellow
+}
 Write-Host ''
 Write-Host "  结论 / verdict : $verdict" -ForegroundColor $(if ($verdict -eq 'FAIL') { 'Red' } elseif ($verdict -eq 'PASS') { 'Green' } else { 'Yellow' })
 Write-Host "  请上传这个文件 / upload this file ($sizeMb MB):" -ForegroundColor Cyan

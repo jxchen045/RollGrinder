@@ -45,6 +45,26 @@ public sealed class SelfTestFrameworkTests : IDisposable
     }
 
     [Fact]
+    public void Screenshots_default_to_key_frames_and_the_policy_cap_and_quality_can_be_set()
+    {
+        SelfTestOptions defaults = SelfTestOptions.Parse(new[] { "--selftest" }, this.root);
+        defaults.Shots.Should().Be(ScreenshotPolicy.Key, "默认只截关键画面，测试包才不会几十 MB");
+        defaults.MaxShots.Should().Be(120);
+        defaults.JpegQuality.Should().Be(SelfTestOptions.DefaultJpegQuality);
+
+        SelfTestOptions custom = SelfTestOptions.Parse(
+            new[] { "--selftest", "--selftest-shots", "fail", "--selftest-max-shots", "40", "--selftest-jpeg-quality", "60" }, this.root);
+        custom.Shots.Should().Be(ScreenshotPolicy.Failures);
+        custom.MaxShots.Should().Be(40);
+        custom.JpegQuality.Should().Be(60);
+
+        Action badPolicy = () => SelfTestOptions.Parse(new[] { "--selftest", "--selftest-shots", "some" }, this.root);
+        badPolicy.Should().Throw<ArgumentException>().WithMessage("*fail, key or all*");
+        Action badQuality = () => SelfTestOptions.Parse(new[] { "--selftest", "--selftest-jpeg-quality", "100" }, this.root);
+        badQuality.Should().Throw<ArgumentException>().WithMessage("*30–95*");
+    }
+
+    [Fact]
     public void Unknown_scope_is_rejected()
     {
         Action act = () => SelfTestOptions.Parse(new[] { "--selftest", "--selftest-scope", "everything" }, this.root);

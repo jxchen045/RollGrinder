@@ -1,0 +1,65 @@
+name: UI self-test (Windows)
+
+# 在云端 Windows 构建机上真的把 WPF 窗口开出来跑界面自检（仿真机床），
+# 截图按画布原尺寸 1920×1080 画、不依赖构建机的屏幕；结果包作为 artifact 上传。
+# 界面相关的改动推上来就自动跑；也可以在 Actions 页手动触发并选轮次与截图策略。
+on:
+  workflow_dispatch:
+    inputs:
+      passes:
+        description: "界面自检轮次（逗号分隔）：sim, offline, en-US"
+        default: "sim,en-US"
+      shots:
+        description: "截图策略：key / fail / all"
+        default: "key"
+      layout:
+        description: "界面档位：standard / compact"
+        default: "standard"
+  push:
+    branches: ["**"]
+    paths:
+      - "src/RollGrinder.App/**"
+      - "src/RollGrinder.Services/**"
+      - "src/RollGrinder.Sim/**"
+      - "config/**"
+      - "scripts/run-full-test.ps1"
+      - ".github/workflows/ui-selftest.yml"
+
+concurrency:
+  group: ui-selftest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ui-selftest:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # 单元 / 集成测试已在 ci.yml（Linux）里跑过，这里只跑界面。
+      - name: UI self-test
+        shell: pwsh
+        run: |
+          $passes = "${{ inputs.passes || 'sim,en-US' }}".Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+          ./scripts/run-full-test.ps1 -SkipUnitTests -AllowNonInteractive `
+            -UiPasses $passes -Shots "${{ inputs.shots || 'key' }}" -Layout "${{ inputs.layout || 'standard' }}"
+
+      - name: Summary
+        if: always()
+        shell: pwsh
+        run: |
+          $summary = Get-ChildItem TestResults -Recurse -Filter SUMMARY.md | Select-Object -First 1
+          if ($summary) { Get-Content $summary.FullName -Encoding UTF8 | Add-Content $env:GITHUB_STEP_SUMMARY -Encoding UTF8 }
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-selftest-${{ github.run_number }}
+          path: TestResults/RollGrinder-TestRun-*.zip
+          retention-days: 14
+          if-no-files-found: warn

@@ -364,7 +364,7 @@ internal sealed class PageSweepSuite : ISelfTestSuite
             if (shell.CurrentPage.ActiveSubViewKey is not null || shell.IsLeaveConfirmOpen
                 || shell.CurrentPage.Key != page || shell.CurrentPage.HasModalPrompt)
             {
-                h.TryScreenshot(Invariant($"sweep-{page}-{bar}{index + 1}-{label}"));
+                h.TryScreenshot(Invariant($"sweep-{page}-{bar}{index + 1}-{label}"), ShotKind.Detail);
             }
 
             await ReturnToAsync(h, page, ctx);

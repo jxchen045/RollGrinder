@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Windows;
 using System.Windows.Documents;
+using System.Windows.Media.Imaging;
 using System.Windows.Xps;
 using System.Windows.Xps.Packaging;
 using RollGrinder.App.Interaction;
@@ -54,26 +56,63 @@ internal sealed class AutoAnswerInteraction : IFileDialogs, IDocumentOutput
         return path;
     }
 
+    /// <summary>
+    /// "打印"：照真打印一样走一遍 XPS 分页与写出（排版问题在这里就会暴露），然后只留前两页的页面图（JPEG，几十 KB），
+    /// XPS 本身删掉——它嵌着中文字体子集，一份就是几 MB，看也要专门的查看器。页数、XPS 大小写进文件名旁的 .txt。
+    /// </summary>
     public bool Print(FlowDocument document, string description, bool askOperator)
     {
         ArgumentNullException.ThrowIfNull(document);
         this.printCount++;
-        string name = string.Create(
+        string stem = string.Create(
             CultureInfo.InvariantCulture,
-            $"{this.printCount:D2}-{(askOperator ? "manual" : "auto")}-{Sanitize(description)}.xps");
-        string path = Unique(Path.Combine(this.printsDirectory, name));
+            $"{this.printCount:D2}-{(askOperator ? "manual" : "auto")}-{Sanitize(description)}");
 
         document.PageWidth = A4WidthDip;
         document.PageHeight = A4HeightDip;
+        DocumentPaginator paginator = ((IDocumentPaginatorSource)document).DocumentPaginator;
 
-        using (var xps = new XpsDocument(path, FileAccess.ReadWrite))
+        string xpsPath = Path.Combine(Path.GetTempPath(), "rollgrinder-selftest-" + Guid.NewGuid().ToString("N") + ".xps");
+        long xpsBytes;
+        try
         {
-            XpsDocumentWriter writer = XpsDocument.CreateXpsDocumentWriter(xps);
-            IDocumentPaginatorSource source = document;
-            writer.Write(source.DocumentPaginator);
+            using (var xps = new XpsDocument(xpsPath, FileAccess.ReadWrite))
+            {
+                XpsDocumentWriter writer = XpsDocument.CreateXpsDocumentWriter(xps);
+                writer.Write(paginator);
+            }
+
+            xpsBytes = new FileInfo(xpsPath).Length;
+        }
+        finally
+        {
+            File.Delete(xpsPath);
         }
 
-        this.produced.Add(path);
+        paginator.ComputePageCount();
+        int pages = paginator.PageCount;
+        string first = string.Empty;
+        for (int index = 0; index < Math.Min(pages, 2); index++)
+        {
+            string imagePath = Unique(Path.Combine(this.printsDirectory, string.Create(CultureInfo.InvariantCulture, $"{stem}-p{index + 1}.jpg")));
+            using DocumentPage page = paginator.GetPage(index);
+            var bitmap = new RenderTargetBitmap(
+                (int)Math.Ceiling(A4WidthDip), (int)Math.Ceiling(A4HeightDip), 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+            var paper = new System.Windows.Media.DrawingVisual();
+            using (System.Windows.Media.DrawingContext dc = paper.RenderOpen())
+            {
+                dc.DrawRectangle(System.Windows.Media.Brushes.White, null, new Rect(0, 0, A4WidthDip, A4HeightDip));
+            }
+
+            bitmap.Render(paper);
+            bitmap.Render(page.Visual);
+            Controls.WindowCapture.Write(bitmap, imagePath, Controls.WindowCapture.DefaultJpegQuality);
+            first = index == 0 ? imagePath : first;
+        }
+
+        string info = Path.Combine(this.printsDirectory, stem + ".txt");
+        File.WriteAllText(info, string.Create(CultureInfo.InvariantCulture, $"{description}\npages={pages}\nxpsBytes={xpsBytes}\n"));
+        this.produced.Add(first.Length > 0 ? first : info);
         return true;
     }
 

@@ -54,7 +54,7 @@ internal sealed class SelfTestRunner
         using var recorder = new SelfTestRecorder(this.outputDirectory, this.options.Label, CollectEnvironment(window), startedAt);
         var harness = new SelfTestHarness(
             window, services.GetService(typeof(ShellViewModel)) as ShellViewModel ?? throw new InvalidOperationException("ShellViewModel missing"),
-            services, recorder, this.interaction, this.outputDirectory);
+            services, recorder, this.interaction, this.outputDirectory, this.options);
 
         // 等主窗口把用户名列表拉进来（Loaded 里异步做的）。
         await harness.WaitUntilAsync(() => harness.Shell.KnownUserNames.Count > 0, TimeSpan.FromSeconds(15)).ConfigureAwait(true);
@@ -94,6 +94,9 @@ internal sealed class SelfTestRunner
             recorder.Note("produced " + produced);
         }
 
+        recorder.Note(string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"screenshots: saved {harness.SavedShots}, same as an earlier one {harness.DuplicateShots}, over the limit {harness.SkippedShots} (policy {this.options.Shots}, max {this.options.MaxShots}, jpeg {this.options.JpegQuality})"));
         SelfTestSummary summary = recorder.Complete(DateTimeOffset.UtcNow, abortReason);
         window.Closing -= OnWindowClosing;
         return SelfTestRecorder.ExitCodeFor(summary);

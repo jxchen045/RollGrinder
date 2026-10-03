@@ -42,6 +42,19 @@ internal sealed class SelfTestSkipException : Exception
     }
 }
 
+/// <summary>一张截图是哪一类：决定在什么截图策略下会存。</summary>
+public enum ShotKind
+{
+    /// <summary>失败的步骤：总是截。</summary>
+    Failure = 0,
+
+    /// <summary>关键画面：每页、子视图、菜单态、标了"截图"的步骤。</summary>
+    Key = 1,
+
+    /// <summary>细节：巡检里每按一个键一张。</summary>
+    Detail = 2,
+}
+
 /// <summary>一步的选项。</summary>
 /// <param name="Screenshot">这一步做完截一张图（失败时总会截）。</param>
 /// <param name="ExpectedAlarms">这一步**预期**会报的报警资源键：它们出现不算失败。"*" 表示任何报警都在预期内。</param>
@@ -100,6 +113,10 @@ internal sealed partial class SelfTestHarness
     private readonly SelfTestRecorder recorder;
     private readonly IAlarmLog alarmLog;
     private readonly string screenshotDirectory;
+    private readonly SelfTestOptions options;
+
+    /// <summary>已存的截图：像素指纹 → 相对路径。画面没变的那一步指向同一张，不另存。</summary>
+    private readonly Dictionary<string, string> shotsByFingerprint = new(StringComparer.Ordinal);
     private readonly List<Exception> uiExceptions = new();
     private long alarmMark;
 
@@ -109,8 +126,10 @@ internal sealed partial class SelfTestHarness
         IServiceProvider services,
         SelfTestRecorder recorder,
         AutoAnswerInteraction interaction,
-        string outputDirectory)
+        string outputDirectory,
+        SelfTestOptions? options = null)
     {
+        this.options = options ?? SelfTestOptions.Disabled;
         Window = window;
         Shell = shell;
         Services = services;
@@ -237,7 +256,9 @@ internal sealed partial class SelfTestHarness
         string? screenshot = null;
         if (options.Screenshot || status == StepStatus.Fail)
         {
-            screenshot = TryScreenshot(Invariant($"{sequence:D4}-{Suite}-{testCase}-{step}"));
+            screenshot = TryScreenshot(
+                Invariant($"{sequence:D4}-{Suite}-{testCase}-{step}"),
+                status == StepStatus.Fail ? ShotKind.Failure : ShotKind.Key);
         }
 
         string detail = string.Join("; ", new[] { context.Detail }.Concat(failures).Where(s => !string.IsNullOrEmpty(s)));
@@ -832,14 +853,46 @@ internal sealed partial class SelfTestHarness
     private static partial Regex MissingResourcePattern();
 
     /// <summary>截屏。失败不影响测试结论，只在备注里说明。</summary>
-    public string? TryScreenshot(string name)
+    public string? TryScreenshot(string name, ShotKind kind = ShotKind.Key)
     {
+        // 策略：失败的一定截；关键画面看 --selftest-shots；巡检里每个键那种细节图只在 all 时截。
+        bool wanted = kind switch
+        {
+            ShotKind.Failure => true,
+            ShotKind.Key => this.options.Shots >= ScreenshotPolicy.Key,
+            _ => this.options.Shots >= ScreenshotPolicy.All,
+        };
+        if (!wanted || (kind != ShotKind.Failure && this.SavedShots >= this.options.MaxShots))
+        {
+            if (wanted)
+            {
+                SkippedShots++;
+            }
+
+            return null;
+        }
+
         try
         {
+            System.Windows.Media.Imaging.BitmapSource? bitmap = Controls.WindowCapture.Render(Window);
+            if (bitmap is null)
+            {
+                return null;
+            }
+
+            string fingerprint = Controls.WindowCapture.Fingerprint(bitmap);
+            if (this.shotsByFingerprint.TryGetValue(fingerprint, out string? same))
+            {
+                DuplicateShots++;
+                return same;
+            }
+
             string fileName = Sanitize(name) + ".jpg";
-            return Controls.WindowCapture.Save(Window, Path.Combine(this.screenshotDirectory, fileName))
-                ? "screenshots/" + fileName
-                : null;
+            Controls.WindowCapture.Write(bitmap, Path.Combine(this.screenshotDirectory, fileName), this.options.JpegQuality);
+            string relative = "screenshots/" + fileName;
+            this.shotsByFingerprint[fingerprint] = relative;
+            SavedShots++;
+            return relative;
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException)
         {
@@ -847,6 +900,15 @@ internal sealed partial class SelfTestHarness
             return null;
         }
     }
+
+    /// <summary>存下的截图张数。</summary>
+    public int SavedShots { get; private set; }
+
+    /// <summary>画面与已存的一样、没另存的张数。</summary>
+    public int DuplicateShots { get; private set; }
+
+    /// <summary>到了上限没存的张数。</summary>
+    public int SkippedShots { get; private set; }
 
     private IReadOnlyList<AlarmEntry> NewAlarms()
     {
