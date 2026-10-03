@@ -4711,4 +4711,13 @@
   <data name="Diag_ScrapProtectionActive" xml:space="preserve">
     <value>已启用（NC 按报废直径限位）</value>
   </data>
+  <data name="Rolls_NothingToChange" xml:space="preserve">
+    <value>所选的辊都不用改（或还没选辊形 / 程序）</value>
+  </data>
+  <data name="Rolls_NothingToImport" xml:space="preserve">
+    <value>没有可导入的行（全是错误行）</value>
+  </data>
+  <data name="Job_ChecksBlock" xml:space="preserve">
+    <value>核对有不通过的项，见左边清单最上面</value>
+  </data>
 </root>

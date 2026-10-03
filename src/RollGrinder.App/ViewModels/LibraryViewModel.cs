@@ -240,7 +240,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         }
 
         this.disableKey.LabelResourceKey = value?.IsDisabled == true ? "Vk_Enable" : "Vk_Disable";
-        _ = RunGuardedAsync(LoadPreviewAsync, CancellationToken.None);
+        _ = RunRefreshAsync(LoadPreviewAsync, CancellationToken.None);
     }
 
     partial void OnSelectedVersionChanged(LibraryVersionRowViewModel? value) =>

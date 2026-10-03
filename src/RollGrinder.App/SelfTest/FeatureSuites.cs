@@ -1596,6 +1596,13 @@ internal sealed class RollsSuite : ISelfTestSuite
                 ctx.Skip("the self-test roll is not in the ledger");
             }
 
+            if (page.ShowRetired)
+            {
+                // 巡检按过"显示作废"：先关掉，作废后才看得出它从列表里消失。
+                await h.PressVerticalKeyAsync(ctx, "Vk_ShowRetired");
+                page.SelectedRow = page.Rows.FirstOrDefault(r => r.RollId == SelfTestNames.LedgerRollId);
+            }
+
             await h.SettleAsync();
             await h.PressVerticalKeyAsync(ctx, "Vk_Retire");
             await h.ConfirmAsync(ctx);

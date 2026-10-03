@@ -162,13 +162,21 @@ public sealed partial class RollsViewModel : PageViewModelBase
         this.onlyErrorsKey = FunctionKeyViewModel.ForAction("Vk_OnlyErrors", localizer, ToggleOnlyErrors);
         this.cancelKey = new FunctionKeyViewModel("Vk_Cancel", new RelayCommand(Navigator.CloseSubView), localizer, FunctionKeyKind.Cancel);
         this.saveKey = new FunctionKeyViewModel("Vk_Save", new AsyncRelayCommand(SaveFormAsync), localizer, FunctionKeyKind.Confirm) { RequiredPermission = Permission.EditJobs };
-        this.applyPlanKey = new FunctionKeyViewModel("Vk_ApplyPlanFormat", new AsyncRelayCommand(ApplyPlanAsync), localizer, FunctionKeyKind.Confirm)
+        // ✓ 键始终在第 8 格（✕ 才看得见）：没有可改 / 可导入的时灰着并说原因。
+        this.applyPlanKey = new FunctionKeyViewModel(
+            "Vk_ApplyPlanFormat", new AsyncRelayCommand(ApplyPlanAsync, () => PlanChecks.Any(row => row.Changes)), localizer, FunctionKeyKind.Confirm)
         {
             RequiredPermission = Permission.EditRollPlans,
+            PreconditionResourceKey = "Rolls_NothingToChange",
         };
-        this.importKey = new FunctionKeyViewModel("Vk_ImportRowsFormat", new AsyncRelayCommand(ImportAsync), localizer, FunctionKeyKind.Confirm)
+        this.importKey = new FunctionKeyViewModel(
+            "Vk_ImportRowsFormat",
+            new AsyncRelayCommand(ImportAsync, () => this.importRows.Any(row => row.Kind != LedgerImportKind.Error)),
+            localizer,
+            FunctionKeyKind.Confirm)
         {
             RequiredPermission = Permission.EditRollPlans,
+            PreconditionResourceKey = "Rolls_NothingToImport",
         };
         this.pickKey = new FunctionKeyViewModel("Vk_PickThis", new RelayCommand(ConfirmPick), localizer, FunctionKeyKind.Confirm);
 
@@ -300,7 +308,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
 
         if (value is not null)
         {
-            _ = RunGuardedAsync(token => ShowCardAsync(value.Roll, token), CancellationToken.None);
+            _ = RunRefreshAsync(token => ShowCardAsync(value.Roll, token), CancellationToken.None);
         }
     }
 
@@ -387,11 +395,14 @@ public sealed partial class RollsViewModel : PageViewModelBase
         return perGrind > 0.0 && remainingMm < JobChecklist.LowLifeFactor * perGrind;
     }
 
+    private int cardVersion;
+
+    /// <summary>读选中那支辊的卡片与履历。选得快时只有最后一次选中的结果写上去。</summary>
     private async Task ShowCardAsync(RollRecord roll, CancellationToken cancellationToken)
     {
-        CardTitle = Localizer.Format("Rolls_CardTitleFormat", roll.RollId, Localizer["RollKind_" + roll.Kind], roll.Purpose ?? "--");
-        CardRows.Clear();
-        History.Clear();
+        int version = ++this.cardVersion;
+        var cardRows = new List<LabelValueViewModel>();
+        var history = new List<RollHistoryRowViewModel>();
 
         string profileText = "--";
         if (roll.TargetProfileId is { } profileId && await this.profiles.GetAsync(profileId, cancellationToken).ConfigureAwait(true) is { } profile)
@@ -417,7 +428,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
                 removedTotal += done;
             }
 
-            History.Add(new RollHistoryRowViewModel(
+            history.Add(new RollHistoryRowViewModel(
                 record.StartedAtUtc.ToLocalTime().ToString("MM-dd HH:mm", CultureInfo.CurrentCulture),
                 job is null ? "--" : (job.ProfileName ?? "--") + (job.ProfileVersion is int v ? " v" + v.ToString(CultureInfo.InvariantCulture) : string.Empty),
                 removed is double mm ? mm.ToString("F3", CultureInfo.CurrentCulture) : "--",
@@ -426,19 +437,37 @@ public sealed partial class RollsViewModel : PageViewModelBase
                 record.JobId));
         }
 
-        CardRows.Add(new LabelValueViewModel("Rolls_BodyNominal", Localizer.Format("Rolls_PairFormat",
+        cardRows.Add(new LabelValueViewModel("Rolls_BodyNominal", Localizer.Format("Rolls_PairFormat",
             roll.Geometry.BodyLengthMm.ToString("F0", CultureInfo.CurrentCulture), roll.Geometry.NominalDiameterMm.ToString("F1", CultureInfo.CurrentCulture)), Localizer));
-        CardRows.Add(new LabelValueViewModel("Rolls_CurrentScrap", Localizer.Format("Rolls_PairFormat",
+        cardRows.Add(new LabelValueViewModel("Rolls_CurrentScrap", Localizer.Format("Rolls_PairFormat",
             roll.StartDiameterMm.ToString("F2", CultureInfo.CurrentCulture), roll.ScrapDiameterMm?.ToString("F1", CultureInfo.CurrentCulture) ?? "--"), Localizer));
-        CardRows.Add(new LabelValueViewModel("Rolls_PlanProfile", profileText, Localizer));
-        CardRows.Add(new LabelValueViewModel("Rolls_PlanProgram", programText, Localizer));
-        CardRows.Add(new LabelValueViewModel("Rolls_GrindCount", records.Count.ToString(CultureInfo.CurrentCulture), Localizer));
-        CardRows.Add(new LabelValueViewModel("Rolls_RemovedTotal", removedTotal.ToString("F3", CultureInfo.CurrentCulture) + " mm", Localizer));
-        CardRows.Add(new LabelValueViewModel("Ledger_Material", roll.Material ?? "--", Localizer));
-        CardRows.Add(new LabelValueViewModel("RollData_NetWeight", roll.Data.NetWeightKg?.ToString("F0", CultureInfo.CurrentCulture) ?? "--", Localizer));
+        cardRows.Add(new LabelValueViewModel("Rolls_PlanProfile", profileText, Localizer));
+        cardRows.Add(new LabelValueViewModel("Rolls_PlanProgram", programText, Localizer));
+        cardRows.Add(new LabelValueViewModel("Rolls_GrindCount", records.Count.ToString(CultureInfo.CurrentCulture), Localizer));
+        cardRows.Add(new LabelValueViewModel("Rolls_RemovedTotal", removedTotal.ToString("F3", CultureInfo.CurrentCulture) + " mm", Localizer));
+        cardRows.Add(new LabelValueViewModel("Ledger_Material", roll.Material ?? "--", Localizer));
+        cardRows.Add(new LabelValueViewModel("RollData_NetWeight", roll.Data.NetWeightKg?.ToString("F0", CultureInfo.CurrentCulture) ?? "--", Localizer));
         if (roll.PlanInferred)
         {
-            CardRows.Add(new LabelValueViewModel("Rolls_PlanInferredLabel", Localizer["Rolls_PlanInferred"], Localizer));
+            cardRows.Add(new LabelValueViewModel("Rolls_PlanInferredLabel", Localizer["Rolls_PlanInferred"], Localizer));
+        }
+
+        if (version != this.cardVersion)
+        {
+            return;
+        }
+
+        CardTitle = Localizer.Format("Rolls_CardTitleFormat", roll.RollId, Localizer["RollKind_" + roll.Kind], roll.Purpose ?? "--");
+        CardRows.Clear();
+        foreach (LabelValueViewModel row in cardRows)
+        {
+            CardRows.Add(row);
+        }
+
+        History.Clear();
+        foreach (RollHistoryRowViewModel row in history)
+        {
+            History.Add(row);
         }
 
         if (roll.ScrapDiameterMm is double scrap && roll.Geometry.NominalDiameterMm > scrap)
@@ -516,7 +545,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
                 row.IsChecked = false;
             }
 
-            _ = RunGuardedAsync(token => ReloadAsync(SelectedRow?.RollId, token), CancellationToken.None);
+            _ = RunRefreshAsync(token => ReloadAsync(SelectedRow?.RollId, token), CancellationToken.None);
         }
 
         OnPropertyChanged(nameof(IsMulti));
@@ -582,7 +611,8 @@ public sealed partial class RollsViewModel : PageViewModelBase
                     FunctionKeyViewModel.ForAction("Vk_Reason", Localizer, OpenReasonMenu),
                 });
                 this.applyPlanKey.LabelArgument = PlanChecks.Count(row => row.Changes).ToString(CultureInfo.InvariantCulture);
-                SetCommitPair(this.cancelKey, PlanChecks.Any(row => row.Changes) ? this.applyPlanKey : null);
+                (this.applyPlanKey.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+                SetCommitPair(this.cancelKey, this.applyPlanKey);
                 break;
 
             case ImportSubView:
@@ -593,7 +623,8 @@ public sealed partial class RollsViewModel : PageViewModelBase
                 });
                 int good = this.importRows.Count(row => row.Kind != LedgerImportKind.Error);
                 this.importKey.LabelArgument = good.ToString(CultureInfo.InvariantCulture);
-                SetCommitPair(this.cancelKey, good > 0 ? this.importKey : null);
+                (this.importKey.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+                SetCommitPair(this.cancelKey, this.importKey);
                 break;
 
             default:
@@ -654,7 +685,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
     private async Task ToggleRetiredAsync()
     {
         ShowRetired = !ShowRetired;
-        await RunGuardedAsync(token => ReloadAsync(SelectedRow?.RollId, token), CancellationToken.None).ConfigureAwait(true);
+        await RunRefreshAsync(token => ReloadAsync(SelectedRow?.RollId, token), CancellationToken.None).ConfigureAwait(true);
         ApplyKeys();
     }
 
@@ -707,7 +738,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
     private async Task SetPurposeFilterAsync(string? purpose)
     {
         PurposeFilter = purpose;
-        await RunGuardedAsync(token => ReloadAsync(SelectedRow?.RollId, token), CancellationToken.None).ConfigureAwait(true);
+        await RunRefreshAsync(token => ReloadAsync(SelectedRow?.RollId, token), CancellationToken.None).ConfigureAwait(true);
     }
 
     // ───────────── 登记 / 编辑 ─────────────
@@ -791,7 +822,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
         FormProfileId = source?.TargetProfileId;
         FormProgramId = source?.ProgramId;
         FormProblems.Clear();
-        _ = RunGuardedAsync(RefreshFormPlanTextAsync, CancellationToken.None);
+        _ = RunRefreshAsync(RefreshFormPlanTextAsync, CancellationToken.None);
         Navigator.OpenSubView(FormSubView);
     }
 
@@ -943,7 +974,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
         }
 
         IsPicking = false;
-        _ = RunGuardedAsync(
+        _ = RunRefreshAsync(
             async token =>
             {
                 await RefreshFormPlanTextAsync(token).ConfigureAwait(true);
@@ -993,6 +1024,9 @@ public sealed partial class RollsViewModel : PageViewModelBase
         PlanReason = string.Empty;
         PlanChecks.Clear();
         Navigator.OpenSubView(ChangePlanSubView);
+
+        // 先把要改的这几支列出来（"不变"），再打开选辊形；只改程序时按"✕"关掉选择即可。
+        _ = RunRefreshAsync(RefreshPlanChecksAsync, CancellationToken.None);
         _ = OpenPickerAsync(PickTarget.PlanProfile);
     }
 

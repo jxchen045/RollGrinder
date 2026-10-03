@@ -162,6 +162,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         this.confirmDownloadKey = new FunctionKeyViewModel("Vk_ConfirmDownload", this.downloadCommand, localizer, FunctionKeyKind.Confirm, requiresEditable: true)
         {
             IsMachineCommand = true,
+            PreconditionResourceKey = "Job_ChecksBlock",
         };
         this.pickKey = new FunctionKeyViewModel("Vk_PickThis", new RelayCommand(ConfirmPick), localizer, FunctionKeyKind.Confirm);
         this.makePlanKey = new FunctionKeyViewModel("Vk_MakePlan", new RelayCommand(ChooseMakePlan), localizer, requiresEditable: true);
@@ -175,7 +176,7 @@ public sealed partial class JobViewModel : PageViewModelBase
                 if (ActiveSubViewKey is null)
                 {
                     IsPicking = false;
-                    Loading = RunGuardedAsync(LoadQueueAsync, CancellationToken.None);
+                    Loading = RunRefreshAsync(LoadQueueAsync, CancellationToken.None);
                 }
 
                 ApplyKeys();
@@ -815,7 +816,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         string? planId = kind == PlanPickKind.Profile ? this.roll.TargetProfileId : this.roll.ProgramId;
         if (planId is null || planId == item.Id)
         {
-            _ = RunGuardedAsync(token => ApplyPickAsync(kind, item.Id, JobDeviation.None, token), CancellationToken.None);
+            _ = RunRefreshAsync(token => ApplyPickAsync(kind, item.Id, JobDeviation.None, token), CancellationToken.None);
             return;
         }
 
@@ -841,7 +842,7 @@ public sealed partial class JobViewModel : PageViewModelBase
                 if (this.makePlanChosen)
                 {
                     this.makePlanChosen = false;
-                    _ = RunGuardedAsync(token => ApplyPickAsync(kind, item.Id, JobDeviation.PlanChanged, token), CancellationToken.None);
+                    _ = RunRefreshAsync(token => ApplyPickAsync(kind, item.Id, JobDeviation.PlanChanged, token), CancellationToken.None);
                 }
 
                 ApplyKeys();
@@ -977,7 +978,8 @@ public sealed partial class JobViewModel : PageViewModelBase
                     PreconditionResourceKey = "Job_NothingSelected",
                 },
             });
-            SetCommitPair(this.cancelReviewKey, CanDownload ? this.confirmDownloadKey : null);
+            // 第 7 / 8 格一直是"✕ 返回清单 / ✓ 确认下发"：核对有拦的时 ✓ 灰着，按了在对话行说哪一项没过。
+            SetCommitPair(this.cancelReviewKey, this.confirmDownloadKey);
             return;
         }
 

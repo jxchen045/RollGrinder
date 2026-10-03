@@ -188,7 +188,9 @@ internal sealed class JobSuite : ISelfTestSuite
             string before = job.StockText;
             job.StockText = "abc";
             await h.SettleAsync();
-            ctx.Check(!job.CanDownload && h.IndexOfVerticalKey("Vk_ConfirmDownload") < 0, "a stock that is not a number blocks the download");
+            int download = h.IndexOfVerticalKey("Vk_ConfirmDownload");
+            ctx.Check(!job.CanDownload && download >= 0 && !h.IsVerticalKeyUsable(download),
+                "a stock that is not a number blocks the download (the key stays, greyed)");
             job.StockText = before;
             await h.SettleAsync();
             ctx.Check(job.CanDownload, "restoring the stock passes again, first block: " + JobFlow.FirstBlock(job));

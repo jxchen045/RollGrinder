@@ -45,6 +45,31 @@ public abstract partial class ViewModelBase : ObservableObject
         this.uiContext.Post(_ => action(), null);
     }
 
+    /// <summary>
+    /// 跟着别的变化做的刷新（选中一行 → 读卡片、子视图收起 → 重读列表）：失败一样转报警，
+    /// 但不看也不占"忙"——这类刷新常在另一个操作进行中被触发，用 <see cref="RunGuardedAsync"/> 会被悄悄丢掉。
+    /// 人按键发起的操作仍用 <see cref="RunGuardedAsync"/>，防连按。
+    /// </summary>
+    protected async Task<bool> RunRefreshAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        try
+        {
+            await action(cancellationToken).ConfigureAwait(true);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+        catch (Exception ex) when (ex is DomainException or GatewayException or DataStoreException
+                                      or Microsoft.Data.Sqlite.SqliteException)
+        {
+            Alarms.RaiseException(ex);
+            return false;
+        }
+    }
+
     /// <summary>执行一段可能失败的界面操作；失败转报警并返回 false。</summary>
     protected async Task<bool> RunGuardedAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken)
     {

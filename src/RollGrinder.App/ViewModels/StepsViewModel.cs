@@ -860,8 +860,10 @@ public sealed partial class StepsViewModel : PageViewModelBase
     [RelayCommand]
     private void NewProgram()
     {
+        // 一支什么都没填的新程序没有可丢的东西：不算"未保存"，离开时不拦。
         ResetToEmptyProgram();
-        MarkEdited();
+        Capture();
+        IsDirty = false;
     }
 
     /// <summary>适用轧辊类型：作业核对按它拦（工作辊程序不给支承辊用）；不限 = 任何辊。</summary>

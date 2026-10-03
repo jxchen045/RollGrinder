@@ -4711,4 +4711,13 @@
   <data name="Diag_ScrapProtectionActive" xml:space="preserve">
     <value>Active (the NC limits at the scrap diameter)</value>
   </data>
+  <data name="Rolls_NothingToChange" xml:space="preserve">
+    <value>Nothing to change for the selected rolls (or no profile / program picked yet)</value>
+  </data>
+  <data name="Rolls_NothingToImport" xml:space="preserve">
+    <value>No rows to import (all rows have errors)</value>
+  </data>
+  <data name="Job_ChecksBlock" xml:space="preserve">
+    <value>A check failed; see the top of the list on the left</value>
+  </data>
 </root>

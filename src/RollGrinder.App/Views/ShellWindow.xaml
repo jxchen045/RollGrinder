@@ -212,10 +212,13 @@
         <UniformGrid Grid.Row="0" Grid.Column="2" Columns="2" Background="{StaticResource Brush.LeftBar}">
             <Button x:Name="AreaTile" Command="{Binding ToggleAreaMenuCommand}" Style="{StaticResource ShellTileButton}" Margin="1"
                     ctl:ButtonStates.IsSelected="{Binding IsAreaMenuOpen}">
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding AreaTileGlyph}" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
-                    <TextBlock Text="{Binding AreaTileText}" FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Center" />
-                </StackPanel>
+                <!-- 标题行只有一行高：图标和名字排一行，放不下时整体缩小（不裁字）。 -->
+                <Viewbox StretchDirection="DownOnly" Margin="4,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding AreaTileGlyph}" FontSize="{StaticResource Size.Body}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                        <TextBlock Text="{Binding AreaTileText}" FontSize="{StaticResource Size.Caption}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Viewbox>
             </Button>
             <Border Background="{StaticResource Brush.Tile}" Margin="1">
                 <TextBlock Text="{Binding ModeText}" FontFamily="{StaticResource Font.Mono}" FontWeight="Bold"
