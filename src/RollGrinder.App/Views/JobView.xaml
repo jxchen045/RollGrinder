@@ -77,7 +77,7 @@
                             </Border>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                                    <Setter TargetName="RowBorder" Property="Background" Value="{StaticResource Brush.WarningFill}" />
+                                    <Setter TargetName="RowBorder" Property="Background" Value="{StaticResource Brush.WarningRowFill}" />
                                     <Setter TargetName="MarkCell" Property="FontWeight" Value="Bold" />
                                 </DataTrigger>
                             </DataTemplate.Triggers>
@@ -124,8 +124,8 @@
                                 </Border>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding IsNotice}" Value="True">
-                                        <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource Brush.Question}" />
-                                        <Setter TargetName="CheckRow" Property="Background" Value="{StaticResource Brush.WarningFill}" />
+                                        <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource Brush.WarningFill}" />
+                                        <Setter TargetName="CheckRow" Property="Background" Value="{StaticResource Brush.WarningRowFill}" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding IsBlock}" Value="True">
                                         <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource Brush.Alarm}" />

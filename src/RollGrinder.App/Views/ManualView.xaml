@@ -47,7 +47,7 @@
                                 </Border>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding HasProblem}" Value="True">
-                                        <Setter TargetName="CondRow" Property="Background" Value="{StaticResource Brush.WarningFill}" />
+                                        <Setter TargetName="CondRow" Property="Background" Value="{StaticResource Brush.WarningRowFill}" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding Ready}" Value="False">
                                         <Setter TargetName="CondText" Property="Foreground" Value="{StaticResource Brush.Alarm}" />

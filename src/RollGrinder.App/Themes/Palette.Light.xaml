@@ -76,6 +76,8 @@
   <Color x:Key="Color.PlotGridMinor">#E4E8ED</Color>
   <Color x:Key="Color.Reference">#8D97A3</Color>
   <Color x:Key="Color.WarningFill">#8A5A00</Color>
+  <!-- 列表里"要留意"的行：浅琥珀底，行内照常用深色字。 -->
+  <Color x:Key="Color.WarningRowFill">#F6E2B3</Color>
 
   <!-- 按下与禁用。触摸屏没有悬停（最终稿 4.6：去掉全部悬停效果），只有按下。 -->
   <Color x:Key="Color.SurfacePressed">#D3E1EE</Color>
@@ -113,6 +115,7 @@
   <SolidColorBrush x:Key="Brush.PlotGridMinor" Color="{StaticResource Color.PlotGridMinor}" />
   <SolidColorBrush x:Key="Brush.Reference" Color="{StaticResource Color.Reference}" />
   <SolidColorBrush x:Key="Brush.WarningFill" Color="{StaticResource Color.WarningFill}" />
+  <SolidColorBrush x:Key="Brush.WarningRowFill" Color="{StaticResource Color.WarningRowFill}" />
   <SolidColorBrush x:Key="Brush.SurfacePressed" Color="{StaticResource Color.SurfacePressed}" />
   <SolidColorBrush x:Key="Brush.AccentPressed" Color="{StaticResource Color.AccentPressed}" />
   <SolidColorBrush x:Key="Brush.AccentDarkPressed" Color="{StaticResource Color.AccentDarkPressed}" />
