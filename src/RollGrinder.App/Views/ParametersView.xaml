@@ -271,13 +271,14 @@
                                                 <TextBlock Text="{Binding DiameterText}" Style="{StaticResource Text.DataRow}"
                                                            HorizontalAlignment="Right" />
                                             </DockPanel>
+                                            <!-- 紧凑档这一栏只有 250 px：时间与来源放不下一行就折行。 -->
                                             <TextBlock FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
-                                                       Foreground="{StaticResource Brush.TextSecondary}">
+                                                       Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap">
                                                 <Run Text="{Binding TimeText, Mode=OneWay}" />
                                                 <Run Text=" · " />
                                                 <Run Text="{Binding SourceText, Mode=OneWay}" />
                                             </TextBlock>
-                                            <TextBlock Text="{Binding DetailText}" FontSize="{StaticResource Size.Caption}"
+                                            <TextBlock Text="{Binding DetailText}" FontSize="{StaticResource Size.Caption}" TextWrapping="Wrap"
                                                        Foreground="{StaticResource Brush.TextSecondary}"
                                                        Visibility="{Binding DetailText, Converter={StaticResource TextToVisibility}}" />
                                         </StackPanel>
