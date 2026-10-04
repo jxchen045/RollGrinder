@@ -34,7 +34,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
-                                            Style="{StaticResource SegmentButton}" Padding="2,0"
+                                            Style="{StaticResource SegmentButton}" Height="44" Padding="2,0"
                                             ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -131,7 +131,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
-                                                Style="{StaticResource SegmentButton}" Padding="2,0"
+                                                Style="{StaticResource SegmentButton}" Height="44" Padding="2,0"
                                                 ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -146,7 +146,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Button Content="{Binding Label}" Command="{Binding Command}" Margin="0,0,4,0"
-                                                Style="{StaticResource SegmentButton}" Padding="2,0"
+                                                Style="{StaticResource SegmentButton}" Height="44" Padding="2,0"
                                                 ctl:ButtonStates.IsSelected="{Binding IsSelected}" />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
