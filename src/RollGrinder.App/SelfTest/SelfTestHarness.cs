@@ -532,7 +532,9 @@ internal sealed partial class SelfTestHarness
         var clipped = new List<string>();
         foreach (Button button in FindVisuals<Button>(Window).Where(b => b.IsVisible && b.ActualWidth > 0))
         {
-            foreach (TextBlock text in FindVisuals<TextBlock>(button).Where(t => t.IsVisible && !string.IsNullOrEmpty(t.Text)))
+            // 设了省略号的是有意收尾（报警条那种长文），不算截断。
+            foreach (TextBlock text in FindVisuals<TextBlock>(button).Where(t => t.IsVisible && !string.IsNullOrEmpty(t.Text)
+                         && (t.TextWrapping != TextWrapping.NoWrap || t.TextTrimming == TextTrimming.None)))
             {
                 // 允许换行的字（竖向软键）：换成两行不算截断，只要最长的一个词放得下。
                 double needed = text.TextWrapping == TextWrapping.NoWrap ? MeasureText(text) : MeasureLongestWord(text);
@@ -569,9 +571,14 @@ internal sealed partial class SelfTestHarness
 
     private static double MeasureText(TextBlock text) => MeasureText(text, text.Text);
 
-    /// <summary>换行只在空格处断（不换行空格连着的算一个词），最长的那个词就是最少要的宽度。</summary>
+    /// <summary>
+    /// 西文只在空格处断（不换行空格连着的算一个词）；中文每个字之间都能断。最长的那个"词"就是最少要的宽度。
+    /// </summary>
     private static double MeasureLongestWord(TextBlock text) =>
-        text.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(word => MeasureText(text, word)).DefaultIfEmpty(0.0).Max();
+        BreakUnitPattern().Matches(text.Text).Select(unit => MeasureText(text, unit.Value)).DefaultIfEmpty(0.0).Max();
+
+    [GeneratedRegex(@"[\u2E80-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]|[^\s\u2E80-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]+")]
+    private static partial Regex BreakUnitPattern();
 
     private static double MeasureText(TextBlock text, string content) =>
         Format(text, content).WidthIncludingTrailingWhitespace + text.Padding.Left + text.Padding.Right;
@@ -682,8 +689,15 @@ internal sealed partial class SelfTestHarness
                 new(w / 2, h / 2), new(3, 3), new(w - 3, 3), new(3, h - 3), new(w - 3, h - 3),
             };
 
+            Rect? visible = VisibleRect(button);
             foreach (Point probe in probes)
             {
+                // 滚动区外面、被裁掉的那部分不算空洞（本来就看不见）。
+                if (visible is { } view && !view.Contains(button.TranslatePoint(probe, CanvasRoot)))
+                {
+                    continue;
+                }
+
                 Point inWindow = button.TranslatePoint(probe, Window);
                 if (Window.InputHitTest(inWindow) is not DependencyObject hit)
                 {

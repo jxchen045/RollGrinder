@@ -17,4 +17,10 @@ public class GatewayException : Exception
         : base(message, innerException)
     {
     }
+
+    /// <summary>
+    /// 界面资源键（可空）。带了键的，报警条显示本地化的那句话、不带英文细节——
+    /// 例如离线模式下"没有机床可读写"是预期内的状态，不是通信故障。
+    /// </summary>
+    public string? ResourceKey { get; init; }
 }

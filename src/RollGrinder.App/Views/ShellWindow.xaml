@@ -248,7 +248,7 @@
             </Border.Style>
             <DockPanel LastChildFill="True">
                 <Button DockPanel.Dock="Left" Command="{Binding BackCommand}" Style="{StaticResource PathBackButton}"
-                        Height="{StaticResource Layout.TitleButtonHeight}" VerticalAlignment="Center" Margin="0,0,10,0" Content="{Binding BackText}"
+                        Margin="0,1,10,1" FontSize="{StaticResource Size.Label}" Content="{Binding BackText}"
                         Visibility="{Binding BackText, Converter={StaticResource TextToVisibility}}" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{loc:Loc Shell_Modified}" FontWeight="Bold" FontSize="{StaticResource Size.Body}" Margin="12,0,0,0"

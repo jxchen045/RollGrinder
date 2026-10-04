@@ -263,6 +263,23 @@ public sealed class MachineMonitorTests
 public sealed class AlarmLogTests
 {
     [Fact]
+    public void A_gateway_refusal_with_a_resource_key_is_a_localized_warning_without_english_detail()
+    {
+        // 离线模式拒绝读写：预期内的状态。以前报"机床通信失败 · The HMI is running offline; …"，中文界面里夹着英文。
+        var log = new AlarmLog(limit: 10, new ManualTimeProvider(DateTimeOffset.UnixEpoch));
+
+        log.RaiseException(new GatewayException("The HMI is running offline.") { ResourceKey = "Gateway_Offline" });
+        log.RaiseException(new GatewayException("Read timed out."));
+
+        IReadOnlyList<AlarmEntry> entries = log.Snapshot();
+        entries[1].Severity.Should().Be(AlarmSeverity.Warning);
+        entries[1].MessageResourceKey.Should().Be("Gateway_Offline");
+        entries[1].Detail.Should().BeNullOrEmpty();
+        entries[0].Severity.Should().Be(AlarmSeverity.Error, "an unexplained gateway failure is still a fault");
+        entries[0].MessageResourceKey.Should().Be(AlarmLog.GatewayFailureResourceKey);
+    }
+
+    [Fact]
     public void Entries_are_newest_first_and_capped()
     {
         var log = new AlarmLog(limit: 3, new ManualTimeProvider(DateTimeOffset.UnixEpoch));

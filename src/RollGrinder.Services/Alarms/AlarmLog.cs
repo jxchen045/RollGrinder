@@ -75,6 +75,13 @@ public sealed class AlarmLog : IAlarmLog
             return;
         }
 
+        // 网关带了键的（离线模式拒绝读写）：预期内的状态，提示级、只显示本地化原因。
+        if (exception is GatewayException { ResourceKey: string gatewayKey })
+        {
+            Raise(AlarmSeverity.Warning, gatewayKey, null, AlarmCodes.GatewayFailure);
+            return;
+        }
+
         (string resourceKey, int code) = exception switch
         {
             GatewayException => (GatewayFailureResourceKey, AlarmCodes.GatewayFailure),

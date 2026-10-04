@@ -4726,4 +4726,7 @@
   <data name="Cfg_ClosedLoop_OpenLoop" xml:space="preserve">
     <value>Open loop</value>
   </data>
+  <data name="Gateway_Offline" xml:space="preserve">
+    <value>Offline mode: no machine is connected, so this step (which reads or writes the machine) cannot run</value>
+  </data>
 </root>

@@ -53,5 +53,5 @@ internal sealed class OfflineGateway : IMachineGateway
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     private static GatewayException Refuse() =>
-        new("The HMI is running offline; there is no machine to read from or write to.");
+        new("The HMI is running offline; there is no machine to read from or write to.") { ResourceKey = "Gateway_Offline" };
 }
