@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -54,6 +55,9 @@ public enum ShotKind
     /// <summary>细节：巡检里每按一个键一张。</summary>
     Detail = 2,
 }
+
+/// <summary>一条版面问题：说明，以及它在画布上的位置（截局部图用）。</summary>
+public sealed record LayoutIssue(string Text, Rect Bounds);
 
 /// <summary>一步的选项。</summary>
 /// <param name="Screenshot">这一步做完截一张图（失败时总会截）。</param>
@@ -117,6 +121,8 @@ internal sealed partial class SelfTestHarness
 
     /// <summary>已存的截图：像素指纹 → 相对路径。画面没变的那一步指向同一张，不另存。</summary>
     private readonly Dictionary<string, string> shotsByFingerprint = new(StringComparer.Ordinal);
+    private readonly HashSet<string> shotIssues = new(StringComparer.Ordinal);
+    private int issueShots;
     private readonly List<Exception> uiExceptions = new();
     private long alarmMark;
 
@@ -696,6 +702,338 @@ internal sealed partial class SelfTestHarness
         }
 
         return issues;
+    }
+
+    /// <summary>
+    /// 版面体检之一：被布局裁掉的元素。元素要的尺寸比分到的格子大时，WPF 把多出来的部分裁掉
+    /// （<see cref="LayoutInformation.GetLayoutClip"/> 不为空且比元素小）——砂轮简图下半截、挤扁的输入框都是这样。
+    /// 只报最外面那一层：上级已经被裁了，里面的不重复报。
+    /// </summary>
+    public IReadOnlyList<LayoutIssue> FindLayoutClipped()
+    {
+        var found = new List<(FrameworkElement Element, LayoutIssue Issue)>();
+        foreach (FrameworkElement element in FindVisuals<FrameworkElement>(CanvasRoot)
+                     .Where(e => e.IsVisible && e.ActualWidth >= 4 && e.ActualHeight >= 4 && !IsInsideOpaqueControl(e)))
+        {
+            if (LayoutInformation.GetLayoutClip(element) is not { } clip)
+            {
+                continue;
+            }
+
+            Rect kept = clip.IsEmpty() ? Rect.Empty : clip.Bounds;
+            double lostWidth = kept.IsEmpty ? element.ActualWidth : element.ActualWidth - kept.Width;
+            double lostHeight = kept.IsEmpty ? element.ActualHeight : element.ActualHeight - kept.Height;
+            if (lostWidth <= 2 && lostHeight <= 2)
+            {
+                continue;
+            }
+
+            if (CanvasBounds(element) is { } bounds)
+            {
+                found.Add((element, new LayoutIssue(
+                    Invariant($"{Describe(element)} cut by its slot: {element.ActualWidth:0}x{element.ActualHeight:0}, shows {Math.Max(0, element.ActualWidth - lostWidth):0}x{Math.Max(0, element.ActualHeight - lostHeight):0}"),
+                    bounds)));
+            }
+        }
+
+        return found.Where(f => !found.Any(o => !ReferenceEquals(o.Element, f.Element) && f.Element.IsDescendantOf(o.Element)))
+            .Select(f => f.Issue).ToList();
+    }
+
+    /// <summary>
+    /// 版面体检之二：控件被别的东西盖住了一部分。在控件里取 9 个点做命中测试，
+    /// 有的点落在它自己身上、有的点落在不相干的元素上，就是半遮半露（整个被盖住的算有意隐藏，不报）。
+    /// 滚动区外面的点不算（列表滚到一半的那一行本来就只露半截）。
+    /// </summary>
+    public IReadOnlyList<LayoutIssue> FindPartlyCovered()
+    {
+        var issues = new List<LayoutIssue>();
+        foreach (Control control in FindVisuals<Control>(CanvasRoot).Where(c =>
+                     c is ButtonBase or TextBoxBase or ListBoxItem or ComboBox
+                     && c.IsVisible && c.IsEnabled && c.ActualWidth > 12 && c.ActualHeight > 12 && !IsInsideOpaqueControl(c)))
+        {
+            Rect? visible = VisibleRect(control);
+            if (visible is not { } view || CanvasBounds(control) is not { } bounds)
+            {
+                continue;
+            }
+
+            double w = control.ActualWidth;
+            double h = control.ActualHeight;
+            int inside = 0;
+            DependencyObject? coverer = null;
+            foreach (Point probe in new Point[]
+                     {
+                         new(w / 2, h / 2), new(4, 4), new(w - 4, 4), new(4, h - 4), new(w - 4, h - 4),
+                         new(w / 2, 4), new(w / 2, h - 4), new(4, h / 2), new(w - 4, h / 2),
+                     })
+            {
+                Point onCanvas = control.TranslatePoint(probe, CanvasRoot);
+                if (!view.Contains(onCanvas) || Window.InputHitTest(control.TranslatePoint(probe, Window)) is not DependencyObject hit)
+                {
+                    continue;
+                }
+
+                if (ReferenceEquals(hit, control) || (hit is Visual v && v.IsDescendantOf(control)))
+                {
+                    inside++;
+                }
+                else if (hit is Visual other && !control.IsDescendantOf(other))
+                {
+                    coverer ??= hit;
+                }
+            }
+
+            if (inside > 0 && coverer is not null)
+            {
+                issues.Add(new LayoutIssue(Describe(control) + " partly covered by " + Describe(NearestElement(coverer)), bounds));
+            }
+        }
+
+        return issues;
+    }
+
+    /// <summary>
+    /// 版面体检之三：一大块面板盖在另一块上面，自己却没有底色——缝隙里透出下面那一页的控件
+    /// （选辊形 / 选程序子视图两张卡片之间的那道缝就是这样）。只看同一个 Grid 里的两块大面板，模板内部的不看。
+    /// </summary>
+    public IReadOnlyList<LayoutIssue> FindSeeThroughOverlays()
+    {
+        var issues = new List<LayoutIssue>();
+        foreach (Grid grid in FindVisuals<Grid>(CanvasRoot).Where(g => g.IsVisible && g.TemplatedParent is null))
+        {
+            List<(FrameworkElement Element, Rect Bounds)> panes = grid.Children.OfType<FrameworkElement>()
+                .Where(c => c.IsVisible && c.IsHitTestVisible && c.ActualWidth >= 200 && c.ActualHeight >= 120)
+                .Select(c => (Element: c, Bounds: CanvasBounds(c)))
+                .Where(p => p.Bounds is not null)
+                .Select(p => (p.Element, p.Bounds!.Value))
+                .ToList();
+            for (int top = 1; top < panes.Count; top++)
+            {
+                if (HasOpaqueBackground(panes[top].Element))
+                {
+                    continue;
+                }
+
+                for (int under = 0; under < top; under++)
+                {
+                    Rect overlap = Rect.Intersect(panes[top].Bounds, panes[under].Bounds);
+                    Rect below = panes[under].Bounds;
+                    if (!overlap.IsEmpty && overlap.Width * overlap.Height >= 0.8 * below.Width * below.Height)
+                    {
+                        issues.Add(new LayoutIssue(
+                            Describe(panes[top].Element) + " lies over " + Describe(panes[under].Element) + " without a background (the page below shows through)",
+                            panes[top].Bounds));
+                        break;
+                    }
+                }
+            }
+        }
+
+        return issues;
+    }
+
+    /// <summary>
+    /// 版面体检之四：软键大小、对齐。同一排（上沿对齐）的软键应一样宽、一样高；
+    /// 同一列（左沿对齐）的软键应一样宽。差 4 px 以上就报（横键条右端的"›"曾比别的键窄一截）。
+    /// </summary>
+    public IReadOnlyList<LayoutIssue> FindMisalignedKeys()
+    {
+        if (Window.TryFindResource("SoftKeyButton") is not Style softKey)
+        {
+            return Array.Empty<LayoutIssue>();
+        }
+
+        var keys = FindVisuals<Button>(CanvasRoot)
+            .Where(b => b.IsVisible && b.ActualWidth > 0 && IsBasedOn(b.Style, softKey))
+            .Select(b => (Button: b, Bounds: CanvasBounds(b)))
+            .Where(k => k.Bounds is not null)
+            .Select(k => (k.Button, Bounds: k.Bounds!.Value))
+            .ToList();
+        var issues = new List<LayoutIssue>();
+
+        void Compare(IEnumerable<IGrouping<long, (Button Button, Rect Bounds)>> lines, string what, bool checkHeight)
+        {
+            foreach (var line in lines.Where(g => g.Count() >= 3))
+            {
+                double width = Median(line.Select(k => k.Bounds.Width));
+                double height = Median(line.Select(k => k.Bounds.Height));
+                foreach ((Button button, Rect bounds) in line)
+                {
+                    if (Math.Abs(bounds.Width - width) > 4 || (checkHeight && Math.Abs(bounds.Height - height) > 4))
+                    {
+                        issues.Add(new LayoutIssue(
+                            Invariant($"soft key '{ButtonLabel(button)}' is {bounds.Width:0}x{bounds.Height:0}, others in its {what} {width:0}x{height:0}"),
+                            bounds));
+                    }
+                }
+            }
+        }
+
+        Compare(keys.GroupBy(k => (long)Math.Round(k.Bounds.Top / 4)), "row", checkHeight: true);
+        Compare(keys.GroupBy(k => (long)Math.Round(k.Bounds.Left / 4)), "column", checkHeight: false);
+        return issues.DistinctBy(i => i.Text).ToList();
+    }
+
+    /// <summary>
+    /// 给一条版面问题截一张局部小图（问题四周留 60 px，红框圈出），同一条问题整轮只截一次，最多 <see cref="MaxIssueShots"/> 张。
+    /// </summary>
+    /// <returns>存下的相对路径；没截返回 null。</returns>
+    public string? TryIssueShot(string name, LayoutIssue issue)
+    {
+        if (!this.shotIssues.Add(issue.Text) || this.issueShots >= MaxIssueShots)
+        {
+            return null;
+        }
+
+        try
+        {
+            Rect region = issue.Bounds;
+            region.Inflate(60, 60);
+            System.Windows.Media.Imaging.BitmapSource? bitmap = Controls.WindowCapture.RenderRegion(Window, region, this.options.ShotScale, issue.Bounds);
+            if (bitmap is null)
+            {
+                return null;
+            }
+
+            string fileName = Sanitize(Invariant($"layout-{++this.issueShots:000}-{name}")) + ".jpg";
+            Controls.WindowCapture.Write(bitmap, Path.Combine(this.screenshotDirectory, fileName), this.options.JpegQuality);
+            return "screenshots/" + fileName;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            this.recorder.Note("issue screenshot failed: " + ex.Message);
+            return null;
+        }
+    }
+
+    /// <summary>版面问题局部图每轮最多几张。</summary>
+    public const int MaxIssueShots = 40;
+
+    private FrameworkElement CanvasRoot => Window.FindName("Canvas") as FrameworkElement ?? (FrameworkElement)Window.Content;
+
+    /// <summary>元素在画布上的位置（画布坐标，与截图一致）；不在画布里（弹出层）返回 null。</summary>
+    private Rect? CanvasBounds(FrameworkElement element)
+    {
+        try
+        {
+            return element.IsDescendantOf(CanvasRoot)
+                ? element.TransformToAncestor(CanvasRoot).TransformBounds(new Rect(element.RenderSize))
+                : null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>元素此刻露在外面的那块（被滚动区、裁边的上级截过以后），画布坐标。</summary>
+    private Rect? VisibleRect(FrameworkElement element)
+    {
+        if (CanvasBounds(element) is not { } visible)
+        {
+            return null;
+        }
+
+        for (DependencyObject? current = VisualTreeHelper.GetParent(element); current is not null && current != CanvasRoot; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is FrameworkElement container && (container is ScrollContentPresenter || container.ClipToBounds)
+                && CanvasBounds(container) is { } box)
+            {
+                visible.Intersect(box);
+                if (visible.IsEmpty)
+                {
+                    return null;
+                }
+            }
+        }
+
+        return visible;
+    }
+
+    /// <summary>表格、图表、下拉框、文本框、滚动条的内部零件不查（那是控件自己的事，查了全是误报）。</summary>
+    private static bool IsInsideOpaqueControl(DependencyObject element)
+    {
+        for (DependencyObject? current = VisualTreeHelper.GetParent(element); current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is DataGrid or ComboBox or TextBoxBase or ScrollBar
+                or ScottPlot.WPF.WpfPlot)
+            {
+                return true;
+            }
+        }
+
+        return element is ScottPlot.WPF.WpfPlot || FindAncestor<ScottPlot.WPF.WpfPlot>(element) is not null;
+    }
+
+    private static bool HasOpaqueBackground(FrameworkElement element)
+    {
+        Brush? background = element switch
+        {
+            Panel panel => panel.Background,
+            Border border => border.Background,
+            Control control => control.Background,
+            _ => null,
+        };
+        if (background is null && element is UserControl { Content: FrameworkElement content })
+        {
+            return HasOpaqueBackground(content);
+        }
+
+        return background is SolidColorBrush { Color.A: > 0 } || (background is not null and not SolidColorBrush);
+    }
+
+    private static bool IsBasedOn(Style? style, Style target)
+    {
+        for (Style? current = style; current is not null; current = current.BasedOn)
+        {
+            if (ReferenceEquals(current, target))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static double Median(IEnumerable<double> values)
+    {
+        double[] sorted = values.OrderBy(v => v).ToArray();
+        return sorted.Length == 0 ? 0 : sorted[sorted.Length / 2];
+    }
+
+    private static FrameworkElement? NearestElement(DependencyObject element)
+    {
+        for (DependencyObject? current = element; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is FrameworkElement fe)
+            {
+                return fe;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>"哪一页：什么控件 '写着什么'"，报告里一眼认得出。</summary>
+    private static string Describe(FrameworkElement? element)
+    {
+        if (element is null)
+        {
+            return "?";
+        }
+
+        string text = element switch
+        {
+            TextBlock block => block.Text,
+            Button button => ButtonLabel(button),
+            TextBox box => box.Text,
+            _ => FindVisuals<TextBlock>(element).Select(t => t.Text).FirstOrDefault(t => !string.IsNullOrWhiteSpace(t)) ?? string.Empty,
+        };
+        string kind = string.IsNullOrEmpty(element.Name) ? element.GetType().Name : element.GetType().Name + "#" + element.Name;
+        UserControl? view = element as UserControl ?? FindAncestor<UserControl>(element);
+        string where = view is null ? "Shell" : view.GetType().Name;
+        return string.IsNullOrWhiteSpace(text) ? where + ": " + kind : where + ": " + kind + " '" + Shorten(text) + "'";
     }
 
     /// <summary>

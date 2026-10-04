@@ -266,6 +266,23 @@ internal sealed class NavigationSuite : ISelfTestSuite
         {
             ctx.Warn(contrast.Count + " low-contrast: " + string.Join(" | ", contrast.Take(25)));
         }
+
+        // 版面体检：被裁、半遮、透底、软键不齐。每条问题第一次出现时截一张局部小图，报告里写上图名。
+        string page = h.Shell.CurrentPage.Key.ToString();
+        foreach ((string title, IReadOnlyList<LayoutIssue> issues) in new[]
+                 {
+                     ("cut by layout", h.FindLayoutClipped()),
+                     ("partly covered", h.FindPartlyCovered()),
+                     ("see-through overlay", h.FindSeeThroughOverlays()),
+                     ("soft key size", h.FindMisalignedKeys()),
+                 })
+        {
+            if (issues.Count > 0)
+            {
+                ctx.Warn(issues.Count + " " + title + ": " + string.Join(" | ", issues.Take(15).Select(issue =>
+                    h.TryIssueShot(page, issue) is { } shot ? issue.Text + " [" + shot + "]" : issue.Text)));
+            }
+        }
     }
 
     private static string Invariant(System.FormattableString text) => text.ToString(CultureInfo.InvariantCulture);

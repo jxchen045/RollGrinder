@@ -35,7 +35,13 @@ public static class WindowCapture
     /// 云端 Windows 构建机的屏幕只有 1024×768，照样截出 1:1 的图。没有画布时退回整个窗口内容。
     /// 先铺窗口底色再画内容：透明的缝隙存成 JPEG 会变成黑块。
     /// </summary>
-    public static BitmapSource? Render(Window window, double scale = 1.0)
+    public static BitmapSource? Render(Window window, double scale = 1.0) => RenderRegion(window, null, scale, null);
+
+    /// <summary>
+    /// 只画画布上的一块（<paramref name="region"/>，画布坐标；null 为整块），可在 <paramref name="highlight"/> 处描一圈红框。
+    /// 自检的版面体检用它给每条问题截一张小图，看图不用再翻整屏截图。
+    /// </summary>
+    public static BitmapSource? RenderRegion(Window window, Rect? region, double scale, Rect? highlight)
     {
         ArgumentNullException.ThrowIfNull(window);
 
@@ -47,10 +53,14 @@ public static class WindowCapture
 
         // 缩小时按矢量直接画小（字是重新排出来的，不是把大图缩糊）。
         scale = Math.Clamp(scale, 0.25, 1.0);
-        double width = Math.Ceiling(target.ActualWidth);
-        double height = Math.Ceiling(target.ActualHeight);
-        var source = new Rect(0, 0, width, height);
-        var output = new Rect(0, 0, Math.Ceiling(width * scale), Math.Ceiling(height * scale));
+        var whole = new Rect(0, 0, Math.Ceiling(target.ActualWidth), Math.Ceiling(target.ActualHeight));
+        Rect source = region is { } r ? Rect.Intersect(whole, r) : whole;
+        if (source.IsEmpty || source.Width < 1 || source.Height < 1)
+        {
+            return null;
+        }
+
+        var output = new Rect(0, 0, Math.Ceiling(source.Width * scale), Math.Ceiling(source.Height * scale));
         var visual = new DrawingVisual();
         using (DrawingContext dc = visual.RenderOpen())
         {
@@ -66,6 +76,12 @@ public static class WindowCapture
                 },
                 null,
                 output);
+
+            if (highlight is { } mark)
+            {
+                var box = new Rect((mark.X - source.X) * scale, (mark.Y - source.Y) * scale, mark.Width * scale, mark.Height * scale);
+                dc.DrawRectangle(null, new Pen(Brushes.Red, 2.0), box);
+            }
         }
 
         var bitmap = new RenderTargetBitmap((int)output.Width, (int)output.Height, 96, 96, PixelFormats.Pbgra32);

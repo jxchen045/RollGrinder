@@ -2,13 +2,14 @@ name: UI self-test (Windows)
 
 # 在云端 Windows 构建机上真的把 WPF 窗口开出来跑界面自检（仿真机床），
 # 截图按画布原尺寸 1920×1080 画、不依赖构建机的屏幕；结果包作为 artifact 上传。
-# 界面相关的改动推上来就自动跑；也可以在 Actions 页手动触发并选轮次与截图策略。
+# 推上来自动跑的是快的那几轮（render,compact,en-US：只渲染巡检 + 版面体检，几分钟）；
+# 仿真全流程 / 离线（sim,offline）在 Actions 页手动触发时跑（默认就是全套）。
 on:
   workflow_dispatch:
     inputs:
       passes:
-        description: "界面自检轮次（逗号分隔）：sim, offline, en-US"
-        default: "sim,en-US"
+        description: "界面自检轮次（逗号分隔）：sim, offline, en-US, render, compact"
+        default: "sim,offline,en-US,compact"
       shots:
         description: "截图策略：key / fail / all"
         default: "key"
@@ -48,7 +49,7 @@ jobs:
       - name: UI self-test
         shell: pwsh
         run: |
-          $passes = "${{ inputs.passes || 'sim,en-US' }}".Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+          $passes = "${{ inputs.passes || 'render,compact,en-US' }}".Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ }
           ./scripts/run-full-test.ps1 -SkipUnitTests -AllowNonInteractive `
             -UiPasses $passes -Shots "${{ inputs.shots || 'key' }}" -Layout "${{ inputs.layout || 'standard' }}"
 

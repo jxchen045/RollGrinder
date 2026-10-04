@@ -971,6 +971,7 @@ internal sealed class ParametersSuite : ISelfTestSuite
             }
 
             h.TryScreenshot("wheel-page");
+            NavigationSuite.WarnClipped(h, ctx);
         });
 
         await h.StepAsync("WheelChange", "CancelHalfway", async ctx =>
@@ -1574,6 +1575,7 @@ internal sealed class RollsSuite : ISelfTestSuite
             await h.PressVerticalKeyAsync(ctx, "Vk_ChangePlan");
             ctx.Check(await h.WaitUntilAsync(() => page.IsChangePlan && page.IsPicking, TimeSpan.FromSeconds(5)), "'change plan' opens the picker");
             h.TryScreenshot("rolls-change-plan-picker");
+            NavigationSuite.WarnClipped(h, ctx);
             page.TryDismissPrompt();
             await h.SettleAsync();
             await h.PressVerticalKeyAsync(ctx, "Vk_Cancel");
