@@ -85,9 +85,10 @@
 
             <!-- 中：曲线 + 工艺参数 -->
             <Grid Grid.Column="1" Margin="0,0,12,0">
+                <!-- 参数区按内容定高（一道工序的参数要一眼看全，加工中不许滚动），封顶 380；曲线占剩下的，至少 200。 -->
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="{ctl:Px 286}" />
+                    <RowDefinition Height="*" MinHeight="{ctl:Px 200}" />
+                    <RowDefinition Height="Auto" MaxHeight="{ctl:Px 380}" />
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
@@ -190,7 +191,8 @@
                                     <Binding Path="FocusCells.Count" Converter="{StaticResource EqualsToVisibility}" ConverterParameter="0" />
                                 </TextBlock.Visibility>
                             </TextBlock>
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                            <!-- 只是兜底：一道工序最多十几个参数，按上面的排法一屏放得下（自检逐道核对不需要滚动）。 -->
+                            <ScrollViewer x:Name="FocusScroll" VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
                                 <ItemsControl ItemsSource="{Binding FocusCells}" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -199,33 +201,37 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border x:Name="FocusCell" Background="{StaticResource Brush.Surface}" Margin="0,0,1,1" Padding="12,6">
-                                                <StackPanel>
-                                                    <TextBlock Style="{StaticResource Text.Label}">
-                                                        <Run Text="{Binding Label, Mode=OneWay}" />
-                                                        <Run Text="{Binding UnitText, Mode=OneWay}" />
-                                                    </TextBlock>
-                                                    <Grid>
-                                                        <TextBlock Text="{Binding Cell.Text}" FontFamily="{StaticResource Font.Mono}"
-                                                                   FontSize="{StaticResource Size.DataRow}" Margin="0,2,0,0"
-                                                                   Visibility="{Binding Cell.CanEdit, Converter={StaticResource InverseBoolVisibility}}" />
-                                                        <TextBox Text="{Binding Cell.Text, UpdateSourceTrigger=PropertyChanged}"
-                                                                 ctl:TouchInput.TapToEdit="True" ctl:TouchInput.Caption="{Binding Label}"
-                                                                 Height="40" Margin="0,2,0,0"
-                                                                 Visibility="{Binding Cell.CanEdit, Converter={StaticResource BoolToVisibility}}">
-                                                            <TextBox.Style>
-                                                                <Style TargetType="TextBox" BasedOn="{StaticResource ValueTextBox}">
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding Cell.IsModified}" Value="True">
-                                                                            <Setter Property="Foreground" Value="{StaticResource Brush.PendingValue}" />
-                                                                            <Setter Property="FontWeight" Value="Bold" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBox.Style>
-                                                        </TextBox>
-                                                    </Grid>
-                                                </StackPanel>
+                                            <!-- 一格一行：参数名 · 值 · 单位。两行叠放时 13 个参数要滚动才看得全，一行放下五排就够。 -->
+                                            <Border x:Name="FocusCell" Background="{StaticResource Brush.Surface}" Margin="0,0,1,1" Padding="10,3">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Cell.Text}" FontFamily="{StaticResource Font.Mono}"
+                                                               FontSize="{StaticResource Size.DataRow}" VerticalAlignment="Center" MinWidth="64" TextAlignment="Right"
+                                                               Visibility="{Binding Cell.CanEdit, Converter={StaticResource InverseBoolVisibility}}" />
+                                                    <TextBox Grid.Column="1" Text="{Binding Cell.Text, UpdateSourceTrigger=PropertyChanged}"
+                                                             ctl:TouchInput.TapToEdit="True" ctl:TouchInput.Caption="{Binding Label}"
+                                                             Width="88" Height="34" HorizontalContentAlignment="Right"
+                                                             Visibility="{Binding Cell.CanEdit, Converter={StaticResource BoolToVisibility}}">
+                                                        <TextBox.Style>
+                                                            <Style TargetType="TextBox" BasedOn="{StaticResource ValueTextBox}">
+                                                                <Setter Property="Padding" Value="4,0" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Cell.IsModified}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{StaticResource Brush.PendingValue}" />
+                                                                        <Setter Property="FontWeight" Value="Bold" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBox.Style>
+                                                    </TextBox>
+                                                    <TextBlock Grid.Column="2" Text="{Binding UnitText}" Style="{StaticResource Text.Label}" VerticalAlignment="Center"
+                                                               Margin="6,0,0,0" TextWrapping="NoWrap" />
+                                                </Grid>
                                             </Border>
                                             <DataTemplate.Triggers>
                                                 <DataTrigger Binding="{Binding Cell.State}" Value="Done">

@@ -689,11 +689,15 @@ internal sealed partial class SelfTestHarness
                 new(w / 2, h / 2), new(3, 3), new(w - 3, 3), new(3, h - 3), new(w - 3, h - 3),
             };
 
-            Rect? visible = VisibleRect(button);
+            // 整个滚到可视区外面的按钮不查（紧凑档机床配置里的闭环方式键曾因此被误报）；露一半的只查露出来的点。
+            if (VisibleRect(button) is not { } view)
+            {
+                continue;
+            }
+
             foreach (Point probe in probes)
             {
-                // 滚动区外面、被裁掉的那部分不算空洞（本来就看不见）。
-                if (visible is { } view && !view.Contains(button.TranslatePoint(probe, CanvasRoot)))
+                if (!view.Contains(button.TranslatePoint(probe, CanvasRoot)))
                 {
                     continue;
                 }

@@ -134,6 +134,28 @@ internal sealed class FullFlowSuite : ISelfTestSuite
                 ctx.Check(auto.FocusCells.Count == expected, Invariant($"focused step should list all {expected} parameters, lists {auto.FocusCells.Count}"));
             }
 
+            // 加工中不许为看参数而滚动：每一道都要一屏放下（标准档、紧凑档都跑这一步）。
+            System.Windows.Controls.ScrollViewer? focusScroll = SelfTestHarness.FindVisuals<System.Windows.Controls.ScrollViewer>(h.Window)
+                .FirstOrDefault(viewer => viewer.Name == "FocusScroll");
+            ctx.Check(focusScroll is not null, "the step view should be on screen");
+            var tooTall = new List<string>();
+            foreach (SequenceRowViewModel row in auto.Sequence.ToList())
+            {
+                auto.FocusStepCommand.Execute(row);
+                await h.SettleAsync();
+                if (focusScroll is { IsVisible: true, ScrollableHeight: > 1 })
+                {
+                    tooTall.Add(Invariant($"{row.OrderText} {row.DisplayName} (+{focusScroll.ScrollableHeight:0} px)"));
+                }
+            }
+
+            ctx.Check(tooTall.Count == 0, "every step's parameters must fit without scrolling: " + string.Join(", ", tooTall));
+            if (later is not null)
+            {
+                auto.FocusStepCommand.Execute(later);
+                await h.SettleAsync();
+            }
+
             await h.PressKeyAsync(ctx, "Fn_ParameterTable");
             ctx.Check(auto.IsMatrixOverview, "'all parameters' should switch to the full table");
             h.TryScreenshot("auto-parameter-table");
