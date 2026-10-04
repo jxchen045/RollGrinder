@@ -1210,12 +1210,6 @@
   <data name="Parameter_wheelAutoApproach" xml:space="preserve">
     <value>砂轮自动趋近</value>
   </data>
-  <data name="Steps_OptionNotAvailable" xml:space="preserve">
-    <value>本台机床未配置这项装置</value>
-  </data>
-  <data name="Steps_ProgramOptionsHeader" xml:space="preserve">
-    <value>程序步骤（自动磨削前取舍）</value>
-  </data>
   <data name="Choice_pauseReason_wheelChange" xml:space="preserve">
     <value>换砂轮</value>
   </data>
@@ -2640,9 +2634,6 @@
   </data>
   <data name="Vk_StepDefaults" xml:space="preserve">
     <value>默认值</value>
-  </data>
-  <data name="Vk_ProgramOptions" xml:space="preserve">
-    <value>程序步骤</value>
   </data>
   <data name="Program_TotalStock" xml:space="preserve">
     <value>标准余量（直径 µm）</value>
@@ -4719,5 +4710,11 @@
   </data>
   <data name="Job_ChecksBlock" xml:space="preserve">
     <value>核对有不通过的项，见左边清单最上面</value>
+  </data>
+  <data name="Job_RunOptionsHeader" xml:space="preserve">
+    <value>本次取舍（开磨前定：这一支辊走哪些、跳过哪些）</value>
+  </data>
+  <data name="Job_OptionStepFormat" xml:space="preserve">
+    <value>第 {0} 道</value>
   </data>
 </root>

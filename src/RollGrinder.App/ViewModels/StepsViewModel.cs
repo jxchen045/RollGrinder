@@ -156,46 +156,6 @@ public sealed class StepTypeOptionViewModel
     public string? RequiredOptionKey { get; }
 }
 
-/// <summary>
-/// 程序步骤（自动磨削前取舍）里的一行。
-/// 本台机床做不了的那几项压暗并禁掉，ToolTip 说明缺什么——
-/// 藏起来只会让人以为软件少做，标出来才知道是机床没装。
-/// </summary>
-public sealed partial class ProgramOptionRowViewModel : ObservableObject
-{
-    public ProgramOptionRowViewModel(
-        ProgramOptionDescriptor descriptor,
-        bool isEnabled,
-        bool isAvailable,
-        IStringLocalizer localizer)
-    {
-        ArgumentNullException.ThrowIfNull(descriptor);
-        ArgumentNullException.ThrowIfNull(localizer);
-
-        Descriptor = descriptor;
-        Label = localizer[descriptor.ResourceKey];
-        IsAvailable = isAvailable;
-        UnavailableHint = isAvailable ? null : localizer["Steps_OptionNotAvailable"];
-
-        // 机床做不了的项一律按"关"处理，免得存进程序里再到下发时被打回来。
-        this.isOn = isEnabled && isAvailable;
-    }
-
-    public ProgramOptionDescriptor Descriptor { get; }
-
-    public string Label { get; }
-
-    /// <summary>本台机床做不做得了。</summary>
-    public bool IsAvailable { get; }
-
-    /// <summary>做不了时的说明。</summary>
-    public string? UnavailableHint { get; }
-
-    /// <summary>开关状态。</summary>
-    [ObservableProperty]
-    private bool isOn;
-}
-
 /// <summary>校验失败的一行，文案由原因与参数键组合而成。</summary>
 public sealed class ViolationRowViewModel
 {
@@ -244,20 +204,18 @@ internal sealed record StepSnapshot(string TypeKey, IReadOnlyList<string> Parame
 internal sealed record StepsSnapshot(
     string? ProgramId,
     string ProgramName,
-    IReadOnlyList<StepSnapshot> Steps,
-    IReadOnlyList<bool> ProgramOptions)
+    IReadOnlyList<StepSnapshot> Steps)
 {
     /// <summary>空快照：还没进过本页时用。</summary>
     public static StepsSnapshot Empty { get; } = new(
         null,
         string.Empty,
-        Array.Empty<StepSnapshot>(),
-        Array.Empty<bool>());
+        Array.Empty<StepSnapshot>());
 }
 
 /// <summary>
 /// 工艺程序（阶段 1，修改稿 5.3；原"工序编程"）：开始 → 若干工序 → 结束，每道的参数，
-/// 程序步骤开关的默认值。不含辊号、尺寸、辊形——那些属于作业（作业页）与轧辊（台账）。
+/// 不含辊号、尺寸、辊形——那些属于作业（作业页）与轧辊（台账）。
 /// 界面按注册表与 schema 生成，新增一类工序不改这里。
 /// </summary>
 public sealed partial class StepsViewModel : PageViewModelBase
@@ -324,21 +282,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.selectedStepType = StepTypeOptions.FirstOrDefault(option => option.IsAvailable && !ProgramFrame.IsFixed(option.Key))
             ?? StepTypeOptions.FirstOrDefault();
 
-        ProgramOptions = new ObservableCollection<ProgramOptionRowViewModel>(
-            ProgramOptionCatalog.All.Select(option => new ProgramOptionRowViewModel(
-                option, option.DefaultEnabled, capability.Supports(option), localizer)));
-
-        foreach (ProgramOptionRowViewModel row in ProgramOptions)
-        {
-            row.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(ProgramOptionRowViewModel.IsOn))
-                {
-                    MarkEdited();
-                }
-            };
-        }
-
         // 竖向软键：对选中的工序操作。插入工序 ▸ 先选类别、再选工序，插在选中工序之后（修改稿 5.3）。
         SetVerticalKeys(new[]
         {
@@ -348,10 +291,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
             new FunctionKeyViewModel("Vk_MoveDown", new RelayCommand(() => MoveStepDown(SelectedStep)), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_CopyStep", new RelayCommand(() => CopyStep(SelectedStep)), localizer, requiresEditable: true),
 
-            // 阶段 2 线框上的另外三个键（修改稿 5.3）：余量分配、默认值、程序步骤。
+            // 阶段 2 线框上的另外两个键（修改稿 5.3）：余量分配、默认值。程序步骤开关不在这里——那是每一支辊开磨前的取舍，在作业核对页。
             new FunctionKeyViewModel("Vk_AllocateStock", new RelayCommand(AllocateStock), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_StepDefaults", new RelayCommand(() => Ask("Steps_AskDefaults", () => ResetStepToDefaults(SelectedStep))), localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_ProgramOptions", new RelayCommand(() => ProgramOptionsFocusRequested?.Invoke(this, EventArgs.Empty)), localizer),
         });
 
         Steps.CollectionChanged += (_, _) =>
@@ -402,9 +344,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
     public ObservableCollection<StepRowViewModel> Steps { get; } = new();
 
     public ObservableCollection<ViolationRowViewModel> Violations { get; } = new();
-
-    /// <summary>程序步骤（自动磨削前取舍）的八个开关。</summary>
-    public ObservableCollection<ProgramOptionRowViewModel> ProgramOptions { get; }
 
     [ObservableProperty]
     private string totalDurationText = "--";
@@ -646,9 +585,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
     /// <summary>跨工序检查的提示（修改稿 5.3）：不挡保存，工艺是人定的。</summary>
     public ObservableCollection<string> ProgramHints { get; } = new();
-
-    /// <summary>"程序步骤"键：视图把键盘焦点移到程序步骤开关上（按键优先：Tab、回车就能切）。</summary>
-    public event EventHandler? ProgramOptionsFocusRequested;
 
     /// <summary>重算跨工序提示。参数没填成立的那一道先跳过（它自己会报错）。</summary>
     private void RefreshHints()
@@ -906,11 +842,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
                 Steps.Add(Track(new StepRowViewModel(step.Order, this.stepTypes.Get(step.StepTypeKey), step.Parameters, Localizer)));
             }
 
-            foreach (ProgramOptionRowViewModel row in ProgramOptions)
-            {
-                row.IsOn = row.Descriptor.DefaultEnabled && row.IsAvailable;
-            }
-
             Violations.Clear();
             StatusResourceKey = string.Empty;
         }
@@ -1151,7 +1082,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
             // 版本 +1、旧版留档由库服务做。
             await this.libraryService.SaveProgramAsync(
-                GrindingProgram.Create(programId, name, steps, existing?.CreatedAtUtc ?? now, CollectProgramOptions())
+                GrindingProgram.Create(programId, name, steps, existing?.CreatedAtUtc ?? now)
                     with
                     {
                         ModifiedAtUtc = now,
@@ -1222,11 +1153,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
                 IGrindingStepType stepType = this.stepTypes.Get(step.StepTypeKey);
                 Steps.Add(Track(new StepRowViewModel(step.Order, stepType, step.Parameters, Localizer)));
             }
-
-            foreach (ProgramOptionRowViewModel row in ProgramOptions)
-            {
-                row.IsOn = program.IsProgramOptionEnabled(row.Descriptor.Key);
-            }
         }
         finally
         {
@@ -1244,10 +1170,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// <summary>新条目的标识。精确到毫秒：只到秒的话，一秒内另存两次会悄悄盖掉前一支。</summary>
     private static string NewProgramId() =>
         string.Create(CultureInfo.InvariantCulture, $"G{DateTimeOffset.Now:yyyyMMddHHmmssfff}");
-
-    private ParameterSet CollectProgramOptions() => new(ProgramOptions.Select(row =>
-        new KeyValuePair<string, ParameterValue>(
-            row.Descriptor.Key, ParameterValue.FromBoolean(row.IsOn))));
 
     /// <summary>切到本页时记住当前程序，"放弃修改"才有东西可回；从库区或作业向导"打开"过来的先调进来。</summary>
     public override void OnActivated()
@@ -1280,8 +1202,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         ProgramName,
         Steps.Select(step => new StepSnapshot(
             step.StepTypeKey,
-            step.Parameters.Select(row => row.Text).ToArray())).ToArray(),
-        ProgramOptions.Select(row => row.IsOn).ToArray());
+            step.Parameters.Select(row => row.Text).ToArray())).ToArray());
 
     private void Restore(StepsSnapshot snapshot)
     {
@@ -1299,12 +1220,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
                 var row = new StepRowViewModel(i + 1, stepType, stepType.Schema.CreateDefaults(), Localizer);
                 ApplyTexts(row.Parameters, stepSnapshot.ParameterTexts);
                 Steps.Add(Track(row));
-            }
-
-            int optionCount = Math.Min(ProgramOptions.Count, snapshot.ProgramOptions.Count);
-            for (int i = 0; i < optionCount; i++)
-            {
-                ProgramOptions[i].IsOn = snapshot.ProgramOptions[i];
             }
 
             Violations.Clear();

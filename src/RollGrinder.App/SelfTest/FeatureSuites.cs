@@ -728,7 +728,6 @@ internal sealed class StepsSuite : ISelfTestSuite
             await h.ConfirmAsync(ctx);
             ctx.Check(stock.Text == defaultStock, "defaults should put the stock back to " + defaultStock + ", is " + stock.Text);
 
-            await h.PressVerticalKeyAsync(ctx, "Vk_ProgramOptions");
             page.TotalStockText = string.Empty;
             await h.SettleAsync(50);
         });
@@ -769,22 +768,6 @@ internal sealed class StepsSuite : ISelfTestSuite
                 "a program built from default parameters of every step type should validate; status " + page.StatusResourceKey
                 + (page.Violations.Count > 0 ? ", first violation: " + page.Violations[0].ParameterText + " " + page.Violations[0].ReasonText : string.Empty));
         }, StepOptions.Shot);
-
-        await h.StepAsync("ProgramOptions", "ToggleEachAvailable", async ctx =>
-        {
-            int toggled = 0;
-            foreach (ProgramOptionRowViewModel option in page.ProgramOptions.Where(o => o.IsAvailable).ToList())
-            {
-                bool original = option.IsOn;
-                option.IsOn = !original;
-                await h.SettleAsync(20);
-                option.IsOn = original;
-                toggled++;
-            }
-
-            ctx.Note(Invariant($"{toggled} of {page.ProgramOptions.Count} options toggled"));
-            ctx.Check(toggled > 0, "at least one program option should be available");
-        });
 
         await h.StepAsync("Program", "ApplicableKindMenu", async ctx =>
         {

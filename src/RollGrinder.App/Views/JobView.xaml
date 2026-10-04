@@ -212,41 +212,47 @@
                     </DockPanel>
                 </Border>
 
+                <!-- 本次取舍：这一支辊开磨前走不走哪段 NC 子程序。只列用得上的（程序里有那道工序、机床有那个装置）。 -->
                 <Border Grid.Row="4" Style="{StaticResource Card}">
-                    <ItemsControl ItemsSource="{Binding ProgramOptions}" Margin="8"
-                                  IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="2" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <ToggleButton IsChecked="{Binding IsOn}" IsEnabled="{Binding IsAvailable}" ToolTip="{Binding UnavailableHint}"
-                                              ToolTipService.Placement="Right" Height="42" Margin="2" HorizontalContentAlignment="Left"
-                                              Style="{StaticResource ProgramOptionToggle}">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Border Width="22" Height="22" Margin="10,0,12,0">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="Transparent" />
-                                                    <Setter Property="BorderBrush" Value="{StaticResource Brush.ButtonBorder}" />
-                                                    <Setter Property="BorderThickness" Value="2" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsOn}" Value="True">
-                                                            <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
-                                                            <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                        </Border>
-                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </ToggleButton>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                            <TextBlock Text="{loc:Loc Job_RunOptionsHeader}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding ProgramOptions}" Margin="8"
+                                      IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="2" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ToggleButton IsChecked="{Binding IsOn}" Height="42" Margin="2" HorizontalContentAlignment="Left"
+                                                  Style="{StaticResource ProgramOptionToggle}">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Border Width="22" Height="22" Margin="10,0,12,0">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="Transparent" />
+                                                        <Setter Property="BorderBrush" Value="{StaticResource Brush.ButtonBorder}" />
+                                                        <Setter Property="BorderThickness" Value="2" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsOn}" Value="True">
+                                                                <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
+                                                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding Note}" Style="{StaticResource Text.Label}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </ToggleButton>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
                 </Border>
             </Grid>
         </Grid>

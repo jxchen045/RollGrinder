@@ -69,19 +69,6 @@ internal sealed class FullFlowSuite : ISelfTestSuite
                 await h.RunAsync(steps.AddStepCommand);
             }
 
-            string[] wanted =
-            {
-                ProgramOptionKeys.PreGrindMeasure, ProgramOptionKeys.PostGrindMeasure,
-                ProgramOptionKeys.PrintPreGrindData, ProgramOptionKeys.PrintPostGrindData,
-            };
-            foreach (ProgramOptionRowViewModel option in steps.ProgramOptions.Where(o => o.IsAvailable))
-            {
-                if (wanted.Contains(option.Descriptor.Key))
-                {
-                    option.IsOn = true;
-                }
-            }
-
             await h.PressKeyAsync(ctx, "Fn_Validate");
             ctx.Check(steps.StatusResourceKey == "Program_Valid", "program should validate, status " + steps.StatusResourceKey);
             ctx.Check(await SelfTestNames.SaveAsAsync(h, steps.SaveProgramAsCommand, steps.NamePrompt, SelfTestNames.FlowProgram),
@@ -93,7 +80,19 @@ internal sealed class FullFlowSuite : ISelfTestSuite
         {
             await JobFlow.RegisterAndOpenAsync(h, ctx, SelfTestNames.FlowRollId, 2000, 600, 600, SelfTestNames.ProfileA, SelfTestNames.FlowProgram);
             ctx.Check(job.CanDownload, "job should pass the checklist, first block: " + JobFlow.FirstBlock(job));
-            ctx.Note("job " + job.JobId + ", " + job.TotalDurationText);
+
+            // 本次取舍：程序末尾排了测量，"磨后测量"应列出并默认开；两项打印这一支辊打开（后面验自动打印）。
+            ProgramOptionRowViewModel? post = job.ProgramOptions.FirstOrDefault(o => o.Descriptor.Key == ProgramOptionKeys.PostGrindMeasure);
+            ctx.Check(post is { IsOn: true }, "the program ends with a measure step, so 'post-grind measure' should be listed and on");
+            foreach (ProgramOptionRowViewModel option in job.ProgramOptions.Where(o =>
+                         o.Descriptor.Key is ProgramOptionKeys.PrintPreGrindData or ProgramOptionKeys.PrintPostGrindData))
+            {
+                option.IsOn = true;
+            }
+
+            await h.SettleAsync();
+            ctx.Note("job " + job.JobId + ", " + job.TotalDurationText + ", run options: "
+                + string.Join(",", job.ProgramOptions.Where(o => o.IsOn).Select(o => o.Descriptor.Key)));
         }, StepOptions.Shot);
 
         StepStatus download = await h.StepAsync("Run", "DownloadToNc", async ctx =>

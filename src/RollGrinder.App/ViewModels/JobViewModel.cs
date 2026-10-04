@@ -53,6 +53,35 @@ public sealed record CheckRowViewModel(string ItemText, string MessageText, JobC
 public sealed record JobProgramStepRowViewModel(string OrderText, string Name, string DurationText);
 
 /// <summary>
+/// 作业核对页"本次取舍"里的一行：这一支辊开磨前，走不走某段 NC 子程序（或上位机打不打印）。
+/// 只列这份作业用得上的（见 <see cref="ProgramOptionPlanner"/>）；挂着工序的注明是第几道。
+/// </summary>
+public sealed partial class ProgramOptionRowViewModel : ObservableObject
+{
+    public ProgramOptionRowViewModel(ProgramOptionDescriptor descriptor, bool isOn, int? linkedStepOrder, IStringLocalizer localizer)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        ArgumentNullException.ThrowIfNull(localizer);
+
+        Descriptor = descriptor;
+        Label = localizer[descriptor.ResourceKey];
+        Note = linkedStepOrder is { } order ? localizer.Format("Job_OptionStepFormat", order) : string.Empty;
+        this.isOn = isOn;
+    }
+
+    public ProgramOptionDescriptor Descriptor { get; }
+
+    public string Label { get; }
+
+    /// <summary>挂着哪道工序（"第 3 道"）；没挂工序为空。</summary>
+    public string Note { get; }
+
+    /// <summary>开关状态。</summary>
+    [ObservableProperty]
+    private bool isOn;
+}
+
+/// <summary>
 /// 作业（界面修订稿 v3 6.3、关系设计第 6 节）：以轧辊为中心——
 /// 根画面是待磨清单（中断待续、不合格待返磨置顶，其余按最近下线），输入尾号就能找到那支辊；
 /// "下作业 ▸"打开一页核对：辊形与程序直接取台账里的计划，磨前直径、本次磨削量（mm）就地改，
@@ -141,14 +170,6 @@ public sealed partial class JobViewModel : PageViewModelBase
         Picker = picker ?? throw new ArgumentNullException(nameof(picker));
         this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
         this.manualGrinding = manualGrinding ?? throw new ArgumentNullException(nameof(manualGrinding));
-
-        ProgramOptions = new ObservableCollection<ProgramOptionRowViewModel>(
-            ProgramOptionCatalog.All.Select(option => new ProgramOptionRowViewModel(
-                option, option.DefaultEnabled, capability.Supports(option), localizer)));
-        foreach (ProgramOptionRowViewModel row in ProgramOptions)
-        {
-            row.PropertyChanged += (_, _) => Evaluate();
-        }
 
         this.jobId = NewJobId();
 
@@ -422,7 +443,7 @@ public sealed partial class JobViewModel : PageViewModelBase
     public ObservableCollection<JobProgramStepRowViewModel> ProgramSteps { get; } = new();
 
     /// <summary>这一次的程序步骤开关，默认值来自程序。</summary>
-    public ObservableCollection<ProgramOptionRowViewModel> ProgramOptions { get; }
+    public ObservableCollection<ProgramOptionRowViewModel> ProgramOptions { get; } = new();
 
     /// <summary>"磨成什么样"：辊形按 2% 规则套在辊身上，横轴辊身坐标、纵轴直径量 µm。</summary>
     public IReadOnlyList<(double BodyPositionMm, double DiameterMicrometer)> ReviewCurve { get; private set; } =
@@ -541,10 +562,17 @@ public sealed partial class JobViewModel : PageViewModelBase
             return;
         }
 
+        // 只列这份作业用得上的开关：程序里有那道工序、机床有那个装置。挂工序的默认开（程序排了就是要做）。
+        IReadOnlyList<GrindingJobStep> steps = ProgramFrame.Normalize(this.program.Steps, this.stepTypes);
         this.suppressEvaluate = true;
-        foreach (ProgramOptionRowViewModel row in ProgramOptions)
+        ProgramOptions.Clear();
+        foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All
+                     .Where(option => ProgramOptionPlanner.AppliesTo(option, steps, this.capability, this.stepTypes)))
         {
-            row.IsOn = row.IsAvailable && this.program.IsProgramOptionEnabled(row.Descriptor.Key);
+            var row = new ProgramOptionRowViewModel(
+                option, ProgramOptionPlanner.DefaultFor(option), ProgramOptionPlanner.LinkedStepOrder(option.Key, steps, this.stepTypes), Localizer);
+            row.PropertyChanged += (_, _) => Evaluate();
+            ProgramOptions.Add(row);
         }
 
         this.suppressEvaluate = false;
@@ -747,9 +775,15 @@ public sealed partial class JobViewModel : PageViewModelBase
             return null;
         }
 
-        ParameterSet options = new(ProgramOptions.Select(row =>
-            new KeyValuePair<string, ParameterValue>(row.Descriptor.Key, ParameterValue.FromBoolean(row.IsOn))));
         IReadOnlyList<GrindingJobStep> steps = checks.Stock.ProblemResourceKey is null ? checks.Stock.Steps : normalized.Steps;
+
+        // 十个开关都下发：没列出来的（用不上）一律关，NC 不会收到开着却没有对应工序或装置的开关。
+        ParameterSet options = ProgramOptionPlanner.Normalize(
+            new ParameterSet(ProgramOptions.Select(row =>
+                new KeyValuePair<string, ParameterValue>(row.Descriptor.Key, ParameterValue.FromBoolean(row.IsOn)))),
+            steps,
+            this.capability,
+            this.stepTypes);
 
         return GrindingJob.Create(JobId, this.roll.RollId, RollGeometry.FromDiameter(this.roll.Geometry.BodyLengthMm, startMm), fitted, steps, options) with
         {

@@ -1210,12 +1210,6 @@
   <data name="Parameter_wheelAutoApproach" xml:space="preserve">
     <value>Wheel auto approach</value>
   </data>
-  <data name="Steps_OptionNotAvailable" xml:space="preserve">
-    <value>This machine is not fitted for it</value>
-  </data>
-  <data name="Steps_ProgramOptionsHeader" xml:space="preserve">
-    <value>Program steps (before auto grinding)</value>
-  </data>
   <data name="Choice_pauseReason_wheelChange" xml:space="preserve">
     <value>Change wheel</value>
   </data>
@@ -2640,9 +2634,6 @@
   </data>
   <data name="Vk_StepDefaults" xml:space="preserve">
     <value>Defaults</value>
-  </data>
-  <data name="Vk_ProgramOptions" xml:space="preserve">
-    <value>Program steps</value>
   </data>
   <data name="Program_TotalStock" xml:space="preserve">
     <value>Standard stock (dia. µm)</value>
@@ -4719,5 +4710,11 @@
   </data>
   <data name="Job_ChecksBlock" xml:space="preserve">
     <value>A check failed; see the top of the list on the left</value>
+  </data>
+  <data name="Job_RunOptionsHeader" xml:space="preserve">
+    <value>This run (decide before starting: what this roll does or skips)</value>
+  </data>
+  <data name="Job_OptionStepFormat" xml:space="preserve">
+    <value>step {0}</value>
   </data>
 </root>

@@ -178,6 +178,30 @@ internal sealed class JobSuite : ISelfTestSuite
             return Task.CompletedTask;
         });
 
+        await h.StepAsync("Review", "RunOptionsOnlyWhatApplies", ctx =>
+        {
+            if (!job.IsReview)
+            {
+                ctx.Skip("no review is open (the registration step before did not get there)");
+            }
+
+            // 本次取舍只列用得上的：挂工序的必须注明是第几道；下发的十个开关里，没列出来的都是关。
+            foreach (ProgramOptionRowViewModel option in job.ProgramOptions.Where(o => ProgramOptionPlanner.IsStepLinked(o.Descriptor.Key)))
+            {
+                ctx.Check(option.Note.Length > 0, option.Descriptor.Key + " is tied to a step and should say which one");
+            }
+
+            GrindingJob? built = job.BuildJob();
+            ctx.Check(built is not null, "the job should build");
+            foreach (ProgramOptionDescriptor option in ProgramOptionCatalog.All.Where(o => job.ProgramOptions.All(row => row.Descriptor.Key != o.Key)))
+            {
+                ctx.Check(!built!.IsProgramOptionEnabled(option.Key), option.Key + " is not listed, so it must go out off");
+            }
+
+            ctx.Note("listed: " + string.Join(",", job.ProgramOptions.Select(o => o.Descriptor.Key + (o.IsOn ? "+" : "-"))));
+            return Task.CompletedTask;
+        });
+
         await h.StepAsync("Review", "StockEditsRecheck", async ctx =>
         {
             if (!job.IsReview)
