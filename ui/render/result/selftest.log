@@ -1,0 +1,91 @@
+# Roll Grinder HMI self-test  label=render  started=2026-10-04T05:04:54.5068157+00:00
+# app.version = 1.0.0+687812d136d7005cf7cca2707bef8379510d74fc
+# commit = 687812d136d7005cf7cca2707bef8379510d74fc
+# cpu.count = 4
+# culture.ui = zh-CN
+# dir.config = D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\render\config
+# dir.data = D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\render\data
+# gateway = Sim
+# offline = False
+# os = Microsoft Windows 10.0.26100
+# os.arch = X64
+# runtime = .NET 8.0.31
+# scope = Render
+# screen.dpiScale = 1
+# screen.primary = 1024x768 DIP
+# sim.speed = 20
+# touch.devices = 0
+# window = 1040x736 DIP, Maximized
+#
+## suite Session
+[0001] PASS  Session / SignIn / LoginOverlayShownAtStartup  (151 ms)  | shot: screenshots/0001-Session-SignIn-LoginOverlayShownAtStartup.jpg
+[0002] PASS  Session / SignIn / SeedAccountAsksForPassword  (309 ms)  | shot: screenshots/0002-Session-SignIn-SeedAccountAsksForPassword.jpg
+[0003] PASS  Session / SignIn / SetPasswordAndSignIn  (354 ms)  | home page ManualGrinding  | shot: screenshots/0003-Session-SignIn-SetPasswordAndSignIn.jpg
+## suite Render
+[0004] PASS  Render / AutoGrinding / PageRoot  (550 ms)  | shot: screenshots/0004-Render-AutoGrinding-PageRoot.jpg
+[0005] PASS  Render / AutoGrinding / AreaMenuState  (495 ms)
+[0006] PASS  Render / AutoGrinding / HelpState  (497 ms)
+[0007] PASS  Render / AutoGrinding / SubView_Fn_Compensation  (853 ms)
+[0008] PASS  Render / AutoGrinding / SubView_Fn_ProgramBlock  (830 ms)
+[0009] PASS  Render / Profile / PageRoot  (414 ms)  | shot: screenshots/0009-Render-Profile-PageRoot.jpg
+[0010] PASS  Render / Profile / AreaMenuState  (475 ms)
+[0011] PASS  Render / Profile / HelpState  (491 ms)
+[0012] PASS  Render / Steps / PageRoot  (350 ms)  | shot: screenshots/0012-Render-Steps-PageRoot.jpg
+[0013] PASS  Render / Steps / AreaMenuState  (477 ms)
+[0014] PASS  Render / Steps / HelpState  (491 ms)
+[0015] PASS  Render / Records / PageRoot  (368 ms)  | shot: screenshots/0015-Render-Records-PageRoot.jpg
+[0016] PASS  Render / Records / AreaMenuState  (479 ms)
+[0017] PASS  Render / Records / HelpState  (484 ms)
+[0018] PASS  Render / Records / SubView_Vk_QueryAsk  (823 ms)
+[0019] PASS  Render / Records / SubView_Fn_Overview  (823 ms)
+[0020] PASS  Render / Manual / PageRoot  (352 ms)  | shot: screenshots/0020-Render-Manual-PageRoot.jpg
+[0021] PASS  Render / Manual / AreaMenuState  (472 ms)
+[0022] PASS  Render / Manual / HelpState  (467 ms)
+[0023] PASS  Render / Manual / Group_measuringArm  (349 ms)
+[0024] PASS  Render / Manual / Group_tailstock  (358 ms)
+[0025] PASS  Render / Manual / Group_driver  (352 ms)
+[0026] PASS  Render / Manual / Group_steadyRest  (361 ms)
+[0027] PASS  Render / Manual / Group_measureCentring  (353 ms)
+[0028] PASS  Render / Manual / Group_cycles  (354 ms)
+[0029] PASS  Render / Diagnostics / PageRoot  (360 ms)  | shot: screenshots/0029-Render-Diagnostics-PageRoot.jpg
+[0030] PASS  Render / Diagnostics / AreaMenuState  (484 ms)
+[0031] PASS  Render / Diagnostics / HelpState  (486 ms)
+[0032] PASS  Render / Diagnostics / Group_alarms  (359 ms)
+[0033] PASS  Render / Diagnostics / Group_tagMonitor  (363 ms)
+[0034] PASS  Render / Diagnostics / Group_audit  (353 ms)
+[0035] PASS  Render / Diagnostics / Group_runLog  (360 ms)
+[0036] PASS  Render / Diagnostics / Group_connection  (365 ms)
+[0037] PASS  Render / Diagnostics / Group_backup  (346 ms)
+[0038] PASS  Render / Parameters / PageRoot  (374 ms)  | shot: screenshots/0038-Render-Parameters-PageRoot.jpg
+[0039] PASS  Render / Parameters / AreaMenuState  (475 ms)
+[0040] PASS  Render / Parameters / HelpState  (499 ms)
+[0041] PASS  Render / Parameters / Group_wheel  (365 ms)
+[0042] PASS  Render / Parameters / Group_calibration  (353 ms)
+[0043] PASS  Render / Parameters / Group_audit  (346 ms)
+[0044] PASS  Render / Parameters / SubView_Vk_ChangeWheel  (963 ms)
+[0045] PASS  Render / Job / PageRoot  (361 ms)  | shot: screenshots/0045-Render-Job-PageRoot.jpg
+[0046] PASS  Render / Job / AreaMenuState  (469 ms)
+[0047] PASS  Render / Job / HelpState  (466 ms)
+[0048] PASS  Render / ManualGrinding / PageRoot  (332 ms)  | shot: screenshots/0048-Render-ManualGrinding-PageRoot.jpg
+[0049] PASS  Render / ManualGrinding / AreaMenuState  (479 ms)
+[0050] PASS  Render / ManualGrinding / HelpState  (480 ms)
+[0051] PASS  Render / Rolls / PageRoot  (345 ms)  | shot: screenshots/0051-Render-Rolls-PageRoot.jpg
+[0052] PASS  Render / Rolls / AreaMenuState  (466 ms)
+[0053] PASS  Render / Rolls / HelpState  (471 ms)
+[0054] PASS  Render / Rolls / SubView_Vk_RegisterRoll  (810 ms)
+[0055] PASS  Render / Rolls / SubView_Vk_MultiSelect  (804 ms)
+[0056] PASS  Render / Commissioning / PageRoot  (361 ms)  | shot: screenshots/0056-Render-Commissioning-PageRoot.jpg
+[0057] PASS  Render / Commissioning / AreaMenuState  (472 ms)
+[0058] PASS  Render / Commissioning / HelpState  (485 ms)
+[0059] PASS  Render / Commissioning / Group_machineConfig  (363 ms)
+[0060] PASS  Render / Commissioning / Group_tagMapping  (385 ms)
+[0061] PASS  Render / Commissioning / Group_system  (359 ms)
+[0062] PASS  Render / ProfileLibrary / PageRoot  (377 ms)  | shot: screenshots/0062-Render-ProfileLibrary-PageRoot.jpg
+[0063] PASS  Render / ProfileLibrary / AreaMenuState  (464 ms)
+[0064] PASS  Render / ProfileLibrary / HelpState  (467 ms)
+[0065] PASS  Render / ProgramLibrary / PageRoot  (316 ms)  | shot: screenshots/0065-Render-ProgramLibrary-PageRoot.jpg
+[0066] PASS  Render / ProgramLibrary / AreaMenuState  (463 ms)
+[0067] PASS  Render / ProgramLibrary / HelpState  (493 ms)
+## screenshots: saved 38, same as an earlier one 3, over the limit 0 (policy Key, max 50, jpeg 65)
+#
+# RESULT  total=67 pass=67 warn=0 fail=0 skip=0 seconds=32.1

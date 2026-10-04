@@ -1,0 +1,359 @@
+# Roll Grinder HMI self-test  label=sim  started=2026-10-04T04:59:09.6121302+00:00
+# app.version = 1.0.0+687812d136d7005cf7cca2707bef8379510d74fc
+# commit = 687812d136d7005cf7cca2707bef8379510d74fc
+# cpu.count = 4
+# culture.ui = zh-CN
+# dir.config = D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\config
+# dir.data = D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\data
+# gateway = Sim
+# offline = False
+# os = Microsoft Windows 10.0.26100
+# os.arch = X64
+# runtime = .NET 8.0.31
+# scope = Full
+# screen.dpiScale = 1
+# screen.primary = 1024x768 DIP
+# sim.speed = 20
+# touch.devices = 0
+# window = 1040x736 DIP, Maximized
+#
+## suite Session
+[0001] PASS  Session / SignIn / LoginOverlayShownAtStartup  (152 ms)  | shot: screenshots/0001-Session-SignIn-LoginOverlayShownAtStartup.jpg
+[0002] PASS  Session / SignIn / SeedAccountAsksForPassword  (319 ms)  | shot: screenshots/0002-Session-SignIn-SeedAccountAsksForPassword.jpg
+[0003] PASS  Session / SignIn / EmptyPasswordRefused  (316 ms)
+[0004] PASS  Session / SignIn / MismatchRefused  (311 ms)
+[0005] PASS  Session / SignIn / SetPasswordAndSignIn  (362 ms)  | home page ManualGrinding  | shot: screenshots/0005-Session-SignIn-SetPasswordAndSignIn.jpg
+[0006] PASS  Session / Users / OpenAdmin  (321 ms)  | shot: screenshots/0006-Session-Users-OpenAdmin.jpg
+[0007] PASS  Session / Users / CreateOperator  (336 ms)
+[0008] PASS  Session / Users / DuplicateNameRefused  (315 ms)  | alarms: Warning:Users_AlreadyExists(selftest-op) [expected]
+[0009] PASS  Session / Users / ResetOperatorPassword  (314 ms)
+[0010] PASS  Session / Users / LastManufacturerCannotBeDeleted  (317 ms)  | alarms: Warning:Users_LastManufacturer [expected]
+[0011] PASS  Session / Users / DeleteOperator  (313 ms)
+[0012] PASS  Session / Users / CloseAdmin  (313 ms)
+[0013] PASS  Session / SignIn / SignOutAndWrongPasswordRejected  (481 ms)
+[0014] PASS  Session / SignIn / SignInAgain  (333 ms)
+## suite Navigation
+[0015] PASS  Navigation / QuickBar / Quick_1_machine  (341 ms)  | path=手动磨削  | shot: screenshots/0015-Navigation-QuickBar-Quick_1_machine.jpg
+[0016] PASS  Navigation / QuickBar / Quick_2_rolls  (627 ms)  | path=轧辊  | shot: screenshots/0016-Navigation-QuickBar-Quick_2_rolls.jpg
+[0017] PASS  Navigation / QuickBar / Quick_3_profile  (402 ms)  | path=辊形编辑  | shot: screenshots/0017-Navigation-QuickBar-Quick_3_profile.jpg
+[0018] PASS  Navigation / QuickBar / Quick_4_steps  (389 ms)  | path=工艺程序  | shot: screenshots/0018-Navigation-QuickBar-Quick_4_steps.jpg
+[0019] PASS  Navigation / QuickBar / Quick_5_wheel  (400 ms)  | path=参数  | shot: screenshots/0019-Navigation-QuickBar-Quick_5_wheel.jpg
+[0020] PASS  Navigation / QuickBar / Quick_6_records  (447 ms)  | path=磨削记录  | shot: screenshots/0020-Navigation-QuickBar-Quick_6_records.jpg
+[0021] PASS  Navigation / QuickBar / Quick_7_diagnostics  (380 ms)  | path=诊断  | shot: screenshots/0021-Navigation-QuickBar-Quick_7_diagnostics.jpg
+[0022] PASS  Navigation / AreaMenu / OpenWithAreaTile  (503 ms)  | shot: screenshots/0022-Navigation-AreaMenu-OpenWithAreaTile.jpg
+[0023] PASS  Navigation / AreaMenu / ToggleCloses  (321 ms)
+[0024] PASS  Navigation / AreaMenu / EscapeCloses  (467 ms)
+[0025] PASS  Navigation / AreaMenu / PickRecordsWithAreaKey  (497 ms)
+[0026] PASS  Navigation / AreaMenu / CommissioningNeedsManufacturer  (475 ms)  | commissioning usable=True
+[0027] PASS  Navigation / TaskJump / RecordsFromAutoAndBack  (767 ms)  | shot: screenshots/0027-Navigation-TaskJump-RecordsFromAutoAndBack.jpg
+[0028] PASS  Navigation / SubView / OpenAndCloseWithBack  (707 ms)
+[0029] PASS  Navigation / LeaveConfirm / DirtyPageAsksBeforeLeaving  (873 ms)
+[0030] PASS  Navigation / LeaveConfirm / DiscardReallyReverts  (499 ms)
+[0031] PASS  Navigation / Confirmation / CancelExpireAndConfirm  (5861 ms)
+[0032] PASS  Navigation / SoftKeys / UnavailableKeySaysWhy  (958 ms)  | reason=先选中一条
+[0033] PASS  Navigation / Keypad / RangeCheckedAndCommitted  (318 ms)
+[0034] PASS  Navigation / Help / OpenAndClose  (674 ms)
+## suite PageSweep
+[0035] PASS  PageSweep / AutoGrinding / H1_Fn_Compensation  (633 ms)  | sub view SubView_Compensation
+[0036] PASS  PageSweep / AutoGrinding / H2_Fn_ProgramBlock  (631 ms)  | sub view SubView_ProgramBlock
+[0037] SKIP  PageSweep / AutoGrinding / H3_Fn_JumpToStep  (0 ms)  | key is unavailable in the default state: 尚无已下发的作业
+[0038] SKIP  PageSweep / AutoGrinding / H4_Fn_EndEarly  (0 ms)  | key is unavailable in the default state: 尚无已下发的作业
+[0039] PASS  PageSweep / AutoGrinding / H5_Fn_GrindingRecords  (677 ms)  | navigated to Records; returned with « back
+[0040] PASS  PageSweep / AutoGrinding / H6_Fn_Job  (686 ms)  | navigated to Job
+[0041] PASS  PageSweep / AutoGrinding / H7_Fn_ParameterTable  (454 ms)  | no navigation
+[0042] PASS  PageSweep / AutoGrinding / V1_Curve_Error  (456 ms)  | no navigation
+[0043] PASS  PageSweep / AutoGrinding / V2_Curve_Reference  (461 ms)  | no navigation
+[0044] PASS  PageSweep / AutoGrinding / V3_Curve_Roundness  (455 ms)  | no navigation
+[0045] PASS  PageSweep / AutoGrinding / V4_Curve_Eccentricity  (453 ms)  | no navigation
+[0046] PASS  PageSweep / AutoGrinding / V5_Curve_GrindingCurrent  (454 ms)  | no navigation
+[0047] PASS  PageSweep / Profile / H1_Fn_ProfileLibrary  (668 ms)  | navigated to ProfileLibrary
+[0048] PASS  PageSweep / Profile / H2_Fn_Save  (454 ms)  | no navigation  | alarms: Warning:Profile_NeedsName [expected]
+[0049] PASS  PageSweep / Profile / H3_Fn_SaveAs  (507 ms)  | prompt open
+[0050] PASS  PageSweep / Profile / H5_Fn_ImportPoints  (453 ms)  | no navigation
+[0051] PASS  PageSweep / Profile / H6_Fn_GeneratePoints  (476 ms)  | no navigation
+[0052] PASS  PageSweep / Profile / H7_Fn_ImportReference  (462 ms)  | no navigation
+[0053] PASS  PageSweep / Profile / H8_Fn_Validate  (458 ms)  | no navigation
+[0054] PASS  PageSweep / Profile / V1_Vk_InsertSegment  (468 ms)  | no navigation
+[0055] PASS  PageSweep / Profile / V2_Vk_DeleteSegment  (459 ms)  | page dirty
+[0056] PASS  PageSweep / Profile / V3_Vk_MoveUp  (453 ms)  | page dirty
+[0057] PASS  PageSweep / Profile / V4_Vk_MoveDown  (453 ms)  | page dirty
+[0058] PASS  PageSweep / Profile / V5_Vk_CopySegment  (453 ms)  | page dirty
+[0059] PASS  PageSweep / Profile / V6_Vk_ChangeType  (462 ms)  | page dirty
+[0060] SKIP  PageSweep / Profile / V7_Vk_Interpolation  (0 ms)  | key is unavailable in the default state: 现在不能做
+[0061] PASS  PageSweep / Profile / V8_Vk_ClearSegments  (611 ms)  | asked: 清空全部辊形段？; page dirty
+[0062] PASS  PageSweep / Steps / H1_Fn_ProgramLibrary  (662 ms)  | navigated to ProgramLibrary
+[0063] PASS  PageSweep / Steps / H2_Fn_SaveProgram  (454 ms)  | no navigation  | alarms: Warning:Program_NeedsName [expected]
+[0064] PASS  PageSweep / Steps / H3_Fn_SaveAs  (469 ms)  | no navigation  | alarms: Warning:Program_HasErrors [expected]
+[0065] PASS  PageSweep / Steps / H5_Fn_NewProgram  (456 ms)  | no navigation
+[0066] PASS  PageSweep / Steps / H6_Fn_ApplicableKind  (465 ms)  | no navigation
+[0067] PASS  PageSweep / Steps / H7_Fn_Validate  (459 ms)  | no navigation  | alarms: Warning:Program_HasErrors [expected]
+[0068] PASS  PageSweep / Steps / V1_Vk_InsertStep  (467 ms)  | no navigation
+[0069] PASS  PageSweep / Steps / V2_Vk_DeleteStep  (451 ms)  | no navigation
+[0070] PASS  PageSweep / Steps / V3_Vk_MoveUp  (452 ms)  | no navigation
+[0071] PASS  PageSweep / Steps / V4_Vk_MoveDown  (451 ms)  | no navigation
+[0072] PASS  PageSweep / Steps / V5_Vk_CopyStep  (452 ms)  | no navigation
+[0073] PASS  PageSweep / Steps / V6_Vk_AllocateStock  (453 ms)  | no navigation
+[0074] PASS  PageSweep / Steps / V7_Vk_StepDefaults  (610 ms)  | asked: 把这道工序的参数恢复成默认值？; no navigation
+[0075] PASS  PageSweep / Records / H1_Fn_Overview  (620 ms)  | sub view SubView_Overview
+[0076] PASS  PageSweep / Records / H2_Fn_GrindingRecords  (452 ms)  | no navigation
+[0077] PASS  PageSweep / Records / H3_Fn_PreGrindReport  (469 ms)  | no navigation
+[0078] PASS  PageSweep / Records / H5_Fn_DailyReport  (456 ms)  | no navigation
+[0079] PASS  PageSweep / Records / H6_Fn_MonthlyReport  (454 ms)  | no navigation
+[0080] PASS  PageSweep / Records / V1_Curve_BeforeAfter  (470 ms)  | no navigation
+[0081] PASS  PageSweep / Records / V2_Curve_Error  (461 ms)  | no navigation
+[0082] PASS  PageSweep / Records / V3_Curve_Roundness  (452 ms)  | no navigation
+[0083] PASS  PageSweep / Records / V4_Curve_Convergence  (454 ms)  | no navigation
+[0084] PASS  PageSweep / Records / V5_Vk_QueryAsk  (611 ms)  | sub view SubView_Query
+[0085] PASS  PageSweep / Records / V6_Vk_MarkFinished  (462 ms)  | no navigation
+[0086] PASS  PageSweep / Records / V7_Vk_DownloadSnapshot  (476 ms)  | no navigation
+[0087] PASS  PageSweep / Manual / H1_Fn_ManualGrinding  (672 ms)  | navigated to ManualGrinding
+[0088] PASS  PageSweep / Manual / H2_ManualPage_measuringArm  (464 ms)  | no navigation
+[0089] PASS  PageSweep / Manual / H3_ManualPage_tailstock  (456 ms)  | no navigation
+[0090] PASS  PageSweep / Manual / H4_ManualPage_driver  (458 ms)  | no navigation
+[0091] PASS  PageSweep / Manual / H5_ManualPage_steadyRest  (457 ms)  | no navigation
+[0092] PASS  PageSweep / Manual / H6_ManualPage_measureCentring  (458 ms)  | no navigation
+[0093] PASS  PageSweep / Manual / H7_Fn_AuxCycles  (476 ms)  | no navigation
+[0094] PASS  PageSweep / Manual / H8_Fn_Job  (674 ms)  | navigated to Job
+[0095] PASS  PageSweep / Manual / V1_Action_AsksFormat  (612 ms)  | asked: 手动磨削？按"✓ 确认"发出; no navigation
+[0096] PASS  PageSweep / Manual / V2_Action_AsksFormat  (609 ms)  | asked: 基准标定？按"✓ 确认"发出; no navigation
+[0097] PASS  PageSweep / Manual / V3_Action_AsksFormat  (634 ms)  | asked: 砂轮修整？按"✓ 确认"发出; no navigation
+[0098] PASS  PageSweep / Manual / V4_Action_AsksFormat  (614 ms)  | asked: 辊对中？按"✓ 确认"发出; no navigation
+[0099] PASS  PageSweep / Diagnostics / H1_Fn_Alarms  (470 ms)  | no navigation
+[0100] PASS  PageSweep / Diagnostics / H2_Fn_TagMonitor  (465 ms)  | no navigation
+[0101] PASS  PageSweep / Diagnostics / H3_Fn_AuditLog  (455 ms)  | no navigation
+[0102] PASS  PageSweep / Diagnostics / H4_Fn_RunLog  (462 ms)  | no navigation
+[0103] PASS  PageSweep / Diagnostics / H6_Fn_Connection  (469 ms)  | no navigation
+[0104] PASS  PageSweep / Diagnostics / H7_Fn_BackupRestore  (472 ms)  | no navigation
+[0105] PASS  PageSweep / Parameters / H1_Fn_Wheel  (469 ms)  | no navigation
+[0106] PASS  PageSweep / Parameters / H2_Fn_Calibration  (457 ms)  | no navigation
+[0107] PASS  PageSweep / Parameters / H4_Fn_CalibrationAudit  (475 ms)  | no navigation
+[0108] PASS  PageSweep / Parameters / V1_Vk_Reload  (473 ms)  | no navigation
+[0109] PASS  PageSweep / Job / H1_Fn_ManualGrinding  (668 ms)  | navigated to ManualGrinding
+[0110] PASS  PageSweep / Job / H2_ManualPage_measuringArm  (672 ms)  | navigated to Manual
+[0111] PASS  PageSweep / Job / H3_ManualPage_tailstock  (668 ms)  | navigated to Manual
+[0112] PASS  PageSweep / Job / H4_ManualPage_driver  (673 ms)  | navigated to Manual
+[0113] PASS  PageSweep / Job / H5_ManualPage_steadyRest  (672 ms)  | navigated to Manual
+[0114] PASS  PageSweep / Job / H6_ManualPage_measureCentring  (670 ms)  | navigated to Manual
+[0115] PASS  PageSweep / Job / H7_Fn_AuxCycles  (655 ms)  | navigated to Manual
+[0116] PASS  PageSweep / Job / H8_Fn_Job  (452 ms)  | no navigation
+[0117] PASS  PageSweep / Job / V1_Vk_ToJob  (453 ms)  | no navigation
+[0118] PASS  PageSweep / Job / V2_Vk_RegisterRoll  (828 ms)  | navigated to Rolls, sub view SubView_RollForm
+[0119] SKIP  PageSweep / Job / V3_Vk_EndInterrupted  (0 ms)  | key is unavailable in the default state: 选中的辊不是中断待续
+[0120] PASS  PageSweep / Job / V4_Vk_GoRolls  (660 ms)  | navigated to Rolls
+[0121] PASS  PageSweep / ManualGrinding / H1_Fn_ManualGrinding  (456 ms)  | no navigation
+[0122] PASS  PageSweep / ManualGrinding / H2_ManualPage_measuringArm  (708 ms)  | navigated to Manual
+[0123] PASS  PageSweep / ManualGrinding / H3_ManualPage_tailstock  (658 ms)  | navigated to Manual
+[0124] PASS  PageSweep / ManualGrinding / H4_ManualPage_driver  (673 ms)  | navigated to Manual
+[0125] PASS  PageSweep / ManualGrinding / H5_ManualPage_steadyRest  (669 ms)  | navigated to Manual
+[0126] PASS  PageSweep / ManualGrinding / H6_ManualPage_measureCentring  (670 ms)  | navigated to Manual
+[0127] PASS  PageSweep / ManualGrinding / H7_Fn_AuxCycles  (644 ms)  | navigated to Manual
+[0128] PASS  PageSweep / ManualGrinding / H8_Fn_Job  (660 ms)  | navigated to Job
+[0129] PASS  PageSweep / ManualGrinding / V1_Action_AsksFormat  (618 ms)  | asked: 砂轮启动？按"✓ 确认"发出; no navigation
+[0130] PASS  PageSweep / ManualGrinding / V2_MG_CarriageStart  (451 ms)  | no navigation
+[0131] PASS  PageSweep / ManualGrinding / V3_Action_Coolant  (453 ms)  | no navigation
+[0132] PASS  PageSweep / ManualGrinding / V4_MG_HeadstockAssist  (459 ms)  | no navigation
+[0133] PASS  PageSweep / ManualGrinding / V5_MG_Position  (460 ms)  | no navigation
+[0134] PASS  PageSweep / ManualGrinding / V6_Action_AsksFormat  (616 ms)  | asked: 各轴归位？按"✓ 确认"发出; no navigation
+[0135] PASS  PageSweep / Rolls / H1_Fn_Ledger  (454 ms)  | no navigation
+[0136] SKIP  PageSweep / Rolls / V1_Vk_ToJob  (0 ms)  | key is unavailable in the default state: 先选一支辊
+[0137] SKIP  PageSweep / Rolls / V2_Vk_ChangePlan  (0 ms)  | key is unavailable in the default state: 先选一支辊
+[0138] PASS  PageSweep / Rolls / V3_Vk_RegisterRoll  (610 ms)  | sub view SubView_RollForm
+[0139] SKIP  PageSweep / Rolls / V4_Vk_CopyRegister  (0 ms)  | key is unavailable in the default state: 先选一支辊
+[0140] PASS  PageSweep / Rolls / V5_Vk_MultiSelect  (624 ms)  | sub view SubView_MultiSelect
+[0141] SKIP  PageSweep / Rolls / V6_Vk_EditRoll  (0 ms)  | key is unavailable in the default state: 先选一支辊
+[0142] SKIP  PageSweep / Rolls / V7_Vk_Retire  (0 ms)  | key is unavailable in the default state: 先选一支辊
+[0143] PASS  PageSweep / Rolls / V8_Vk_ShowRetired  (457 ms)  | no navigation
+[0144] PASS  PageSweep / Commissioning / H1_Fn_MachineConfig  (466 ms)  | no navigation
+[0145] PASS  PageSweep / Commissioning / H2_Fn_TagMapping  (480 ms)  | no navigation
+[0146] PASS  PageSweep / Commissioning / H3_Fn_System  (470 ms)  | no navigation
+[0147] PASS  PageSweep / Commissioning / V1_Vk_ViewMachineJson  (674 ms)  | no navigation
+[0148] PASS  PageSweep / Commissioning / V2_Vk_ViewTagMapJson  (661 ms)  | no navigation
+[0149] PASS  PageSweep / ProfileLibrary / H1_Fn_ProfileLibrary  (462 ms)  | no navigation
+[0150] PASS  PageSweep / ProfileLibrary / H2_Fn_ProfileEditor  (650 ms)  | navigated to Profile
+[0151] SKIP  PageSweep / ProfileLibrary / V1_Vk_Open  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0152] PASS  PageSweep / ProfileLibrary / V2_Vk_New  (691 ms)  | navigated to Profile
+[0153] SKIP  PageSweep / ProfileLibrary / V3_Vk_Copy  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0154] SKIP  PageSweep / ProfileLibrary / V4_Vk_Rename  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0155] SKIP  PageSweep / ProfileLibrary / V5_Vk_Disable  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0156] SKIP  PageSweep / ProfileLibrary / V6_Vk_Versions  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0157] SKIP  PageSweep / ProfileLibrary / V7_Vk_Delete  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0158] PASS  PageSweep / ProgramLibrary / H1_Fn_ProgramLibrary  (451 ms)  | no navigation
+[0159] PASS  PageSweep / ProgramLibrary / H2_Fn_ProgramEditor  (653 ms)  | navigated to Steps
+[0160] SKIP  PageSweep / ProgramLibrary / V1_Vk_Open  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0161] PASS  PageSweep / ProgramLibrary / V2_Vk_New  (638 ms)  | navigated to Steps
+[0162] SKIP  PageSweep / ProgramLibrary / V3_Vk_Copy  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0163] SKIP  PageSweep / ProgramLibrary / V4_Vk_Rename  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0164] SKIP  PageSweep / ProgramLibrary / V5_Vk_Disable  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0165] SKIP  PageSweep / ProgramLibrary / V6_Vk_Versions  (0 ms)  | key is unavailable in the default state: 先选中一条
+[0166] SKIP  PageSweep / ProgramLibrary / V7_Vk_Delete  (0 ms)  | key is unavailable in the default state: 先选中一条
+## suite Profile
+[0167] PASS  Profile / Segments / BuildFromEmptyEveryType  (2055 ms)  | types=5, first length=1600  | shot: screenshots/0167-Profile-Segments-BuildFromEmptyEveryType.jpg
+[0168] PASS  Profile / Segments / Validate  (323 ms)  | status=, maxChordError=0.00 µm
+[0169] PASS  Profile / Segments / MoveCopyAndRemove  (1277 ms)
+[0170] PASS  Profile / Segments / LiveValidationBlocksSave  (490 ms)
+[0171] PASS  Profile / PointTable / EditPoints  (891 ms)
+[0172] PASS  Profile / Symmetric / HeadstockSideMirrorsToTailstock  (1924 ms)
+[0173] PASS  Profile / Symmetric / AsymmetricProfileCannotFold  (259 ms)
+[0174] PASS  Profile / Library / SaveWithoutNameRefused  (303 ms)  | alarms: Warning:Profile_NeedsName [expected]
+[0175] PASS  Profile / Library / SaveAsAndReload  (1476 ms)  | alarms: Information:Profile_Saved(SelfTest Profile A) [expected]
+[0176] PASS  Profile / Library / SaveAsRefusesTakenName  (720 ms)
+[0177] PASS  Profile / Library / OldProfileIsConvertedToAPointTable  (1134 ms)
+[0178] PASS  Profile / Library / DeleteSecondProfile  (2246 ms)  | alarms: Information:Profile_Saved(SelfTest Profile B) [expected]
+[0179] PASS  Profile / Points / GenerateCsv  (301 ms)  | profile-20261004-0500.csv lines=102
+[0180] PASS  Profile / Points / ImportReferenceLine  (506 ms)  | reference deviation=与对照线最大相差 0.0 µm  | shot: screenshots/0180-Profile-Points-ImportReferenceLine.jpg
+[0181] PASS  Profile / Points / ImportPointTableAsANewSegment  (716 ms)
+[0182] PASS  Profile / Points / ImportGarbageRefused  (305 ms)
+[0183] PASS  Profile / Points / ImportCancelledDoesNothing  (301 ms)
+[0184] PASS  Profile / Segments / DeleteToEmptyCannotSave  (916 ms)
+## suite Steps
+[0185] PASS  Steps / Program / NewProgramHasFrame  (308 ms)
+[0186] PASS  Steps / StepTypes / GroupedBySlotInOrder  (152 ms)  | 15 types, 15 available
+[0187] PASS  Steps / StepTypes / AddEveryAvailableType  (2302 ms)  | total duration 711 min  | shot: screenshots/0187-Steps-StepTypes-AddEveryAvailableType.jpg
+[0188] PASS  Steps / StepTypes / FrameTypesRefused  (453 ms)
+[0189] PASS  Steps / StepTypes / RemoveStep  (305 ms)
+[0190] PASS  Steps / StepTypes / MoveUpAndDown  (609 ms)
+[0191] PASS  Steps / Clipboard / CopyCutPaste  (801 ms)
+[0192] PASS  Steps / VerticalKeys / InsertByCategoryCopyDelete  (2328 ms)
+[0193] PASS  Steps / CrossStep / AllocateStockAndDefaults  (936 ms)  | 各道磨削量合计 664 µm，与总余量 987 µm 对不上；按“余量分配”可按比例分好
+[0194] PASS  Steps / Diagram / EveryParameterLightsUpWithAHelpLine  (1203 ms)  | 8 diagram kinds shown
+[0195] PASS  Steps / Validation / ProgramValidates  (306 ms)  | status=Program_Valid, violations=0  | shot: screenshots/0195-Steps-Validation-ProgramValidates.jpg
+[0196] PASS  Steps / Program / ApplicableKindMenu  (780 ms)
+[0197] PASS  Steps / ProgramLibrary / SaveWithoutNameRefused  (316 ms)  | alarms: Warning:Program_NeedsName [expected]
+[0198] PASS  Steps / ProgramLibrary / InvalidProgramNotSaved  (491 ms)  | alarms: Warning:Program_HasErrors [expected]
+[0199] PASS  Steps / ProgramLibrary / SaveAsNewProgramLoad  (1793 ms)  | alarms: Information:Program_Saved(SelfTest Program A) [expected]
+[0200] PASS  Steps / ProgramLibrary / DeleteSecondProgram  (1529 ms)  | alarms: Information:Program_Saved(SelfTest Program B) [expected]
+## suite Library
+[0201] PASS  Library / Pages / profiles  (965 ms)  | 2 entries, preview rows 3, users 0  | shot: screenshots/library-profiles.jpg
+[0202] PASS  Library / Pages / programs  (892 ms)  | 1 entries, preview rows 3, users 0  | shot: screenshots/library-programs.jpg
+[0203] PASS  Library / Entries / CopyRenameDisableDelete  (2126 ms)
+[0204] PASS  Library / Files / ExportAndImportRenamesClashes  (1262 ms)
+## suite Rolls
+[0205] PASS  Rolls / Ledger / ListAndCard  (330 ms)  | 全部用途 · 0 支 · 含作废  | shot: screenshots/0205-Rolls-Ledger-ListAndCard.jpg
+[0206] PASS  Rolls / Register / PlanRequiredAndDuplicateRefused  (1339 ms)  | problems: 计划必填：请选辊形与程序  | shot: screenshots/0206-Rolls-Register-PlanRequiredAndDuplicateRefused.jpg
+[0207] PASS  Rolls / Edit / CurrentDiameterSaved  (619 ms)
+[0208] PASS  Rolls / Multi / ChangePlanChecksEachRoll  (1020 ms)  | shot: screenshots/0208-Rolls-Multi-ChangePlanChecksEachRoll.jpg
+[0209] PASS  Rolls / Retire / RetireAndRestore  (1878 ms)
+[0210] PASS  Rolls / Files / ExportLedger  (508 ms)
+## suite Job
+[0211] PASS  Job / Queue / ShowsQueue  (347 ms)  | 待磨清单 · 1 支（置顶 0）  | shot: screenshots/0211-Job-Queue-ShowsQueue.jpg
+[0212] PASS  Job / Queue / TailNumberFilters  (463 ms)
+[0213] PASS  Job / Review / RegisterRollWithPlan  (1387 ms)  | 核对 · SELFTEST-JOB · 工作辊 · -- · ✓ 8 · ! 1 · ✕ 0  | shot: screenshots/0213-Job-Review-RegisterRollWithPlan.jpg
+[0214] PASS  Job / Review / ChecklistPasses  (152 ms)
+[0215] PASS  Job / Review / RunOptionsOnlyWhatApplies  (150 ms)  | listed: mountingErrorMeasure+,axisFeedForward+,wheelAutoApproach+,inProcessMeasure+,postGrindMeasure+,eddyCurrentTest+,printPreGrindData-,printPostGrindData-
+[0216] PASS  Job / Review / StockEditsRecheck  (482 ms)
+[0217] PASS  Job / Review / ChangeProfileThisTimeNeedsReason  (1133 ms)  | ✓ 8 · ! 2 · ✕ 0, first block: none  | shot: screenshots/0217-Job-Review-ChangeProfileThisTimeNeedsReason.jpg
+[0218] PASS  Job / Review / RestorePlan  (333 ms)
+[0219] PASS  Job / Review / BackToQueue  (309 ms)
+## suite Parameters
+[0220] PASS  Parameters / Calibration / ValuesListed  (150 ms)  | 19 values  | shot: screenshots/0220-Parameters-Calibration-ValuesListed.jpg
+[0221] PASS  Parameters / Calibration / EditSaveReload  (679 ms)  | wheelDiameterMm: 900 -> 900.001
+[0222] PASS  Parameters / Audit / AuditGroupListsChanges  (623 ms)
+[0223] PASS  Parameters / WheelChange / FullWizard  (1421 ms)  | result: 砂轮直径误差 +0.010 mm，修正为 899.990 mm; done: 换砂轮已完成，对刀方式已改回
+[0224] PASS  Parameters / Wheel / DataDressingAndHistory  (508 ms)  | 1 history rows, max surface speed 45 m/s
+[0225] PASS  Parameters / WheelChange / CancelHalfway  (934 ms)
+## suite ManualGrinding
+[0226] PASS  ManualGrinding / Page / WindowsAndKeys  (152 ms)  | wheel 0.0 m/s · Ø 890.2, headstock 0, carriage 停  | shot: screenshots/0226-ManualGrinding-Page-WindowsAndKeys.jpg
+[0227] PASS  ManualGrinding / Setpoint / OverrideCancelReverts  (476 ms)
+[0228] PASS  ManualGrinding / Setpoint / OverrideConfirmWrites  (1081 ms)  | feed override 95 written: 进给倍率 已写入
+[0229] PASS  ManualGrinding / Stroke / PickTargetAndStrokeValues  (459 ms)
+[0230] PASS  ManualGrinding / Keys / V1_砂轮启动…  (928 ms)  | asked: 砂轮启动？按"✓ 确认"发出; dialog: 砂轮启动 · 已发出
+[0231] PASS  ManualGrinding / Keys / V2_拖板往复…  (1640 ms)  | asked: 拖板往复 100.0 → 1900.0 mm，1200 mm/min。按"✓ 确认"启动; dialog: 拖板往复 · 已发出
+[0232] PASS  ManualGrinding / Keys / V3_冷却液  (470 ms)  | dialog: 冷却液 · 已发出
+[0233] PASS  ManualGrinding / Keys / V4_带启动装置  (454 ms)  | dialog: 带启动装置 · 已发出
+[0234] PASS  ManualGrinding / Keys / V5_定位 ▸  (516 ms)  | 拖板到 Z… | 到辊身 ¼… (要先有装辊的作业（知道辊身在哪）) | 到辊身 ½… (要先有装辊的作业（知道辊身在哪）) | 到辊身 ¾… (要先有装辊的作业（知道辊身在哪）) | 测量架到轧辊… | 测量架归位… | 磨架退到安全位… | « 返回
+[0235] PASS  ManualGrinding / Keys / V6_各轴归位…  (1076 ms)  | asked: 各轴归位？按"✓ 确认"发出; dialog: 各轴归位 · 已发出
+[0236] PASS  ManualGrinding / Keys / HelpTopicIsManualGrinding  (475 ms)
+## suite Manual
+[0237] PASS  Manual / Page / GroupsAndReadouts  (158 ms)  | measuringArm:2 axes, tailstock:1 axes, driver:1 axes, steadyRest:2 axes, measureCentring:2 axes, cycles:4 axes  | shot: screenshots/0237-Manual-Page-GroupsAndReadouts.jpg
+[0238] PASS  Manual / Groups / measuringArm  (316 ms)  | 外测量臂=收起, 内测量臂=收起  | shot: screenshots/0238-Manual-Groups-measuringArm.jpg
+[0239] PASS  Manual / Actions_measuringArm / V1_外臂 A 放下  (873 ms)  | dialog: 外臂 A 放下 · 已发出
+[0240] PASS  Manual / Actions_measuringArm / V2_外臂 A 收起  (862 ms)  | dialog: 外臂 A 收起 · 已发出
+[0241] PASS  Manual / Actions_measuringArm / V3_内臂 B 放下  (873 ms)  | dialog: 内臂 B 放下 · 已发出
+[0242] PASS  Manual / Actions_measuringArm / V4_内臂 B 收起  (882 ms)  | dialog: 内臂 B 收起 · 已发出
+[0243] PASS  Manual / Actions_measuringArm / V5_双臂到轧辊  (883 ms)  | dialog: 双臂到轧辊 · 已发出
+[0244] PASS  Manual / Actions_measuringArm / V6_双臂归位  (876 ms)  | dialog: 双臂归位 · 已发出
+[0245] PASS  Manual / Actions_measuringArm / V7_校测量臂…  (1064 ms)  | asked: 校测量臂？按"✓ 确认"发出; dialog: 校测量臂 · 已发出
+[0246] PASS  Manual / Actions_measuringArm / V8_测量采样  (468 ms)  | dialog: 已采集一个测点
+[0247] PASS  Manual / Groups / tailstock  (305 ms)  | 套筒=伸出到位, 尾架=前进到位  | shot: screenshots/0247-Manual-Groups-tailstock.jpg
+[0248] PASS  Manual / Actions_tailstock / V1_套筒伸出  (869 ms)  | dialog: 套筒伸出 · 已发出
+[0249] PASS  Manual / Actions_tailstock / V2_套筒缩回…  (1078 ms)  | asked: 套筒缩回？按"✓ 确认"发出; dialog: 套筒缩回 · 已发出
+[0250] PASS  Manual / Actions_tailstock / V3_尾架前进  (883 ms)  | dialog: 尾架前进 · 已发出
+[0251] PASS  Manual / Actions_tailstock / V4_尾架后退…  (1077 ms)  | asked: 尾架后退？按"✓ 确认"发出; dialog: 尾架后退 · 已发出
+[0252] PASS  Manual / Groups / driver  (305 ms)  | 拨盘=伸出到位, 头架正转=--, 头架反转=--  | shot: screenshots/0252-Manual-Groups-driver.jpg
+[0253] PASS  Manual / Actions_driver / V1_拨盘伸出  (880 ms)  | dialog: 拨盘伸出 · 已发出
+[0254] PASS  Manual / Actions_driver / V2_拨盘收回…  (1072 ms)  | asked: 拨盘收回？按"✓ 确认"发出; dialog: 拨盘收回 · 已发出
+[0255] PASS  Manual / Groups / steadyRest  (307 ms)  | 头架侧托瓦=落下, 尾架侧托瓦=落下, 中心架=落下  | shot: screenshots/0255-Manual-Groups-steadyRest.jpg
+[0256] PASS  Manual / Actions_steadyRest / V1_头架侧升  (871 ms)  | dialog: 头架侧升 · 已发出
+[0257] PASS  Manual / Actions_steadyRest / V2_头架侧降…  (1062 ms)  | asked: 头架侧降？按"✓ 确认"发出; dialog: 头架侧降 · 已发出
+[0258] PASS  Manual / Actions_steadyRest / V3_尾架侧升  (860 ms)  | dialog: 尾架侧升 · 已发出
+[0259] PASS  Manual / Actions_steadyRest / V4_尾架侧降…  (1063 ms)  | asked: 尾架侧降？按"✓ 确认"发出; dialog: 尾架侧降 · 已发出
+[0260] PASS  Manual / Actions_steadyRest / V5_U1 轴归零…  (1066 ms)  | asked: U1 轴归零？按"✓ 确认"发出; dialog: U1 轴归零 · 已发出
+[0261] PASS  Manual / Groups / measureCentring  (312 ms)  | shot: screenshots/0261-Manual-Groups-measureCentring.jpg
+[0262] PASS  Manual / Groups / cycles  (316 ms)  | 切削液=关, 砂轮=停, 头架正转=--, 头架反转=--, 外测量臂=收起, 内测量臂=收起, 套筒=缩回, 尾架=后退, 拨盘=收回, 头架侧托瓦=落下, 尾架侧托瓦=落下, 中心架=落下, 防护门=关好, 液压=正常, 润滑=正常  | shot: screenshots/0262-Manual-Groups-cycles.jpg
+[0263] PASS  Manual / Actions_cycles / V1_手动磨削…  (1071 ms)  | asked: 手动磨削？按"✓ 确认"发出; dialog: 手动磨削 · 已发出
+[0264] PASS  Manual / Actions_cycles / V2_基准标定…  (1080 ms)  | asked: 基准标定？按"✓ 确认"发出; dialog: 基准标定 · 已发出
+[0265] PASS  Manual / Actions_cycles / V3_砂轮修整…  (1081 ms)  | asked: 砂轮修整？按"✓ 确认"发出; dialog: 砂轮修整 · 已发出
+[0266] PASS  Manual / Actions_cycles / V4_辊对中…  (1061 ms)  | asked: 辊对中？按"✓ 确认"发出; dialog: 辊对中 · 已发出
+[0267] PASS  Manual / Status / QuillLampFollowsTheCommand  (1471 ms)  | dialog: 套筒伸出 · 已发出  | shot: screenshots/0267-Manual-Status-QuillLampFollowsTheCommand.jpg
+[0268] PASS  Manual / Measurement / CaptureSaveClear  (1898 ms)  | save status=Measurement_NotEnoughPoints
+[0269] PASS  Manual / Centring / HeadTailClear  (981 ms)  | difference=0.0 µm, hint=
+## suite FullFlow
+[0270] PASS  FullFlow / Prepare / BuildProgram  (2022 ms)  | steps Measure>Rough>Auxiliary>WheelDress>Measure>Roundness, duration 129 min  | alarms: Information:Program_Saved(SelfTest Flow Program)  | shot: screenshots/0270-FullFlow-Prepare-BuildProgram.jpg
+[0271] PASS  FullFlow / Prepare / BuildJob  (1644 ms)  | job J20261004050214, 56 min, run options: preGrindMeasure,mountingErrorMeasure,axisFeedForward,wheelAutoApproach,postGrindMeasure,printPreGrindData,printPostGrindData  | shot: screenshots/0271-FullFlow-Prepare-BuildJob.jpg
+[0272] PASS  FullFlow / Run / DownloadToNc  (1032 ms)  | alarms: Information:Alarm_HandoverCompleted(J20261004050214)  | shot: screenshots/0272-FullFlow-Run-DownloadToNc.jpg
+[0273] PASS  FullFlow / Run / GrindingStarts  (169 ms)  | sequence rows=8, live values=6  | shot: screenshots/0273-FullFlow-Run-GrindingStarts.jpg
+[0274] PASS  FullFlow / Run / ParameterAreaFollowsTheRunningStep  (1959 ms)  | 03 粗磨 · 下一道 | 下一道：04 辅助动作   | 13 parameters  | shot: screenshots/0274-FullFlow-Run-ParameterAreaFollowsTheRunningStep.jpg
+[0275] PASS  FullFlow / RunLock / EditPagesReadOnly  (653 ms)
+[0276] PASS  FullFlow / Run / LiveValuesMove  (2152 ms)  | t0=12%|0.663|600.663  t2=25%|0.831|600.831
+[0277] PASS  FullFlow / Run / CurvesWhileGrinding  (2144 ms)  | Error=data; Reference=data; Roundness=data; Eccentricity=data; GrindingCurrent=data
+[0278] SKIP  FullFlow / Run / CycleStartAsksFirst  (0 ms)  | cycle start is on the operator panel
+[0279] PASS  FullFlow / Run / Coolant  (454 ms)
+[0280] PASS  FullFlow / Run / EndEarlyConfirmationExpires  (5386 ms)
+[0281] PASS  FullFlow / Run / GrindsToCompletion  (85375 ms)  | measured=599.949, target=600.000, rms=RMS 7.4 µm, tolerance=公差 ±10 µm  | alarms: Information:Alarm_RecordCompleted(J20261004050214) [expected]
+[0282] PASS  FullFlow / After / AutoPageShowsRmsWithoutClicking  (155 ms)  | rms=RMS 7.4 µm
+[0283] PASS  FullFlow / After / StatusBandAndCompensationView  (791 ms)  | 方式 AUTO · 通道 复位 · 程序 -- · X mm +300.000 · Z mm 0.00 · 砂轮 r/min 0 · 头架 r/min 0.0; 切削液 关 · 中心架 落下 · 尾架 后退 · 测量臂 收起; stroke corrections=14, measurements=2
+[0284] PASS  FullFlow / After / ProgramDressIsInTheWheelHistory  (165 ms)
+[0285] PASS  FullFlow / After / EditPagesUnlocked  (157 ms)
+[0286] PASS  FullFlow / After / PreGrindSheetPrintedAutomatically  (149 ms)  | 2 automatic print(s): 01-auto-磨前工艺单-p1.jpg, 02-auto-磨削报告-p1.jpg
+[0287] PASS  FullFlow / After / RecordClosedAutomatically  (503 ms)  | state=已完成, duration=1.6, worst=17.40; automatic prints: 01-auto-磨前工艺单-p1.jpg, 02-auto-磨削报告-p1.jpg
+[0288] PASS  FullFlow / After / FinishButtonDoesNotReopenAClosedRecord  (778 ms)
+[0289] PASS  FullFlow / After / RecordCurvesHaveData  (2470 ms)  | BeforeAfterProfile=data; Deviation=data; Roundness=data; CompensationConvergence=empty
+## suite Records
+[0290] PASS  Records / Query / LastThirtyDays  (771 ms)  | 1 records
+[0291] PASS  Records / Record / OpenMetricsAndCurves  (1905 ms)  | Curve_BeforeAfter=data · 磨前 / 磨后; Curve_Error=data · 误差曲线; Curve_Roundness=data · 圆度; Curve_Convergence=empty · 补偿收敛
+[0292] PASS  Records / Summary / DailyAndMonthly  (464 ms)  | daily: 本日：开 1 支，合格 1 支，合格率 100.0%，累计 0.0 h; monthly: 本月：开 1 支，合格 1 支，合格率 100.0%，累计 0.0 h
+[0293] PASS  Records / Report / PreGrindPreviewAndPrint  (1725 ms)  | printed 03-manual-磨前工艺单-p1.jpg
+[0294] PASS  Records / Report / PostGrindPreviewAndPrint  (1371 ms)  | printed 04-manual-磨削报告-p1.jpg
+[0295] PASS  Records / Export / Csv  (457 ms)  | records-20261004-0504.csv lines=2
+## suite Diagnostics
+[0296] PASS  Diagnostics / Connection / ConnectionAndTagMap  (359 ms)  | tagmap: tagmap.json 校验通过, missing=0, degradation=Full
+[0297] PASS  Diagnostics / Alarms / DetailAndClearAsks  (1097 ms)
+[0298] PASS  Diagnostics / Groups / tagMonitor  (737 ms)  | monitorRows=77, changeLog=0, logChars=1004
+[0299] PASS  Diagnostics / Groups / audit  (750 ms)  | monitorRows=77, changeLog=15, logChars=1004
+[0300] PASS  Diagnostics / Groups / runLog  (724 ms)  | monitorRows=77, changeLog=15, logChars=1004
+[0301] PASS  Diagnostics / Export / Snapshot  (469 ms)  | diagnostics-20261004-0504.txt 5395 bytes  | alarms: Information:Diag_SnapshotExported(D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\files\diagnostics-20261004-0504.txt)
+[0302] PASS  Diagnostics / Export / Backup  (1302 ms)  | rollgrinder-backup-20261004-0504.zip entries=8: config/hmi.json, config/machine.json, config/tagmap.json, data/.selftest-data, data/rollgrinder.db, data/rollgrinder.db-shm, data/rollgrinder.db-wal, data/logs/rollgrinder-20261004.log  | alarms: Information:Diag_BackupWritten(D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\files\rollgrinder-backup-20261004-0504.zip)
+## suite Commissioning
+[0303] PASS  Commissioning / ConfigEditor / MachineConfigEditSaveRestore  (2425 ms)  | 已保存 1 处改动（原文件备份为 machine.20261004-050413266.json）。重启上位机后生效。
+[0304] PASS  Commissioning / ConfigEditor / TagMapSearchMissingTestRead  (2044 ms)  | missing rows=51; test read: 试读 machine.channelState：0（好）
+[0305] PASS  Commissioning / System / ReadOnlyRowsAndRawView  (685 ms)
+## suite Permissions
+[0306] PASS  Permissions / Operator / CreateAndSignIn  (1051 ms)
+[0307] PASS  Permissions / Operator / LibrariesAreReadOnly  (506 ms)  | 只读 · 要管理员权限才能改
+[0308] PASS  Permissions / Manufacturer / SignBackInAndClean  (986 ms)
+## suite SessionTail
+[0309] PASS  SessionTail / SignOut / KeysBlockedWhenSignedOut  (455 ms)
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\files\profile-20261004-0459.csv
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\files\profile-20261004-0500.csv
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\files\SelfTest Profile A.rgxlib
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\files\RGX-ledger-20261004.csv
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\prints\01-auto-磨前工艺单-p1.jpg
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\prints\02-auto-磨削报告-p1.jpg
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\prints\03-manual-磨前工艺单-p1.jpg
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\prints\04-manual-磨削报告-p1.jpg
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\files\records-20261004-0504.csv
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\files\diagnostics-20261004-0504.txt
+## produced D:\a\RollGrinder\RollGrinder\TestResults\run-20261004-045752\ui\sim\result\files\rollgrinder-backup-20261004-0504.zip
+## screenshots: saved 80, same as an earlier one 2, over the limit 27 (policy Key, max 80, jpeg 65)
+#
+# RESULT  total=309 pass=287 warn=0 fail=0 skip=22 seconds=311.6

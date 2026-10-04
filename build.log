@@ -1,0 +1,33 @@
+> dotnet build D:\a\RollGrinder\RollGrinder\RollGrinder.sln -c Release -nologo -v minimal
+  Determining projects to restore...
+  Restored D:\a\RollGrinder\RollGrinder\src\RollGrinder.Nc\RollGrinder.Nc.csproj (in 179 ms).
+  Restored D:\a\RollGrinder\RollGrinder\src\RollGrinder.Core\RollGrinder.Core.csproj (in 164 ms).
+  Restored D:\a\RollGrinder\RollGrinder\src\RollGrinder.Sim\RollGrinder.Sim.csproj (in 1 ms).
+  Restored D:\a\RollGrinder\RollGrinder\src\RollGrinder.Services\RollGrinder.Services.csproj (in 21.34 sec).
+  Restored D:\a\RollGrinder\RollGrinder\src\RollGrinder.Device\RollGrinder.Device.csproj (in 707 ms).
+  Restored D:\a\RollGrinder\RollGrinder\tests\RollGrinder.Nc.Tests\RollGrinder.Nc.Tests.csproj (in 22.36 sec).
+  Restored D:\a\RollGrinder\RollGrinder\tests\RollGrinder.Core.Tests\RollGrinder.Core.Tests.csproj (in 22.14 sec).
+  Restored D:\a\RollGrinder\RollGrinder\src\RollGrinder.Data\RollGrinder.Data.csproj (in 2 ms).
+  Restored D:\a\RollGrinder\RollGrinder\src\RollGrinder.Contracts\RollGrinder.Contracts.csproj (in 0.5 ms).
+  Restored D:\a\RollGrinder\RollGrinder\tests\RollGrinder.Integration.Tests\RollGrinder.Integration.Tests.csproj (in 22.36 sec).
+  Restored D:\a\RollGrinder\RollGrinder\src\RollGrinder.Composition\RollGrinder.Composition.csproj (in 2 ms).
+  Restored D:\a\RollGrinder\RollGrinder\src\RollGrinder.App\RollGrinder.App.csproj (in 13.99 sec).
+  RollGrinder.Contracts -> D:\a\RollGrinder\RollGrinder\src\RollGrinder.Contracts\bin\Release\net8.0\RollGrinder.Contracts.dll
+  RollGrinder.Core -> D:\a\RollGrinder\RollGrinder\src\RollGrinder.Core\bin\Release\net8.0\RollGrinder.Core.dll
+  RollGrinder.Device -> D:\a\RollGrinder\RollGrinder\src\RollGrinder.Device\bin\Release\net8.0\RollGrinder.Device.dll
+  RollGrinder.Data -> D:\a\RollGrinder\RollGrinder\src\RollGrinder.Data\bin\Release\net8.0\RollGrinder.Data.dll
+  RollGrinder.Nc -> D:\a\RollGrinder\RollGrinder\src\RollGrinder.Nc\bin\Release\net8.0\RollGrinder.Nc.dll
+  RollGrinder.Core.Tests -> D:\a\RollGrinder\RollGrinder\tests\RollGrinder.Core.Tests\bin\Release\net8.0\RollGrinder.Core.Tests.dll
+  RollGrinder.Sim -> D:\a\RollGrinder\RollGrinder\src\RollGrinder.Sim\bin\Release\net8.0\RollGrinder.Sim.dll
+  RollGrinder.Services -> D:\a\RollGrinder\RollGrinder\src\RollGrinder.Services\bin\Release\net8.0\RollGrinder.Services.dll
+  RollGrinder.Composition -> D:\a\RollGrinder\RollGrinder\src\RollGrinder.Composition\bin\Release\net8.0\RollGrinder.Composition.dll
+  RollGrinder.Nc.Tests -> D:\a\RollGrinder\RollGrinder\tests\RollGrinder.Nc.Tests\bin\Release\net8.0\RollGrinder.Nc.Tests.dll
+  RollGrinder.Integration.Tests -> D:\a\RollGrinder\RollGrinder\tests\RollGrinder.Integration.Tests\bin\Release\net8.0\RollGrinder.Integration.Tests.dll
+  RollGrinder.App -> D:\a\RollGrinder\RollGrinder\src\RollGrinder.App\bin\Release\net8.0-windows\RollGrinder.App.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:01:03.96
+exit code: 0

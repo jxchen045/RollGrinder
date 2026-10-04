@@ -1,0 +1,13 @@
+{
+  "Label": "render",
+  "StartedAtUtc": "2026-10-04T05:04:54.5068157+00:00",
+  "TotalSeconds": 32.1,
+  "Total": 67,
+  "Passed": 67,
+  "Warned": 0,
+  "Failed": 0,
+  "Skipped": 0,
+  "Aborted": false,
+  "AbortReason": null,
+  "FailedSteps": []
+}
