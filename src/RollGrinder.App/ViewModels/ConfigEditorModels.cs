@@ -39,7 +39,8 @@ public sealed partial class ConfigFieldViewModel : ObservableObject
         string unitText,
         IReadOnlyList<string> choices,
         bool isReadOnly,
-        Action changed)
+        Action changed,
+        Func<string, string>? choiceLabel = null)
     {
         Path = path;
         this.owner = owner;
@@ -70,7 +71,8 @@ public sealed partial class ConfigFieldViewModel : ObservableObject
         foreach (string choice in choices)
         {
             string chosen = choice;
-            Choices.Add(new ParameterChoiceViewModel(choice, choice, new RelayCommand(() => Text = chosen))
+            // 存进文件的是原值（SemiClosed），键上写本地化的名字（半闭环）。
+            Choices.Add(new ParameterChoiceViewModel(choice, choiceLabel?.Invoke(choice) ?? choice, new RelayCommand(() => Text = chosen))
             {
                 IsSelected = string.Equals(choice, Text, StringComparison.OrdinalIgnoreCase),
             });

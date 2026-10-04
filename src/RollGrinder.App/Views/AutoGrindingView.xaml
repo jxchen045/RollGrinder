@@ -290,50 +290,54 @@
                             <TextBlock Text="{loc:Loc Auto_LiveDataHeader}" Style="{StaticResource Text.CardTitle}" />
                         </Border>
 
-                        <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="16,14">
+                        <!-- 实时数据与补偿状态一起滚：小屏（紧凑档位）上放不下时能滑，不被裁掉。 -->
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
                             <StackPanel>
-                                <TextBlock Text="{loc:Loc Auto_CompensationHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,10" />
-                                <DockPanel Margin="0,0,0,7">
-                                    <TextBlock Text="{loc:Loc Auto_FeedForward}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                    <TextBlock Text="{Binding FeedForwardText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                               HorizontalAlignment="Right" />
-                                </DockPanel>
-                                <DockPanel Margin="0,0,0,7">
-                                    <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                    <TextBlock Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                               HorizontalAlignment="Right" />
-                                </DockPanel>
-                                <DockPanel>
-                                    <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                    <TextBlock Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                               HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
-                                </DockPanel>
-                            </StackPanel>
-                        </Border>
-
-                        <ItemsControl ItemsSource="{Binding LiveValues}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border>
-                                        <Border.Style>
-                                            <Style TargetType="Border" BasedOn="{StaticResource DataRowBorder}">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Highlight}" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource Brush.RowAlternate}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <DockPanel>
-                                            <TextBlock Text="{Binding Label}" FontSize="17"
-                                                       Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Bottom" />
-                                            <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.DataRow}"
+                                <ItemsControl ItemsSource="{Binding LiveValues}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border>
+                                                <Border.Style>
+                                                    <Style TargetType="Border" BasedOn="{StaticResource DataRowBorder}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Highlight}" Value="True">
+                                                                <Setter Property="Background" Value="{StaticResource Brush.RowAlternate}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <DockPanel>
+                                                    <TextBlock Text="{Binding Label}" FontSize="17"
+                                                               Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Bottom" />
+                                                    <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.DataRow}"
+                                                               HorizontalAlignment="Right" />
+                                                </DockPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Border BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="16,14">
+                                    <StackPanel>
+                                        <TextBlock Text="{loc:Loc Auto_CompensationHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,10" />
+                                        <DockPanel Margin="0,0,0,7">
+                                            <TextBlock Text="{loc:Loc Auto_FeedForward}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
+                                            <TextBlock Text="{Binding FeedForwardText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
                                                        HorizontalAlignment="Right" />
                                         </DockPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                        <DockPanel Margin="0,0,0,7">
+                                            <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
+                                            <TextBlock Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                                       HorizontalAlignment="Right" />
+                                        </DockPanel>
+                                        <DockPanel>
+                                            <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
+                                            <TextBlock Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                                       HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
                     </DockPanel>
                 </Border>
             </Grid>
@@ -439,40 +443,42 @@
                             <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                                 <TextBlock Text="{loc:Loc Auto_CompensationHeader}" Style="{StaticResource Text.CardTitle}" />
                             </Border>
-                            <StackPanel Margin="16,12">
-                                <DockPanel Margin="0,0,0,7">
-                                    <TextBlock Text="{loc:Loc Auto_FeedForward}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                    <TextBlock Text="{Binding FeedForwardText}" FontFamily="{StaticResource Font.Mono}" FontSize="16" HorizontalAlignment="Right" />
-                                </DockPanel>
-                                <DockPanel Margin="0,0,0,7">
-                                    <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                    <TextBlock Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}" FontSize="16" HorizontalAlignment="Right" />
-                                </DockPanel>
-                                <DockPanel Margin="0,0,0,18">
-                                    <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                    <TextBlock Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                               HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
-                                </DockPanel>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                                <StackPanel Margin="16,12">
+                                    <DockPanel Margin="0,0,0,7">
+                                        <TextBlock Text="{loc:Loc Auto_FeedForward}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
+                                        <TextBlock Text="{Binding FeedForwardText}" FontFamily="{StaticResource Font.Mono}" FontSize="16" HorizontalAlignment="Right" />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,0,7">
+                                        <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
+                                        <TextBlock Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}" FontSize="16" HorizontalAlignment="Right" />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,0,18">
+                                        <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
+                                        <TextBlock Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                                   HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
+                                    </DockPanel>
 
-                                <TextBlock Text="{loc:Loc Comp_TuningHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,4" />
-                                <TextBlock Text="{Binding TuningSourceText}" Style="{StaticResource Text.Label}" Margin="0,0,0,10" TextWrapping="Wrap" />
-                                <StackPanel IsEnabled="{Binding CanEditCompensation}">
-                                    <TextBlock Text="{loc:Loc Comp_Gain}" Style="{StaticResource Text.Label}" />
-                                    <TextBox x:Name="TuningGainBox" Text="{Binding TuningGainText, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource ValueTextBox}" Margin="0,4,0,10" />
-                                    <TextBlock Text="{loc:Loc Comp_SmoothingPoints}" Style="{StaticResource Text.Label}" />
-                                    <TextBox Text="{Binding TuningSmoothingText, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource ValueTextBox}" Margin="0,4,0,10" />
-                                    <TextBlock Text="{loc:Loc Comp_MaxCorrection}" Style="{StaticResource Text.Label}" />
-                                    <TextBox Text="{Binding TuningMaxCorrectionText, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource ValueTextBox}" Margin="0,4,0,4" />
-                                    <TextBlock Text="{Binding TuningLimitText}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{loc:Loc Comp_TuningHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,4" />
+                                    <TextBlock Text="{Binding TuningSourceText}" Style="{StaticResource Text.Label}" Margin="0,0,0,10" TextWrapping="Wrap" />
+                                    <StackPanel IsEnabled="{Binding CanEditCompensation}">
+                                        <TextBlock Text="{loc:Loc Comp_Gain}" Style="{StaticResource Text.Label}" />
+                                        <TextBox x:Name="TuningGainBox" Text="{Binding TuningGainText, UpdateSourceTrigger=PropertyChanged}"
+                                                 Style="{StaticResource ValueTextBox}" Margin="0,4,0,10" />
+                                        <TextBlock Text="{loc:Loc Comp_SmoothingPoints}" Style="{StaticResource Text.Label}" />
+                                        <TextBox Text="{Binding TuningSmoothingText, UpdateSourceTrigger=PropertyChanged}"
+                                                 Style="{StaticResource ValueTextBox}" Margin="0,4,0,10" />
+                                        <TextBlock Text="{loc:Loc Comp_MaxCorrection}" Style="{StaticResource Text.Label}" />
+                                        <TextBox Text="{Binding TuningMaxCorrectionText, UpdateSourceTrigger=PropertyChanged}"
+                                                 Style="{StaticResource ValueTextBox}" Margin="0,4,0,4" />
+                                        <TextBlock Text="{Binding TuningLimitText}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <TextBlock Text="{loc:Loc Comp_ManufacturerOnly}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,10,0,0"
+                                               Visibility="{Binding CanEditCompensation, Converter={StaticResource InverseBoolVisibility}}" />
+                                    <TextBlock Text="{Binding TuningStatusText}" FontSize="16" TextWrapping="Wrap" Margin="0,10,0,0"
+                                               Foreground="{StaticResource Brush.CurrentStep}" />
                                 </StackPanel>
-                                <TextBlock Text="{loc:Loc Comp_ManufacturerOnly}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,10,0,0"
-                                           Visibility="{Binding CanEditCompensation, Converter={StaticResource InverseBoolVisibility}}" />
-                                <TextBlock Text="{Binding TuningStatusText}" FontSize="16" TextWrapping="Wrap" Margin="0,10,0,0"
-                                           Foreground="{StaticResource Brush.CurrentStep}" />
-                            </StackPanel>
+                            </ScrollViewer>
                         </DockPanel>
                     </Border>
 

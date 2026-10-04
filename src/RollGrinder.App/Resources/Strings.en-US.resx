@@ -4717,4 +4717,13 @@
   <data name="Job_OptionStepFormat" xml:space="preserve">
     <value>step {0}</value>
   </data>
+  <data name="Cfg_ClosedLoop_SemiClosed" xml:space="preserve">
+    <value>Semi-closed</value>
+  </data>
+  <data name="Cfg_ClosedLoop_FullClosed" xml:space="preserve">
+    <value>Full-closed</value>
+  </data>
+  <data name="Cfg_ClosedLoop_OpenLoop" xml:space="preserve">
+    <value>Open loop</value>
+  </data>
 </root>

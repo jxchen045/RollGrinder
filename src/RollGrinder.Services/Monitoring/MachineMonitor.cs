@@ -78,7 +78,8 @@ public sealed class MachineMonitor : IMachineMonitor, IAsyncDisposable
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await this.lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        // 这把锁只在启停时短暂持有；停的时限到了也要拿到它把循环停掉，所以不跟着时限取消。
+        await this.lifecycleGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         try
         {
             if (this.loopCancellation is null || this.loopTask is null)
@@ -100,7 +101,15 @@ public sealed class MachineMonitor : IMachineMonitor, IAsyncDisposable
             this.loopCancellation = null;
             this.loopTask = null;
 
-            await this.gateway.DisconnectAsync(cancellationToken).ConfigureAwait(false);
+            // 断开是收尾：停的时限到了就不等了，但不把"取消"再抛给宿主（宿主会把它当成停服务出错）。
+            try
+            {
+                await this.gateway.DisconnectAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // 停的时限到了：放弃断开，进程照样退出。
+            }
         }
         finally
         {

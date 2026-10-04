@@ -110,10 +110,12 @@
                 <!-- "⇆ 侧屏"：按得下去，在对话行说为什么这里不开（侧屏是数控系统操作界面自带的）。 -->
                 <Button DockPanel.Dock="Bottom" Height="{StaticResource Layout.SideScreenHeight}" Margin="0,4,0,0" Command="{Binding SideScreenCommand}"
                         Style="{StaticResource ShellDarkButton}" ctl:ButtonStates.IsUnavailable="True">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="⇆" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
-                        <TextBlock Text="{loc:Loc Quick_SideScreen}" FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Center" />
-                    </StackPanel>
+                    <Viewbox StretchDirection="DownOnly">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="⇆" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{loc:Loc Quick_SideScreen}" FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Viewbox>
                 </Button>
                 <ItemsControl ItemsSource="{Binding QuickBarItems}">
                     <ItemsControl.ItemTemplate>
@@ -122,12 +124,15 @@
                                     Style="{StaticResource ShellDarkButton}"
                                     ctl:ButtonStates.IsSelected="{Binding IsCurrent}"
                                     ctl:ButtonStates.IsUnavailable="{Binding IsAvailable, Converter={StaticResource InverseBool}}">
-                                <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="{Binding Glyph}" FontSize="{StaticResource Size.DataRow}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
-                                    <TextBlock Text="{Binding ShortcutText}" FontFamily="{StaticResource Font.Mono}"
-                                               FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Center" />
-                                </StackPanel>
+                                <!-- 左栏窄（标准 80、紧凑 64）：英文名、Ctrl+N 放不下时整体缩小，不切字。 -->
+                                <Viewbox StretchDirection="DownOnly">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding Glyph}" FontSize="{StaticResource Size.DataRow}" HorizontalAlignment="Center" />
+                                        <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" />
+                                        <TextBlock Text="{Binding ShortcutText}" FontFamily="{StaticResource Font.Mono}"
+                                                   FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Viewbox>
                             </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -243,7 +248,7 @@
             </Border.Style>
             <DockPanel LastChildFill="True">
                 <Button DockPanel.Dock="Left" Command="{Binding BackCommand}" Style="{StaticResource PathBackButton}"
-                        Height="28" Margin="0,0,10,0" Content="{Binding BackText}"
+                        Height="{StaticResource Layout.TitleButtonHeight}" VerticalAlignment="Center" Margin="0,0,10,0" Content="{Binding BackText}"
                         Visibility="{Binding BackText, Converter={StaticResource TextToVisibility}}" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{loc:Loc Shell_Modified}" FontWeight="Bold" FontSize="{StaticResource Size.Body}" Margin="12,0,0,0"

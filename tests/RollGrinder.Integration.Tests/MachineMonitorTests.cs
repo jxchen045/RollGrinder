@@ -75,6 +75,7 @@ public sealed class MachineMonitorTests
 
         public Task DisconnectAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             ConnectionState = GatewayConnectionState.Disconnected;
             return Task.CompletedTask;
         }
@@ -239,6 +240,23 @@ public sealed class MachineMonitorTests
 
         gateway.ConnectCount.Should().Be(1);
         gateway.ConnectionState.Should().Be(GatewayConnectionState.Disconnected);
+    }
+
+    [Fact]
+    public async Task Stopping_after_the_shutdown_deadline_still_stops_the_loop_and_does_not_throw()
+    {
+        // 宿主停服务的时限（5 s）到了以后才轮到监视：以前断开时抛"已取消"，一路抛到 Main 里弹出"启动失败"的框，
+        // 自检时没人点，进程就一直挂着。
+        (MachineMonitor monitor, ScriptedGateway gateway, _) = Create();
+        gateway.EnqueueSnapshot(2.0);
+        await monitor.StartAsync(CancellationToken.None);
+        await monitor.PollOnceAsync(CancellationToken.None);
+
+        Func<Task> stop = () => monitor.StopAsync(new CancellationToken(canceled: true));
+
+        await stop.Should().NotThrowAsync();
+        await monitor.StopAsync(CancellationToken.None);
+        gateway.ConnectionState.Should().Be(GatewayConnectionState.Connected, "past the deadline the disconnect is given up, not retried");
     }
 }
 

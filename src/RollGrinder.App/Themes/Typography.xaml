@@ -60,6 +60,8 @@
     <Setter Property="FontFamily" Value="{StaticResource Font.Sans}" />
     <Setter Property="FontSize" Value="{StaticResource Size.Label}" />
     <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
+    <!-- 标签放不下就折成两行，不切字（紧凑档位、英文界面的标签列都曾被切掉一截）。 -->
+    <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
 
   <!-- 卡片标题不写死颜色：继承标题栏给的前景（灰底标题栏深灰字、青底当前标题栏白字），青底上不会出现深字。 -->

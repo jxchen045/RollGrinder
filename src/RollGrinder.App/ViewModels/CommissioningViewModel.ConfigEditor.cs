@@ -229,7 +229,8 @@ public sealed partial class CommissioningViewModel
                 UnitOf(property),
                 choices,
                 readOnly.Contains(property),
-                OnMachineFieldChanged);
+                OnMachineFieldChanged,
+                choice => Localizer["Cfg_ClosedLoop_" + choice]);
             fields.Add(field);
             this.machineFields.Add(field);
         }

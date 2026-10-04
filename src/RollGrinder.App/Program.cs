@@ -123,7 +123,17 @@ public static class Program
             RollGrinder.App.Controls.LayoutProfile.Apply(application, hmiSettings.Layout, hmiSettings.FullScreen);
             int exitCode = application.Run();
 
-            host.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            // 退出时停后台服务：停得慢、停的时候出错都只记日志——窗口已经关了，不能再弹"启动失败"的框
+            // （自检时没人点那个框，进程会一直挂着）。
+            try
+            {
+                host.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            }
+            catch (Exception ex) when (ex is OperationCanceledException or AggregateException or InvalidOperationException or TimeoutException)
+            {
+                Log.Warning(ex, "Background services did not stop cleanly; exiting anyway");
+            }
+
             return exitCode;
         }
         catch (Exception ex)

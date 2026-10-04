@@ -4717,4 +4717,13 @@
   <data name="Job_OptionStepFormat" xml:space="preserve">
     <value>第 {0} 道</value>
   </data>
+  <data name="Cfg_ClosedLoop_SemiClosed" xml:space="preserve">
+    <value>半闭环</value>
+  </data>
+  <data name="Cfg_ClosedLoop_FullClosed" xml:space="preserve">
+    <value>全闭环</value>
+  </data>
+  <data name="Cfg_ClosedLoop_OpenLoop" xml:space="preserve">
+    <value>开环</value>
+  </data>
 </root>

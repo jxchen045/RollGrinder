@@ -515,10 +515,20 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
             TagValue value = snapshot.Values[i];
             TagMonitorRowViewModel row = TagMonitorRows[i];
             row.Key = value.Key;
-            row.ValueText = value.Raw?.ToString() ?? "--";
+            row.ValueText = FormatRaw(value.Raw);
             row.IsGood = value.IsGood;
         }
     }
+
+    /// <summary>变量监视里的值：浮点数最多 6 位小数（原样显示是 -0.0001372096851435361，列宽装不下也没人看得清）。</summary>
+    private static string FormatRaw(object? raw) => raw switch
+    {
+        null => "--",
+        double number => number.ToString("0.######", CultureInfo.InvariantCulture),
+        float number => number.ToString("0.######", CultureInfo.InvariantCulture),
+        IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+        _ => raw.ToString() ?? "--",
+    };
 
     private void RefreshEvents()
     {

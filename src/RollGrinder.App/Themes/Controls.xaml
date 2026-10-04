@@ -248,7 +248,8 @@
   <Style x:Key="SoftKeyButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
     <Setter Property="Background" Value="{StaticResource Brush.Key}" />
     <Setter Property="BorderBrush" Value="{StaticResource Brush.Divider}" />
-    <Setter Property="Padding" Value="6,4" />
+    <!-- 上下不留内边距：紧凑档位的键只有 54 px 高，名称 + 快捷键两行要 50 px，留 4 px 就切掉一截（内容本来就居中）。 -->
+    <Setter Property="Padding" Value="6,0" />
     <Setter Property="ctl:ButtonStates.PressedBackground" Value="{StaticResource Brush.KeyPressed}" />
   </Style>
 
@@ -497,7 +498,8 @@
   <!-- 状态灯（修改稿 5.5 状态带、5.6 手动页到位显示）：开为绿、关为灰、读不到画虚框。 -->
   <DataTemplate x:Key="StatusLampTemplate">
     <!-- 文字放在填色的 Border 里面：对比度检查认得出底色（并排叠放时它只看得到页面底色）。 -->
-    <Grid Margin="0,0,8,0" MinWidth="104" Height="46">
+    <!-- 两行字（名称 + 状态）要约 50 px，原来的 46 把状态那行切掉一截。 -->
+    <Grid Margin="0,0,8,0" MinWidth="104" Height="54">
       <Rectangle x:Name="LampDash" Stroke="{StaticResource Brush.TextMuted}" StrokeThickness="1.5"
                  StrokeDashArray="3 2" Visibility="Collapsed" />
       <Border x:Name="LampFill" Background="{StaticResource Brush.StepIdle}">

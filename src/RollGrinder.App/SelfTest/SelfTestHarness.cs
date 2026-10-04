@@ -778,7 +778,7 @@ internal sealed partial class SelfTestHarness
                 {
                     inside++;
                 }
-                else if (hit is Visual other && !control.IsDescendantOf(other))
+                else if (hit is Visual other && !control.IsDescendantOf(other) && !IsInHelpPanel(other))
                 {
                     coverer ??= hit;
                 }
@@ -906,6 +906,10 @@ internal sealed partial class SelfTestHarness
             return null;
         }
     }
+
+    /// <summary>黄色帮助按设计就盖在工作区右侧（表单照样能填），被它盖住的不算问题。</summary>
+    private bool IsInHelpPanel(Visual element) =>
+        Window.FindName("HelpPanel") is Visual help && (ReferenceEquals(element, help) || element.IsDescendantOf(help));
 
     /// <summary>版面问题局部图每轮最多几张。</summary>
     public const int MaxIssueShots = 40;

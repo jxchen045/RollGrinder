@@ -17,7 +17,7 @@
                 <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                     <DockPanel>
                         <TextBox DockPanel.Dock="Right" Width="{ctl:Px 320}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource ValueTextBox}" IsReadOnly="False" ToolTip="{loc:Loc Job_SearchHint}">
+                                 Style="{StaticResource ValueTextBox}" Height="38" IsReadOnly="False" ToolTip="{loc:Loc Job_SearchHint}">
                             <TextBox.InputBindings>
                                 <KeyBinding Key="Enter" Command="{Binding SearchEnterCommand}" />
                             </TextBox.InputBindings>
