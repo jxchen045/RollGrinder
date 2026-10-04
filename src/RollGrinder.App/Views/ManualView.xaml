@@ -34,28 +34,30 @@
                             <TextBlock Text="{loc:Loc Manual_ConditionsHeader}" Style="{StaticResource Text.CardTitle}" Margin="12,0,0,0" />
                         </StackPanel>
                     </Border>
-                    <ItemsControl ItemsSource="{Binding Conditions}" Margin="12,6">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border x:Name="CondRow" Padding="8,8" BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="0,0,0,1">
-                                    <DockPanel>
-                                        <TextBlock DockPanel.Dock="Left" Text="{Binding ActionText}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}"
-                                                   Style="{StaticResource Text.Body}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                        <TextBlock x:Name="CondText" Text="{Binding ConditionsText}" Style="{StaticResource Text.Label}"
-                                                   TextWrapping="Wrap" VerticalAlignment="Center" />
-                                    </DockPanel>
-                                </Border>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding HasProblem}" Value="True">
-                                        <Setter TargetName="CondRow" Property="Background" Value="{StaticResource Brush.WarningRowFill}" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Ready}" Value="False">
-                                        <Setter TargetName="CondText" Property="Foreground" Value="{StaticResource Brush.Alarm}" />
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                        <ItemsControl ItemsSource="{Binding Conditions}" Margin="12,6">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="CondRow" Padding="8,8" BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="0,0,0,1">
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Left" Text="{Binding ActionText}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}"
+                                                       Style="{StaticResource Text.Body}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0" />
+                                            <TextBlock x:Name="CondText" Text="{Binding ConditionsText}" Style="{StaticResource Text.Label}"
+                                                       TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding HasProblem}" Value="True">
+                                            <Setter TargetName="CondRow" Property="Background" Value="{StaticResource Brush.WarningRowFill}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Ready}" Value="False">
+                                            <Setter TargetName="CondText" Property="Foreground" Value="{StaticResource Brush.Alarm}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </DockPanel>
             </Border>
 

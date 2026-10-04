@@ -184,11 +184,28 @@
                         <ColumnDefinition Width="{ctl:Px 360}" />
                     </Grid.ColumnDefinitions>
 
-                    <DockPanel Grid.Column="0" Margin="0,0,1,0">
-                        <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                    <!-- 标题、简图、参数格、底部说明：简图那一行封顶 320，参数格紧跟其下；紧凑档位高度不够时先缩简图，参数格不被裁。 -->
+                    <Grid Grid.Column="0" Margin="0,0,1,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" MaxHeight="{ctl:Px 320}" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Style="{StaticResource ActiveCardHeader}">
                             <TextBlock Text="{loc:Loc Wheel_DataHeader}" Style="{StaticResource Text.CardTitle}" />
                         </Border>
-                        <Border DockPanel.Dock="Bottom" Padding="14,10" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0">
+                        <ctl:WheelDiagram Grid.Row="1" Mode="Wheel" Margin="10"
+                                          HighlightKey="{Binding FocusedWheelKey}" />
+                        <ItemsControl Grid.Row="2" ItemsSource="{Binding WheelRows}" Background="{StaticResource Brush.GridLine}"
+                                      IsEnabled="{Binding CanEdit}" ItemTemplate="{StaticResource ParameterCellTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="3" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <Border Grid.Row="3" Padding="14,10" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0">
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,6">
                                     <TextBlock Text="{loc:Loc Settings_WheelWear}" Style="{StaticResource Text.Label}" />
@@ -202,27 +219,21 @@
                                 </DockPanel>
                             </StackPanel>
                         </Border>
-                        <ctl:WheelDiagram DockPanel.Dock="Top" Mode="Wheel" Height="{ctl:Px 300}" Margin="10"
-                                          HighlightKey="{Binding FocusedWheelKey}" />
-                        <ItemsControl ItemsSource="{Binding WheelRows}" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top"
-                                      IsEnabled="{Binding CanEdit}" ItemTemplate="{StaticResource ParameterCellTemplate}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Columns="3" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                    </DockPanel>
+                    </Grid>
 
-                    <DockPanel Grid.Column="1" Margin="0,0,1,0">
-                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                    <Grid Grid.Column="1" Margin="0,0,1,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" MaxHeight="{ctl:Px 320}" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Style="{StaticResource CardHeader}">
                             <TextBlock Text="{loc:Loc Wheel_DressHeader}" Style="{StaticResource Text.CardTitle}" />
                         </Border>
-                        <TextBlock DockPanel.Dock="Bottom" Text="{loc:Loc Wheel_DressDefaultsNote}" Style="{StaticResource Text.Label}"
-                                   TextWrapping="Wrap" Margin="14,10" />
-                        <ctl:StepDiagram DockPanel.Dock="Top" StepTypeKey="WheelDress" Height="{ctl:Px 300}" Margin="10"
+                        <ctl:StepDiagram Grid.Row="1" StepTypeKey="WheelDress" Margin="10"
                                          HighlightedParameterKey="{Binding FocusedWheelKey}" />
-                        <ItemsControl ItemsSource="{Binding DressRows}" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top"
+                        <ItemsControl Grid.Row="2" ItemsSource="{Binding DressRows}" Background="{StaticResource Brush.GridLine}"
                                       IsEnabled="{Binding CanEdit}" ItemTemplate="{StaticResource ParameterCellTemplate}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -230,7 +241,9 @@
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
-                    </DockPanel>
+                        <TextBlock Grid.Row="3" Text="{loc:Loc Wheel_DressDefaultsNote}" Style="{StaticResource Text.Label}"
+                                   TextWrapping="Wrap" Margin="14,10" />
+                    </Grid>
 
                     <DockPanel Grid.Column="2">
                         <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">

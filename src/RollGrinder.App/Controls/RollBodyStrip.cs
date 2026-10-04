@@ -34,7 +34,8 @@ public sealed class RollBodyStrip : FrameworkElement
 
     public RollBodyStrip()
     {
-        MinHeight = 90;
+        // 画法按实际高度走；最小高度不能大于格子（标准档只给 75、紧凑档 45），否则下半截被裁掉。
+        MinHeight = 40;
         Cursor = Cursors.Hand;
     }
 

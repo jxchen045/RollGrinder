@@ -32,10 +32,10 @@
                                            Width="{Binding ProgressFraction, Converter={StaticResource FractionToWidth}, ConverterParameter=302}" />
                             </Border>
                             <DockPanel Margin="0,8,0,0">
-                                <TextBlock Text="{Binding ProgressText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
-                                           Foreground="{StaticResource Brush.TextSecondary}" />
-                                <TextBlock Text="{Binding RemainingTimeText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
+                                <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding RemainingTimeText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
                                            Foreground="{StaticResource Brush.TextSecondary}" HorizontalAlignment="Right" />
+                                <TextBlock Text="{Binding ProgressText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
+                                           Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
                             </DockPanel>
                         </StackPanel>
                     </Border>
@@ -307,10 +307,10 @@
                                                     </Style>
                                                 </Border.Style>
                                                 <DockPanel>
-                                                    <TextBlock Text="{Binding Label}" FontSize="17"
-                                                               Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Bottom" />
-                                                    <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.DataRow}"
+                                                    <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding ValueText}" Style="{StaticResource Text.DataRow}"
                                                                HorizontalAlignment="Right" />
+                                                    <TextBlock Text="{Binding Label}" FontSize="17"
+                                                               Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Bottom" TextWrapping="Wrap" />
                                                 </DockPanel>
                                             </Border>
                                         </DataTemplate>
@@ -320,19 +320,19 @@
                                     <StackPanel>
                                         <TextBlock Text="{loc:Loc Auto_CompensationHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,10" />
                                         <DockPanel Margin="0,0,0,7">
-                                            <TextBlock Text="{loc:Loc Auto_FeedForward}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                            <TextBlock Text="{Binding FeedForwardText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                            <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding FeedForwardText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
                                                        HorizontalAlignment="Right" />
+                                            <TextBlock Text="{loc:Loc Auto_FeedForward}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
                                         </DockPanel>
                                         <DockPanel Margin="0,0,0,7">
-                                            <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                            <TextBlock Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                            <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
                                                        HorizontalAlignment="Right" />
+                                            <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
                                         </DockPanel>
                                         <DockPanel>
-                                            <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                            <TextBlock Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                            <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
                                                        HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
+                                            <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
                                         </DockPanel>
                                     </StackPanel>
                                 </Border>
@@ -358,18 +358,20 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <StackPanel Margin="16,4">
-                        <TextBlock Text="{loc:Loc Block_Current}" Style="{StaticResource Text.Label}" />
-                        <Border Background="{StaticResource Brush.SelectionFill}" Padding="12,8" Margin="0,4,0,12">
-                            <TextBlock Text="{Binding CurrentBlockText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Parameter}"
-                                       TextWrapping="Wrap" />
-                        </Border>
-                        <TextBlock Text="{loc:Loc Block_Next}" Style="{StaticResource Text.Label}" />
-                        <Border BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="1" Padding="12,8" Margin="0,4,0,0">
-                            <TextBlock Text="{Binding NextBlockText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Body}"
-                                       Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
-                        </Border>
-                    </StackPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                        <StackPanel Margin="16,4">
+                            <TextBlock Text="{loc:Loc Block_Current}" Style="{StaticResource Text.Label}" />
+                            <Border Background="{StaticResource Brush.SelectionFill}" Padding="12,8" Margin="0,4,0,12">
+                                <TextBlock Text="{Binding CurrentBlockText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Parameter}"
+                                           TextWrapping="Wrap" />
+                            </Border>
+                            <TextBlock Text="{loc:Loc Block_Next}" Style="{StaticResource Text.Label}" />
+                            <Border BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="1" Padding="12,8" Margin="0,4,0,0">
+                                <TextBlock Text="{Binding NextBlockText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Body}"
+                                           Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
                 </DockPanel>
             </Border>
 
@@ -446,17 +448,17 @@
                             <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
                                 <StackPanel Margin="16,12">
                                     <DockPanel Margin="0,0,0,7">
-                                        <TextBlock Text="{loc:Loc Auto_FeedForward}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                        <TextBlock Text="{Binding FeedForwardText}" FontFamily="{StaticResource Font.Mono}" FontSize="16" HorizontalAlignment="Right" />
+                                        <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding FeedForwardText}" FontFamily="{StaticResource Font.Mono}" FontSize="16" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{loc:Loc Auto_FeedForward}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
                                     </DockPanel>
                                     <DockPanel Margin="0,0,0,7">
-                                        <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                        <TextBlock Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}" FontSize="16" HorizontalAlignment="Right" />
+                                        <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}" FontSize="16" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
                                     </DockPanel>
                                     <DockPanel Margin="0,0,0,18">
-                                        <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                        <TextBlock Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                        <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
                                                    HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
+                                        <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
                                     </DockPanel>
 
                                     <TextBlock Text="{loc:Loc Comp_TuningHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,4" />

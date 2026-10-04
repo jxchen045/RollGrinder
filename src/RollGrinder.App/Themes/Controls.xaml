@@ -341,6 +341,16 @@
     <Setter Property="FontSize" Value="{StaticResource Size.Body}" />
     <Setter Property="Height" Value="54" />
     <Setter Property="Padding" Value="18,0" />
+    <!-- 几个选项平分一格宽：字放不下（紧凑档位、英文"Semi-closed"）就整体缩小，不切字。 -->
+    <Setter Property="ContentTemplate">
+      <Setter.Value>
+        <DataTemplate>
+          <Viewbox StretchDirection="DownOnly">
+            <TextBlock Text="{Binding}" />
+          </Viewbox>
+        </DataTemplate>
+      </Setter.Value>
+    </Setter>
   </Style>
 
 
@@ -390,10 +400,11 @@
       </Border.Style>
 
       <StackPanel IsEnabled="{Binding IsApplicable}">
-        <StackPanel Orientation="Horizontal">
-          <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" />
-          <TextBlock Text="{Binding UnitText}" Style="{StaticResource Text.Label}" Margin="6,0,0,0" />
-        </StackPanel>
+        <!-- 名称和单位在同一个 TextBlock 里：格子窄（紧凑档位、英文）时整体折行，而不是横排着被切掉。 -->
+        <TextBlock Style="{StaticResource Text.Label}">
+          <Run Text="{Binding Label, Mode=OneWay}" />
+          <Run Text="{Binding UnitText, Mode=OneWay}" />
+        </TextBlock>
 
         <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
                  Style="{StaticResource ValueTextBox}"
@@ -542,15 +553,17 @@
   <DataTemplate x:Key="AxisReadoutTemplate">
     <Border x:Name="Row" Height="76" Padding="14,0" Margin="0,0,0,2" Background="{StaticResource Brush.Surface}">
       <DockPanel>
-        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" Width="230">
+        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center" MinWidth="{x:Static ctl:LayoutProfile.AxisReadoutLabelWidth}" Margin="0,0,8,0">
           <TextBlock Text="{Binding AxisName}" FontFamily="{StaticResource Font.Mono}" FontWeight="Bold"
                      FontSize="{StaticResource Size.Secondary}" Width="70" VerticalAlignment="Center" />
           <TextBlock Text="{Binding RoleText}" Style="{StaticResource Text.Body}" VerticalAlignment="Center" />
         </StackPanel>
         <TextBlock x:Name="Marker" DockPanel.Dock="Right" Text="&#x25C0;" FontSize="{StaticResource Size.DataRow}"
                    Width="34" TextAlignment="Right" VerticalAlignment="Center" Visibility="Hidden" />
-        <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Measurement}" Foreground="{StaticResource Brush.TextPrimary}"
-                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+        <!-- 读数是大字：列窄（紧凑档位）时整体缩小，不切掉数字。 -->
+        <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Measurement}" Foreground="{StaticResource Brush.TextPrimary}" />
+        </Viewbox>
       </DockPanel>
     </Border>
     <DataTemplate.Triggers>

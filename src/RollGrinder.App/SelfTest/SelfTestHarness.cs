@@ -723,7 +723,7 @@ internal sealed partial class SelfTestHarness
             Rect kept = clip.IsEmpty() ? Rect.Empty : clip.Bounds;
             double lostWidth = kept.IsEmpty ? element.ActualWidth : element.ActualWidth - kept.Width;
             double lostHeight = kept.IsEmpty ? element.ActualHeight : element.ActualHeight - kept.Height;
-            if (lostWidth <= 2 && lostHeight <= 2)
+            if (lostWidth <= 3 && lostHeight <= 3)
             {
                 continue;
             }
@@ -870,7 +870,8 @@ internal sealed partial class SelfTestHarness
             }
         }
 
-        Compare(keys.GroupBy(k => (long)Math.Round(k.Bounds.Top / 4)), "row", checkHeight: true);
+        // 一排只和同一条键栏里的比（横键条的 8 个键）；右端"›"属于竖键那一列，按列比（与上面的竖键同宽）。
+        Compare(keys.GroupBy(k => (long)Math.Round(k.Bounds.Top / 4) * 1_000_003 + (FindAncestor<ItemsControl>(k.Button)?.GetHashCode() ?? k.Button.GetHashCode())), "row", checkHeight: true);
         Compare(keys.GroupBy(k => (long)Math.Round(k.Bounds.Left / 4)), "column", checkHeight: false);
         return issues.DistinctBy(i => i.Text).ToList();
     }

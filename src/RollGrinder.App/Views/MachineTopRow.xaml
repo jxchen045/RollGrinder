@@ -20,9 +20,10 @@
         <Border Style="{StaticResource Card}" Padding="12,6">
             <DockPanel>
                 <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Fields}" Margin="0,0,0,4">
+                    <!-- 一行排不下（紧凑档位、英文）就折到第二行，不切掉后面的字段。 -->
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
+                            <WrapPanel Orientation="Horizontal" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
@@ -98,20 +99,25 @@
         <Border Grid.Column="4" Style="{StaticResource Card}" Padding="12,6">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Top_Aux}" Style="{StaticResource Text.Label}" Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding Groups}">
+                <!-- 组名一列按最长的那个定宽（各行共用），英文组名比中文长也不切字。 -->
+                <ItemsControl ItemsSource="{Binding Groups}" Grid.IsSharedSizeScope="True">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <DockPanel Margin="0,0,0,3">
-                                <TextBlock DockPanel.Dock="Left" Text="{Binding Label}" Width="{x:Static ctl:LayoutProfile.StatusGroupColumnWidth}"
+                            <Grid Margin="0,0,0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" MinWidth="{x:Static ctl:LayoutProfile.StatusGroupColumnWidth}" SharedSizeGroup="GroupLabel" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Label}" Margin="0,0,6,0"
                                            FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
-                                <ItemsControl ItemsSource="{Binding Lamps}" ItemTemplate="{StaticResource StatusLampCompactTemplate}">
+                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Lamps}" ItemTemplate="{StaticResource StatusLampCompactTemplate}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <StackPanel Orientation="Horizontal" />
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                 </ItemsControl>
-                            </DockPanel>
+                            </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

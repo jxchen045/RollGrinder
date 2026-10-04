@@ -53,6 +53,9 @@ public static class LayoutProfile
     /// <summary>库列表的修改时刻列宽。</summary>
     public static GridLength LibraryModifiedColumn => new(Math.Round(180 * Scale));
 
+    /// <summary>轴读数行左边"轴名 + 角色"的最小宽（角色名更长时照样往右撑开）。</summary>
+    public static double AxisReadoutLabelWidth => Math.Round(230 * Scale);
+
     /// <summary>"标签 + 值"两列表的标签宽（模板里用）。</summary>
     public static double LabelColumnWidth => Math.Round(160 * Scale);
 

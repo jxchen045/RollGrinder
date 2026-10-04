@@ -69,6 +69,8 @@
     <Setter Property="FontFamily" Value="{StaticResource Font.Sans}" />
     <Setter Property="FontSize" Value="{StaticResource Size.CardTitle}" />
     <Setter Property="VerticalAlignment" Value="Center" />
+    <!-- 卡片标题条高度固定，放不下时以省略号收尾，不切半个字（紧凑档位的窄卡片）。 -->
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
 
 </ResourceDictionary>

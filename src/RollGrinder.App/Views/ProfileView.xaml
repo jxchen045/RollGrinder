@@ -12,165 +12,168 @@
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                    <TextBlock Text="{loc:Loc Profile_SegmentsHeader}" Style="{StaticResource Text.CardTitle}" />
-                </Border>
+            <!-- 整列能滑：标准档位下段表照样占满剩下的高度；紧凑档位放不下时整列滑，段表至少留 200 px（紧凑档按比例），不会被挤没。 -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                <DockPanel MinHeight="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Profile_SegmentsHeader}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
 
-                <!-- 名称、设计长度、对称。只读时整块按不动。 -->
-                <StackPanel DockPanel.Dock="Top" Margin="8,8,8,0"
-                            IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
-                    <DockPanel>
-                        <TextBlock Text="{loc:Loc Profile_Name}" Style="{StaticResource Text.Label}"
-                                   VerticalAlignment="Center" Width="80" />
-                        <TextBox Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}"
-                                 Height="46" FontSize="17" VerticalContentAlignment="Center" />
-                    </DockPanel>
-                    <DockPanel Margin="0,8,0,0">
-                        <TextBlock Text="{loc:Loc Profile_BodyLength}" Style="{StaticResource Text.Label}"
-                                   VerticalAlignment="Center" Width="80" />
-                        <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
-                                   DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
-                        <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
-                                 Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}"
-                                 VerticalContentAlignment="Center" />
-                    </DockPanel>
-                    <!-- 适用公称直径、辊形公差（流程调整方案第 5 节）：属于辊形规格，随辊形保存。 -->
-                    <DockPanel Margin="0,8,0,0">
-                        <TextBlock Text="{loc:Loc Profile_NominalDiameter}" Style="{StaticResource Text.Label}"
-                                   VerticalAlignment="Center" Width="80" TextWrapping="Wrap" />
-                        <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
-                                   DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
-                        <TextBox Text="{Binding NominalDiameterText, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="True"
-                                 Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}" VerticalContentAlignment="Center" />
-                    </DockPanel>
-                    <DockPanel Margin="0,8,0,0">
-                        <TextBlock Text="{loc:Loc Profile_Tolerance}" Style="{StaticResource Text.Label}"
-                                   VerticalAlignment="Center" Width="80" TextWrapping="Wrap" />
-                        <TextBlock Text="{loc:Loc Unit_Micrometer}" Style="{StaticResource Text.Label}"
-                                   DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
-                        <TextBox Text="{Binding ToleranceText, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="True"
-                                 Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}" VerticalContentAlignment="Center" />
-                    </DockPanel>
-                    <!-- 对称只是编辑辅助：勾上只编头架端，尾架端镜像生成；含 CVC 时置灰。 -->
-                    <CheckBox Content="{loc:Loc Profile_Symmetric}" IsChecked="{Binding IsSymmetric}"
-                              IsEnabled="{Binding CanToggleSymmetry}" ToolTip="{loc:Loc Profile_SymmetricHint}"
-                              FontSize="16" Margin="0,10,0,0" />
-                </StackPanel>
-
-                <!-- 段的编辑动作（插入 ▸、删除、上移、下移、复制、改类型 ▸、插值方式 ▸、清空）都在右侧竖向软键上，
-                     不再有下拉和一排小按钮（修改稿原则 1）。 -->
-                <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Profile_EditOnVerticalKeys}" Style="{StaticResource Text.Label}"
-                           TextWrapping="Wrap" Margin="14,8,14,4" />
-
-                <!-- 选中段：只有第一段能填起点 Z，其余段的起点是上一段的终点。 -->
-                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,10"
-                        IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
-                    <StackPanel>
-                        <DockPanel Margin="0,0,0,6">
-                            <TextBlock Text="{loc:Loc Profile_SegmentStart}" Style="{StaticResource Text.Label}"
-                                       VerticalAlignment="Center" Width="80" />
-                            <TextBox Text="{Binding SegmentStartText, UpdateSourceTrigger=PropertyChanged}"
-                                     IsEnabled="{Binding IsFirstSegmentSelected}"
-                                     Height="42" FontSize="16" FontFamily="{StaticResource Font.Mono}"
-                                     VerticalContentAlignment="Center" />
-                        </DockPanel>
-                        <DockPanel Margin="0,0,0,6">
-                            <TextBlock Text="{loc:Loc Profile_SegmentLength}" Style="{StaticResource Text.Label}"
-                                       VerticalAlignment="Center" Width="80" />
-                            <TextBox Text="{Binding SegmentLengthText, UpdateSourceTrigger=PropertyChanged}"
-                                     Height="42" FontSize="16" FontFamily="{StaticResource Font.Mono}"
-                                     VerticalContentAlignment="Center" />
-                        </DockPanel>
-                        <CheckBox Content="{loc:Loc Profile_SegmentMirrored}" IsChecked="{Binding SegmentIsMirrored}"
-                                  IsEnabled="{Binding CanMirrorSegment}" ToolTip="{loc:Loc Profile_MirrorNotForRelief}"
-                                  ToolTipService.ShowOnDisabled="True" FontSize="16" />
-                    </StackPanel>
-                </Border>
-
-                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,10">
-                    <StackPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="{loc:Loc Profile_MaxChordError}" FontSize="16" />
-                            <TextBlock Text="{Binding MaxChordErrorText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                       HorizontalAlignment="Right" Foreground="{StaticResource Brush.Normal}" />
-                        </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="{loc:Loc Profile_SegmentCount}" FontSize="16" />
-                            <TextBlock Text="{Binding SegmentCountText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                       HorizontalAlignment="Right" />
-                        </DockPanel>
+                    <!-- 名称、设计长度、对称。只读时整块按不动。 -->
+                    <StackPanel DockPanel.Dock="Top" Margin="8,8,8,0"
+                                IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
                         <DockPanel>
-                            <TextBlock Text="{loc:Loc Profile_CompensationAxis}" FontSize="16" />
-                            <TextBlock Text="{Binding CompensationAxisText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                       HorizontalAlignment="Right" />
+                            <TextBlock Text="{loc:Loc Profile_Name}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" Width="80" />
+                            <TextBox Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="46" FontSize="17" VerticalContentAlignment="Center" />
                         </DockPanel>
+                        <DockPanel Margin="0,8,0,0">
+                            <TextBlock Text="{loc:Loc Profile_BodyLength}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" Width="80" />
+                            <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
+                                       DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
+                            <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}"
+                                     VerticalContentAlignment="Center" />
+                        </DockPanel>
+                        <!-- 适用公称直径、辊形公差（流程调整方案第 5 节）：属于辊形规格，随辊形保存。 -->
+                        <DockPanel Margin="0,8,0,0">
+                            <TextBlock Text="{loc:Loc Profile_NominalDiameter}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" Width="80" TextWrapping="Wrap" />
+                            <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
+                                       DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
+                            <TextBox Text="{Binding NominalDiameterText, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="True"
+                                     Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}" VerticalContentAlignment="Center" />
+                        </DockPanel>
+                        <DockPanel Margin="0,8,0,0">
+                            <TextBlock Text="{loc:Loc Profile_Tolerance}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" Width="80" TextWrapping="Wrap" />
+                            <TextBlock Text="{loc:Loc Unit_Micrometer}" Style="{StaticResource Text.Label}"
+                                       DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
+                            <TextBox Text="{Binding ToleranceText, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="True"
+                                     Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}" VerticalContentAlignment="Center" />
+                        </DockPanel>
+                        <!-- 对称只是编辑辅助：勾上只编头架端，尾架端镜像生成；含 CVC 时置灰。 -->
+                        <CheckBox Content="{loc:Loc Profile_Symmetric}" IsChecked="{Binding IsSymmetric}"
+                                  IsEnabled="{Binding CanToggleSymmetry}" ToolTip="{loc:Loc Profile_SymmetricHint}"
+                                  FontSize="16" Margin="0,10,0,0" />
                     </StackPanel>
-                </Border>
 
-                <!-- 段表表头：# 类型 起点 长度 终点。Z 自头架侧辊身端面起，向尾架为正。 -->
-                <Grid DockPanel.Dock="Top" Margin="20,0,20,4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="22" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="64" />
-                        <ColumnDefinition Width="64" />
-                        <ColumnDefinition Width="64" />
-                        <ColumnDefinition Width="10" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="1" Text="{loc:Loc Profile_ColumnType}" Style="{StaticResource Text.Label}" Margin="8,0,0,0" />
-                    <TextBlock Grid.Column="2" Text="{loc:Loc Profile_ColumnStart}" Style="{StaticResource Text.Label}" TextAlignment="Right" />
-                    <TextBlock Grid.Column="3" Text="{loc:Loc Profile_ColumnLength}" Style="{StaticResource Text.Label}" TextAlignment="Right" />
-                    <TextBlock Grid.Column="4" Text="{loc:Loc Profile_ColumnEnd}" Style="{StaticResource Text.Label}" TextAlignment="Right" />
-                </Grid>
+                    <!-- 段的编辑动作（插入 ▸、删除、上移、下移、复制、改类型 ▸、插值方式 ▸、清空）都在右侧竖向软键上，
+                         不再有下拉和一排小按钮（修改稿原则 1）。 -->
+                    <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Profile_EditOnVerticalKeys}" Style="{StaticResource Text.Label}"
+                               TextWrapping="Wrap" Margin="14,8,14,4" />
 
-                <ListBox ItemsSource="{Binding Segments}" SelectedItem="{Binding SelectedSegment}"
-                         BorderThickness="0" Background="Transparent" Margin="8,0,8,8"
-                         HorizontalContentAlignment="Stretch">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Border Height="46" Padding="6,0" Margin="0,0,0,4">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Background" Value="{StaticResource Brush.StepIdle}" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                <Setter Property="Background" Value="{StaticResource Brush.SelectionFill}" />
-                                                <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
-                                                <Setter Property="BorderThickness" Value="5,0,0,0" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <Grid VerticalAlignment="Center">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="22" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="64" />
-                                        <ColumnDefinition Width="64" />
-                                        <ColumnDefinition Width="64" />
-                                        <ColumnDefinition Width="10" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{Binding OrderText}" FontFamily="{StaticResource Font.Mono}"
-                                               FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontSize="17" Margin="8,0,0,0"
-                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Grid.Column="2" Text="{Binding StartText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
-                                               TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Brush.TextSecondary}" />
-                                    <TextBlock Grid.Column="3" Text="{Binding LengthText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
-                                               TextAlignment="Right" VerticalAlignment="Center" />
-                                    <TextBlock Grid.Column="4" Text="{Binding EndText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
-                                               TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Brush.TextSecondary}" />
-                                    <!-- 这一段有错：行尾一条红标，和问题列表里的"第 N 段"对得上。 -->
-                                    <Border Grid.Column="5" Width="6" Height="30" HorizontalAlignment="Right"
-                                            Background="{StaticResource Brush.CurrentStep}"
-                                            Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
+                    <!-- 选中段：只有第一段能填起点 Z，其余段的起点是上一段的终点。 -->
+                    <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,10"
+                            IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <TextBlock Text="{loc:Loc Profile_SegmentStart}" Style="{StaticResource Text.Label}"
+                                           VerticalAlignment="Center" Width="80" />
+                                <TextBox Text="{Binding SegmentStartText, UpdateSourceTrigger=PropertyChanged}"
+                                         IsEnabled="{Binding IsFirstSegmentSelected}"
+                                         Height="42" FontSize="16" FontFamily="{StaticResource Font.Mono}"
+                                         VerticalContentAlignment="Center" />
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <TextBlock Text="{loc:Loc Profile_SegmentLength}" Style="{StaticResource Text.Label}"
+                                           VerticalAlignment="Center" Width="80" />
+                                <TextBox Text="{Binding SegmentLengthText, UpdateSourceTrigger=PropertyChanged}"
+                                         Height="42" FontSize="16" FontFamily="{StaticResource Font.Mono}"
+                                         VerticalContentAlignment="Center" />
+                            </DockPanel>
+                            <CheckBox Content="{loc:Loc Profile_SegmentMirrored}" IsChecked="{Binding SegmentIsMirrored}"
+                                      IsEnabled="{Binding CanMirrorSegment}" ToolTip="{loc:Loc Profile_MirrorNotForRelief}"
+                                      ToolTipService.ShowOnDisabled="True" FontSize="16" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14,10">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="{loc:Loc Profile_MaxChordError}" FontSize="16" />
+                                <TextBlock Text="{Binding MaxChordErrorText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                           HorizontalAlignment="Right" Foreground="{StaticResource Brush.Normal}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="{loc:Loc Profile_SegmentCount}" FontSize="16" />
+                                <TextBlock Text="{Binding SegmentCountText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                           HorizontalAlignment="Right" />
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="{loc:Loc Profile_CompensationAxis}" FontSize="16" />
+                                <TextBlock Text="{Binding CompensationAxisText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                           HorizontalAlignment="Right" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 段表表头：# 类型 起点 长度 终点。Z 自头架侧辊身端面起，向尾架为正。 -->
+                    <Grid DockPanel.Dock="Top" Margin="20,0,20,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="22" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="64" />
+                            <ColumnDefinition Width="64" />
+                            <ColumnDefinition Width="64" />
+                            <ColumnDefinition Width="10" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="1" Text="{loc:Loc Profile_ColumnType}" Style="{StaticResource Text.Label}" Margin="8,0,0,0" />
+                        <TextBlock Grid.Column="2" Text="{loc:Loc Profile_ColumnStart}" Style="{StaticResource Text.Label}" TextAlignment="Right" />
+                        <TextBlock Grid.Column="3" Text="{loc:Loc Profile_ColumnLength}" Style="{StaticResource Text.Label}" TextAlignment="Right" />
+                        <TextBlock Grid.Column="4" Text="{loc:Loc Profile_ColumnEnd}" Style="{StaticResource Text.Label}" TextAlignment="Right" />
+                    </Grid>
+
+                    <ListBox ItemsSource="{Binding Segments}" SelectedItem="{Binding SelectedSegment}" MinHeight="{ctl:Px 200}"
+                             BorderThickness="0" Background="Transparent" Margin="8,0,8,8"
+                             HorizontalContentAlignment="Stretch">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Height="46" Padding="6,0" Margin="0,0,0,4">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{StaticResource Brush.StepIdle}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource Brush.SelectionFill}" />
+                                                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+                                                    <Setter Property="BorderThickness" Value="5,0,0,0" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="22" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="64" />
+                                            <ColumnDefinition Width="64" />
+                                            <ColumnDefinition Width="64" />
+                                            <ColumnDefinition Width="10" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding OrderText}" FontFamily="{StaticResource Font.Mono}"
+                                                   FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontSize="17" Margin="8,0,0,0"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="2" Text="{Binding StartText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
+                                                   TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Brush.TextSecondary}" />
+                                        <TextBlock Grid.Column="3" Text="{Binding LengthText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
+                                                   TextAlignment="Right" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="4" Text="{Binding EndText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
+                                                   TextAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource Brush.TextSecondary}" />
+                                        <!-- 这一段有错：行尾一条红标，和问题列表里的"第 N 段"对得上。 -->
+                                        <Border Grid.Column="5" Width="6" Height="30" HorizontalAlignment="Right"
+                                                Background="{StaticResource Brush.CurrentStep}"
+                                                Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </ScrollViewer>
         </Border>
 
         <Grid Grid.Column="1">
