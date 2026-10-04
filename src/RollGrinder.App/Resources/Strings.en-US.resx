@@ -4729,4 +4729,34 @@
   <data name="Gateway_Offline" xml:space="preserve">
     <value>Offline mode: no machine is connected, so this step (which reads or writes the machine) cannot run</value>
   </data>
+  <data name="Fn_ParameterTable" xml:space="preserve">
+    <value>All parameters</value>
+  </data>
+  <data name="Auto_FocusState_Pending" xml:space="preserve">
+    <value>Not started</value>
+  </data>
+  <data name="Auto_FocusState_Current" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Auto_FocusState_Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="Auto_FocusState_Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Auto_FocusLastStep" xml:space="preserve">
+    <value>This is the last step</value>
+  </data>
+  <data name="Auto_FocusNextFormat" xml:space="preserve">
+    <value>Next: {0} {1}  {2}</value>
+  </data>
+  <data name="Auto_FocusNoParameters" xml:space="preserve">
+    <value>This step has no process parameters</value>
+  </data>
+  <data name="Job_AuxiliaryStepFormat" xml:space="preserve">
+    <value>{0}: {1} {2}</value>
+  </data>
+  <data name="Job_OptionChanged" xml:space="preserve">
+    <value>changed</value>
+  </data>
 </root>

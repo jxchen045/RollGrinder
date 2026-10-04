@@ -43,8 +43,23 @@
                     <ItemsControl ItemsSource="{Binding Sequence}" Margin="8">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Height="46" Margin="0,0,0,4" Padding="12,0"
+                                <!-- 点一下：参数区改看这一道。正在看的那一道左边描一道竖条。 -->
+                                <Border Height="46" Margin="0,0,0,4" Padding="12,0" BorderBrush="{StaticResource Brush.Accent}"
                                         Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="BorderThickness" Value="0" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                                    <Setter Property="BorderThickness" Value="6,0,0,0" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Border.InputBindings>
+                                        <MouseBinding Gesture="LeftClick" CommandParameter="{Binding}"
+                                                      Command="{Binding DataContext.FocusStepCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                    </Border.InputBindings>
                                     <DockPanel>
                                         <TextBlock Text="{Binding OrderText}" Width="26"
                                                    FontFamily="{StaticResource Font.Mono}" FontSize="16"
@@ -115,9 +130,18 @@
                     <DockPanel>
                         <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="{loc:Loc Auto_MatrixHeader}" Style="{StaticResource Text.CardTitle}" />
+                                <!-- 看一道：标题是那一道（底色与左边工序序列同一套）；看总表：原来的标题与说明。 -->
+                                <Border Padding="10,2" VerticalAlignment="Center"
+                                        Background="{Binding FocusedStep.State, Converter={StaticResource StepStateToBackground}}"
+                                        Visibility="{Binding IsMatrixOverview, Converter={StaticResource InverseBoolVisibility}}">
+                                    <TextBlock Text="{Binding FocusTitle}" Style="{StaticResource Text.CardTitle}" FontWeight="SemiBold"
+                                               Foreground="{Binding FocusedStep.State, Converter={StaticResource StepStateToForeground}}" />
+                                </Border>
+                                <TextBlock Text="{loc:Loc Auto_MatrixHeader}" Style="{StaticResource Text.CardTitle}"
+                                           Visibility="{Binding IsMatrixOverview, Converter={StaticResource BoolToVisibility}}" />
                                 <TextBlock Text="{loc:Loc Auto_MatrixHint}" Style="{StaticResource Text.Label}"
-                                           Margin="12,0,0,0" Foreground="{StaticResource Brush.TextMuted}" />
+                                           Margin="12,0,0,0" Foreground="{StaticResource Brush.TextMuted}"
+                                           Visibility="{Binding IsMatrixOverview, Converter={StaticResource BoolToVisibility}}" />
                                 <TextBlock Text="{Binding MatrixMessage}" FontSize="{StaticResource Size.Caption}" Margin="12,0,0,0"
                                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                            Foreground="{StaticResource Brush.WarningFill}"
@@ -145,8 +169,80 @@
                                    Foreground="{StaticResource Brush.TextMuted}"
                                    Visibility="{Binding HasMatrix, Converter={StaticResource InverseBoolVisibility}}" />
 
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                                      Visibility="{Binding HasMatrix, Converter={StaticResource BoolToVisibility}}">
+                        <!--
+                            看一道（默认）：那一道的全部参数排成三列，一个不落、不用横着滚；改得动的就地改，改过标红，
+                            与总表是同一批格子。底部一行写下一道是什么。
+                        -->
+                        <DockPanel>
+                            <DockPanel.Visibility>
+                                <MultiBinding Converter="{StaticResource AllTrueToVisibility}">
+                                    <Binding Path="HasMatrix" />
+                                    <Binding Path="IsMatrixOverview" Converter="{StaticResource InverseBool}" />
+                                </MultiBinding>
+                            </DockPanel.Visibility>
+                            <TextBlock DockPanel.Dock="Bottom" Text="{Binding NextStepText}" Style="{StaticResource Text.Label}" Margin="14,6"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Auto_FocusNoParameters}" Style="{StaticResource Text.Label}" Margin="14,10">
+                                <TextBlock.Visibility>
+                                    <Binding Path="FocusCells.Count" Converter="{StaticResource EqualsToVisibility}" ConverterParameter="0" />
+                                </TextBlock.Visibility>
+                            </TextBlock>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                                <ItemsControl ItemsSource="{Binding FocusCells}" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="3" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border x:Name="FocusCell" Background="{StaticResource Brush.Surface}" Margin="0,0,1,1" Padding="12,6">
+                                                <StackPanel>
+                                                    <TextBlock Style="{StaticResource Text.Label}">
+                                                        <Run Text="{Binding Label, Mode=OneWay}" />
+                                                        <Run Text="{Binding UnitText, Mode=OneWay}" />
+                                                    </TextBlock>
+                                                    <Grid>
+                                                        <TextBlock Text="{Binding Cell.Text}" FontFamily="{StaticResource Font.Mono}"
+                                                                   FontSize="{StaticResource Size.DataRow}" Margin="0,2,0,0"
+                                                                   Visibility="{Binding Cell.CanEdit, Converter={StaticResource InverseBoolVisibility}}" />
+                                                        <TextBox Text="{Binding Cell.Text, UpdateSourceTrigger=PropertyChanged}"
+                                                                 ctl:TouchInput.TapToEdit="True" ctl:TouchInput.Caption="{Binding Label}"
+                                                                 Height="40" Margin="0,2,0,0"
+                                                                 Visibility="{Binding Cell.CanEdit, Converter={StaticResource BoolToVisibility}}">
+                                                            <TextBox.Style>
+                                                                <Style TargetType="TextBox" BasedOn="{StaticResource ValueTextBox}">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Cell.IsModified}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{StaticResource Brush.PendingValue}" />
+                                                                            <Setter Property="FontWeight" Value="Bold" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBox.Style>
+                                                        </TextBox>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Cell.State}" Value="Done">
+                                                    <Setter TargetName="FocusCell" Property="TextElement.Foreground" Value="{StaticResource Brush.TextMuted}" />
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </DockPanel>
+
+                        <!-- 看总表（横键"参数总表"）：行 = 参数，列 = 工序。 -->
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer.Visibility>
+                                <MultiBinding Converter="{StaticResource AllTrueToVisibility}">
+                                    <Binding Path="HasMatrix" />
+                                    <Binding Path="IsMatrixOverview" />
+                                </MultiBinding>
+                            </ScrollViewer.Visibility>
                             <StackPanel Background="{StaticResource Brush.GridLine}">
 
                                 <!-- 列头：工序名 -->

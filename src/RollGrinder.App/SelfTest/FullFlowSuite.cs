@@ -115,6 +115,29 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             ctx.Note(Invariant($"sequence rows={auto.Sequence.Count}, live values={auto.LiveValues.Count}"));
         }, StepOptions.Shot);
 
+        await h.StepAsync("Run", "ParameterAreaFollowsTheRunningStep", async ctx =>
+        {
+            // 参数区默认看正在跑的那一道、参数一个不落；点别的工序看那一道；"参数总表"切到总表再切回来。
+            await h.WaitUntilAsync(() => auto.FocusedStep?.State == StepRowState.Current, TimeSpan.FromSeconds(10));
+            ctx.Check(auto.FocusedStep?.State == StepRowState.Current, "the parameter area should show the running step");
+            ctx.Check(auto.FocusTitle.Length > 0 && auto.NextStepText.Length > 0, "the focused step should have a title and a next-step line");
+            SequenceRowViewModel? later = auto.Sequence.LastOrDefault(row => row.State == StepRowState.Pending);
+            if (later is not null)
+            {
+                auto.FocusStepCommand.Execute(later);
+                ctx.Check(ReferenceEquals(auto.FocusedStep, later) && later.IsFocused, "tapping a step should focus it");
+                int expected = auto.MatrixRows.Count(row => row.Cells.Any(cell => cell.StepOrder == later.Order && cell.IsApplicable));
+                ctx.Check(auto.FocusCells.Count == expected, Invariant($"focused step should list all {expected} parameters, lists {auto.FocusCells.Count}"));
+            }
+
+            await h.PressKeyAsync(ctx, "Fn_ParameterTable");
+            ctx.Check(auto.IsMatrixOverview, "'all parameters' should switch to the full table");
+            h.TryScreenshot("auto-parameter-table");
+            await h.PressKeyAsync(ctx, "Fn_ParameterTable");
+            ctx.Check(!auto.IsMatrixOverview, "pressing it again goes back to the focused step");
+            ctx.Note(auto.FocusTitle + " | " + auto.NextStepText);
+        }, StepOptions.Shot);
+
         await h.StepAsync("RunLock", "EditPagesReadOnly", async ctx =>
         {
             ctx.Check(steps.IsReadOnly, "program page must be read-only while the cycle runs");

@@ -145,6 +145,12 @@ public sealed class MatrixRowViewModel
     public IReadOnlyList<MatrixCellViewModel> Cells { get; }
 }
 
+/// <summary>
+/// 参数区"看一道"时的一格：参数名、单位，以及矩阵里那一格本身（同一个对象——这里改了，总表里也是改过的样子，
+/// 下发 / 放弃按同一套走）。
+/// </summary>
+public sealed record FocusCellViewModel(string Label, string UnitText, MatrixCellViewModel Cell);
+
 /// <summary>工序序列里的一行。</summary>
 public sealed partial class SequenceRowViewModel : ObservableObject
 {
@@ -170,6 +176,10 @@ public sealed partial class SequenceRowViewModel : ObservableObject
 
     [ObservableProperty]
     private string passText = string.Empty;
+
+    /// <summary>参数区正在看这一道（左侧描一道竖条）。</summary>
+    [ObservableProperty]
+    private bool isFocused;
 }
 
 /// <summary>右侧实时数据里的一行。</summary>
@@ -248,6 +258,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly LiveValueViewModel currentPass;
 
     private readonly FunctionKeyViewModel compensationKey;
+    private readonly FunctionKeyViewModel parameterTableKey;
     private readonly FunctionKeyViewModel overviewKey;
     private readonly FunctionKeyViewModel jumpKey;
     private readonly FunctionKeyViewModel endEarlyKey;
@@ -361,6 +372,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         // 横键（界面修订稿 v3 5.1）：补偿 · 程序段 · 工序跳转… · 提前结束… · 磨削记录 · 作业；
         // 按钮板上没有的循环启动 / 暂停补在后面。冷却挪到竖键 6（运行中随手开关，不占横键）。
+        this.parameterTableKey = FunctionKeyViewModel.ForAction("Fn_ParameterTable", localizer, () => IsMatrixOverview = !IsMatrixOverview);
         var functionKeys = new List<FunctionKeyViewModel?>
         {
             this.compensationKey,
@@ -369,6 +381,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             this.endEarlyKey,
             FunctionKeyViewModel.ForAction("Fn_GrindingRecords", localizer, OpenRecordsOfThisRoll),
             FunctionKeyViewModel.ForAction("Fn_Job", localizer, () => Navigator.GoTo(PageKey.Job)),
+            this.parameterTableKey,
         };
         if (!machine.IsOnPanel(MachineDescription.PanelCycleStart))
         {
@@ -1202,9 +1215,20 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 : string.Empty;
         }
 
+        bool stepChanged = this.currentStepOrder != currentOrder;
         this.currentStepOrder = currentOrder;
         UpdateMatrixState(currentOrder);
         UpdateProgress(currentOrder, pass, totalPasses);
+
+        // 参数区跟着走：换了一道就看新的那一道；人点开看别的那一道，留到下一次换道为止。
+        if (stepChanged || FocusedStep is null)
+        {
+            FocusOn(currentOrder);
+        }
+        else
+        {
+            RefreshFocusTitle();
+        }
     }
 
     /// <summary>
@@ -1381,6 +1405,105 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         HasMatrix = MatrixRows.Count > 0;
         RefreshMatrixDirty();
+
+        // 矩阵重建（换作业、下发改动、放弃改动）：格子是新对象，参数区也要重新取。
+        FocusOn(FocusedStep?.Order ?? this.currentStepOrder);
+    }
+
+    /// <summary>参数区现在看的那一道。默认跟着正在跑的那一道；点左边工序序列的某一道就看那一道。</summary>
+    [ObservableProperty]
+    private SequenceRowViewModel? focusedStep;
+
+    /// <summary>参数区显示全部工序的总表（横键"参数总表"切换）；默认只看一道，参数一个不落、不用横着滚。</summary>
+    [ObservableProperty]
+    private bool isMatrixOverview;
+
+    /// <summary>参数区标题，例如"03 粗磨 · 正在磨 · 4/10"。</summary>
+    [ObservableProperty]
+    private string focusTitle = string.Empty;
+
+    /// <summary>参数区底部一行：下一道是什么、大约多久。</summary>
+    [ObservableProperty]
+    private string nextStepText = string.Empty;
+
+    /// <summary>看的那一道的全部参数。</summary>
+    public ObservableCollection<FocusCellViewModel> FocusCells { get; } = new();
+
+    partial void OnIsMatrixOverviewChanged(bool value) => this.parameterTableKey.IsActive = value;
+
+    partial void OnFocusedStepChanged(SequenceRowViewModel? oldValue, SequenceRowViewModel? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.IsFocused = false;
+        }
+
+        if (newValue is not null)
+        {
+            newValue.IsFocused = true;
+        }
+
+        RebuildFocus();
+    }
+
+    /// <summary>点左边工序序列的一行：参数区改看那一道（看下一道、提前改它的参数）。</summary>
+    [RelayCommand]
+    private void FocusStep(SequenceRowViewModel? row)
+    {
+        if (row is not null)
+        {
+            FocusedStep = row;
+            IsMatrixOverview = false;
+        }
+    }
+
+    private void FocusOn(int order)
+    {
+        SequenceRowViewModel? row = Sequence.FirstOrDefault(candidate => candidate.Order == order) ?? Sequence.FirstOrDefault();
+        if (ReferenceEquals(row, FocusedStep))
+        {
+            RebuildFocus();
+        }
+        else
+        {
+            FocusedStep = row;
+        }
+    }
+
+    private void RebuildFocus()
+    {
+        FocusCells.Clear();
+        if (FocusedStep is { } step)
+        {
+            foreach (MatrixRowViewModel row in MatrixRows)
+            {
+                if (row.Cells.FirstOrDefault(cell => cell.StepOrder == step.Order && cell.IsApplicable) is { } cell)
+                {
+                    FocusCells.Add(new FocusCellViewModel(row.Label, row.UnitText, cell));
+                }
+            }
+        }
+
+        RefreshFocusTitle();
+    }
+
+    private void RefreshFocusTitle()
+    {
+        if (FocusedStep is not { } step)
+        {
+            FocusTitle = string.Empty;
+            NextStepText = string.Empty;
+            return;
+        }
+
+        FocusTitle = string.Join(
+            " · ",
+            new[] { step.OrderText + " " + step.DisplayName, Localizer["Auto_FocusState_" + step.State], step.PassText }
+                .Where(part => !string.IsNullOrWhiteSpace(part)));
+        SequenceRowViewModel? next = Sequence.FirstOrDefault(candidate => candidate.Order == step.Order + 1);
+        NextStepText = next is null
+            ? Localizer["Auto_FocusLastStep"]
+            : Localizer.Format("Auto_FocusNextFormat", next.OrderText, next.DisplayName, next.DurationText);
     }
 
     private string LabelOf(Core.Parameters.ParameterDescriptor descriptor)

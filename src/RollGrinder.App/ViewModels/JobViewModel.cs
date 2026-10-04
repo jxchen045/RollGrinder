@@ -66,8 +66,15 @@ public sealed partial class ProgramOptionRowViewModel : ObservableObject
         Descriptor = descriptor;
         Label = localizer[descriptor.ResourceKey];
         Note = linkedStepOrder is { } order ? localizer.Format("Job_OptionStepFormat", order) : string.Empty;
+        DefaultOn = isOn;
         this.isOn = isOn;
     }
+
+    /// <summary>默认值（挂工序的看程序里有没有那道工序，其余按目录）。</summary>
+    public bool DefaultOn { get; }
+
+    /// <summary>这一支辊改了默认：行尾标"本次改"，核对时一眼看得出哪几项和平常不一样。</summary>
+    public bool IsChanged => IsOn != DefaultOn;
 
     public ProgramOptionDescriptor Descriptor { get; }
 
@@ -78,6 +85,7 @@ public sealed partial class ProgramOptionRowViewModel : ObservableObject
 
     /// <summary>开关状态。</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsChanged))]
     private bool isOn;
 }
 
@@ -761,10 +769,34 @@ public sealed partial class JobViewModel : PageViewModelBase
             }
 
             ProgramSteps.Add(new JobProgramStepRowViewModel(
-                step.Order.ToString(CultureInfo.InvariantCulture), Localizer["StepType_" + step.StepTypeKey], duration));
+                step.Order.ToString(CultureInfo.InvariantCulture), StepName(step), duration));
         }
 
         TotalDurationText = Localizer.Format("Steps_TotalTimeFormat", (int)total.TotalMinutes);
+    }
+
+    /// <summary>
+    /// 核对页工序清单里的名字。辅助动作写明做什么（"辅助动作：中心架 开"）：这是工艺员编在程序里的，
+    /// 与下面"本次取舍"不是一回事，开磨前一起看一眼。
+    /// </summary>
+    private string StepName(GrindingJobStep step)
+    {
+        string name = Localizer["StepType_" + step.StepTypeKey];
+        if (step.StepTypeKey != StepTypeKeys.Auxiliary)
+        {
+            return name;
+        }
+
+        ParameterSet values = this.stepTypes.Get(step.StepTypeKey).Schema.ApplyDefaults(step.Parameters);
+        string Choice(string key)
+        {
+            ParameterDescriptor descriptor = this.stepTypes.Get(step.StepTypeKey).Schema.Get(key);
+            return values.TryGet(key, out ParameterValue? value) && value is { Kind: ParameterValueKind.Choice }
+                ? Localizer[descriptor.ChoiceResourceKey(value.Choice)]
+                : string.Empty;
+        }
+
+        return Localizer.Format("Job_AuxiliaryStepFormat", name, Choice(StepParameterKeys.AuxAction), Choice(StepParameterKeys.AuxState));
     }
 
     /// <summary>按核对结果拼出这份作业；辊形套不上（长度差太多）返回 null。</summary>

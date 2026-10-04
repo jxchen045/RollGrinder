@@ -247,6 +247,9 @@
                                             </Border>
                                             <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" VerticalAlignment="Center" />
                                             <TextBlock Text="{Binding Note}" Style="{StaticResource Text.Label}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                            <TextBlock Text="{loc:Loc Job_OptionChanged}" Margin="10,0,0,0" VerticalAlignment="Center" FontWeight="Bold"
+                                                       FontSize="{StaticResource Size.Label}" Foreground="{StaticResource Brush.PendingValue}"
+                                                       Visibility="{Binding IsChanged, Converter={StaticResource BoolToVisibility}}" />
                                         </StackPanel>
                                     </ToggleButton>
                                 </DataTemplate>

@@ -27,13 +27,34 @@ internal static class PlotTheme
     /// <summary>图例。</summary>
     public const float LegendFontSize = 15f;
 
-    private const string FontName = "Microsoft YaHei";
+    /// <summary>
+    /// 曲线用的字体：随程序带的思源黑体（Noto Sans SC），在静态构造里按文件注册给 ScottPlot。
+    /// 以前写死"Microsoft YaHei"，装机电脑没装这个字体（英文版、精简版 Windows）时中文标题显示成方框。
+    /// </summary>
+    private const string FontName = "Noto Sans SC";
+
+    private const string FallbackFontName = "Microsoft YaHei";
+
+    private static readonly string ResolvedFontName = RegisterFont();
+
+    private static string RegisterFont()
+    {
+        string path = System.IO.Path.Combine(AppContext.BaseDirectory, "Fonts", "NotoSansSC-Regular.otf");
+        if (!System.IO.File.Exists(path))
+        {
+            return FallbackFontName;
+        }
+
+        ScottPlot.Fonts.AddFontFile(FontName, path, false, false);
+        ScottPlot.Fonts.AddFontFile(FontName, path, true, false);
+        return FontName;
+    }
 
     public static void Apply(WpfPlot control)
     {
         Color text = PaletteColor(control, "Color.TextSecondary");
         Plot plot = control.Plot;
-        plot.Font.Set(FontName);
+        plot.Font.Set(ResolvedFontName);
 
         foreach (IAxis axis in new IAxis[] { plot.Axes.Bottom, plot.Axes.Left })
         {

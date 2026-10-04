@@ -46,6 +46,9 @@
     <Resource Include="Fonts\*.otf" />
     <!-- OFL 要求授权文本随字体一同分发 -->
     <None Include="Fonts\OFL-*.txt" CopyToOutputDirectory="PreserveNewest" Link="Fonts\%(Filename)%(Extension)" />
+    <!-- 曲线（ScottPlot）不认 WPF 的内嵌字体：中文字体另拷一份到输出目录，启动时按文件注册。
+         否则装机电脑上没有"微软雅黑"时，坐标轴的中文标题全是方框。 -->
+    <None Include="Fonts\NotoSansSC-Regular.otf" CopyToOutputDirectory="PreserveNewest" Link="Fonts\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup Label="部署：config/*.sample.json 随程序发布，升级时不覆盖现场 config/*.json">
