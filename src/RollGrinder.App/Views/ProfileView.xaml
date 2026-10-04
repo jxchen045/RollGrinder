@@ -115,9 +115,9 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="22" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="64" />
-                            <ColumnDefinition Width="64" />
-                            <ColumnDefinition Width="64" />
+                            <ColumnDefinition Width="{x:Static ctl:LayoutProfile.SegmentNumberColumn}" />
+                            <ColumnDefinition Width="{x:Static ctl:LayoutProfile.SegmentNumberColumn}" />
+                            <ColumnDefinition Width="{x:Static ctl:LayoutProfile.SegmentNumberColumn}" />
                             <ColumnDefinition Width="10" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="1" Text="{loc:Loc Profile_ColumnType}" Style="{StaticResource Text.Label}" Margin="8,0,0,0" />
@@ -148,9 +148,9 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="22" />
                                             <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="64" />
-                                            <ColumnDefinition Width="64" />
-                                            <ColumnDefinition Width="64" />
+                                            <ColumnDefinition Width="{x:Static ctl:LayoutProfile.SegmentNumberColumn}" />
+                                            <ColumnDefinition Width="{x:Static ctl:LayoutProfile.SegmentNumberColumn}" />
+                                            <ColumnDefinition Width="{x:Static ctl:LayoutProfile.SegmentNumberColumn}" />
                                             <ColumnDefinition Width="10" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding OrderText}" FontFamily="{StaticResource Font.Mono}"

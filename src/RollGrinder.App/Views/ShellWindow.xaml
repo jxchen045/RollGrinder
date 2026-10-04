@@ -200,14 +200,15 @@
                                 <Binding Path="IsEmergencyStop" Converter="{StaticResource InverseBool}" />
                             </MultiBinding>
                         </Button.Visibility>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding AlarmCode}" FontFamily="{StaticResource Font.Mono}" FontWeight="Bold"
+                        <!-- 报警号在左、"+N"在右，中间的报警文字按剩下的宽度以省略号收尾（横排 StackPanel 会把整行挤出按钮）。 -->
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" Text="{Binding AlarmCode}" FontFamily="{StaticResource Font.Mono}" FontWeight="Bold"
                                        FontSize="{StaticResource Size.Body}" Foreground="{StaticResource Brush.Alarm}" Margin="0,0,10,0" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding AlarmMoreText}" FontWeight="Bold" FontSize="{StaticResource Size.Body}"
+                                       Foreground="{StaticResource Brush.Alarm}" Margin="10,0,0,0" />
                             <TextBlock Text="{Binding AlarmText}" FontWeight="Bold" FontSize="{StaticResource Size.Body}"
                                        Foreground="{StaticResource Brush.Alarm}" TextTrimming="CharacterEllipsis" MaxWidth="{ctl:Px 820}" />
-                            <TextBlock Text="{Binding AlarmMoreText}" FontWeight="Bold" FontSize="{StaticResource Size.Body}"
-                                       Foreground="{StaticResource Brush.Alarm}" Margin="10,0,0,0" />
-                        </StackPanel>
+                        </DockPanel>
                     </Button>
                 </Grid>
             </DockPanel>

@@ -709,7 +709,7 @@ internal sealed partial class SelfTestHarness
                 if (fellThrough)
                 {
                     issues.Add(ButtonLabel(button) + " @" + probe.X.ToString("0", CultureInfo.InvariantCulture)
-                        + "," + probe.Y.ToString("0", CultureInfo.InvariantCulture));
+                        + "," + probe.Y.ToString("0", CultureInfo.InvariantCulture) + " -> " + Describe(NearestElement(hit)));
                     break;
                 }
             }
