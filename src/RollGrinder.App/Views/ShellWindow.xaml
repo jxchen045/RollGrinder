@@ -382,17 +382,15 @@
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
             </ItemsControl>
-            <Grid Grid.Column="1" Margin="0,2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="72" />
-                </Grid.ColumnDefinitions>
-                <Button Command="{Binding NextHorizontalPageCommand}" Style="{StaticResource SoftKeyButton}" Margin="3"
-                        FontWeight="Bold" FontSize="{StaticResource Size.DataRow}" Content="{loc:Loc Fn_NextPage}"
-                        ctl:ButtonStates.IsUnavailable="{Binding HasMoreHorizontalKeys, Converter={StaticResource InverseBool}}" />
-                <TextBlock Grid.Column="1" Text="{Binding HorizontalPageText}" FontFamily="{StaticResource Font.Mono}"
-                           FontSize="{StaticResource Size.Body}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </Grid>
+            <!-- "›"占满右栏宽，与上面竖键同宽对齐；页码写在键里第二行，和别的键的快捷键位置一样。 -->
+            <Button Grid.Column="1" Margin="3,5" Command="{Binding NextHorizontalPageCommand}" Style="{StaticResource SoftKeyButton}"
+                    ctl:ButtonStates.IsUnavailable="{Binding HasMoreHorizontalKeys, Converter={StaticResource InverseBool}}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Loc Fn_NextPage}" FontWeight="Bold" FontSize="{StaticResource Size.DataRow}" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding HorizontalPageText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Button>
         </Grid>
 
         <!-- 黄色帮助（最终稿 F9）：工作区右侧，全屏时盖满工作区；表单照样能填。 -->

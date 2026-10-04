@@ -8,7 +8,7 @@
         选辊形 / 选程序子视图（界面修订稿 v3 4.2）：左边已按这支辊过滤的库（长度 2% 规则、适用类型、停用的不列），
         右边是选中那一条——辊形与现计划叠图（实线选中、虚线现计划），程序列要点。DataContext 是 PlanPickerViewModel。
     -->
-    <Grid>
+    <Grid Background="{StaticResource Brush.Background}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="{ctl:Px 640}" />
             <ColumnDefinition Width="*" />

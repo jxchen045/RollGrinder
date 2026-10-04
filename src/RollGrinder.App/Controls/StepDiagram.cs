@@ -51,8 +51,13 @@ public sealed class StepDiagram : FrameworkElement
 
     protected override Size MeasureOverride(Size availableSize)
     {
-        double width = double.IsInfinity(availableSize.Width) ? DesignWidth : Math.Min(availableSize.Width, DesignWidth);
-        return new Size(width, width * DesignHeight / DesignWidth);
+        // 宽、高两头都得守住：只按宽算的话，外面给了固定高度时排出来比格子高，下半截被裁掉。
+        double scale = Math.Min(
+            1.0,
+            Math.Min(
+                double.IsInfinity(availableSize.Width) ? 1.0 : availableSize.Width / DesignWidth,
+                double.IsInfinity(availableSize.Height) ? 1.0 : availableSize.Height / DesignHeight));
+        return new Size(DesignWidth * scale, DesignHeight * scale);
     }
 
     protected override void OnRender(DrawingContext dc)

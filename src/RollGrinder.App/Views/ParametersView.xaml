@@ -202,9 +202,9 @@
                                 </DockPanel>
                             </StackPanel>
                         </Border>
-                        <ctl:WheelDiagram DockPanel.Dock="Top" Mode="Wheel" Height="{ctl:Px 220}" Margin="10"
+                        <ctl:WheelDiagram DockPanel.Dock="Top" Mode="Wheel" Height="{ctl:Px 300}" Margin="10"
                                           HighlightKey="{Binding FocusedWheelKey}" />
-                        <ItemsControl ItemsSource="{Binding WheelRows}" Background="{StaticResource Brush.GridLine}"
+                        <ItemsControl ItemsSource="{Binding WheelRows}" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top"
                                       IsEnabled="{Binding CanEdit}" ItemTemplate="{StaticResource ParameterCellTemplate}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -220,9 +220,9 @@
                         </Border>
                         <TextBlock DockPanel.Dock="Bottom" Text="{loc:Loc Wheel_DressDefaultsNote}" Style="{StaticResource Text.Label}"
                                    TextWrapping="Wrap" Margin="14,10" />
-                        <ctl:StepDiagram DockPanel.Dock="Top" StepTypeKey="WheelDress" Height="{ctl:Px 220}" Margin="10"
+                        <ctl:StepDiagram DockPanel.Dock="Top" StepTypeKey="WheelDress" Height="{ctl:Px 300}" Margin="10"
                                          HighlightedParameterKey="{Binding FocusedWheelKey}" />
-                        <ItemsControl ItemsSource="{Binding DressRows}" Background="{StaticResource Brush.GridLine}"
+                        <ItemsControl ItemsSource="{Binding DressRows}" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top"
                                       IsEnabled="{Binding CanEdit}" ItemTemplate="{StaticResource ParameterCellTemplate}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
