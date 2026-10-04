@@ -40,43 +40,46 @@
                         </StackPanel>
                     </Border>
 
-                    <ItemsControl ItemsSource="{Binding Sequence}" Margin="8">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <!-- 点一下：参数区改看这一道。正在看的那一道左边描一道竖条。 -->
-                                <Border Height="46" Margin="0,0,0,4" Padding="12,0" BorderBrush="{StaticResource Brush.Accent}"
-                                        Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="BorderThickness" Value="0" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsFocused}" Value="True">
-                                                    <Setter Property="BorderThickness" Value="6,0,0,0" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <Border.InputBindings>
-                                        <MouseBinding Gesture="LeftClick" CommandParameter="{Binding}"
-                                                      Command="{Binding DataContext.FocusStepCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                    </Border.InputBindings>
-                                    <DockPanel>
-                                        <TextBlock Text="{Binding OrderText}" Width="26"
-                                                   FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
-                                        <TextBlock Text="{Binding PassText}" DockPanel.Dock="Right"
-                                                   FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="19" VerticalAlignment="Center"
-                                                   Margin="12,0,0,0"
-                                                   Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
-                                    </DockPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <!-- 十几道工序放不下：能滑，看哪一道就把哪一道滚进视野（见代码后台）。 -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                        <ItemsControl x:Name="SequenceList" ItemsSource="{Binding Sequence}" Margin="8">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <!-- 点一下：参数区改看这一道。正在看的那一道左边描一道竖条。 -->
+                                    <Border Height="46" Margin="0,0,0,4" Padding="12,0" BorderBrush="{StaticResource Brush.Accent}"
+                                            Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderThickness" Value="0" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                                        <Setter Property="BorderThickness" Value="6,0,0,0" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Border.InputBindings>
+                                            <MouseBinding Gesture="LeftClick" CommandParameter="{Binding}"
+                                                          Command="{Binding DataContext.FocusStepCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                        </Border.InputBindings>
+                                        <DockPanel>
+                                            <TextBlock Text="{Binding OrderText}" Width="26"
+                                                       FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
+                                            <TextBlock Text="{Binding PassText}" DockPanel.Dock="Right"
+                                                       FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="19" VerticalAlignment="Center"
+                                                       Margin="12,0,0,0"
+                                                       Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </DockPanel>
             </Border>
 

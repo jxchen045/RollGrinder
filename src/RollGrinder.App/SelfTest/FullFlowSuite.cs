@@ -121,7 +121,11 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             await h.WaitUntilAsync(() => auto.FocusedStep?.State == StepRowState.Current, TimeSpan.FromSeconds(10));
             ctx.Check(auto.FocusedStep?.State == StepRowState.Current, "the parameter area should show the running step");
             ctx.Check(auto.FocusTitle.Length > 0 && auto.NextStepText.Length > 0, "the focused step should have a title and a next-step line");
-            SequenceRowViewModel? later = auto.Sequence.LastOrDefault(row => row.State == StepRowState.Pending);
+            // 挑参数最多的那一道没开始的工序来看（结束这类标记工序没有参数，看不出什么）。
+            SequenceRowViewModel? later = auto.Sequence
+                .Where(row => row.State is StepRowState.Pending or StepRowState.Next)
+                .OrderByDescending(row => auto.MatrixRows.Count(m => m.Cells.Any(cell => cell.StepOrder == row.Order && cell.IsApplicable)))
+                .FirstOrDefault();
             if (later is not null)
             {
                 auto.FocusStepCommand.Execute(later);
@@ -135,7 +139,8 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             h.TryScreenshot("auto-parameter-table");
             await h.PressKeyAsync(ctx, "Fn_ParameterTable");
             ctx.Check(!auto.IsMatrixOverview, "pressing it again goes back to the focused step");
-            ctx.Note(auto.FocusTitle + " | " + auto.NextStepText);
+            h.TryScreenshot("auto-focused-step");
+            ctx.Note(auto.FocusTitle + " | " + auto.NextStepText + Invariant($" | {auto.FocusCells.Count} parameters"));
         }, StepOptions.Shot);
 
         await h.StepAsync("RunLock", "EditPagesReadOnly", async ctx =>

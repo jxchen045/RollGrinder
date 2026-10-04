@@ -1318,6 +1318,9 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         Sequence.Clear();
         this.activeJob = null;
+
+        // 换了一支辊（新作业）：参数区回到"看一道"，不沿用上一支辊时切到的总表。
+        IsMatrixOverview = false;
         MatrixRows.Clear();
         MatrixColumns.Clear();
         HasMatrix = false;

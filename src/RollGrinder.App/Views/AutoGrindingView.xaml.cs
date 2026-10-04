@@ -34,6 +34,7 @@ public partial class AutoGrindingView : UserControl
             this.viewModel.CurveChanged += OnCurveChanged;
             this.viewModel.StrokeCurveChanged += OnStrokeCurveChanged;
             this.viewModel.WheelPositionChanged += OnWheelPositionChanged;
+            this.viewModel.PropertyChanged += OnViewModelPropertyChanged;
             Redraw();
             RedrawStrokes();
         }
@@ -48,6 +49,17 @@ public partial class AutoGrindingView : UserControl
             this.viewModel.CurveChanged -= OnCurveChanged;
             this.viewModel.StrokeCurveChanged -= OnStrokeCurveChanged;
             this.viewModel.WheelPositionChanged -= OnWheelPositionChanged;
+            this.viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+    }
+
+    /// <summary>工序多（十几道）时序列要滚动：参数区看哪一道，左边就把那一道滚进视野。</summary>
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AutoGrindingViewModel.FocusedStep) && this.viewModel?.FocusedStep is { } step)
+        {
+            Dispatcher.BeginInvoke(() =>
+                (SequenceList.ItemContainerGenerator.ContainerFromItem(step) as System.Windows.FrameworkElement)?.BringIntoView());
         }
     }
 
