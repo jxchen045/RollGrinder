@@ -1643,9 +1643,11 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         bool variationAdded = false;
         foreach (MatrixRowViewModel row in MatrixRows)
         {
+            // 行 = 看的那一道有的参数；下一道有同一个参数就并排写出来，没有就空着
+            // （下一道独有的参数不加行——辅助动作的"动作 / 开关"这类会把参数区撑高，点那一道再看）。
             MatrixCellViewModel? focused = ApplicableCell(row, focusedOrder);
             MatrixCellViewModel? next = ApplicableCell(row, nextOrder);
-            if (focused is null && next is null)
+            if (focused is null)
             {
                 continue;
             }
@@ -1670,7 +1672,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 item = CompareRowViewModel.Parameter(
                     row.Label,
                     row.UnitText,
-                    focused ?? ReadOnlyCell(focusedOrder, string.Empty),
+                    focused,
                     next ?? ReadOnlyCell(nextOrder, string.Empty));
             }
 
@@ -1703,7 +1705,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private static MatrixCellViewModel ReadOnlyCell(int order, string text) =>
         new(order, string.Empty, text, isApplicable: false, isLiveEditable: false);
 
-    /// <summary>变速合成一行："轧辊 ±8% / 5 转"；关闭时只写"关闭"；那一道没有变速参数时为空。</summary>
+    /// <summary>变速合成一行："±8% / 5 转"（实机只有轧辊一种作用对象，不写）；关闭时写"关闭"；那一道没有变速参数时为空。</summary>
     private string VariationText(int order)
     {
         string? TextOf(string key) => MatrixRows

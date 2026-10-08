@@ -15,7 +15,7 @@
                            Visibility="{Binding CanEdit, Converter={StaticResource InverseBoolVisibility}}" />
                 <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
                          ctl:TouchInput.TapToEdit="True" ctl:TouchInput.Caption="{Binding ParameterKey}"
-                         Margin="2" Height="Auto" HorizontalContentAlignment="Right"
+                         Margin="1" Height="Auto" HorizontalContentAlignment="Right"
                          Visibility="{Binding CanEdit, Converter={StaticResource BoolToVisibility}}">
                     <TextBox.Style>
                         <Style TargetType="TextBox" BasedOn="{StaticResource ValueTextBox}">
@@ -420,7 +420,10 @@
                 <Border Grid.Row="0" Style="{StaticResource Card}" Padding="14,10" Margin="0,0,0,12">
                     <StackPanel>
                         <TextBlock Text="{loc:Loc Auto_MeasuredDiameterHeader}" Style="{StaticResource Text.Label}" />
-                        <TextBlock Text="{Binding MeasuredDiameterText}" Style="{StaticResource Text.Measurement}" />
+                        <!-- 窄的紧凑档上大字整体缩一点，不切掉末位。 -->
+                        <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left">
+                            <TextBlock Text="{Binding MeasuredDiameterText}" Style="{StaticResource Text.Measurement}" />
+                        </Viewbox>
                         <DockPanel Margin="0,4,0,0">
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
                                 <TextBlock Text="{loc:Loc Auto_RemainingStockLabel}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" />
@@ -433,12 +436,15 @@
                                            Margin="6,0,0,0" Foreground="{StaticResource Brush.TextSecondary}" />
                             </StackPanel>
                         </DockPanel>
-                        <!-- 已去除多少：从装上这支辊第一次读到的直径算到目标。 -->
-                        <Border Height="10" Margin="0,8,0,4" Background="{StaticResource Brush.Key}">
-                            <Rectangle Fill="{StaticResource Brush.Normal}" HorizontalAlignment="Left"
-                                       Width="{Binding RemovedFraction, Converter={StaticResource FractionToWidth}, ConverterParameter=300}" />
-                        </Border>
-                        <TextBlock Text="{Binding RemovedText}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" />
+                        <!-- 已去除多少：从装上这支辊第一次读到的直径算到目标。条与比例同一行。 -->
+                        <DockPanel Margin="0,6,0,0">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding RemovedText}" FontSize="{StaticResource Size.Caption}"
+                                       Foreground="{StaticResource Brush.TextSecondary}" Margin="8,0,0,0" />
+                            <Border Height="10" Background="{StaticResource Brush.Key}" VerticalAlignment="Center">
+                                <Rectangle Fill="{StaticResource Brush.Normal}" HorizontalAlignment="Left"
+                                           Width="{Binding RemovedFraction, Converter={StaticResource FractionToWidth}, ConverterParameter=200}" />
+                            </Border>
+                        </DockPanel>
                     </StackPanel>
                 </Border>
 
@@ -449,9 +455,12 @@
                             <TextBlock DockPanel.Dock="Right" Text="{Binding GrindingCurrentText}" Style="{StaticResource Text.DataRow}" FontWeight="Bold" />
                             <TextBlock Text="{loc:Loc MG_GrindingCurrent}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
                         </DockPanel>
-                        <Border Height="16" Margin="0,6,0,4" Background="{StaticResource Brush.Key}">
+                        <DockPanel Margin="0,6,0,0">
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding CurrentLimitText}" FontSize="{StaticResource Size.Caption}"
+                                   Foreground="{StaticResource Brush.TextSecondary}" Margin="8,0,0,0" />
+                        <Border Height="14" Background="{StaticResource Brush.Key}" VerticalAlignment="Center">
                             <Rectangle HorizontalAlignment="Left"
-                                       Width="{Binding GrindingCurrentFraction, Converter={StaticResource FractionToWidth}, ConverterParameter=300}">
+                                       Width="{Binding GrindingCurrentFraction, Converter={StaticResource FractionToWidth}, ConverterParameter=200}">
                                 <Rectangle.Style>
                                     <Style TargetType="Rectangle">
                                         <Setter Property="Fill" Value="{StaticResource Brush.Normal}" />
@@ -464,17 +473,17 @@
                                 </Rectangle.Style>
                             </Rectangle>
                         </Border>
-                        <TextBlock Text="{Binding CurrentLimitText}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" />
+                        </DockPanel>
                     </StackPanel>
                 </Border>
 
                 <!-- 测量与补偿：测头 A / B、对中偏差、砂轮直径；下面三行是 NC 的补偿状态。 -->
-                <Border Grid.Row="2" Style="{StaticResource Card}" Padding="14,8">
+                <Border Grid.Row="2" Style="{StaticResource Card}" Padding="14,6">
                     <StackPanel>
                         <ItemsControl ItemsSource="{Binding LiveValues}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <DockPanel Margin="0,3">
+                                    <DockPanel Margin="0,1">
                                         <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}"
                                                    FontSize="{StaticResource Size.Label}" HorizontalAlignment="Right" />
                                         <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}"
@@ -483,15 +492,15 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <Border BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Margin="0,6,0,0" Padding="0,6,0,0">
+                        <Border BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Margin="0,4,0,0" Padding="0,4,0,0">
                             <StackPanel>
-                                <DockPanel Margin="0,3">
+                                <DockPanel Margin="0,1">
                                     <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}"
                                                FontSize="{StaticResource Size.Label}" HorizontalAlignment="Right" />
                                     <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}"
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                 </DockPanel>
-                                <DockPanel Margin="0,3">
+                                <DockPanel Margin="0,1">
                                     <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}"
                                                FontSize="{StaticResource Size.Label}" HorizontalAlignment="Right" />
                                     <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}"

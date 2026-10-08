@@ -27,7 +27,7 @@
   <sys:Double x:Key="Layout.ChannelHeight">28</sys:Double>
   <sys:Double x:Key="Layout.FunctionBlockHeight">108</sys:Double>
   <!-- 自动页参数对照表：列头、组标题、参数行的高（方案 F；字号 DataRow 放得下，不按 0.7 缩）。 -->
-  <sys:Double x:Key="Layout.CompareHeaderHeight">28</sys:Double>
-  <sys:Double x:Key="Layout.CompareGroupHeight">22</sys:Double>
-  <sys:Double x:Key="Layout.CompareRowHeight">32</sys:Double>
+  <sys:Double x:Key="Layout.CompareHeaderHeight">26</sys:Double>
+  <sys:Double x:Key="Layout.CompareGroupHeight">20</sys:Double>
+  <sys:Double x:Key="Layout.CompareRowHeight">29</sys:Double>
 </ResourceDictionary>

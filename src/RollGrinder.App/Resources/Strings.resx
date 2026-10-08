@@ -4648,11 +4648,8 @@
   <data name="Top_Drives" xml:space="preserve">
     <value>主轴与进给</value>
   </data>
-  <data name="Top_Position" xml:space="preserve">
-    <value>位置 (mm)</value>
-  </data>
   <data name="Top_Remaining" xml:space="preserve">
-    <value>剩余</value>
+    <value>剩余 mm</value>
   </data>
   <data name="Verdict_ProfileError" xml:space="preserve">
     <value>辊形误差峰值</value>
@@ -4748,7 +4745,7 @@
     <value>变速</value>
   </data>
   <data name="Auto_SpeedVariationFormat" xml:space="preserve">
-    <value>{0} ±{1}% / {2} 转</value>
+    <value>±{1}% / {2} 转</value>
   </data>
   <data name="Auto_CompareHeader" xml:space="preserve">
     <value>工艺参数 · 当前道 / 下一道</value>

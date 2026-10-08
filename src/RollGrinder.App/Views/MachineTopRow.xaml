@@ -19,31 +19,26 @@
 
         <Border Style="{StaticResource Card}" Padding="12,6">
             <DockPanel>
-                <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Fields}" Margin="0,0,0,4">
-                    <!-- 一行排不下（紧凑档位、英文）就折到第二行，不切掉后面的字段。 -->
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,16,0" Visibility="{Binding IsPrimary, Converter={StaticResource InverseBoolVisibility}}">
-                                <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,6,0" />
-                                <TextBlock Text="{Binding ValueText}" FontSize="{StaticResource Size.Caption}" FontWeight="SemiBold" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <Grid DockPanel.Dock="Top">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="1" Text="{loc:Loc Top_Position}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
-                    <TextBlock Grid.Column="2" Text="{loc:Loc Top_Remaining}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
-                </Grid>
+                <!-- 一行：方式 · 通道 · 参考点 · 程序，右端是剩余行程那一列的列名（位置一看就是 mm，不另占一行）。 -->
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,2">
+                    <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Top_Remaining}" Style="{StaticResource Text.Label}" VerticalAlignment="Top" Margin="8,0,0,0" />
+                    <ItemsControl ItemsSource="{Binding Fields}">
+                        <!-- 一行排不下（紧凑档位、英文）就折到第二行，不切掉后面的字段。 -->
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,16,0" Visibility="{Binding IsPrimary, Converter={StaticResource InverseBoolVisibility}}">
+                                    <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,6,0" />
+                                    <TextBlock Text="{Binding ValueText}" FontSize="{StaticResource Size.Caption}" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
                 <ItemsControl ItemsSource="{Binding Axes}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>

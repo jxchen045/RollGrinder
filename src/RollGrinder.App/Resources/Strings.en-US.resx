@@ -4648,11 +4648,8 @@
   <data name="Top_Drives" xml:space="preserve">
     <value>Spindles and feed</value>
   </data>
-  <data name="Top_Position" xml:space="preserve">
-    <value>Position (mm)</value>
-  </data>
   <data name="Top_Remaining" xml:space="preserve">
-    <value>To go</value>
+    <value>To go mm</value>
   </data>
   <data name="Verdict_ProfileError" xml:space="preserve">
     <value>Profile error peak</value>
@@ -4748,7 +4745,7 @@
     <value>Speed variation</value>
   </data>
   <data name="Auto_SpeedVariationFormat" xml:space="preserve">
-    <value>{0} ±{1}% / {2} rev</value>
+    <value>±{1}% / {2} rev</value>
   </data>
   <data name="Auto_CompareHeader" xml:space="preserve">
     <value>Parameters · this step / next</value>
