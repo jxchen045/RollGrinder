@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "machineId": "RG-01",
+  "displayName": "Roll Grinder RG-01",
+  "controller": {
+    "kind": "SinumerikOne",
+    "channelNumber": 1,
+    "endpointUrl": "opc.tcp://192.168.0.10:4840",
+    "useSecurity": true,
+    "autoAcceptUntrustedCertificates": false,
+    "sessionTimeoutMs": 60000,
+    "operationTimeoutMs": 15000
+  },
+  "axes": [
+    {
+      "name": "X",
+      "role": "InfeedRadius",
+      "isPresent": true,
+      "closedLoop": "FullClosed",
+      "minPositionMm": -5.0,
+      "maxPositionMm": 320.0,
+      "maxFeedMmPerMin": 3000.0
+    },
+    {
+      "name": "X1",
+      "role": "MeasuringCarriage",
+      "isPresent": true,
+      "closedLoop": "FullClosed",
+      "minPositionMm": -5.0,
+      "maxPositionMm": 320.0,
+      "maxFeedMmPerMin": 3000.0
+    },
+    {
+      "name": "Z",
+      "role": "Carriage",
+      "isPresent": true,
+      "closedLoop": "FullClosed",
+      "minPositionMm": 0.0,
+      "maxPositionMm": 6000.0,
+      "maxFeedMmPerMin": 12000.0
+    },
+    {
+      "name": "U",
+      "role": "RollProfile",
+      "isPresent": true,
+      "closedLoop": "SemiClosed",
+      "maxFeedMmPerMin": 60.0
+    },
+    {
+      "name": "C",
+      "role": "WorkpieceSpindle",
+      "isPresent": true,
+      "closedLoop": "SemiClosed",
+      "maxSpeedRpm": 120.0
+    },
+    {
+      "name": "S",
+      "role": "WheelSpindle",
+      "isPresent": true,
+      "closedLoop": "OpenLoop",
+      "maxSpeedRpm": 1200.0
+    },
+    {
+      "name": "B",
+      "role": "WheelSwivel",
+      "isPresent": false,
+      "closedLoop": "SemiClosed",
+      "minPositionMm": -2.0,
+      "maxPositionMm": 2.0
+    }
+  ],
+  "measurementChannels": [
+    {
+      "name": "DiameterGauge",
+      "isPresent": true,
+      "quantity": "Diameter",
+      "resolutionMicrometer": 0.1
+    },
+    {
+      "name": "RoundnessProbe",
+      "isPresent": false,
+      "quantity": "Roundness",
+      "resolutionMicrometer": 0.05
+    }
+  ],
+  "options": {
+    "hasSteadyRest": true,
+    "hasChatterMonitor": false,
+    "hasAutomaticWheelBalancer": true,
+    "hasRollLoader": false,
+    "hasWheelDresser": true,
+    "hasEddyCurrentTester": true,
+    "hasDualProbeMeasurement": true,
+    "hasU1Leveling": false,
+    "hasContactDetection": true
+  },
+  "thresholds": {
+    "maxInfeedPerPassRadiusMm": 0.05,
+    "maxContinuousInfeedRadiusMmPerMin": 0.25,
+    "maxProfileDeviationMicrometer": 5.0,
+    "maxRoundnessMicrometer": 3.0,
+    "wheelWearWarningRadiusMm": 15.0,
+    "maxCompensationRadiusMm": 0.02,
+    "minWheelSurfaceSpeedMPerSec": 18.0,
+    "maxWheelSurfaceSpeedMPerSec": 45.0,
+    "grindingCurrentLimitA": 60.0,
+    "positioningFeedMmPerMin": 2000.0,
+    "positionX1AtRollMm": 180.0,
+    "positionX1HomeMm": 0.0,
+    "positionXSafeMm": 300.0,
+    "lengthTolerancePercent": 2.0,
+    "minWorkpieceSurfaceSpeedMPerMin": 30.0,
+    "maxWorkpieceSurfaceSpeedMPerMin": 120.0
+  },
+  "workpiece": {
+    "minBodyLengthMm": 300.0,
+    "maxBodyLengthMm": 5200.0,
+    "minDiameterMm": 150.0,
+    "maxDiameterMm": 1300.0,
+    "maxWeightKg": 42000.0
+  },
+  "stepTypeCodes": {
+    "Start": 10,
+    "ShortStroke": 20,
+    "Rough": 30,
+    "WheelDress": 40,
+    "SemiFinish": 50,
+    "Finish": 60,
+    "SparkOut": 70,
+    "Measure": 80,
+    "Roundness": 85,
+    "Polish": 90,
+    "Chamfer": 100,
+    "EddyCurrent": 110,
+    "Pause": 115,
+    "Auxiliary": 117,
+    "End": 120
+  },
+  "auxiliaryActionCodes": {
+    "coolant": 1,
+    "steadyRest": 2,
+    "tailstockLock": 3,
+    "measuringArm": 4
+  },
+  "quickBar": [
+    "machine",
+    "rolls",
+    "profile",
+    "steps",
+    "wheel",
+    "records",
+    "diagnostics"
+  ],
+  "panelActions": [
+    "cycleStart",
+    "feedHold"
+  ],
+  "manualStrokeMarginMm": 60.0,
+  "headstockRpmByWeight": []
+}

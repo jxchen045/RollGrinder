@@ -1,0 +1,13 @@
+{
+  "Label": "sim",
+  "StartedAtUtc": "2026-10-08T16:02:02.8937694+00:00",
+  "TotalSeconds": 311.8,
+  "Total": 309,
+  "Passed": 287,
+  "Warned": 0,
+  "Failed": 0,
+  "Skipped": 22,
+  "Aborted": false,
+  "AbortReason": null,
+  "FailedSteps": []
+}

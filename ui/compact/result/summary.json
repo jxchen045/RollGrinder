@@ -1,0 +1,13 @@
+{
+  "Label": "compact",
+  "StartedAtUtc": "2026-10-08T16:07:52.4160836+00:00",
+  "TotalSeconds": 34.3,
+  "Total": 67,
+  "Passed": 67,
+  "Warned": 0,
+  "Failed": 0,
+  "Skipped": 0,
+  "Aborted": false,
+  "AbortReason": null,
+  "FailedSteps": []
+}

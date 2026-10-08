@@ -1,0 +1,88 @@
+﻿# RollGrinder diagnostics snapshot
+generatedAtUtc: 2026-10-08T16:07:05.4021459+00:00
+machineId: RG-01
+controller: SinumerikOne
+connection: Connected
+snapshotAtUtc: 2026-10-08T16:07:05.3991016+00:00
+mappedTags: 144
+
+## tags
+machine.channelState	0	good	2026-10-08T16:07:05.3991016+00:00
+machine.programName		good	2026-10-08T16:07:05.3991016+00:00
+job.parametersValid	True	good	2026-10-08T16:07:05.3991016+00:00
+measure.diameterMm	599.9508187126114	good	2026-10-08T16:07:05.3991016+00:00
+job.currentStepOrder	9	good	2026-10-08T16:07:05.3991016+00:00
+job.currentPass	0	good	2026-10-08T16:07:05.3991016+00:00
+job.totalPasses	10	good	2026-10-08T16:07:05.3991016+00:00
+job.cycleComplete	1	good	2026-10-08T16:07:05.3991016+00:00
+measure.probeAMm	0.0007093563057090418	good	2026-10-08T16:07:05.3991016+00:00
+measure.probeBMm	0.00010935630570904181	good	2026-10-08T16:07:05.3991016+00:00
+measure.roundnessMicrometer	3.595312428473335	good	2026-10-08T16:07:05.3991016+00:00
+measure.eccentricityMicrometer	7.2	good	2026-10-08T16:07:05.3991016+00:00
+wheel.diameterMm	890.24	good	2026-10-08T16:07:05.3991016+00:00
+wheel.speedRpm	0	good	2026-10-08T16:07:05.3991016+00:00
+grinding.currentA	6	good	2026-10-08T16:07:05.3991016+00:00
+compensation.feedForwardA	-0.006	good	2026-10-08T16:07:05.3991016+00:00
+compensation.feedForwardB	2.1E-06	good	2026-10-08T16:07:05.3991016+00:00
+compensation.strokeVersion	14	good	2026-10-08T16:07:05.3991016+00:00
+compensation.realtimeOffsetMm	0	good	2026-10-08T16:07:05.3991016+00:00
+compensation.degradationLevel		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.count		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.number[0]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.text[0]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.number[1]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.text[1]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.number[2]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.text[2]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.number[3]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.text[3]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.number[4]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.text[4]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.number[5]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.text[5]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.number[6]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.text[6]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.number[7]		bad	2026-10-08T16:07:05.3991016+00:00
+machine.alarm.text[7]		bad	2026-10-08T16:07:05.3991016+00:00
+manual.coolant.state	False	good	2026-10-08T16:07:05.3991016+00:00
+manual.headstock.forward.state		bad	2026-10-08T16:07:05.3991016+00:00
+manual.headstock.reverse.state		bad	2026-10-08T16:07:05.3991016+00:00
+manual.wheel.run.state	False	good	2026-10-08T16:07:05.3991016+00:00
+machine.operatingMode	2	good	2026-10-08T16:07:05.3991016+00:00
+status.outerArm.lowered	False	good	2026-10-08T16:07:05.3991016+00:00
+status.innerArm.lowered	False	good	2026-10-08T16:07:05.3991016+00:00
+status.quill.extended	True	good	2026-10-08T16:07:05.3991016+00:00
+status.tailstock.forward	False	good	2026-10-08T16:07:05.3991016+00:00
+status.driver.extended	False	good	2026-10-08T16:07:05.3991016+00:00
+status.softLanding.headstock.raised	False	good	2026-10-08T16:07:05.3991016+00:00
+status.softLanding.tailstock.raised	False	good	2026-10-08T16:07:05.3991016+00:00
+status.steadyRest.engaged	False	good	2026-10-08T16:07:05.3991016+00:00
+status.door.closed	True	good	2026-10-08T16:07:05.3991016+00:00
+status.hydraulics.ok	True	good	2026-10-08T16:07:05.3991016+00:00
+status.lubrication.ok	True	good	2026-10-08T16:07:05.3991016+00:00
+status.emergencyStop	False	good	2026-10-08T16:07:05.3991016+00:00
+status.machineOn	True	good	2026-10-08T16:07:05.3991016+00:00
+status.referenced	True	good	2026-10-08T16:07:05.3991016+00:00
+status.faultLevel	0	good	2026-10-08T16:07:05.3991016+00:00
+pendant.axisSelect	3	good	2026-10-08T16:07:05.3991016+00:00
+pendant.handwheelFactor	10	good	2026-10-08T16:07:05.3991016+00:00
+pendant.enable	False	good	2026-10-08T16:07:05.3991016+00:00
+axis.Z.syncDiffMm	0.0008187126114180836	good	2026-10-08T16:07:05.3991016+00:00
+override.feedPercent	100	good	2026-10-08T16:07:05.3991016+00:00
+override.wheelPercent	100	good	2026-10-08T16:07:05.3991016+00:00
+override.headstockPercent	100	good	2026-10-08T16:07:05.3991016+00:00
+manual.carriage.running.state	False	good	2026-10-08T16:07:05.3991016+00:00
+manual.headstock.assistStart.state	False	good	2026-10-08T16:07:05.3991016+00:00
+manual.position.state	0	good	2026-10-08T16:07:05.3991016+00:00
+panel.cycleStart	False	good	2026-10-08T16:07:05.3991016+00:00
+axis.X.actualPositionMm	300	good	2026-10-08T16:07:05.3991016+00:00
+axis.X.actualSpeedRpm		bad	2026-10-08T16:07:05.3991016+00:00
+axis.X1.actualPositionMm	0	good	2026-10-08T16:07:05.3991016+00:00
+axis.Z.actualPositionMm	0	good	2026-10-08T16:07:05.3991016+00:00
+axis.Z.actualSpeedRpm		bad	2026-10-08T16:07:05.3991016+00:00
+axis.C.actualPositionMm		bad	2026-10-08T16:07:05.3991016+00:00
+axis.C.actualSpeedRpm	0	good	2026-10-08T16:07:05.3991016+00:00
+axis.S.actualPositionMm		bad	2026-10-08T16:07:05.3991016+00:00
+axis.S.actualSpeedRpm	0	good	2026-10-08T16:07:05.3991016+00:00
+
+## alarms
