@@ -121,7 +121,7 @@ public sealed class LocalizationTests
         "JobState_", "StepSlot_", "Option_", "Role_", "Severity_", "Violation_",
         "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_", "WheelEvent_", "WheelSource_", "Status_", "MeasurementStage_", "ChangeArea_", "ManualPage_", "CfgField_", "CfgGroup_",
         "Area_", "Mode_", "Help_", "Language_", "Keypad_Error_", "Pendant_Axis",
-        "CheckItem_", "Check_Stock_", "Chart_AxisX_", "Chart_AxisY_", "StatusGroup_", "Verdict_", "ImportKind_", "Ledger_Problem_", "RollKindFilter_", "RollKind_", "Cfg_ClosedLoop_", "Auto_FocusState_",
+        "CheckItem_", "Check_Stock_", "Chart_AxisX_", "Chart_AxisY_", "StatusGroup_", "Verdict_", "ImportKind_", "Ledger_Problem_", "RollKindFilter_", "RollKind_", "Cfg_ClosedLoop_", "ParamGroup_",
     };
 
     [Fact]
@@ -137,7 +137,7 @@ public sealed class LocalizationTests
                 .Select(field => "CheckItem_" + (string)field.GetValue(null)!))
             .Concat(new[] { "Stock_ActualInvalid", "Stock_BelowFinishing", "Stock_NoRoughStep" }.Select(key => "Check_" + key))
             .Concat(Enum.GetNames<RollGrinder.Contracts.Dtos.AxisClosedLoopKind>().Select(name => "Cfg_ClosedLoop_" + name))
-            .Concat(new[] { "Pending", "Current", "Next", "Done" }.Select(state => "Auto_FocusState_" + state));
+            .Concat(Enum.GetNames<RollGrinder.Core.Steps.StepParameterGroup>().Select(name => "ParamGroup_" + name));
 
         foreach (string key in keys)
         {

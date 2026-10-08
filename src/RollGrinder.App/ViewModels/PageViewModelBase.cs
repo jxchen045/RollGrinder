@@ -89,6 +89,12 @@ public abstract partial class PageViewModelBase : ViewModelBase
     [ObservableProperty]
     private string verticalMenuTitle = string.Empty;
 
+    /// <summary>
+    /// 外壳不画路径条与通道行，工作区顶上去用。自动磨削页这样做（方案 F）：
+    /// 方式、通道状态、回参考点已在本页上排的位置块里，路径条上又没有返回与未保存标记可显示。
+    /// </summary>
+    public virtual bool HidesPathRows => false;
+
     /// <summary>本页是不是编辑页：自动循环运行期间要落只读锁。</summary>
     public virtual bool LocksDuringRun => false;
 

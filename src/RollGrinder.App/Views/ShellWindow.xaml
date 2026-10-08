@@ -240,6 +240,9 @@
                     <Setter Property="Background" Value="{StaticResource Brush.Active}" />
                     <Setter Property="TextElement.Foreground" Value="{StaticResource Brush.OnAccent}" />
                     <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentPage.HidesPathRows}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
                         <DataTrigger Binding="{Binding IsMachineArea}" Value="True">
                             <Setter Property="Background" Value="{StaticResource Brush.PathBar}" />
                             <Setter Property="TextElement.Foreground" Value="{StaticResource Brush.TextPrimary}" />
@@ -284,8 +287,13 @@
 
         <!-- 通道行（只在机床区）：左通道状态与回参考点，中机床已起动（钥匙），右手持盒的轴、手轮倍率、使能。 -->
         <Border x:Name="ChannelRow" Grid.Row="2" Grid.Column="1" Height="{StaticResource Layout.ChannelHeight}" Padding="12,0"
-                Background="{StaticResource Brush.ChannelRow}"
-                Visibility="{Binding IsMachineArea, Converter={StaticResource BoolToVisibility}}">
+                Background="{StaticResource Brush.ChannelRow}">
+            <Border.Visibility>
+                <MultiBinding Converter="{StaticResource AllTrueToVisibility}">
+                    <Binding Path="IsMachineArea" />
+                    <Binding Path="CurrentPage.HidesPathRows" Converter="{StaticResource InverseBool}" />
+                </MultiBinding>
+            </Border.Visibility>
             <Grid TextElement.Foreground="{StaticResource Brush.OnAccent}" TextElement.FontSize="{StaticResource Size.Body}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -309,8 +317,19 @@
             </Grid>
         </Border>
 
-        <!-- 工作区 -->
-        <Border Grid.Row="3" Grid.Column="1" Background="{StaticResource Brush.PathBar}">
+        <!-- 工作区；页面不要路径条与通道行时（自动磨削页）顶到标题行下面。 -->
+        <Border x:Name="Workspace" Grid.Column="1" Background="{StaticResource Brush.PathBar}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Grid.Row" Value="3" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentPage.HidesPathRows}" Value="True">
+                            <Setter Property="Grid.Row" Value="1" />
+                            <Setter Property="Grid.RowSpan" Value="3" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <ContentControl Content="{Binding CurrentPage}" Margin="6"
                             IsEnabled="{Binding IsOverlayOpen, Converter={StaticResource InverseBool}}" />
         </Border>

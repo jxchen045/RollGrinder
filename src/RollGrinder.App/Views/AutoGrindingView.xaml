@@ -6,47 +6,142 @@
              xmlns:vm="clr-namespace:RollGrinder.App.ViewModels"
              xmlns:views="clr-namespace:RollGrinder.App.Views"
              xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
+    <UserControl.Resources>
+        <!-- 对照表的一格：改不动的只读文字；改得动的就地改，改过标蓝加粗（待下发）。同一个格子对象也在总表里。 -->
+        <DataTemplate x:Key="CompareValueTemplate" DataType="{x:Type vm:MatrixCellViewModel}">
+            <Grid>
+                <TextBlock Text="{Binding Text}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.DataRow}"
+                           VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" TextTrimming="CharacterEllipsis"
+                           Visibility="{Binding CanEdit, Converter={StaticResource InverseBoolVisibility}}" />
+                <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                         ctl:TouchInput.TapToEdit="True" ctl:TouchInput.Caption="{Binding ParameterKey}"
+                         Margin="2" Height="Auto" HorizontalContentAlignment="Right"
+                         Visibility="{Binding CanEdit, Converter={StaticResource BoolToVisibility}}">
+                    <TextBox.Style>
+                        <Style TargetType="TextBox" BasedOn="{StaticResource ValueTextBox}">
+                            <Setter Property="Padding" Value="4,0" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsModified}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource Brush.PendingValue}" />
+                                    <Setter Property="FontWeight" Value="Bold" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
+            </Grid>
+        </DataTemplate>
+
+        <!-- 对照表一栏的一行：组标题（浅底粗字），或 参数名 + 单位 · 看的那一道 · 下一道。三栏按同一比例，各行对齐。 -->
+        <DataTemplate x:Key="CompareRowTemplate" DataType="{x:Type vm:CompareRowViewModel}">
+            <Grid>
+                <Border x:Name="GroupBand" Background="{StaticResource Brush.Background}" Padding="8,0" Margin="0,0,0,1"
+                        Height="{StaticResource Layout.CompareGroupHeight}" Visibility="Collapsed">
+                    <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
+                               Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                </Border>
+                <Grid x:Name="ParameterRow" Height="{StaticResource Layout.CompareRowHeight}" Margin="0,0,0,1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.5*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Background="{StaticResource Brush.Surface}" Padding="8,0" Margin="0,0,1,0">
+                        <DockPanel VerticalAlignment="Center">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding UnitText}" FontSize="{StaticResource Size.Caption}"
+                                       Foreground="{StaticResource Brush.TextSecondary}" Margin="6,0,0,0" />
+                            <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Label}" Foreground="{StaticResource Brush.TextSecondary}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </DockPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="{StaticResource Brush.Surface}" Margin="0,0,1,0">
+                        <ContentControl Content="{Binding Focused}" ContentTemplate="{StaticResource CompareValueTemplate}" />
+                    </Border>
+                    <Border Grid.Column="2" Background="{StaticResource Brush.Surface}">
+                        <ContentControl Content="{Binding Next}" ContentTemplate="{StaticResource CompareValueTemplate}" />
+                    </Border>
+                </Grid>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsGroup}" Value="True">
+                    <Setter TargetName="GroupBand" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="ParameterRow" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- 对照表一栏的列头：空 · 看的那一道（底色同左边工序序列）· 下一道。 -->
+        <DataTemplate x:Key="CompareHeaderTemplate" DataType="{x:Type vm:AutoGrindingViewModel}">
+            <Grid Height="{StaticResource Layout.CompareHeaderHeight}" Margin="0,0,0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.5*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Background="{StaticResource Brush.HeaderFill}" Margin="0,0,1,0" />
+                <Border Grid.Column="1" Padding="8,0" Margin="0,0,1,0"
+                        Background="{Binding FocusedStep.State, Converter={StaticResource StepStateToBackground}}">
+                    <TextBlock Text="{Binding FocusTitle}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
+                               HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Foreground="{Binding FocusedStep.State, Converter={StaticResource StepStateToForeground}}" />
+                </Border>
+                <Border Grid.Column="2" Padding="8,0" Background="{StaticResource Brush.HeaderFill}">
+                    <TextBlock Text="{Binding NextTitle}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
+                               HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                </Border>
+                <Border Grid.Column="2" Padding="8,0"
+                        Background="{Binding NextStep.State, Converter={StaticResource StepStateToBackground}}"
+                        Visibility="{Binding NextStep, Converter={StaticResource NullToVisibility}}">
+                    <TextBlock Text="{Binding NextTitle}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
+                               HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Foreground="{Binding NextStep.State, Converter={StaticResource StepStateToForeground}}" />
+                </Border>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
     <DockPanel>
-        <!-- 上排三块（界面修订稿 v3 1.1）：位置 · 主轴与进给 · 辅助功能；与 JOG 页同一个控件。 -->
+        <!-- 上排三块（界面修订稿 v3 1.1）：位置 · 主轴与进给 · 辅助功能；与 JOG 页同一个控件。
+             方案 F：外壳不画路径条与通道行，方式 · 通道 · 参考点 · 程序在位置块顶上。 -->
         <views:MachineTopRow x:Name="StatusBand" DockPanel.Dock="Top" DataContext="{Binding StatusBand}" Margin="0,0,0,10" />
 
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="{ctl:Px 330}" />
+                <ColumnDefinition Width="{ctl:Px 280}" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="{ctl:Px 372}" />
+                <ColumnDefinition Width="{ctl:Px 330}" />
             </Grid.ColumnDefinitions>
 
-            <!-- 左：工序序列 + 本支辊进度 -->
+            <!-- 左：工序序列（正在跑的那一道写道次，没轮到的写预计时长）+ 本支辊进度 -->
             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
                         <TextBlock Text="{loc:Loc Auto_SequenceHeader}" Style="{StaticResource Text.CardTitle}" />
                     </Border>
 
-                    <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="14">
+                    <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="12,10">
                         <StackPanel>
-                            <TextBlock Text="{loc:Loc Auto_ProgressHeader}" Style="{StaticResource Text.Label}" Margin="0,0,0,8" />
-                            <Border Height="14" Background="#DFE3E9">
+                            <TextBlock Text="{loc:Loc Auto_ProgressHeader}" Style="{StaticResource Text.Label}" Margin="0,0,0,6" />
+                            <Border Height="12" Background="{StaticResource Brush.Key}">
                                 <Rectangle Fill="{StaticResource Brush.Accent}" HorizontalAlignment="Left"
-                                           Width="{Binding ProgressFraction, Converter={StaticResource FractionToWidth}, ConverterParameter=302}" />
+                                           Width="{Binding ProgressFraction, Converter={StaticResource FractionToWidth}, ConverterParameter=254}" />
                             </Border>
-                            <DockPanel Margin="0,8,0,0">
-                                <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding RemainingTimeText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
-                                           Foreground="{StaticResource Brush.TextSecondary}" HorizontalAlignment="Right" />
-                                <TextBlock Text="{Binding ProgressText}" FontFamily="{StaticResource Font.Mono}" FontSize="17"
-                                           Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
+                            <DockPanel Margin="0,6,0,0">
+                                <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding RemainingTimeText}" FontFamily="{StaticResource Font.Mono}"
+                                           FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" HorizontalAlignment="Right" />
+                                <TextBlock Text="{Binding ProgressText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
+                                           Foreground="{StaticResource Brush.TextSecondary}" TextTrimming="CharacterEllipsis" />
                             </DockPanel>
                         </StackPanel>
                     </Border>
 
                     <!-- 十几道工序放不下：能滑，看哪一道就把哪一道滚进视野（见代码后台）。 -->
                     <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
-                        <ItemsControl x:Name="SequenceList" ItemsSource="{Binding Sequence}" Margin="8">
+                        <ItemsControl x:Name="SequenceList" ItemsSource="{Binding Sequence}" Margin="6">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <!-- 点一下：参数区改看这一道。正在看的那一道左边描一道竖条。 -->
-                                    <Border Height="46" Margin="0,0,0,4" Padding="12,0" BorderBrush="{StaticResource Brush.Accent}"
+                                    <Border Height="{ctl:Px 42}" Margin="0,0,0,4" Padding="10,0" BorderBrush="{StaticResource Brush.Accent}"
                                             Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
                                         <Border.Style>
                                             <Style TargetType="Border">
@@ -64,15 +159,15 @@
                                         </Border.InputBindings>
                                         <DockPanel>
                                             <TextBlock Text="{Binding OrderText}" Width="26"
-                                                       FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                                       FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
                                                        VerticalAlignment="Center"
                                                        Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
-                                            <TextBlock Text="{Binding PassText}" DockPanel.Dock="Right"
-                                                       FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                                            <TextBlock Text="{Binding SideText}" DockPanel.Dock="Right" Margin="8,0,0,0"
+                                                       FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
                                                        VerticalAlignment="Center"
                                                        Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
-                                            <TextBlock Text="{Binding DisplayName}" FontSize="19" VerticalAlignment="Center"
-                                                       Margin="12,0,0,0"
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="{StaticResource Size.Label}" VerticalAlignment="Center"
+                                                       Margin="8,0,0,0" TextTrimming="CharacterEllipsis"
                                                        Foreground="{Binding State, Converter={StaticResource StepStateToForeground}}" />
                                         </DockPanel>
                                     </Border>
@@ -83,12 +178,12 @@
                 </DockPanel>
             </Border>
 
-            <!-- 中：曲线 + 工艺参数 -->
+            <!-- 中：曲线 + 工艺参数对照表 -->
             <Grid Grid.Column="1" Margin="0,0,12,0">
-                <!-- 参数区按内容定高（一道工序的参数要一眼看全，加工中不许滚动），封顶 380；曲线占剩下的，至少 200。 -->
+                <!-- 参数区按内容定高（一道工序的参数一眼看全，加工中不许滚动），开没开始加工都一样高；曲线占剩下的。 -->
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*" MinHeight="{ctl:Px 200}" />
-                    <RowDefinition Height="Auto" MaxHeight="{ctl:Px 380}" />
+                    <RowDefinition Height="*" MinHeight="{ctl:Px 160}" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
@@ -96,11 +191,11 @@
                         <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                             <DockPanel>
                                 <!-- 看哪条曲线由竖键 1–5 选（最终稿 D3），标题写当前这条。 -->
-                                <TextBlock Text="{Binding CurveTitle}" Style="{StaticResource Text.CardTitle}" FontWeight="Bold" />
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding ToleranceText}" FontSize="{StaticResource Size.Label}" Margin="0,0,20,0" />
                                     <TextBlock Text="{Binding RmsText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Label}" FontWeight="Bold" />
                                 </StackPanel>
+                                <TextBlock Text="{Binding CurveTitle}" Style="{StaticResource Text.CardTitle}" FontWeight="Bold" />
                             </DockPanel>
                         </Border>
 
@@ -126,123 +221,74 @@
                 </Border>
 
                 <!--
-                    参数矩阵：行 = 参数，列 = 工序，一屏看完整支程序。
-                    列头与每一格的底色跟着机床走——红色是正在跑的那一道，黄色是下一道，
-                    用的是与左侧工序序列同一套 StepRowState 与同一套配色。
+                    工艺参数（方案 F）：默认是对照表——看的那一道与下一道并排，参数分速度 / 进给 / 道次与去除 / 其他四组，
+                    分左右两栏一屏放下。横键"参数总表"切到全部工序的总表（行 = 参数，列 = 工序）。
                 -->
                 <Border Grid.Row="1" Style="{StaticResource Card}">
                     <DockPanel>
                         <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <!-- 看一道：标题是那一道（底色与左边工序序列同一套）；看总表：原来的标题与说明。 -->
-                                <Border Padding="10,2" VerticalAlignment="Center"
-                                        Background="{Binding FocusedStep.State, Converter={StaticResource StepStateToBackground}}"
-                                        Visibility="{Binding IsMatrixOverview, Converter={StaticResource InverseBoolVisibility}}">
-                                    <TextBlock Text="{Binding FocusTitle}" Style="{StaticResource Text.CardTitle}" FontWeight="SemiBold"
-                                               Foreground="{Binding FocusedStep.State, Converter={StaticResource StepStateToForeground}}" />
-                                </Border>
-                                <TextBlock Text="{loc:Loc Auto_MatrixHeader}" Style="{StaticResource Text.CardTitle}"
-                                           Visibility="{Binding IsMatrixOverview, Converter={StaticResource BoolToVisibility}}" />
-                                <TextBlock Text="{loc:Loc Auto_MatrixHint}" Style="{StaticResource Text.Label}"
-                                           Margin="12,0,0,0" Foreground="{StaticResource Brush.TextMuted}"
-                                           Visibility="{Binding IsMatrixOverview, Converter={StaticResource BoolToVisibility}}" />
-                                <TextBlock Text="{Binding MatrixMessage}" FontSize="{StaticResource Size.Caption}" Margin="12,0,0,0"
-                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                           Foreground="{StaticResource Brush.WarningFill}"
-                                           Visibility="{Binding MatrixMessage, Converter={StaticResource TextToVisibility}}" />
-                            </StackPanel>
-                        </Border>
-
-                        <!--
-                            改参数不是实时通道：新值写进那一道工序的 R 参数，NC 在下一道次读取。
-                            改过还没下发的格子标红，与 RGI 的做法一致；竖键 7 / 8 换成"放弃改动 / 下发改动"（最终稿 5.2）。
-                        -->
-                        <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Brush.Divider}"
-                                BorderThickness="0,1,0,0" Padding="14,10"
-                                Visibility="{Binding HasPendingEdits, Converter={StaticResource BoolToVisibility}}">
                             <DockPanel>
-                                <TextBlock Text="{loc:Loc Auto_MatrixPendingHint}" Style="{StaticResource Text.Label}"
-                                           VerticalAlignment="Center" TextWrapping="Wrap" />
+                                <!-- 改过还没下发：右端"待下发 N"，提示写在悬停里，不另占一行（参数区高度不跟着变）。 -->
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding PendingCountText}" FontSize="{StaticResource Size.Label}" FontWeight="Bold"
+                                           Foreground="{StaticResource Brush.PendingValue}" VerticalAlignment="Center" Margin="12,0,0,0"
+                                           ToolTip="{loc:Loc Auto_MatrixPendingHint}" />
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{loc:Loc Auto_CompareHeader}" Style="{StaticResource Text.CardTitle}"
+                                               Visibility="{Binding IsMatrixOverview, Converter={StaticResource InverseBoolVisibility}}" />
+                                    <TextBlock Text="{loc:Loc Auto_MatrixHeader}" Style="{StaticResource Text.CardTitle}"
+                                               Visibility="{Binding IsMatrixOverview, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Text="{loc:Loc Auto_MatrixHint}" Style="{StaticResource Text.Label}"
+                                               Margin="12,0,0,0" Foreground="{StaticResource Brush.TextMuted}"
+                                               Visibility="{Binding IsMatrixOverview, Converter={StaticResource BoolToVisibility}}" />
+                                    <TextBlock Text="{Binding MatrixMessage}" FontSize="{StaticResource Size.Caption}" Margin="12,0,0,0"
+                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                               Foreground="{StaticResource Brush.WarningFill}"
+                                               Visibility="{Binding MatrixMessage, Converter={StaticResource TextToVisibility}}" />
+                                </StackPanel>
                             </DockPanel>
                         </Border>
 
-                        <!-- 空状态与表格包在一起占满剩余空间：直接放在 DockPanel 里，空状态文字会被停靠到最左边。 -->
-                        <Grid>
-                        <TextBlock Text="{loc:Loc Auto_MatrixEmpty}"
+                        <!-- 空状态与表格包在一起；高度按这支作业最高的那张对照表固定（见代码后台），换道不变高。 -->
+                        <Grid x:Name="CompareHost">
+                        <TextBlock Text="{loc:Loc Auto_MatrixEmpty}" Margin="14,10"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource Size.Body}"
                                    Foreground="{StaticResource Brush.TextMuted}"
                                    Visibility="{Binding HasMatrix, Converter={StaticResource InverseBoolVisibility}}" />
 
-                        <!--
-                            看一道（默认）：那一道的全部参数排成三列，一个不落、不用横着滚；改得动的就地改，改过标红，
-                            与总表是同一批格子。底部一行写下一道是什么。
-                        -->
-                        <DockPanel>
-                            <DockPanel.Visibility>
+                        <!-- 只是兜底：一道工序十来个参数，分两栏一屏放得下（自检逐道核对不需要滚动）。 -->
+                        <ScrollViewer x:Name="FocusScroll" VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                            <ScrollViewer.Visibility>
                                 <MultiBinding Converter="{StaticResource AllTrueToVisibility}">
                                     <Binding Path="HasMatrix" />
                                     <Binding Path="IsMatrixOverview" Converter="{StaticResource InverseBool}" />
                                 </MultiBinding>
-                            </DockPanel.Visibility>
-                            <TextBlock DockPanel.Dock="Bottom" Text="{Binding NextStepText}" Style="{StaticResource Text.Label}" Margin="14,6"
-                                       TextTrimming="CharacterEllipsis" />
-                            <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Auto_FocusNoParameters}" Style="{StaticResource Text.Label}" Margin="14,10">
-                                <TextBlock.Visibility>
-                                    <Binding Path="FocusCells.Count" Converter="{StaticResource EqualsToVisibility}" ConverterParameter="0" />
-                                </TextBlock.Visibility>
-                            </TextBlock>
-                            <!-- 只是兜底：一道工序最多十几个参数，按上面的排法一屏放得下（自检逐道核对不需要滚动）。 -->
-                            <ScrollViewer x:Name="FocusScroll" VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
-                                <ItemsControl ItemsSource="{Binding FocusCells}" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <UniformGrid Columns="3" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <!-- 一格一行：参数名 · 值 · 单位。两行叠放时 13 个参数要滚动才看得全，一行放下五排就够。 -->
-                                            <Border x:Name="FocusCell" Background="{StaticResource Brush.Surface}" Margin="0,0,1,1" Padding="10,3">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                                                    <TextBlock Grid.Column="1" Text="{Binding Cell.Text}" FontFamily="{StaticResource Font.Mono}"
-                                                               FontSize="{StaticResource Size.DataRow}" VerticalAlignment="Center" MinWidth="64" TextAlignment="Right"
-                                                               Visibility="{Binding Cell.CanEdit, Converter={StaticResource InverseBoolVisibility}}" />
-                                                    <TextBox Grid.Column="1" Text="{Binding Cell.Text, UpdateSourceTrigger=PropertyChanged}"
-                                                             ctl:TouchInput.TapToEdit="True" ctl:TouchInput.Caption="{Binding Label}"
-                                                             Width="88" Height="34" HorizontalContentAlignment="Right"
-                                                             Visibility="{Binding Cell.CanEdit, Converter={StaticResource BoolToVisibility}}">
-                                                        <TextBox.Style>
-                                                            <Style TargetType="TextBox" BasedOn="{StaticResource ValueTextBox}">
-                                                                <Setter Property="Padding" Value="4,0" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Cell.IsModified}" Value="True">
-                                                                        <Setter Property="Foreground" Value="{StaticResource Brush.PendingValue}" />
-                                                                        <Setter Property="FontWeight" Value="Bold" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBox.Style>
-                                                    </TextBox>
-                                                    <TextBlock Grid.Column="2" Text="{Binding UnitText}" Style="{StaticResource Text.Label}" VerticalAlignment="Center"
-                                                               Margin="6,0,0,0" TextWrapping="NoWrap" />
-                                                </Grid>
-                                            </Border>
-                                            <DataTemplate.Triggers>
-                                                <DataTrigger Binding="{Binding Cell.State}" Value="Done">
-                                                    <Setter TargetName="FocusCell" Property="TextElement.Foreground" Value="{StaticResource Brush.TextMuted}" />
-                                                </DataTrigger>
-                                            </DataTemplate.Triggers>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
-                        </DockPanel>
+                            </ScrollViewer.Visibility>
+                            <Grid Margin="8,6,8,8" VerticalAlignment="Top">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top">
+                                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CompareHeaderTemplate}" />
+                                    <ItemsControl ItemsSource="{Binding CompareLeft}" ItemTemplate="{StaticResource CompareRowTemplate}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top">
+                                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CompareHeaderTemplate}" />
+                                    <ItemsControl ItemsSource="{Binding CompareRight}" ItemTemplate="{StaticResource CompareRowTemplate}" />
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
+                        <TextBlock Text="{loc:Loc Auto_FocusNoParameters}" Style="{StaticResource Text.Label}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock.Visibility>
+                                <MultiBinding Converter="{StaticResource AllTrueToVisibility}">
+                                    <Binding Path="HasMatrix" />
+                                    <Binding Path="IsMatrixOverview" Converter="{StaticResource InverseBool}" />
+                                    <Binding Path="HasCompareRows" Converter="{StaticResource InverseBool}" />
+                                </MultiBinding>
+                            </TextBlock.Visibility>
+                        </TextBlock>
 
                         <!-- 看总表（横键"参数总表"）：行 = 参数，列 = 工序。 -->
                         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
@@ -363,87 +409,97 @@
                 </Border>
             </Grid>
 
-            <!-- 右：实测直径 + 实时数据 + 补偿状态 -->
+            <!-- 右：实测直径与余量 · 磨削电流 · 测量与补偿（方案 F，三块固定，不滚动） -->
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <Border Grid.Row="0" Style="{StaticResource Card}" Padding="16,14" Margin="0,0,0,12">
+                <Border Grid.Row="0" Style="{StaticResource Card}" Padding="14,10" Margin="0,0,0,12">
                     <StackPanel>
                         <TextBlock Text="{loc:Loc Auto_MeasuredDiameterHeader}" Style="{StaticResource Text.Label}" />
                         <TextBlock Text="{Binding MeasuredDiameterText}" Style="{StaticResource Text.Measurement}" />
-                        <DockPanel Margin="0,6,0,0">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{loc:Loc Auto_TargetLabel}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                <TextBlock Text="{Binding TargetDiameterText}" FontSize="16" Margin="6,0,0,0"
-                                           Foreground="{StaticResource Brush.TextSecondary}" />
+                        <DockPanel Margin="0,4,0,0">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <TextBlock Text="{loc:Loc Auto_RemainingStockLabel}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" />
+                                <TextBlock Text="{Binding RemainingStockText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
+                                           FontWeight="Bold" Margin="6,0,0,0" />
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <TextBlock Text="{loc:Loc Auto_RemainingStockLabel}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" />
-                                <TextBlock Text="{Binding RemainingStockText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{loc:Loc Auto_TargetLabel}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" />
+                                <TextBlock Text="{Binding TargetDiameterText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
                                            Margin="6,0,0,0" Foreground="{StaticResource Brush.TextSecondary}" />
                             </StackPanel>
                         </DockPanel>
+                        <!-- 已去除多少：从装上这支辊第一次读到的直径算到目标。 -->
+                        <Border Height="10" Margin="0,8,0,4" Background="{StaticResource Brush.Key}">
+                            <Rectangle Fill="{StaticResource Brush.Normal}" HorizontalAlignment="Left"
+                                       Width="{Binding RemovedFraction, Converter={StaticResource FractionToWidth}, ConverterParameter=300}" />
+                        </Border>
+                        <TextBlock Text="{Binding RemovedText}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" />
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Row="1" Style="{StaticResource Card}">
-                    <DockPanel>
-                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                            <TextBlock Text="{loc:Loc Auto_LiveDataHeader}" Style="{StaticResource Text.CardTitle}" />
+                <!-- 磨削电流：与手动磨削页同一根条，超上限变红。 -->
+                <Border Grid.Row="1" Style="{StaticResource Card}" Padding="14,10" Margin="0,0,0,12">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding GrindingCurrentText}" Style="{StaticResource Text.DataRow}" FontWeight="Bold" />
+                            <TextBlock Text="{loc:Loc MG_GrindingCurrent}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <Border Height="16" Margin="0,6,0,4" Background="{StaticResource Brush.Key}">
+                            <Rectangle HorizontalAlignment="Left"
+                                       Width="{Binding GrindingCurrentFraction, Converter={StaticResource FractionToWidth}, ConverterParameter=300}">
+                                <Rectangle.Style>
+                                    <Style TargetType="Rectangle">
+                                        <Setter Property="Fill" Value="{StaticResource Brush.Normal}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCurrentHigh}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource Brush.CurrentStep}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Rectangle.Style>
+                            </Rectangle>
                         </Border>
+                        <TextBlock Text="{Binding CurrentLimitText}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" />
+                    </StackPanel>
+                </Border>
 
-                        <!-- 实时数据与补偿状态一起滚：小屏（紧凑档位）上放不下时能滑，不被裁掉。 -->
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                <!-- 测量与补偿：测头 A / B、对中偏差、砂轮直径；下面三行是 NC 的补偿状态。 -->
+                <Border Grid.Row="2" Style="{StaticResource Card}" Padding="14,8">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding LiveValues}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,3">
+                                        <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}"
+                                                   FontSize="{StaticResource Size.Label}" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Margin="0,6,0,0" Padding="0,6,0,0">
                             <StackPanel>
-                                <ItemsControl ItemsSource="{Binding LiveValues}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border>
-                                                <Border.Style>
-                                                    <Style TargetType="Border" BasedOn="{StaticResource DataRowBorder}">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Highlight}" Value="True">
-                                                                <Setter Property="Background" Value="{StaticResource Brush.RowAlternate}" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Border.Style>
-                                                <DockPanel>
-                                                    <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding ValueText}" Style="{StaticResource Text.DataRow}"
-                                                               HorizontalAlignment="Right" />
-                                                    <TextBlock Text="{Binding Label}" FontSize="17"
-                                                               Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Bottom" TextWrapping="Wrap" />
-                                                </DockPanel>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <Border BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Padding="16,14">
-                                    <StackPanel>
-                                        <TextBlock Text="{loc:Loc Auto_CompensationHeader}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,10" />
-                                        <DockPanel Margin="0,0,0,7">
-                                            <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding FeedForwardText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                                       HorizontalAlignment="Right" />
-                                            <TextBlock Text="{loc:Loc Auto_FeedForward}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
-                                        </DockPanel>
-                                        <DockPanel Margin="0,0,0,7">
-                                            <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                                       HorizontalAlignment="Right" />
-                                            <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
-                                        </DockPanel>
-                                        <DockPanel>
-                                            <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                                       HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
-                                            <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
+                                <DockPanel Margin="0,3">
+                                    <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}"
+                                               FontSize="{StaticResource Size.Label}" HorizontalAlignment="Right" />
+                                    <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}"
+                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                </DockPanel>
+                                <DockPanel Margin="0,3">
+                                    <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}"
+                                               FontSize="{StaticResource Size.Label}" HorizontalAlignment="Right" />
+                                    <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}"
+                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                </DockPanel>
                             </StackPanel>
-                        </ScrollViewer>
-                    </DockPanel>
+                        </Border>
+                    </StackPanel>
                 </Border>
             </Grid>
             <!-- 程序段（界面修订稿 v3：取代"状态总览"，机构灯已在上排）：NC 当前段 / 下一段、作业、工序与道次。 -->

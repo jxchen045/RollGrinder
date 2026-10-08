@@ -144,13 +144,24 @@ public sealed partial class DriveReadoutViewModel : ObservableObject
 
     [ObservableProperty]
     private string overrideText = string.Empty;
+
+    /// <summary>倍率不是 100 %：琥珀色提醒（不是报警，红色只留给报警）。</summary>
+    [ObservableProperty]
+    private bool isOverrideOff;
+
+    /// <summary>写倍率；读不到时留空，不提醒。</summary>
+    public void SetOverride(double? percent)
+    {
+        OverrideText = percent is null ? string.Empty : percent.Value.ToString("F0", CultureInfo.CurrentCulture) + " %";
+        IsOverrideOff = percent is double value && Math.Abs(value - 100.0) > 0.5;
+    }
 }
 
 /// <summary>辅助功能块的一组：组名 + 一行灯。</summary>
 public sealed record StatusGroupViewModel(string Label, IReadOnlyList<StatusLampViewModel> Lamps);
 
 /// <summary>
-/// 自动页顶上常驻的状态带（修改稿 3③、5.5）：方式、通道、程序名、X、Z、砂轮与头架转速，
+/// 自动页顶上常驻的状态带（修改稿 3③、5.5）：方式、通道、回参考点、程序名，
 /// 以及切削液、中心架、尾架、测量臂四盏灯。机构状态位没映射（Q7 地址未到）时灯画虚框。
 /// </summary>
 public sealed class StatusBandViewModel
@@ -159,11 +170,8 @@ public sealed class StatusBandViewModel
     private readonly MachineDescription machine;
     private readonly StatusFieldViewModel mode;
     private readonly StatusFieldViewModel channel;
+    private readonly StatusFieldViewModel referenced;
     private readonly StatusFieldViewModel program;
-    private readonly StatusFieldViewModel x;
-    private readonly StatusFieldViewModel z;
-    private readonly StatusFieldViewModel wheel;
-    private readonly StatusFieldViewModel headstock;
 
     public StatusBandViewModel(MachineDescription machine, IStringLocalizer localizer)
     {
@@ -172,14 +180,13 @@ public sealed class StatusBandViewModel
 
         this.mode = new StatusFieldViewModel("Band_Mode", localizer);
         this.channel = new StatusFieldViewModel("Band_Channel", localizer);
+        this.referenced = new StatusFieldViewModel("Band_Reference", localizer);
         this.program = new StatusFieldViewModel("Band_Program", localizer, isMonospaced: true);
-        this.x = new StatusFieldViewModel("Band_X", localizer, isMonospaced: true, isPrimary: true);
-        this.z = new StatusFieldViewModel("Band_Z", localizer, isMonospaced: true, isPrimary: true);
-        this.wheel = new StatusFieldViewModel("Band_WheelRpm", localizer, isMonospaced: true);
-        this.headstock = new StatusFieldViewModel("Band_HeadstockRpm", localizer, isMonospaced: true);
+
+        // 方式 · 通道 · 参考点 · 程序（方案 F：自动页不画通道行，这三样挪到位置块顶上；轴位置与转速下面各有大字，不重复）。
         Fields = new ObservableCollection<StatusFieldViewModel>
         {
-            this.mode, this.channel, this.program, this.x, this.z, this.wheel, this.headstock,
+            this.mode, this.channel, this.referenced, this.program,
         };
 
         Lamps = new ObservableCollection<StatusLampViewModel>
@@ -255,13 +262,15 @@ public sealed class StatusBandViewModel
                 ? ((NcChannelState)code).ToString()
                 : "Unknown")];
 
+        this.referenced.ValueText = snapshot.GetNumberOrNull(MachineTagKeys.Referenced) switch
+        {
+            null => "--",
+            0 => this.localizer["Band_ReferenceMissing"],
+            _ => this.localizer["Band_ReferenceDone"],
+        };
+
         string? programName = snapshot.GetTextOrNull(MachineTagKeys.ProgramName);
         this.program.ValueText = string.IsNullOrEmpty(programName) ? "--" : programName;
-
-        this.x.ValueText = Format(Axis(snapshot, MachineAxisRoles.InfeedRadius, speed: false), "+0.000;-0.000;0.000");
-        this.z.ValueText = Format(Axis(snapshot, MachineAxisRoles.Carriage, speed: false), "F2");
-        this.wheel.ValueText = Format(snapshot.GetNumberOrNull(MachineTagKeys.WheelSpeedRpm), "F0");
-        this.headstock.ValueText = Format(Axis(snapshot, MachineAxisRoles.WorkpieceSpindle, speed: true), "F1");
 
         foreach (StatusLampViewModel lamp in Lamps.Concat(Overview).Concat(Groups.SelectMany(group => group.Lamps)))
         {
@@ -281,7 +290,7 @@ public sealed class StatusBandViewModel
         this.wheelDrive.SecondaryText = wheelRpm is double n2 && wheelDiameter is double d2
             ? (Math.PI * d2 * n2 / 60000.0).ToString("F1", CultureInfo.CurrentCulture) + " m/s"
             : string.Empty;
-        this.wheelDrive.OverrideText = Percent(snapshot.GetNumberOrNull(MachineTagKeys.WheelOverridePercent));
+        this.wheelDrive.SetOverride(snapshot.GetNumberOrNull(MachineTagKeys.WheelOverridePercent));
 
         // S1 头架：r/min + 工件线速 m/min（按实测直径，没有就按作业半径）。
         double? headRpm = Axis(snapshot, MachineAxisRoles.WorkpieceSpindle, speed: true);
@@ -291,22 +300,19 @@ public sealed class StatusBandViewModel
         this.headstockDrive.SecondaryText = headRpm is double n1 && rollDiameter is double d1 && d1 > 0.0
             ? (Math.PI * d1 * n1 / 1000.0).ToString("F0", CultureInfo.CurrentCulture) + " m/min"
             : string.Empty;
-        this.headstockDrive.OverrideText = Percent(snapshot.GetNumberOrNull(MachineTagKeys.SpindleOverridePercent));
+        this.headstockDrive.SetOverride(snapshot.GetNumberOrNull(MachineTagKeys.SpindleOverridePercent));
 
         // F 拖板：实际进给；没映射时显示本工序设定的进给。
         AxisDescription? carriage = this.machine.Axes.FirstOrDefault(axis => axis.IsPresent && axis.Role == MachineAxisRoles.Carriage);
         double? feed = (carriage is null ? null : snapshot.GetNumberOrNull(MachineTagKeys.AxisActualFeedMmPerMin(carriage.Name)))
             ?? snapshot.GetNumberOrNull(MachineTagKeys.JobStepFeedMmPerMin);
         this.carriageDrive.ValueText = Format(feed, "F0") + " mm/min";
-        this.carriageDrive.OverrideText = Percent(snapshot.GetNumberOrNull(MachineTagKeys.FeedOverridePercent));
+        this.carriageDrive.SetOverride(snapshot.GetNumberOrNull(MachineTagKeys.FeedOverridePercent));
 
         // X 周期进给：本工序每道进给（半径 µm / 次）。
         double? infeed = snapshot.GetNumberOrNull(MachineTagKeys.JobStepInfeedPerPassRadiusMm);
         this.infeedDrive.ValueText = (infeed is double mm ? (mm * 1000.0).ToString("F1", CultureInfo.CurrentCulture) : "--") + " µm/" + this.localizer["Drive_PerPass"];
     }
-
-    private static string Percent(double? value) =>
-        value is null ? string.Empty : value.Value.ToString("F0", CultureInfo.CurrentCulture) + " %";
 
     private double? Axis(MachineStateSnapshot snapshot, string role, bool speed)
     {

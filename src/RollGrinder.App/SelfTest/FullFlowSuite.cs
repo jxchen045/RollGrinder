@@ -120,7 +120,7 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             // 参数区默认看正在跑的那一道、参数一个不落；点别的工序看那一道；"参数总表"切到总表再切回来。
             await h.WaitUntilAsync(() => auto.FocusedStep?.State == StepRowState.Current, TimeSpan.FromSeconds(10));
             ctx.Check(auto.FocusedStep?.State == StepRowState.Current, "the parameter area should show the running step");
-            ctx.Check(auto.FocusTitle.Length > 0 && auto.NextStepText.Length > 0, "the focused step should have a title and a next-step line");
+            ctx.Check(auto.FocusTitle.Length > 0 && auto.NextTitle.Length > 0, "the comparison should name the focused step and the next one");
             // 挑参数最多的那一道没开始的工序来看（结束这类标记工序没有参数，看不出什么）。
             SequenceRowViewModel? later = auto.Sequence
                 .Where(row => row.State is StepRowState.Pending or StepRowState.Next)
@@ -130,8 +130,14 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             {
                 auto.FocusStepCommand.Execute(later);
                 ctx.Check(ReferenceEquals(auto.FocusedStep, later) && later.IsFocused, "tapping a step should focus it");
-                int expected = auto.MatrixRows.Count(row => row.Cells.Any(cell => cell.StepOrder == later.Order && cell.IsApplicable));
-                ctx.Check(auto.FocusCells.Count == expected, Invariant($"focused step should list all {expected} parameters, lists {auto.FocusCells.Count}"));
+                // 每个适用的参数都在对照表里有一行（变速的三个参数合成一行）。
+                var keys = auto.MatrixRows
+                    .Where(row => row.Cells.Any(cell => cell.StepOrder == later.Order && cell.IsApplicable))
+                    .Select(row => StepParameterGroups.SpeedVariationKeys.Contains(row.ParameterKey) ? "variation" : row.ParameterKey)
+                    .Distinct()
+                    .ToList();
+                int listed = auto.CompareLeft.Concat(auto.CompareRight).Count(row => !row.IsGroup && row.Focused!.Text.Length > 0);
+                ctx.Check(listed >= keys.Count, Invariant($"focused step should list all {keys.Count} parameters, lists {listed}"));
             }
 
             // 加工中不许为看参数而滚动：每一道都要一屏放下（标准档、紧凑档都跑这一步）。
@@ -162,7 +168,7 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             await h.PressKeyAsync(ctx, "Fn_ParameterTable");
             ctx.Check(!auto.IsMatrixOverview, "pressing it again goes back to the focused step");
             h.TryScreenshot("auto-focused-step");
-            ctx.Note(auto.FocusTitle + " | " + auto.NextStepText + Invariant($" | {auto.FocusCells.Count} parameters"));
+            ctx.Note(auto.FocusTitle + " | " + auto.NextTitle + Invariant($" | {auto.CompareLeft.Count} + {auto.CompareRight.Count} rows"));
         }, StepOptions.Shot);
 
         await h.StepAsync("RunLock", "EditPagesReadOnly", async ctx =>

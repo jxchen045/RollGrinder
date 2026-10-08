@@ -27,4 +27,8 @@
   <sys:Double x:Key="Layout.TitleButtonHeight">46</sys:Double>
   <sys:Double x:Key="Layout.ChannelHeight">32</sys:Double>
   <sys:Double x:Key="Layout.FunctionBlockHeight">144</sys:Double>
+  <!-- 自动页参数对照表：列头、组标题、参数行的高（方案 F；字号 DataRow 放得下，不按 0.7 缩）。 -->
+  <sys:Double x:Key="Layout.CompareHeaderHeight">34</sys:Double>
+  <sys:Double x:Key="Layout.CompareGroupHeight">26</sys:Double>
+  <sys:Double x:Key="Layout.CompareRowHeight">38</sys:Double>
 </ResourceDictionary>

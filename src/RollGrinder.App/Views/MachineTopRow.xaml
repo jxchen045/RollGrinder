@@ -87,8 +87,21 @@
                                     <TextBlock Text="{Binding SecondaryText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
                                                Foreground="{StaticResource Brush.TextSecondary}" Margin="10,0,0,0" VerticalAlignment="Bottom" />
                                 </StackPanel>
-                                <TextBlock Grid.Column="3" Text="{Binding OverrideText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
-                                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                <!-- 倍率不是 100 %：琥珀底色提醒（红色只留给报警）。 -->
+                                <Border Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" Padding="4,0">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsOverrideOff}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource Brush.WarningRowFill}" />
+                                                    <Setter Property="TextElement.Foreground" Value="{StaticResource Brush.WarningFill}" />
+                                                    <Setter Property="TextElement.FontWeight" Value="Bold" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding OverrideText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}" />
+                                </Border>
                             </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

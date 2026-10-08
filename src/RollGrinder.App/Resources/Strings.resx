@@ -181,9 +181,6 @@
   <data name="Auto_FeedForward" xml:space="preserve">
     <value>轴线前馈</value>
   </data>
-  <data name="Auto_LiveDataHeader" xml:space="preserve">
-    <value>实时数据</value>
-  </data>
   <data name="Auto_MeasuredDiameterHeader" xml:space="preserve">
     <value>轧辊实测直径 mm</value>
   </data>
@@ -459,9 +456,6 @@
   </data>
   <data name="Live_CurrentPass" xml:space="preserve">
     <value>当前道次</value>
-  </data>
-  <data name="Live_GrindingCurrent" xml:space="preserve">
-    <value>磨削电流</value>
   </data>
   <data name="Live_ProbeA" xml:space="preserve">
     <value>外测头 A</value>
@@ -2154,18 +2148,6 @@
   </data>
   <data name="Band_Program" xml:space="preserve">
     <value>程序</value>
-  </data>
-  <data name="Band_X" xml:space="preserve">
-    <value>X mm</value>
-  </data>
-  <data name="Band_Z" xml:space="preserve">
-    <value>Z mm</value>
-  </data>
-  <data name="Band_WheelRpm" xml:space="preserve">
-    <value>砂轮 r/min</value>
-  </data>
-  <data name="Band_HeadstockRpm" xml:space="preserve">
-    <value>头架 r/min</value>
   </data>
   <data name="Mode_Jog" xml:space="preserve">
     <value>JOG</value>
@@ -4732,24 +4714,6 @@
   <data name="Fn_ParameterTable" xml:space="preserve">
     <value>参数总表</value>
   </data>
-  <data name="Auto_FocusState_Pending" xml:space="preserve">
-    <value>未开始</value>
-  </data>
-  <data name="Auto_FocusState_Current" xml:space="preserve">
-    <value>正在磨</value>
-  </data>
-  <data name="Auto_FocusState_Next" xml:space="preserve">
-    <value>下一道</value>
-  </data>
-  <data name="Auto_FocusState_Done" xml:space="preserve">
-    <value>已完成</value>
-  </data>
-  <data name="Auto_FocusLastStep" xml:space="preserve">
-    <value>这是最后一道</value>
-  </data>
-  <data name="Auto_FocusNextFormat" xml:space="preserve">
-    <value>下一道：{0} {1}  {2}</value>
-  </data>
   <data name="Auto_FocusNoParameters" xml:space="preserve">
     <value>这一道没有工艺参数</value>
   </data>
@@ -4758,5 +4722,47 @@
   </data>
   <data name="Job_OptionChanged" xml:space="preserve">
     <value>本次改</value>
+  </data>
+  <data name="Band_Reference" xml:space="preserve">
+    <value>参考点</value>
+  </data>
+  <data name="Band_ReferenceDone" xml:space="preserve">
+    <value>已回</value>
+  </data>
+  <data name="Band_ReferenceMissing" xml:space="preserve">
+    <value>未回</value>
+  </data>
+  <data name="ParamGroup_Speed" xml:space="preserve">
+    <value>速度</value>
+  </data>
+  <data name="ParamGroup_Infeed" xml:space="preserve">
+    <value>进给</value>
+  </data>
+  <data name="ParamGroup_Removal" xml:space="preserve">
+    <value>道次与去除</value>
+  </data>
+  <data name="ParamGroup_Other" xml:space="preserve">
+    <value>其他</value>
+  </data>
+  <data name="Auto_SpeedVariation" xml:space="preserve">
+    <value>变速</value>
+  </data>
+  <data name="Auto_SpeedVariationFormat" xml:space="preserve">
+    <value>{0} ±{1}% / {2} 转</value>
+  </data>
+  <data name="Auto_CompareHeader" xml:space="preserve">
+    <value>工艺参数 · 当前道 / 下一道</value>
+  </data>
+  <data name="Auto_CompareNoNext" xml:space="preserve">
+    <value>无下一道</value>
+  </data>
+  <data name="Auto_PendingCountFormat" xml:space="preserve">
+    <value>待下发 {0}</value>
+  </data>
+  <data name="Auto_CurrentLimitFormat" xml:space="preserve">
+    <value>上限 {0} A</value>
+  </data>
+  <data name="Auto_RemovedFormat" xml:space="preserve">
+    <value>已去除 {0}%</value>
   </data>
 </root>

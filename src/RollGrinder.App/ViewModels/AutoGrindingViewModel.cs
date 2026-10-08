@@ -143,13 +143,44 @@ public sealed class MatrixRowViewModel
     public string UnitText { get; }
 
     public IReadOnlyList<MatrixCellViewModel> Cells { get; }
+
+    /// <summary>这一行的参数键；没有格子时为空串。</summary>
+    public string ParameterKey => Cells.Count == 0 ? string.Empty : Cells[0].ParameterKey;
 }
 
 /// <summary>
-/// 参数区"看一道"时的一格：参数名、单位，以及矩阵里那一格本身（同一个对象——这里改了，总表里也是改过的样子，
-/// 下发 / 放弃按同一套走）。
+/// 参数对照表（方案 F）里的一行：组标题，或一个参数在"看的那一道"与"下一道"上的取值。
+/// 取值格就是矩阵里那一格本身（同一个对象——这里改了，总表里也是改过的样子，下发 / 放弃按同一套走）；
+/// 那一道没有这个参数时是一个改不动的空格。
 /// </summary>
-public sealed record FocusCellViewModel(string Label, string UnitText, MatrixCellViewModel Cell);
+public sealed class CompareRowViewModel
+{
+    private CompareRowViewModel(bool isGroup, string label, string unitText, MatrixCellViewModel? focused, MatrixCellViewModel? next)
+    {
+        IsGroup = isGroup;
+        Label = label;
+        UnitText = unitText;
+        Focused = focused;
+        Next = next;
+    }
+
+    public bool IsGroup { get; }
+
+    public string Label { get; }
+
+    public string UnitText { get; }
+
+    /// <summary>看的那一道；组标题行为 null。</summary>
+    public MatrixCellViewModel? Focused { get; }
+
+    /// <summary>下一道；组标题行为 null。</summary>
+    public MatrixCellViewModel? Next { get; }
+
+    public static CompareRowViewModel Group(string label) => new(true, label, string.Empty, null, null);
+
+    public static CompareRowViewModel Parameter(string label, string unitText, MatrixCellViewModel focused, MatrixCellViewModel next) =>
+        new(false, label, unitText, focused, next);
+}
 
 /// <summary>工序序列里的一行。</summary>
 public sealed partial class SequenceRowViewModel : ObservableObject
@@ -172,10 +203,15 @@ public sealed partial class SequenceRowViewModel : ObservableObject
     public string DurationText { get; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SideText))]
     private StepRowState state;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SideText))]
     private string passText = string.Empty;
+
+    /// <summary>行右端：正在跑的那一道写道次（4/10），没轮到的写预计时长，磨完的空着。</summary>
+    public string SideText => PassText.Length > 0 ? PassText : State == StepRowState.Done ? string.Empty : DurationText;
 
     /// <summary>参数区正在看这一道（左侧描一道竖条）。</summary>
     [ObservableProperty]
@@ -254,7 +290,6 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly LiveValueViewModel probeB;
     private readonly LiveValueViewModel centringDeviation;
     private readonly LiveValueViewModel wheelDiameter;
-    private readonly LiveValueViewModel grindingCurrent;
     private readonly LiveValueViewModel currentPass;
 
     private readonly FunctionKeyViewModel compensationKey;
@@ -334,16 +369,15 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         this.probeB = new LiveValueViewModel("Live_ProbeB", localizer);
         this.centringDeviation = new LiveValueViewModel("Live_CentringDeviation", localizer, highlight: true);
         this.wheelDiameter = new LiveValueViewModel("Live_WheelDiameter", localizer);
-        this.grindingCurrent = new LiveValueViewModel("Live_GrindingCurrent", localizer);
         this.currentPass = new LiveValueViewModel("Live_CurrentPass", localizer);
 
         // X、Z 挪到了顶上的状态带里（修改稿 5.5），右栏只留测量与过程量。
         StatusBand = new StatusBandViewModel(machine, localizer);
 
+        // 右栏第三块（方案 F）：测量与砂轮；磨削电流有自己的一块，道次写在工序序列那一行上。
         LiveValues = new ObservableCollection<LiveValueViewModel>
         {
-            this.probeA, this.probeB, this.centringDeviation,
-            this.wheelDiameter, this.grindingCurrent, this.currentPass,
+            this.probeA, this.probeB, this.centringDeviation, this.wheelDiameter,
         };
 
         RefreshTolerance();
@@ -659,6 +693,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     public ObservableCollection<SequenceRowViewModel> Sequence { get; } = new();
 
     /// <summary>右栏：实时数据。</summary>
+    public override bool HidesPathRows => true;
+
     public ObservableCollection<LiveValueViewModel> LiveValues { get; }
 
     /// <summary>顶上常驻的状态带：方式、通道、程序、X、Z、转速与四盏机构灯（修改稿 3③）。</summary>
@@ -693,8 +729,16 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     /// <summary>机床当前跑到第几道；0 表示还没开始。</summary>
     private int currentStepOrder;
 
-    private void RefreshMatrixDirty() =>
-        HasPendingEdits = MatrixRows.Any(row => row.Cells.Any(cell => cell.IsModified));
+    /// <summary>参数区标题右端"待下发 N"；没有改动时为空。</summary>
+    [ObservableProperty]
+    private string pendingCountText = string.Empty;
+
+    private void RefreshMatrixDirty()
+    {
+        int pending = MatrixRows.Sum(row => row.Cells.Count(cell => cell.IsModified));
+        HasPendingEdits = pending > 0;
+        PendingCountText = pending > 0 ? Localizer.Format("Auto_PendingCountFormat", pending) : string.Empty;
+    }
 
     /// <summary>
     /// 把矩阵里改过的格子下发下去。
@@ -957,7 +1001,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         StatusBand.Update(snapshot);
         this.wheelDiameter.ValueText = FormatOrDash(snapshot.GetNumberOrNull(MachineTagKeys.WheelDiameterMm), "F2");
-        this.grindingCurrent.ValueText = FormatOrDash(snapshot.GetNumberOrNull(MachineTagKeys.GrindingCurrentA), "F1");
+        UpdateGrindingCurrent(snapshot.GetNumberOrNull(MachineTagKeys.GrindingCurrentA));
 
         double? pass = snapshot.GetNumberOrNull(MachineTagKeys.JobCurrentPass);
         double? totalPasses = snapshot.GetNumberOrNull(MachineTagKeys.JobTotalPasses);
@@ -1176,6 +1220,38 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         _ = RunGuardedAsync(RefreshCurveAsync, CancellationToken.None);
     }
 
+    /// <summary>磨削电流：数值 + 与手动磨削页同一根条（按 machine.json 的 grindingCurrentLimitA，默认 60 A）。</summary>
+    private void UpdateGrindingCurrent(double? current)
+    {
+        double limit = this.machine.Thresholds.TryGetValue("grindingCurrentLimitA", out double configured) ? configured : 60.0;
+        GrindingCurrentText = current is null ? "--" : current.Value.ToString("F1", CultureInfo.CurrentCulture) + " A";
+        GrindingCurrentFraction = current is { } a && limit > 0 ? Math.Clamp(a / limit, 0.0, 1.0) : 0.0;
+        IsCurrentHigh = current is { } amps && amps > limit;
+        CurrentLimitText = Localizer.Format("Auto_CurrentLimitFormat", limit.ToString("F0", CultureInfo.CurrentCulture));
+    }
+
+    /// <summary>这支辊装上后第一次读到的直径：算"已去除多少"的起点。换作业时清掉。</summary>
+    private double? startDiameterMm;
+
+    [ObservableProperty]
+    private string grindingCurrentText = "--";
+
+    [ObservableProperty]
+    private double grindingCurrentFraction;
+
+    [ObservableProperty]
+    private bool isCurrentHigh;
+
+    [ObservableProperty]
+    private string currentLimitText = string.Empty;
+
+    /// <summary>已去除的比例（0–1）：从第一次读到的直径到目标直径。</summary>
+    [ObservableProperty]
+    private double removedFraction;
+
+    [ObservableProperty]
+    private string removedText = string.Empty;
+
     private void UpdateDiameters(MachineStateSnapshot snapshot)
     {
         double? measuredDiameterMm = snapshot.GetNumberOrNull(MachineTagKeys.MeasuredDiameterMm);
@@ -1185,7 +1261,22 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         {
             TargetDiameterText = "--";
             RemainingStockText = "--";
+            RemovedFraction = 0.0;
+            RemovedText = string.Empty;
             return;
+        }
+
+        double target = this.activeJob.Geometry.NominalDiameterMm;
+        this.startDiameterMm ??= measuredDiameterMm;
+        if (this.startDiameterMm is double start && measuredDiameterMm is double now && start - target > 1e-6)
+        {
+            RemovedFraction = Math.Clamp((start - now) / (start - target), 0.0, 1.0);
+            RemovedText = Localizer.Format("Auto_RemovedFormat", (RemovedFraction * 100.0).ToString("F0", CultureInfo.CurrentCulture));
+        }
+        else
+        {
+            RemovedFraction = 0.0;
+            RemovedText = string.Empty;
         }
 
         double targetDiameterMm = this.activeJob.Geometry.NominalDiameterMm;
@@ -1318,6 +1409,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         Sequence.Clear();
         this.activeJob = null;
+        this.startDiameterMm = null;
 
         // 换了一支辊（新作业）：参数区回到"看一道"，不沿用上一支辊时切到的总表。
         IsMatrixOverview = false;
@@ -1409,6 +1501,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         HasMatrix = MatrixRows.Count > 0;
         RefreshMatrixDirty();
 
+        RefreshCompareCapacity();
+
         // 矩阵重建（换作业、下发改动、放弃改动）：格子是新对象，参数区也要重新取。
         FocusOn(FocusedStep?.Order ?? this.currentStepOrder);
     }
@@ -1421,16 +1515,27 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     [ObservableProperty]
     private bool isMatrixOverview;
 
-    /// <summary>参数区标题，例如"03 粗磨 · 正在磨 · 4/10"。</summary>
+    /// <summary>对照表左列的列头："03 粗磨"。</summary>
     [ObservableProperty]
     private string focusTitle = string.Empty;
 
-    /// <summary>参数区底部一行：下一道是什么、大约多久。</summary>
+    /// <summary>对照表右列对着的那一道（看的那一道的下一道）；看的是最后一道时为 null。</summary>
     [ObservableProperty]
-    private string nextStepText = string.Empty;
+    private SequenceRowViewModel? nextStep;
 
-    /// <summary>看的那一道的全部参数。</summary>
-    public ObservableCollection<FocusCellViewModel> FocusCells { get; } = new();
+    /// <summary>对照表右列的列头："04 半精磨"，或"无下一道"。</summary>
+    [ObservableProperty]
+    private string nextTitle = string.Empty;
+
+    /// <summary>对照表里有没有参数（开始、结束这类标记工序和它的下一道都没有时为 false）。</summary>
+    [ObservableProperty]
+    private bool hasCompareRows;
+
+    /// <summary>对照表左栏（前几组）。</summary>
+    public ObservableCollection<CompareRowViewModel> CompareLeft { get; } = new();
+
+    /// <summary>对照表右栏（其余各组）。</summary>
+    public ObservableCollection<CompareRowViewModel> CompareRight { get; } = new();
 
     partial void OnIsMatrixOverviewChanged(bool value) => this.parameterTableKey.IsActive = value;
 
@@ -1473,40 +1578,161 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         }
     }
 
+    /// <summary>
+    /// 摊出参数对照表（方案 F）：看的那一道与下一道并排，参数分四组按固定顺序排，
+    /// 变速的三个参数合成一行，组不拆开地分到左右两栏——一道工序的参数一屏看完，加工中不用滚动。
+    /// </summary>
     private void RebuildFocus()
     {
-        FocusCells.Clear();
-        if (FocusedStep is { } step)
+        CompareLeft.Clear();
+        CompareRight.Clear();
+        SequenceRowViewModel? step = FocusedStep;
+        NextStep = step is null ? null : Sequence.FirstOrDefault(candidate => candidate.Order == step.Order + 1);
+
+        if (step is not null)
         {
-            foreach (MatrixRowViewModel row in MatrixRows)
+            (List<CompareRowViewModel> left, List<CompareRowViewModel> right) = BuildCompare(step.Order, NextStep?.Order ?? 0);
+            left.ForEach(CompareLeft.Add);
+            right.ForEach(CompareRight.Add);
+        }
+
+        HasCompareRows = CompareLeft.Count + CompareRight.Count > 0;
+        RefreshFocusTitle();
+    }
+
+    /// <summary>
+    /// 参数区的固定高度按这支作业里最高的那一张对照表定（组数、参数行数）：换道、开始加工时参数区不变高、曲线不跳。
+    /// </summary>
+    [ObservableProperty]
+    private int compareCapacityGroups;
+
+    [ObservableProperty]
+    private int compareCapacityRows;
+
+    private void RefreshCompareCapacity()
+    {
+        int groups = 0;
+        int rows = 0;
+        foreach (SequenceRowViewModel step in Sequence)
+        {
+            int next = Sequence.Any(candidate => candidate.Order == step.Order + 1) ? step.Order + 1 : 0;
+            (List<CompareRowViewModel> left, List<CompareRowViewModel> right) = BuildCompare(step.Order, next);
+            foreach (List<CompareRowViewModel> column in new[] { left, right })
             {
-                if (row.Cells.FirstOrDefault(cell => cell.StepOrder == step.Order && cell.IsApplicable) is { } cell)
+                int g = column.Count(item => item.IsGroup);
+                int r = column.Count - g;
+                if (g * 0.7 + r > groups * 0.7 + rows)
                 {
-                    FocusCells.Add(new FocusCellViewModel(row.Label, row.UnitText, cell));
+                    groups = g;
+                    rows = r;
                 }
             }
         }
 
-        RefreshFocusTitle();
+        CompareCapacityGroups = groups;
+        CompareCapacityRows = rows;
+    }
+
+    /// <summary>
+    /// 摊出参数对照表（方案 F）：看的那一道与下一道并排，参数分四组按固定顺序排，
+    /// 变速的三个参数合成一行，组不拆开地分到左右两栏——一道工序的参数一屏看完，加工中不用滚动。
+    /// </summary>
+    private (List<CompareRowViewModel> Left, List<CompareRowViewModel> Right) BuildCompare(int focusedOrder, int nextOrder)
+    {
+        var groups = new SortedDictionary<StepParameterGroup, List<CompareRowViewModel>>();
+        bool variationAdded = false;
+        foreach (MatrixRowViewModel row in MatrixRows)
+        {
+            MatrixCellViewModel? focused = ApplicableCell(row, focusedOrder);
+            MatrixCellViewModel? next = ApplicableCell(row, nextOrder);
+            if (focused is null && next is null)
+            {
+                continue;
+            }
+
+            CompareRowViewModel item;
+            if (StepParameterGroups.SpeedVariationKeys.Contains(row.ParameterKey))
+            {
+                if (variationAdded)
+                {
+                    continue;
+                }
+
+                variationAdded = true;
+                item = CompareRowViewModel.Parameter(
+                    Localizer["Auto_SpeedVariation"],
+                    string.Empty,
+                    ReadOnlyCell(focusedOrder, VariationText(focusedOrder)),
+                    ReadOnlyCell(nextOrder, VariationText(nextOrder)));
+            }
+            else
+            {
+                item = CompareRowViewModel.Parameter(
+                    row.Label,
+                    row.UnitText,
+                    focused ?? ReadOnlyCell(focusedOrder, string.Empty),
+                    next ?? ReadOnlyCell(nextOrder, string.Empty));
+            }
+
+            StepParameterGroup group = StepParameterGroups.GroupOf(row.ParameterKey);
+            if (!groups.TryGetValue(group, out List<CompareRowViewModel>? items))
+            {
+                groups[group] = items = new List<CompareRowViewModel>();
+            }
+
+            items.Add(item);
+        }
+
+        var left = new List<CompareRowViewModel>();
+        var right = new List<CompareRowViewModel>();
+        int split = StepParameterGroups.SplitIndex(groups.Values.Select(items => items.Count).ToArray());
+        int index = 0;
+        foreach ((StepParameterGroup group, List<CompareRowViewModel> items) in groups)
+        {
+            List<CompareRowViewModel> column = index++ < split ? left : right;
+            column.Add(CompareRowViewModel.Group(Localizer["ParamGroup_" + group]));
+            column.AddRange(items);
+        }
+
+        return (left, right);
+    }
+
+    private static MatrixCellViewModel? ApplicableCell(MatrixRowViewModel row, int order) =>
+        order <= 0 ? null : row.Cells.FirstOrDefault(cell => cell.StepOrder == order && cell.IsApplicable);
+
+    private static MatrixCellViewModel ReadOnlyCell(int order, string text) =>
+        new(order, string.Empty, text, isApplicable: false, isLiveEditable: false);
+
+    /// <summary>变速合成一行："轧辊 ±8% / 5 转"；关闭时只写"关闭"；那一道没有变速参数时为空。</summary>
+    private string VariationText(int order)
+    {
+        string? TextOf(string key) => MatrixRows
+            .FirstOrDefault(row => row.ParameterKey == key) is { } row
+            ? ApplicableCell(row, order)?.Text
+            : null;
+
+        string? target = TextOf(StepParameterKeys.SpeedVariationTarget);
+        if (string.IsNullOrEmpty(target))
+        {
+            return string.Empty;
+        }
+
+        string off = Localizer["Choice_" + StepParameterKeys.SpeedVariationTarget + "_" + SpeedVariationChoices.Off];
+        return target == off
+            ? target
+            : Localizer.Format(
+                "Auto_SpeedVariationFormat",
+                target,
+                TextOf(StepParameterKeys.SpeedVariationPercent) ?? "--",
+                TextOf(StepParameterKeys.SpeedVariationPeriodRevolutions) ?? "--");
     }
 
     private void RefreshFocusTitle()
     {
-        if (FocusedStep is not { } step)
-        {
-            FocusTitle = string.Empty;
-            NextStepText = string.Empty;
-            return;
-        }
-
-        FocusTitle = string.Join(
-            " · ",
-            new[] { step.OrderText + " " + step.DisplayName, Localizer["Auto_FocusState_" + step.State], step.PassText }
-                .Where(part => !string.IsNullOrWhiteSpace(part)));
-        SequenceRowViewModel? next = Sequence.FirstOrDefault(candidate => candidate.Order == step.Order + 1);
-        NextStepText = next is null
-            ? Localizer["Auto_FocusLastStep"]
-            : Localizer.Format("Auto_FocusNextFormat", next.OrderText, next.DisplayName, next.DurationText);
+        FocusTitle = FocusedStep is { } step ? step.OrderText + " " + step.DisplayName : string.Empty;
+        NextTitle = FocusedStep is null
+            ? string.Empty
+            : NextStep is { } next ? next.OrderText + " " + next.DisplayName : Localizer["Auto_CompareNoNext"];
     }
 
     private string LabelOf(Core.Parameters.ParameterDescriptor descriptor)
