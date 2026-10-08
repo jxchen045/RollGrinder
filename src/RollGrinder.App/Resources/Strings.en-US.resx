@@ -4730,7 +4730,7 @@
     <value>Speed variation</value>
   </data>
   <data name="Auto_SpeedVariationFormat" xml:space="preserve">
-    <value>±{1}% / {2} rev</value>
+    <value>±{1}%/{2}rev</value>
   </data>
   <data name="Auto_CompareHeader" xml:space="preserve">
     <value>Parameters</value>
