@@ -136,7 +136,7 @@ internal sealed class FullFlowSuite : ISelfTestSuite
                     .Select(row => StepParameterGroups.SpeedVariationKeys.Contains(row.ParameterKey) ? "variation" : row.ParameterKey)
                     .Distinct()
                     .ToList();
-                int listed = auto.CompareLeft.Concat(auto.CompareRight).Count(row => !row.IsGroup && row.Focused!.Text.Length > 0);
+                int listed = auto.CompareLeft.Concat(auto.CompareRight).Sum(group => group.Rows.Count(row => row.Focused.Text.Length > 0));
                 ctx.Check(listed >= keys.Count, Invariant($"focused step should list all {keys.Count} parameters, lists {listed}"));
             }
 
@@ -168,7 +168,7 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             await h.PressKeyAsync(ctx, "Fn_ParameterTable");
             ctx.Check(!auto.IsMatrixOverview, "pressing it again goes back to the focused step");
             h.TryScreenshot("auto-focused-step");
-            ctx.Note(auto.FocusTitle + " | " + auto.NextTitle + Invariant($" | {auto.CompareLeft.Count} + {auto.CompareRight.Count} rows"));
+            ctx.Note(auto.FocusTitle + " | " + auto.NextTitle + Invariant($" | rows {auto.CompareLeft.Sum(g => g.Rows.Count)} + {auto.CompareRight.Sum(g => g.Rows.Count)}, area for {auto.CompareCapacityRows}"));
         }, StepOptions.Shot);
 
         await h.StepAsync("RunLock", "EditPagesReadOnly", async ctx =>

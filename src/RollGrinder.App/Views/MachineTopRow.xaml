@@ -19,7 +19,7 @@
 
         <Border Style="{StaticResource Card}" Padding="12,6">
             <DockPanel>
-                <!-- 一行：方式 · 通道 · 参考点 · 程序，右端是剩余行程那一列的列名（位置一看就是 mm，不另占一行）。 -->
+                <!-- 一行：方式 · 通道 · 参考点 · 程序（只写值，值本身看得懂，紧凑档也排得下一行），右端是剩余行程那一列的列名。 -->
                 <DockPanel DockPanel.Dock="Top" Margin="0,0,0,2">
                     <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Top_Remaining}" Style="{StaticResource Text.Label}" VerticalAlignment="Top" Margin="8,0,0,0" />
                     <ItemsControl ItemsSource="{Binding Fields}">
@@ -31,10 +31,9 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,16,0" Visibility="{Binding IsPrimary, Converter={StaticResource InverseBoolVisibility}}">
-                                    <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,6,0" />
-                                    <TextBlock Text="{Binding ValueText}" FontSize="{StaticResource Size.Caption}" FontWeight="SemiBold" />
-                                </StackPanel>
+                                <TextBlock Text="{Binding ValueText}" ToolTip="{Binding Label}" Margin="0,0,12,0"
+                                           FontSize="{StaticResource Size.Caption}" FontWeight="SemiBold"
+                                           Visibility="{Binding IsPrimary, Converter={StaticResource InverseBoolVisibility}}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

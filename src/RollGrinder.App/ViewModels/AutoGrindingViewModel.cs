@@ -149,38 +149,14 @@ public sealed class MatrixRowViewModel
 }
 
 /// <summary>
-/// 参数对照表（方案 F）里的一行：组标题，或一个参数在"看的那一道"与"下一道"上的取值。
+/// 参数对照表（方案 F）里的一行：一个参数在"看的那一道"与"下一道"上的取值。
 /// 取值格就是矩阵里那一格本身（同一个对象——这里改了，总表里也是改过的样子，下发 / 放弃按同一套走）；
-/// 那一道没有这个参数时是一个改不动的空格。
+/// 下一道没有这个参数时是一个改不动的空格。
 /// </summary>
-public sealed class CompareRowViewModel
-{
-    private CompareRowViewModel(bool isGroup, string label, string unitText, MatrixCellViewModel? focused, MatrixCellViewModel? next)
-    {
-        IsGroup = isGroup;
-        Label = label;
-        UnitText = unitText;
-        Focused = focused;
-        Next = next;
-    }
+public sealed record CompareRowViewModel(string Label, string UnitText, MatrixCellViewModel Focused, MatrixCellViewModel Next);
 
-    public bool IsGroup { get; }
-
-    public string Label { get; }
-
-    public string UnitText { get; }
-
-    /// <summary>看的那一道；组标题行为 null。</summary>
-    public MatrixCellViewModel? Focused { get; }
-
-    /// <summary>下一道；组标题行为 null。</summary>
-    public MatrixCellViewModel? Next { get; }
-
-    public static CompareRowViewModel Group(string label) => new(true, label, string.Empty, null, null);
-
-    public static CompareRowViewModel Parameter(string label, string unitText, MatrixCellViewModel focused, MatrixCellViewModel next) =>
-        new(false, label, unitText, focused, next);
-}
+/// <summary>对照表里的一组（速度 / 进给 / 道次与去除 / 其他）：组名竖排在左边一窄列，不另占一行。</summary>
+public sealed record CompareGroupViewModel(string Label, IReadOnlyList<CompareRowViewModel> Rows);
 
 /// <summary>工序序列里的一行。</summary>
 public sealed partial class SequenceRowViewModel : ObservableObject
@@ -1233,6 +1209,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     /// <summary>这支辊装上后第一次读到的直径：算"已去除多少"的起点。换作业时清掉。</summary>
     private double? startDiameterMm;
 
+    /// <summary>右栏补偿一行："v 3 · +0.0027"（行程间补偿版本 · 实时补偿量）。</summary>
+    [ObservableProperty]
+    private string compensationLineText = "--";
+
     [ObservableProperty]
     private string grindingCurrentText = "--";
 
@@ -1399,6 +1379,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         RealtimeOffsetText = FormatOrDash(
             snapshot.GetNumberOrNull(MachineTagKeys.CompensationRealtimeOffsetMm), "F4", showSign: true);
+        CompensationLineText = StrokeVersionText + " · " + RealtimeOffsetText;
     }
 
     private async Task LoadActiveJobAsync(CancellationToken cancellationToken)
@@ -1445,7 +1426,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 step.Order,
                 Localizer["StepType_" + step.StepTypeKey],
                 duration > TimeSpan.Zero
-                    ? Localizer.Format("Auto_StepDurationFormat", (int)duration.TotalMinutes)
+                    ? Localizer.Format("Auto_StepMinutesFormat", (int)duration.TotalMinutes)
                     : string.Empty));
         }
 
@@ -1532,10 +1513,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private bool hasCompareRows;
 
     /// <summary>对照表左栏（前几组）。</summary>
-    public ObservableCollection<CompareRowViewModel> CompareLeft { get; } = new();
+    public ObservableCollection<CompareGroupViewModel> CompareLeft { get; } = new();
 
     /// <summary>对照表右栏（其余各组）。</summary>
-    public ObservableCollection<CompareRowViewModel> CompareRight { get; } = new();
+    public ObservableCollection<CompareGroupViewModel> CompareRight { get; } = new();
 
     partial void OnIsMatrixOverviewChanged(bool value) => this.parameterTableKey.IsActive = value;
 
@@ -1591,7 +1572,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
         if (step is not null)
         {
-            (List<CompareRowViewModel> left, List<CompareRowViewModel> right) = BuildCompare(step.Order, NextStep?.Order ?? 0);
+            (List<CompareGroupViewModel> left, List<CompareGroupViewModel> right) = BuildCompare(step.Order, NextStep?.Order ?? 0);
             left.ForEach(CompareLeft.Add);
             right.ForEach(CompareRight.Add);
         }
@@ -1601,57 +1582,42 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     }
 
     /// <summary>
-    /// 参数区的固定高度按这支作业里最高的那一张对照表定（组数、参数行数）：换道、开始加工时参数区不变高、曲线不跳。
+    /// 参数区的固定高度按这支作业里最高的那一张对照表定（较高那一栏的参数行数）：换道、开始加工时参数区不变高、曲线不跳。
     /// </summary>
-    [ObservableProperty]
-    private int compareCapacityGroups;
-
     [ObservableProperty]
     private int compareCapacityRows;
 
     private void RefreshCompareCapacity()
     {
-        int groups = 0;
         int rows = 0;
         foreach (SequenceRowViewModel step in Sequence)
         {
             int next = Sequence.Any(candidate => candidate.Order == step.Order + 1) ? step.Order + 1 : 0;
-            (List<CompareRowViewModel> left, List<CompareRowViewModel> right) = BuildCompare(step.Order, next);
-            foreach (List<CompareRowViewModel> column in new[] { left, right })
-            {
-                int g = column.Count(item => item.IsGroup);
-                int r = column.Count - g;
-                if (g * 0.7 + r > groups * 0.7 + rows)
-                {
-                    groups = g;
-                    rows = r;
-                }
-            }
+            (List<CompareGroupViewModel> left, List<CompareGroupViewModel> right) = BuildCompare(step.Order, next);
+            rows = Math.Max(rows, Math.Max(left.Sum(group => group.Rows.Count), right.Sum(group => group.Rows.Count)));
         }
 
-        CompareCapacityGroups = groups;
         CompareCapacityRows = rows;
     }
 
     /// <summary>
-    /// 摊出参数对照表（方案 F）：看的那一道与下一道并排，参数分四组按固定顺序排，
+    /// 摊出参数对照表（方案 F）：行 = 看的那一道有的参数，下一道的同名参数并排；分四组按固定顺序排，
     /// 变速的三个参数合成一行，组不拆开地分到左右两栏——一道工序的参数一屏看完，加工中不用滚动。
+    /// 下一道独有的参数不加行（辅助动作的"动作 / 开关"这类会把参数区撑高），点那一道再看。
     /// </summary>
-    private (List<CompareRowViewModel> Left, List<CompareRowViewModel> Right) BuildCompare(int focusedOrder, int nextOrder)
+    private (List<CompareGroupViewModel> Left, List<CompareGroupViewModel> Right) BuildCompare(int focusedOrder, int nextOrder)
     {
         var groups = new SortedDictionary<StepParameterGroup, List<CompareRowViewModel>>();
         bool variationAdded = false;
         foreach (MatrixRowViewModel row in MatrixRows)
         {
-            // 行 = 看的那一道有的参数；下一道有同一个参数就并排写出来，没有就空着
-            // （下一道独有的参数不加行——辅助动作的"动作 / 开关"这类会把参数区撑高，点那一道再看）。
             MatrixCellViewModel? focused = ApplicableCell(row, focusedOrder);
-            MatrixCellViewModel? next = ApplicableCell(row, nextOrder);
             if (focused is null)
             {
                 continue;
             }
 
+            MatrixCellViewModel? next = ApplicableCell(row, nextOrder);
             CompareRowViewModel item;
             if (StepParameterGroups.SpeedVariationKeys.Contains(row.ParameterKey))
             {
@@ -1661,7 +1627,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 }
 
                 variationAdded = true;
-                item = CompareRowViewModel.Parameter(
+                item = new CompareRowViewModel(
                     Localizer["Auto_SpeedVariation"],
                     string.Empty,
                     ReadOnlyCell(focusedOrder, VariationText(focusedOrder)),
@@ -1669,11 +1635,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             }
             else
             {
-                item = CompareRowViewModel.Parameter(
-                    row.Label,
-                    row.UnitText,
-                    focused,
-                    next ?? ReadOnlyCell(nextOrder, string.Empty));
+                item = new CompareRowViewModel(row.Label, row.UnitText, focused, next ?? ReadOnlyCell(nextOrder, string.Empty));
             }
 
             StepParameterGroup group = StepParameterGroups.GroupOf(row.ParameterKey);
@@ -1685,15 +1647,13 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             items.Add(item);
         }
 
-        var left = new List<CompareRowViewModel>();
-        var right = new List<CompareRowViewModel>();
+        var left = new List<CompareGroupViewModel>();
+        var right = new List<CompareGroupViewModel>();
         int split = StepParameterGroups.SplitIndex(groups.Values.Select(items => items.Count).ToArray());
         int index = 0;
         foreach ((StepParameterGroup group, List<CompareRowViewModel> items) in groups)
         {
-            List<CompareRowViewModel> column = index++ < split ? left : right;
-            column.Add(CompareRowViewModel.Group(Localizer["ParamGroup_" + group]));
-            column.AddRange(items);
+            (index++ < split ? left : right).Add(new CompareGroupViewModel(Localizer["ParamGroup_" + group], items));
         }
 
         return (left, right);

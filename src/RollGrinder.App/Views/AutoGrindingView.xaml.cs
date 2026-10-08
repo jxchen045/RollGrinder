@@ -42,8 +42,8 @@ public partial class AutoGrindingView : UserControl
     }
 
     /// <summary>
-    /// 参数区固定高（方案 F）：按这支作业里最高的那张对照表算——列头 + 组标题 + 参数行，每行下面 1 px 格线，再加上下边距。
-    /// 没装作业时按一道普通纵磨（两组、六行）留位置，装上作业、开始加工、换道都不跳。
+    /// 参数区固定高（方案 F）：按这支作业里最高的那张对照表算——列头 + 参数行，每行下面 1 px 格线，再加上下边距。
+    /// 没装作业时按一道普通纵磨（较高那栏六行）留位置，装上作业、开始加工、换道都不跳。
     /// </summary>
     private void SizeCompareHost()
     {
@@ -52,12 +52,10 @@ public partial class AutoGrindingView : UserControl
             return;
         }
 
-        int groups = Math.Max(2, this.viewModel.CompareCapacityGroups);
         int rows = Math.Max(6, this.viewModel.CompareCapacityRows);
         double header = (double)FindResource("Layout.CompareHeaderHeight");
-        double group = (double)FindResource("Layout.CompareGroupHeight");
         double row = (double)FindResource("Layout.CompareRowHeight");
-        CompareHost.Height = header + 1 + (groups * (group + 1)) + (rows * (row + 1)) + 14;
+        CompareHost.Height = header + 1 + (rows * (row + 1)) + 14;
     }
 
     private void OnUnloaded(object sender, System.Windows.RoutedEventArgs e) => Detach();
@@ -76,7 +74,7 @@ public partial class AutoGrindingView : UserControl
     /// <summary>工序多（十几道）时序列要滚动：参数区看哪一道，左边就把那一道滚进视野。</summary>
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(AutoGrindingViewModel.CompareCapacityGroups) or nameof(AutoGrindingViewModel.CompareCapacityRows))
+        if (e.PropertyName == nameof(AutoGrindingViewModel.CompareCapacityRows))
         {
             SizeCompareHost();
         }

@@ -697,12 +697,6 @@
   <data name="Auto_MatrixEmpty" xml:space="preserve">
     <value>No job loaded yet</value>
   </data>
-  <data name="Auto_MatrixHeader" xml:space="preserve">
-    <value>Parameter matrix</value>
-  </data>
-  <data name="Auto_MatrixHint" xml:space="preserve">
-    <value>Rows = parameters, columns = steps; red is running, amber is next</value>
-  </data>
   <data name="Auto_MatrixParameterColumn" xml:space="preserve">
     <value>Parameter</value>
   </data>
@@ -4720,15 +4714,6 @@
   <data name="Job_OptionChanged" xml:space="preserve">
     <value>changed</value>
   </data>
-  <data name="Band_Reference" xml:space="preserve">
-    <value>Reference</value>
-  </data>
-  <data name="Band_ReferenceDone" xml:space="preserve">
-    <value>Done</value>
-  </data>
-  <data name="Band_ReferenceMissing" xml:space="preserve">
-    <value>Missing</value>
-  </data>
   <data name="ParamGroup_Speed" xml:space="preserve">
     <value>Speeds</value>
   </data>
@@ -4736,7 +4721,7 @@
     <value>Infeed</value>
   </data>
   <data name="ParamGroup_Removal" xml:space="preserve">
-    <value>Passes &amp; stock</value>
+    <value>Passes</value>
   </data>
   <data name="ParamGroup_Other" xml:space="preserve">
     <value>Other</value>
@@ -4748,7 +4733,7 @@
     <value>±{1}% / {2} rev</value>
   </data>
   <data name="Auto_CompareHeader" xml:space="preserve">
-    <value>Parameters · this step / next</value>
+    <value>Parameters</value>
   </data>
   <data name="Auto_CompareNoNext" xml:space="preserve">
     <value>No next step</value>
@@ -4761,5 +4746,8 @@
   </data>
   <data name="Auto_RemovedFormat" xml:space="preserve">
     <value>{0}% removed</value>
+  </data>
+  <data name="Auto_StepMinutesFormat" xml:space="preserve">
+    <value>{0} min</value>
   </data>
 </root>

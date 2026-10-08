@@ -697,12 +697,6 @@
   <data name="Auto_MatrixEmpty" xml:space="preserve">
     <value>还没有装载作业</value>
   </data>
-  <data name="Auto_MatrixHeader" xml:space="preserve">
-    <value>工艺参数矩阵</value>
-  </data>
-  <data name="Auto_MatrixHint" xml:space="preserve">
-    <value>行 = 参数，列 = 工序；红色为当前工序，黄色为下一道</value>
-  </data>
   <data name="Auto_MatrixParameterColumn" xml:space="preserve">
     <value>参数</value>
   </data>
@@ -4720,15 +4714,6 @@
   <data name="Job_OptionChanged" xml:space="preserve">
     <value>本次改</value>
   </data>
-  <data name="Band_Reference" xml:space="preserve">
-    <value>参考点</value>
-  </data>
-  <data name="Band_ReferenceDone" xml:space="preserve">
-    <value>已回</value>
-  </data>
-  <data name="Band_ReferenceMissing" xml:space="preserve">
-    <value>未回</value>
-  </data>
   <data name="ParamGroup_Speed" xml:space="preserve">
     <value>速度</value>
   </data>
@@ -4748,7 +4733,7 @@
     <value>±{1}% / {2} 转</value>
   </data>
   <data name="Auto_CompareHeader" xml:space="preserve">
-    <value>工艺参数 · 当前道 / 下一道</value>
+    <value>工艺参数</value>
   </data>
   <data name="Auto_CompareNoNext" xml:space="preserve">
     <value>无下一道</value>
@@ -4761,5 +4746,8 @@
   </data>
   <data name="Auto_RemovedFormat" xml:space="preserve">
     <value>已去除 {0}%</value>
+  </data>
+  <data name="Auto_StepMinutesFormat" xml:space="preserve">
+    <value>{0} min</value>
   </data>
 </root>

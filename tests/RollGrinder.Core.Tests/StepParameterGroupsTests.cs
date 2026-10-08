@@ -24,7 +24,7 @@ public sealed class StepParameterGroupsTests
     [Fact]
     public void A_grinding_step_splits_speed_and_infeed_left_the_rest_right()
     {
-        // 速度 3、进给 2、道次与去除 3、其他 3（变速合成一行）：左 7 行，右 8 行。
+        // 速度 3、进给 2、道次与去除 3、其他 3（变速合成一行）：左 5 行，右 6 行。
         StepParameterGroups.SplitIndex(new[] { 3, 2, 3, 3 }).Should().Be(2);
     }
 

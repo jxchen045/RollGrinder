@@ -265,8 +265,8 @@ public sealed class StatusBandViewModel
         this.referenced.ValueText = snapshot.GetNumberOrNull(MachineTagKeys.Referenced) switch
         {
             null => "--",
-            0 => this.localizer["Band_ReferenceMissing"],
-            _ => this.localizer["Band_ReferenceDone"],
+            0 => this.localizer["Channel_NotReferenced"],
+            _ => this.localizer["Channel_Referenced"],
         };
 
         string? programName = snapshot.GetTextOrNull(MachineTagKeys.ProgramName);

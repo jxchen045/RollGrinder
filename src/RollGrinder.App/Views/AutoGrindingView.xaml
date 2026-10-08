@@ -32,64 +32,71 @@
             </Grid>
         </DataTemplate>
 
-        <!-- 对照表一栏的一行：组标题（浅底粗字），或 参数名 + 单位 · 看的那一道 · 下一道。三栏按同一比例，各行对齐。 -->
+        <!-- 对照表的一行：参数名 + 单位 · 看的那一道 · 下一道。三栏按同一比例，各行对齐。 -->
         <DataTemplate x:Key="CompareRowTemplate" DataType="{x:Type vm:CompareRowViewModel}">
-            <Grid>
-                <Border x:Name="GroupBand" Background="{StaticResource Brush.Background}" Padding="8,0" Margin="0,0,0,1"
-                        Height="{StaticResource Layout.CompareGroupHeight}" Visibility="Collapsed">
-                    <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
-                               Foreground="{StaticResource Brush.TextSecondary}" VerticalAlignment="Center" />
-                </Border>
-                <Grid x:Name="ParameterRow" Height="{StaticResource Layout.CompareRowHeight}" Margin="0,0,0,1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1.5*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Border Background="{StaticResource Brush.Surface}" Padding="8,0" Margin="0,0,1,0">
-                        <DockPanel VerticalAlignment="Center">
-                            <TextBlock DockPanel.Dock="Right" Text="{Binding UnitText}" FontSize="{StaticResource Size.Caption}"
-                                       Foreground="{StaticResource Brush.TextSecondary}" Margin="6,0,0,0" />
-                            <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Label}" Foreground="{StaticResource Brush.TextSecondary}"
-                                       TextTrimming="CharacterEllipsis" />
-                        </DockPanel>
-                    </Border>
-                    <Border Grid.Column="1" Background="{StaticResource Brush.Surface}" Margin="0,0,1,0">
-                        <ContentControl Content="{Binding Focused}" ContentTemplate="{StaticResource CompareValueTemplate}" />
-                    </Border>
-                    <Border Grid.Column="2" Background="{StaticResource Brush.Surface}">
-                        <ContentControl Content="{Binding Next}" ContentTemplate="{StaticResource CompareValueTemplate}" />
-                    </Border>
-                </Grid>
-            </Grid>
-            <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding IsGroup}" Value="True">
-                    <Setter TargetName="GroupBand" Property="Visibility" Value="Visible" />
-                    <Setter TargetName="ParameterRow" Property="Visibility" Value="Collapsed" />
-                </DataTrigger>
-            </DataTemplate.Triggers>
-        </DataTemplate>
-
-        <!-- 对照表一栏的列头：空 · 看的那一道（底色同左边工序序列）· 下一道。 -->
-        <DataTemplate x:Key="CompareHeaderTemplate" DataType="{x:Type vm:AutoGrindingViewModel}">
-            <Grid Height="{StaticResource Layout.CompareHeaderHeight}" Margin="0,0,0,1">
+            <Grid Height="{StaticResource Layout.CompareRowHeight}" Margin="0,0,0,1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1.5*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Background="{StaticResource Brush.HeaderFill}" Margin="0,0,1,0" />
-                <Border Grid.Column="1" Padding="8,0" Margin="0,0,1,0"
+                <Border Background="{StaticResource Brush.Surface}" Padding="8,0" Margin="0,0,1,0">
+                    <DockPanel VerticalAlignment="Center">
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding UnitText}" FontSize="{StaticResource Size.Caption}"
+                                   Foreground="{StaticResource Brush.TextSecondary}" Margin="6,0,0,0" />
+                        <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Label}" Foreground="{StaticResource Brush.TextSecondary}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                </Border>
+                <Border Grid.Column="1" Background="{StaticResource Brush.Surface}" Margin="0,0,1,0">
+                    <ContentControl Content="{Binding Focused}" ContentTemplate="{StaticResource CompareValueTemplate}" />
+                </Border>
+                <Border Grid.Column="2" Background="{StaticResource Brush.Surface}">
+                    <ContentControl Content="{Binding Next}" ContentTemplate="{StaticResource CompareValueTemplate}" />
+                </Border>
+            </Grid>
+        </DataTemplate>
+
+        <!-- 对照表的一组：组名竖排在左边一窄列（不另占一行，紧凑档也放得下），右边是这一组的参数行。 -->
+        <DataTemplate x:Key="CompareGroupTemplate" DataType="{x:Type vm:CompareGroupViewModel}">
+            <DockPanel>
+                <Border DockPanel.Dock="Left" Width="{x:Static ctl:LayoutProfile.CompareGroupLabelWidth}" Margin="0,0,1,1" Background="{StaticResource Brush.Background}">
+                    <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
+                               Foreground="{StaticResource Brush.TextSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis">
+                        <TextBlock.LayoutTransform>
+                            <RotateTransform Angle="-90" />
+                        </TextBlock.LayoutTransform>
+                    </TextBlock>
+                </Border>
+                <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource CompareRowTemplate}" />
+            </DockPanel>
+        </DataTemplate>
+
+        <!--
+            对照表一栏的列头：左格（盖住组名列和参数名列）· 看的那一道（底色同左边工序序列）· 下一道。
+            参数区不再另画标题栏（紧凑档放不下）：左栏的左格写"工艺参数"和"待下发 N"，右栏的左格写下发结果。
+        -->
+        <DataTemplate x:Key="CompareHeaderTemplate" DataType="{x:Type vm:AutoGrindingViewModel}">
+            <Grid Height="{StaticResource Layout.CompareHeaderHeight}" Margin="0,0,0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{x:Static ctl:LayoutProfile.CompareGroupColumn}" />
+                    <ColumnDefinition Width="1.5*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.ColumnSpan="2" Background="{StaticResource Brush.HeaderFill}" Margin="0,0,1,0" />
+                <Border Grid.Column="2" Padding="8,0" Margin="0,0,1,0"
                         Background="{Binding FocusedStep.State, Converter={StaticResource StepStateToBackground}}">
                     <TextBlock Text="{Binding FocusTitle}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
                                HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                Foreground="{Binding FocusedStep.State, Converter={StaticResource StepStateToForeground}}" />
                 </Border>
-                <Border Grid.Column="2" Padding="8,0" Background="{StaticResource Brush.HeaderFill}">
+                <Border Grid.Column="3" Padding="8,0" Background="{StaticResource Brush.HeaderFill}">
                     <TextBlock Text="{Binding NextTitle}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
                                HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </Border>
-                <Border Grid.Column="2" Padding="8,0"
+                <Border Grid.Column="3" Padding="8,0"
                         Background="{Binding NextStep.State, Converter={StaticResource StepStateToBackground}}"
                         Visibility="{Binding NextStep, Converter={StaticResource NullToVisibility}}">
                     <TextBlock Text="{Binding NextTitle}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
@@ -226,28 +233,6 @@
                 -->
                 <Border Grid.Row="1" Style="{StaticResource Card}">
                     <DockPanel>
-                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
-                            <DockPanel>
-                                <!-- 改过还没下发：右端"待下发 N"，提示写在悬停里，不另占一行（参数区高度不跟着变）。 -->
-                                <TextBlock DockPanel.Dock="Right" Text="{Binding PendingCountText}" FontSize="{StaticResource Size.Label}" FontWeight="Bold"
-                                           Foreground="{StaticResource Brush.PendingValue}" VerticalAlignment="Center" Margin="12,0,0,0"
-                                           ToolTip="{loc:Loc Auto_MatrixPendingHint}" />
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{loc:Loc Auto_CompareHeader}" Style="{StaticResource Text.CardTitle}"
-                                               Visibility="{Binding IsMatrixOverview, Converter={StaticResource InverseBoolVisibility}}" />
-                                    <TextBlock Text="{loc:Loc Auto_MatrixHeader}" Style="{StaticResource Text.CardTitle}"
-                                               Visibility="{Binding IsMatrixOverview, Converter={StaticResource BoolToVisibility}}" />
-                                    <TextBlock Text="{loc:Loc Auto_MatrixHint}" Style="{StaticResource Text.Label}"
-                                               Margin="12,0,0,0" Foreground="{StaticResource Brush.TextMuted}"
-                                               Visibility="{Binding IsMatrixOverview, Converter={StaticResource BoolToVisibility}}" />
-                                    <TextBlock Text="{Binding MatrixMessage}" FontSize="{StaticResource Size.Caption}" Margin="12,0,0,0"
-                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                               Foreground="{StaticResource Brush.WarningFill}"
-                                               Visibility="{Binding MatrixMessage, Converter={StaticResource TextToVisibility}}" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-
                         <!-- 空状态与表格包在一起；高度按这支作业最高的那张对照表固定（见代码后台），换道不变高。 -->
                         <Grid x:Name="CompareHost">
                         <TextBlock Text="{loc:Loc Auto_MatrixEmpty}" Margin="14,10"
@@ -270,12 +255,28 @@
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top">
-                                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CompareHeaderTemplate}" />
-                                    <ItemsControl ItemsSource="{Binding CompareLeft}" ItemTemplate="{StaticResource CompareRowTemplate}" />
+                                    <Grid>
+                                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CompareHeaderTemplate}" />
+                                        <!-- 左格：标题 + 待下发（改过还没下发时，提示在悬停里，不另占一行）。 -->
+                                        <DockPanel Width="{ctl:Px 200}" HorizontalAlignment="Left" Margin="8,0" VerticalAlignment="Center">
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding PendingCountText}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
+                                                       Foreground="{StaticResource Brush.PendingValue}" Margin="6,0,0,0"
+                                                       ToolTip="{loc:Loc Auto_MatrixPendingHint}" />
+                                            <TextBlock Text="{loc:Loc Auto_CompareHeader}" FontSize="{StaticResource Size.Caption}" FontWeight="Bold"
+                                                       Foreground="{StaticResource Brush.TextSecondary}" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding CompareLeft}" ItemTemplate="{StaticResource CompareGroupTemplate}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Background="{StaticResource Brush.GridLine}" VerticalAlignment="Top">
-                                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CompareHeaderTemplate}" />
-                                    <ItemsControl ItemsSource="{Binding CompareRight}" ItemTemplate="{StaticResource CompareRowTemplate}" />
+                                    <Grid>
+                                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CompareHeaderTemplate}" />
+                                        <!-- 左格：下发 / 被挡的结果。 -->
+                                        <TextBlock Text="{Binding MatrixMessage}" FontSize="{StaticResource Size.Caption}" Width="{ctl:Px 200}"
+                                                   HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{StaticResource Brush.WarningFill}" ToolTip="{Binding MatrixMessage}" />
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding CompareRight}" ItemTemplate="{StaticResource CompareGroupTemplate}" />
                                 </StackPanel>
                             </Grid>
                         </ScrollViewer>
@@ -417,7 +418,7 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <Border Grid.Row="0" Style="{StaticResource Card}" Padding="14,10" Margin="0,0,0,12">
+                <Border Grid.Row="0" Style="{StaticResource Card}" Padding="14,6" Margin="0,0,0,8">
                     <StackPanel>
                         <TextBlock Text="{loc:Loc Auto_MeasuredDiameterHeader}" Style="{StaticResource Text.Label}" />
                         <!-- 窄的紧凑档上大字整体缩一点，不切掉末位。 -->
@@ -449,7 +450,7 @@
                 </Border>
 
                 <!-- 磨削电流：与手动磨削页同一根条，超上限变红。 -->
-                <Border Grid.Row="1" Style="{StaticResource Card}" Padding="14,10" Margin="0,0,0,12">
+                <Border Grid.Row="1" Style="{StaticResource Card}" Padding="14,6" Margin="0,0,0,8">
                     <StackPanel>
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Right" Text="{Binding GrindingCurrentText}" Style="{StaticResource Text.DataRow}" FontWeight="Bold" />
@@ -492,22 +493,13 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <Border BorderBrush="{StaticResource Brush.Divider}" BorderThickness="0,1,0,0" Margin="0,4,0,0" Padding="0,4,0,0">
-                            <StackPanel>
-                                <DockPanel Margin="0,1">
-                                    <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding StrokeVersionText}" FontFamily="{StaticResource Font.Mono}"
-                                               FontSize="{StaticResource Size.Label}" HorizontalAlignment="Right" />
-                                    <TextBlock Text="{loc:Loc Auto_StrokeCompensation}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}"
-                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                </DockPanel>
-                                <DockPanel Margin="0,1">
-                                    <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}"
-                                               FontSize="{StaticResource Size.Label}" HorizontalAlignment="Right" />
-                                    <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}"
-                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                </DockPanel>
-                            </StackPanel>
-                        </Border>
+                        <!-- 补偿一行：行程间补偿版本 · 实时补偿量；细节在横键"补偿"。 -->
+                        <DockPanel Margin="0,4,0,0">
+                            <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding CompensationLineText}" FontFamily="{StaticResource Font.Mono}"
+                                       FontSize="{StaticResource Size.Label}" HorizontalAlignment="Right" />
+                            <TextBlock Text="{loc:Loc Auto_CompensationHeader}" FontSize="{StaticResource Size.Caption}" Foreground="{StaticResource Brush.TextSecondary}"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </DockPanel>
                     </StackPanel>
                 </Border>
             </Grid>

@@ -56,6 +56,12 @@ public static class LayoutProfile
     /// <summary>辊形段表的起点 / 长度 / 终点列宽（表头与行模板共用，紧凑档按比例缩）。</summary>
     public static GridLength SegmentNumberColumn => new(Math.Round(64 * Scale));
 
+    /// <summary>自动页参数对照表：组名竖排的那一窄列（含右边 1 px 格线），列头左格按它对齐。</summary>
+    public static GridLength CompareGroupColumn => new(CompareGroupLabelWidth + 1);
+
+    /// <summary>自动页参数对照表：组名竖排那一窄列的宽。</summary>
+    public static double CompareGroupLabelWidth => Math.Round(30 * Scale);
+
     /// <summary>轴读数行左边"轴名 + 角色"的最小宽（角色名更长时照样往右撑开）。</summary>
     public static double AxisReadoutLabelWidth => Math.Round(230 * Scale);
 

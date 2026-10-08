@@ -61,9 +61,9 @@ public static class StepParameterGroups
 
     /// <summary>
     /// 把按顺序排好的若干组分到左右两栏：前 k 组放左栏，其余放右栏，组不拆开。
-    /// 每组占"组标题 1 行 + 参数行数"，挑两栏里较高那一栏最矮的 k；一样高时左栏多放。
+    /// 组名竖排在组左边一窄列、不占行，挑两栏里较高那一栏最矮的 k；一样高时左栏多放。
     /// </summary>
-    /// <param name="groupRowCounts">每组的参数行数（不含组标题），按显示顺序。</param>
+    /// <param name="groupRowCounts">每组的参数行数，按显示顺序。</param>
     /// <returns>放进左栏的组数。</returns>
     public static int SplitIndex(IReadOnlyList<int> groupRowCounts)
     {
@@ -72,7 +72,7 @@ public static class StepParameterGroups
         int total = 0;
         foreach (int rows in groupRowCounts)
         {
-            total += rows + 1;
+            total += rows;
         }
 
         int best = groupRowCounts.Count;
@@ -89,7 +89,7 @@ public static class StepParameterGroups
 
             if (k < groupRowCounts.Count)
             {
-                left += groupRowCounts[k] + 1;
+                left += groupRowCounts[k];
             }
         }
 
