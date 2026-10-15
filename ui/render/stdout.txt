@@ -1,0 +1,9 @@
+[09:41:56 INF] Created D:\a\RollGrinder\RollGrinder\TestResults\run-20261015-093538\ui\render\config\machine.json from its sample template
+[09:41:56 INF] Created D:\a\RollGrinder\RollGrinder\TestResults\run-20261015-093538\ui\render\config\tagmap.json from its sample template
+[09:41:56 INF] Starting Roll Grinder HMI, gateway=Sim, config=D:\a\RollGrinder\RollGrinder\TestResults\run-20261015-093538\ui\render\config, data=D:\a\RollGrinder\RollGrinder\TestResults\run-20261015-093538\ui\render\data
+[09:41:57 INF] Database D:\a\RollGrinder\RollGrinder\TestResults\run-20261015-093538\ui\render\data\rollgrinder.db is at schema version 16
+[09:41:57 INF] Application started. Press Ctrl+C to shut down.
+[09:41:57 INF] Hosting environment: Production
+[09:41:57 INF] Content root path: D:\a\RollGrinder\RollGrinder\src\RollGrinder.App\bin\Release\net8.0-windows
+[09:42:31 INF] Self-test finished with exit code 0
+[09:42:31 INF] Application is shutting down...

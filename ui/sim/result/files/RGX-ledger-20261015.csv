@@ -1,0 +1,3 @@
+﻿rollId,kind,bodyLengthMm,nominalDiameterMm,currentDiameterMm,scrapDiameterMm,material,purpose,profileName,programName,netWeightKg
+SELFTEST-BR1,WorkRoll,2000,1200,1180,1100,,,SelfTest Profile A,SelfTest Program A,
+SELFTEST-REF,Unspecified,2000,600,,,,,,,

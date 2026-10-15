@@ -1,0 +1,2 @@
+﻿recordId,jobId,rollId,rollCode,profileType,startedAtUtc,finishedAtUtc,durationSeconds,state,worstDeviationDiameterMicrometer,note
+19d771e65c96479f823dabbf3de8e205,J20261015093954,SELFTEST-FLOW,SELFTEST-FLOW,Taper,2026-10-15T09:39:55.2867580+00:00,2026-10-15T09:41:31.6435553+00:00,96.4,Completed,17.15,
