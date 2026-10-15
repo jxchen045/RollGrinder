@@ -1329,7 +1329,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
                 step.DurationText = string.Empty;
             }
 
-            TotalDurationText = Localizer["Program_EstimateNeedsRoll"];
+            TotalDurationText = "--"; // 下面估时用轧辊那一格写着"填台账辊号估算时长"
             return;
         }
 

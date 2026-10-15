@@ -4789,7 +4789,7 @@
   <data name="Program_EstimateRollFormat" xml:space="preserve">
     <value>Body {0:0} mm · diameter {1:0.#} mm</value>
   </data>
-  <data name="Program_EstimateNeedsRoll" xml:space="preserve">
-    <value>Type a roll to estimate</value>
+  <data name="Profile_ReferenceRollNone" xml:space="preserve">
+    <value>No reference roll: using the stored design length {0:0} mm</value>
   </data>
 </root>

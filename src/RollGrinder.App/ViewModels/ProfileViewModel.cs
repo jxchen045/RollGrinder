@@ -137,6 +137,12 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     private readonly IRollRepository rolls;
     private string committedReferenceRoll = string.Empty;
 
+    /// <summary>
+    /// 必须填参考轧辊：新建的辊形是。库里没记参考轧辊的老条目、导入的条目不必——它们的设计长度已经存着，
+    /// 照用；填了辊号就改按那支辊。
+    /// </summary>
+    private bool referenceRequired = true;
+
     /// <summary>程序里改输入框时不要反过来又触发一次回写。</summary>
     private bool suppressWriteBack;
 
@@ -376,8 +382,11 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
         if (roll is null)
         {
-            this.bodyLengthInvalid = true;
-            ReferenceRollNote = Localizer[id.Length == 0 ? "Profile_ReferenceRollPrompt" : "Profile_ReferenceRollUnknown"];
+            bool keepStored = id.Length == 0 && !this.referenceRequired;
+            this.bodyLengthInvalid = !keepStored;
+            ReferenceRollNote = keepStored
+                ? Localizer.Format("Profile_ReferenceRollNone", this.geometry.BodyLengthMm)
+                : Localizer[id.Length == 0 ? "Profile_ReferenceRollPrompt" : "Profile_ReferenceRollUnknown"];
             RefreshIssues();
             return;
         }
@@ -1280,6 +1289,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             ProfileName = definition.Name;
             SetReferenceRollSilently(definition.ReferenceRollId ?? string.Empty);
             this.committedReferenceRoll = ReferenceRollText;
+            this.referenceRequired = definition.ReferenceRollId is not null;
             await ApplyReferenceRollAsync(ReferenceRollText, adoptLength: false, cancellationToken).ConfigureAwait(true);
             ToleranceText = definition.ToleranceMicrometer?.ToString("0.#", CultureInfo.CurrentCulture) ?? string.Empty;
             IsDirty = legacy;
@@ -1342,6 +1352,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         ToleranceText = string.Empty;
         SetReferenceRollSilently(string.Empty);
         this.committedReferenceRoll = string.Empty;
+        this.referenceRequired = true;
         this.bodyLengthInvalid = true;
         ReferenceRollNote = Localizer["Profile_ReferenceRollPrompt"];
         RefreshIssues();

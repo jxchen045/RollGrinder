@@ -275,7 +275,7 @@
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,18,0" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding LabelResourceKey, Converter={StaticResource LocalizeConverter}}"
-                                               FontSize="{StaticResource Size.Body}" Opacity="0.85" Margin="0,0,6,0" />
+                                               FontSize="{StaticResource Size.Body}" Margin="0,0,6,0" />
                                     <TextBlock Text="{Binding Value}" FontSize="{StaticResource Size.Body}" />
                                 </StackPanel>
                             </DataTemplate>

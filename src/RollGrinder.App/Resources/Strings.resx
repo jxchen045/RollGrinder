@@ -4789,7 +4789,7 @@
   <data name="Program_EstimateRollFormat" xml:space="preserve">
     <value>辊身 {0:0} mm · 直径 {1:0.#} mm</value>
   </data>
-  <data name="Program_EstimateNeedsRoll" xml:space="preserve">
-    <value>填辊号后估算</value>
+  <data name="Profile_ReferenceRollNone" xml:space="preserve">
+    <value>未记参考轧辊：按存的设计长度 {0:0} mm</value>
   </data>
 </root>
