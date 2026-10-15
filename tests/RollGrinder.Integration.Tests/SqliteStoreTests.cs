@@ -127,10 +127,10 @@ public sealed class SqliteStoreTests : IDisposable
                 2000.0,
                 CompositeRollProfile.Sequential(0.0, new[] { new SequentialSegment(ProfileTypeKeys.Crown, 2000.0, new CrownProfileType().Schema.CreateDefaults()) }),
                 DateTimeOffset.UnixEpoch)
-            with { NominalDiameterMm = 650.0, ToleranceMicrometer = 5.0 },
+            with { ReferenceRollId = "R-1", ToleranceMicrometer = 5.0 },
             CancellationToken.None);
         RollProfileDefinition loaded = (await profiles.GetAsync("P-1", CancellationToken.None))!;
-        loaded.NominalDiameterMm.Should().Be(650.0);
+        loaded.ReferenceRollId.Should().Be("R-1", "辊形记着按哪支辊画");
         loaded.ToleranceMicrometer.Should().Be(5.0);
     }
 
@@ -173,13 +173,14 @@ public sealed class SqliteStoreTests : IDisposable
             CancellationToken.None);
 
         var jobs = new SqliteJobRepository(this.database);
-        GrindingJob job = CreateJob();
+        GrindingJob job = CreateJob() with { GrindStartZMm = 312.5 };
 
         await jobs.SaveAsync(job, JobState.Draft, CancellationToken.None);
         (GrindingJob Job, JobState State)? loaded = await jobs.GetAsync("J-1", CancellationToken.None);
 
         loaded.Should().NotBeNull();
         loaded!.Value.State.Should().Be(JobState.Draft);
+        loaded.Value.Job.GrindStartZMm.Should().Be(312.5, "磨削起点跟着作业存");
         loaded.Value.Job.ProfileTypeKey.Should().Be(ProfileTypeKeys.Crown);
         loaded.Value.Job.Profile.Segments.Should().ContainSingle()
             .Which.Parameters.GetNumber(CrownProfileType.CrownDiameterMicrometerKey).Should().Be(120.0);

@@ -222,7 +222,7 @@ public sealed partial class PlanPickerViewModel : ObservableObject
         BodyFitResult fit = BodyLengthFit.Fit(definition.Profile, definition.BodyLengthMm, this.bodyLengthMm, tolerance);
         CompositeRollProfile shape = fit.Profile ?? definition.Profile;
         double length = fit.Profile is null ? definition.BodyLengthMm : this.bodyLengthMm;
-        return shape.Compose(RollGeometry.FromDiameter(length, definition.NominalDiameterMm ?? 600.0), this.profileTypes, this.settings.ProfileSampleCount)
+        return shape.Compose(RollGeometry.FromDiameter(length, RollGeometry.PreviewDiameterMm), this.profileTypes, this.settings.ProfileSampleCount)
             .Points.Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)))
             .ToArray();
     }

@@ -53,7 +53,7 @@ public sealed class RollDataTests : IDisposable
         RollRecord? loaded = await rolls.GetAsync("R-1", CancellationToken.None);
 
         loaded!.Data.NetWeightKg.Should().BeNull();
-        loaded.Data.CurveToleranceMicrometer.Should().BeNull();
+        loaded.Data.HeadBoxWeightKg.Should().BeNull();
         loaded.Data.TotalWeightKg.Should().BeNull();
     }
 
@@ -61,7 +61,7 @@ public sealed class RollDataTests : IDisposable
     public async Task The_registered_values_survive_a_round_trip()
     {
         IRollRepository rolls = await BuildAsync();
-        var sheet = new RollDataSheet(120.0, 1800.0, 10.0, 24500.0, 1800.0, 1750.0);
+        var sheet = new RollDataSheet(24500.0, 1800.0, 1750.0);
 
         await rolls.UpsertAsync(
             new RollRecord("R-1", "WR-1", Geometry, "9Cr2Mo", DateTimeOffset.UnixEpoch) { Data = sheet },
@@ -77,9 +77,9 @@ public sealed class RollDataTests : IDisposable
     public void The_lifting_weight_needs_all_three_pieces()
     {
         // 少算一个轴承箱会让人按偏轻的重量挂吊具。
-        new RollDataSheet(null, null, null, 24500.0, 1800.0, 1750.0).TotalWeightKg.Should().Be(28050.0);
-        new RollDataSheet(null, null, null, 24500.0, 1800.0, null).TotalWeightKg.Should().BeNull();
-        new RollDataSheet(null, null, null, null, 1800.0, 1750.0).TotalWeightKg.Should().BeNull();
+        new RollDataSheet(24500.0, 1800.0, 1750.0).TotalWeightKg.Should().Be(28050.0);
+        new RollDataSheet(24500.0, 1800.0, null).TotalWeightKg.Should().BeNull();
+        new RollDataSheet(null, 1800.0, 1750.0).TotalWeightKg.Should().BeNull();
     }
 
     [Fact]
@@ -92,12 +92,12 @@ public sealed class RollDataTests : IDisposable
 
         RollRecord existing = (await rolls.GetAsync("R-1", CancellationToken.None))!;
         await rolls.UpsertAsync(
-            existing with { Data = new RollDataSheet(120.0, null, null, null, null, null) },
+            existing with { Data = new RollDataSheet(24500.0, null, null) },
             CancellationToken.None);
 
         RollRecord? loaded = await rolls.GetAsync("R-1", CancellationToken.None);
 
         loaded!.Geometry.Should().Be(Geometry);
-        loaded.Data.GrindStartPositionMm.Should().Be(120.0);
+        loaded.Data.NetWeightKg.Should().Be(24500.0);
     }
 }

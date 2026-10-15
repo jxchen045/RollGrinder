@@ -90,6 +90,11 @@ public sealed class NcJobTranslator
             AddNumber(writes, MachineTagKeys.JobScrapDiameterMm, scrap, timestampUtc);
         }
 
+        if (job.GrindStartZMm is double startZ)
+        {
+            AddNumber(writes, MachineTagKeys.JobGrindStartZMm, startZ, timestampUtc);
+        }
+
         // 首道磨削工序的进给同时写到通用进给变量，方便老程序直接引用。
         //
         // 必须挑"真的走刀"的那一道：开始、结束、暂停这类工序没有拖板进给（0）。

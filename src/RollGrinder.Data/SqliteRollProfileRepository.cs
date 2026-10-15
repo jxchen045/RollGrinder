@@ -68,7 +68,7 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
         double bodyLengthMm;
         DateTimeOffset createdAtUtc;
         DateTimeOffset modifiedAtUtc;
-        double? nominalDiameter;
+        string? referenceRollId;
         double? tolerance;
         int version;
         bool disabled;
@@ -76,7 +76,7 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
         await using (SqliteCommand command = connection.CreateCommand())
         {
             command.CommandText =
-                "SELECT name, body_length_mm, created_at_utc, modified_at_utc, nominal_diameter_mm, tolerance_um, version, disabled FROM roll_profile WHERE profile_id = $id;";
+                "SELECT name, body_length_mm, created_at_utc, modified_at_utc, reference_roll_id, tolerance_um, version, disabled FROM roll_profile WHERE profile_id = $id;";
             SqlMapping.AddParameter(command, "$id", profileId);
 
             await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -89,7 +89,7 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             bodyLengthMm = reader.GetDouble(1);
             createdAtUtc = SqlMapping.ToTimestamp(reader.GetString(2));
             modifiedAtUtc = SqlMapping.ToTimestamp(reader.GetString(3));
-            nominalDiameter = reader.IsDBNull(4) ? null : reader.GetDouble(4);
+            referenceRollId = reader.IsDBNull(4) ? null : reader.GetString(4);
             tolerance = reader.IsDBNull(5) ? null : reader.GetDouble(5);
             version = reader.GetInt32(6);
             disabled = reader.GetInt32(7) != 0;
@@ -106,7 +106,7 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
 
         return new RollProfileDefinition(profileId, name, bodyLengthMm, profile, createdAtUtc, modifiedAtUtc)
         {
-            NominalDiameterMm = nominalDiameter,
+            ReferenceRollId = referenceRollId,
             ToleranceMicrometer = tolerance,
             Version = version,
             Disabled = disabled,
@@ -126,13 +126,13 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             command.Transaction = transaction;
             command.CommandText =
                 """
-                INSERT INTO roll_profile (profile_id, name, body_length_mm, created_at_utc, modified_at_utc, nominal_diameter_mm, tolerance_um,
+                INSERT INTO roll_profile (profile_id, name, body_length_mm, created_at_utc, modified_at_utc, reference_roll_id, tolerance_um,
                                           version, disabled)
-                VALUES ($id, $name, $length, $created, $modified, $diameter, $tolerance, $version, $disabled)
+                VALUES ($id, $name, $length, $created, $modified, $referenceRoll, $tolerance, $version, $disabled)
                 ON CONFLICT(profile_id) DO UPDATE SET
                     name = excluded.name,
                     body_length_mm = excluded.body_length_mm,
-                    nominal_diameter_mm = excluded.nominal_diameter_mm,
+                    reference_roll_id = excluded.reference_roll_id,
                     tolerance_um = excluded.tolerance_um,
                     version = excluded.version,
                     disabled = excluded.disabled,
@@ -141,7 +141,7 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             SqlMapping.AddParameter(command, "$id", profile.ProfileId);
             SqlMapping.AddParameter(command, "$name", profile.Name);
             SqlMapping.AddParameter(command, "$length", profile.BodyLengthMm);
-            SqlMapping.AddParameter(command, "$diameter", profile.NominalDiameterMm);
+            SqlMapping.AddParameter(command, "$referenceRoll", profile.ReferenceRollId);
             SqlMapping.AddParameter(command, "$tolerance", profile.ToleranceMicrometer);
             SqlMapping.AddParameter(command, "$version", profile.Version);
             SqlMapping.AddParameter(command, "$disabled", profile.Disabled ? 1 : 0);

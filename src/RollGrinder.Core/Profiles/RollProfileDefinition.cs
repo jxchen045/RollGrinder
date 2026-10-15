@@ -11,7 +11,10 @@ namespace RollGrinder.Core.Profiles;
 /// </summary>
 /// <param name="ProfileId">辊形标识。</param>
 /// <param name="Name">辊形名，现场按这个名字找。</param>
-/// <param name="BodyLengthMm">编辑这条辊形时用的参考辊身长度（mm）。段的区间按它定，换一支长度不同的辊要重新对区间。</param>
+/// <param name="BodyLengthMm">
+/// 设计长度（mm）：画这条辊形时按的辊身长度，取自参考轧辊的台账（<see cref="ReferenceRollId"/>），不在辊形里手填。
+/// 用到别的辊上按 2% 规则套：两端锥度段保持绝对长度，中间段伸缩铺满辊身。
+/// </param>
 /// <param name="Profile">多段叠加的曲线本体。</param>
 /// <param name="CreatedAtUtc">建立时刻。</param>
 /// <param name="ModifiedAtUtc">最后修改时刻，列表按它排序。</param>
@@ -23,8 +26,11 @@ public sealed record RollProfileDefinition(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset ModifiedAtUtc)
 {
-    /// <summary>适用公称直径（mm）：估时用；作业里和这支辊的直径相差 10% 以上时提示。没填为 null。</summary>
-    public double? NominalDiameterMm { get; init; }
+    /// <summary>
+    /// 参考轧辊：这条辊形按哪支辊的辊身长度画的（台账辊号）。长度只有台账一个出处——辊形不收直径、不手填长度。
+    /// 没记（旧条目、导入的条目）为 null。
+    /// </summary>
+    public string? ReferenceRollId { get; init; }
 
     /// <summary>辊形公差（直径量 µm）：形状规格的一部分，不属于某一支辊。没填为 null。</summary>
     public double? ToleranceMicrometer { get; init; }

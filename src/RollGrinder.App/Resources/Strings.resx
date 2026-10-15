@@ -1681,9 +1681,6 @@
   <data name="Profile_Issue_InputParameter" xml:space="preserve">
     <value>选中段有参数格没填成立（见标红的格子）</value>
   </data>
-  <data name="Profile_Issue_BodyLengthFormat" xml:space="preserve">
-    <value>设计长度要是 {0:0}–{1:0} mm 之间的数</value>
-  </data>
   <data name="Profile_IssuesSummaryFormat" xml:space="preserve">
     <value>有 {0} 处错误，改好之前不能保存</value>
   </data>
@@ -1857,9 +1854,6 @@
   </data>
   <data name="Program_Header" xml:space="preserve">
     <value>工艺程序</value>
-  </data>
-  <data name="Program_ReferenceDiameter" xml:space="preserve">
-    <value>估算用直径 mm</value>
   </data>
   <data name="Program_FrameFixed" xml:space="preserve">
     <value>开始、结束固定在首尾，不能删、不能挪、不能再加</value>
@@ -3556,9 +3550,6 @@
   <data name="Stock_BelowScrap" xml:space="preserve">
     <value>目标直径小于台账登记的报废直径：这支辊不能再磨到这个尺寸</value>
   </data>
-  <data name="Profile_NominalDiameter" xml:space="preserve">
-    <value>适用直径</value>
-  </data>
   <data name="Profile_Tolerance" xml:space="preserve">
     <value>辊形公差</value>
   </data>
@@ -3922,9 +3913,6 @@
   <data name="Ledger_Problem_CurrentDiameterOutOfRange" xml:space="preserve">
     <value>当前直径超出本机能磨的范围</value>
   </data>
-  <data name="Ledger_Problem_PlanMissing" xml:space="preserve">
-    <value>计划必填：请选辊形与程序</value>
-  </data>
   <data name="Ledger_Problem_ScrapNotBelowNominal" xml:space="preserve">
     <value>报废直径必须小于公称直径</value>
   </data>
@@ -4083,9 +4071,6 @@
   </data>
   <data name="Program_ApplicableMaterial" xml:space="preserve">
     <value>适用材质</value>
-  </data>
-  <data name="Program_ReferenceBodyLength" xml:space="preserve">
-    <value>参考辊身 (mm)</value>
   </data>
   <data name="Reason_CustomerRequest" xml:space="preserve">
     <value>用户要求</value>
@@ -4749,5 +4734,62 @@
   </data>
   <data name="Auto_StepMinutesFormat" xml:space="preserve">
     <value>{0} min</value>
+  </data>
+  <data name="CheckItem_GrindStart" xml:space="preserve">
+    <value>磨削起点</value>
+  </data>
+  <data name="Check_GrindStart_Missing" xml:space="preserve">
+    <value>还没示教磨削起点：砂轮对到辊身头架侧端面，按"取当前 Z"</value>
+  </data>
+  <data name="Check_GrindStart_Ok" xml:space="preserve">
+    <value>磨削起点 Z {0:F3} mm（本次示教）</value>
+  </data>
+  <data name="Check_GrindStart_Reused" xml:space="preserve">
+    <value>沿用上次的磨削起点 Z {0:F3} mm；装夹动过要重新示教</value>
+  </data>
+  <data name="Job_GrindStartZ" xml:space="preserve">
+    <value>磨削起点 Z (mm)</value>
+  </data>
+  <data name="Job_TeachGrindStart" xml:space="preserve">
+    <value>取当前 Z</value>
+  </data>
+  <data name="Job_GrindStartNotSet" xml:space="preserve">
+    <value>未示教</value>
+  </data>
+  <data name="Job_GrindStartTaught" xml:space="preserve">
+    <value>本次示教</value>
+  </data>
+  <data name="Job_GrindStartReused" xml:space="preserve">
+    <value>沿用上次</value>
+  </data>
+  <data name="Job_GrindStartNoZ" xml:space="preserve">
+    <value>读不到拖板 Z 的位置，没法示教；可以手输</value>
+  </data>
+  <data name="Profile_ReferenceRoll" xml:space="preserve">
+    <value>参考轧辊</value>
+  </data>
+  <data name="Profile_ReferenceRollPrompt" xml:space="preserve">
+    <value>填辊号：按这支辊的辊身长度画，长度从台账带入</value>
+  </data>
+  <data name="Profile_ReferenceRollUnknown" xml:space="preserve">
+    <value>台账里没有这支辊</value>
+  </data>
+  <data name="Profile_ReferenceRollFormat" xml:space="preserve">
+    <value>取自台账：辊身 {0:0} mm</value>
+  </data>
+  <data name="Profile_Issue_ReferenceRoll" xml:space="preserve">
+    <value>先填参考轧辊（台账里有的辊号）：辊形的设计长度取自它的辊身长度</value>
+  </data>
+  <data name="Program_EstimateRoll" xml:space="preserve">
+    <value>估时用轧辊</value>
+  </data>
+  <data name="Program_EstimateRollPrompt" xml:space="preserve">
+    <value>填台账辊号估算时长</value>
+  </data>
+  <data name="Program_EstimateRollFormat" xml:space="preserve">
+    <value>辊身 {0:0} mm · 直径 {1:0.#} mm</value>
+  </data>
+  <data name="Program_EstimateNeedsRoll" xml:space="preserve">
+    <value>填辊号后估算</value>
   </data>
 </root>

@@ -406,6 +406,15 @@ public sealed class SqliteDatabase
                           ORDER BY j.created_at_utc DESC LIMIT 1);
         UPDATE roll SET plan_inferred = 1 WHERE target_profile_id IS NOT NULL OR program_id IS NOT NULL;
         """,
+
+        // 参数归属（一个数一个出处）：
+        // · 磨削起点是这次装夹在机床 Z 上的位置——归作业（每次示教），台账的 grind_start_position_mm 停用；
+        //   台账的 curve_length_mm / curve_tolerance_um 也停用（曲线铺满辊身、公差只认辊形）。停用的列留着不读不写。
+        // · 辊形的长度按哪支辊画：记参考轧辊，长度从台账带入；roll_profile.nominal_diameter_mm（适用直径）停用。
+        """
+        ALTER TABLE job ADD COLUMN grind_start_z_mm REAL NULL;
+        ALTER TABLE roll_profile ADD COLUMN reference_roll_id TEXT NULL;
+        """,
     };
 
     private readonly string connectionString;

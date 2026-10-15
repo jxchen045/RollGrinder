@@ -316,7 +316,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         {
             if (IsProfiles && await this.profiles.GetAsync(entry.Id, cancellationToken).ConfigureAwait(true) is { } profile)
             {
-                RollGeometry geometry = RollGeometry.FromDiameter(profile.BodyLengthMm, profile.NominalDiameterMm ?? 1000.0);
+                RollGeometry geometry = RollGeometry.FromDiameter(profile.BodyLengthMm, RollGeometry.PreviewDiameterMm);
                 PreviewCurve = profile.Profile.Compose(geometry, this.profileTypes, this.settings.ProfileSampleCount).Points
                     .Select(point => (point.BodyPositionMm, UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)))
                     .ToArray();

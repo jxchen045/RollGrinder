@@ -241,6 +241,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         GrindingStepTypeRegistry stepTypes,
         IProgramRepository programs,
         IRollProfileRepository profiles,
+        IRollRepository rolls,
         ILibraryService libraryService,
         IUserSession session,
         ICalibrationService calibration,
@@ -260,6 +261,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.stepTypes = stepTypes ?? throw new ArgumentNullException(nameof(stepTypes));
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
         this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
+        this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         this.session = session ?? throw new ArgumentNullException(nameof(session));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
@@ -276,9 +278,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
                 .Select(type => new StepTypeOptionViewModel(type, capability.Supports(type), localizer))
                 .OrderBy(option => option.SlotOrder));
 
-        // 估算时长与存程序前的校验要一支参考辊来展开；程序本身不带辊。默认取机床的最大辊身与最大直径。
-        this.bodyLengthMmText = machine.Workpiece.MaxBodyLengthMm.ToString("F0", CultureInfo.CurrentCulture);
-        this.nominalDiameterMmText = machine.Workpiece.MaxDiameterMm.ToString("F0", CultureInfo.CurrentCulture);
+        // 估算时长要一支实际的辊（填辊号，尺寸从台账来）；程序本身不带辊、不收长度直径。
+        this.referenceRollNote = localizer["Program_EstimateRollPrompt"];
         this.selectedStepType = StepTypeOptions.FirstOrDefault(option => option.IsAvailable && !ProgramFrame.IsFixed(option.Key))
             ?? StepTypeOptions.FirstOrDefault();
 
@@ -348,13 +349,21 @@ public sealed partial class StepsViewModel : PageViewModelBase
     [ObservableProperty]
     private string totalDurationText = "--";
 
-    /// <summary>估算用的参考辊身长度（mm）。不属于程序，不存、不算修改。</summary>
-    [ObservableProperty]
-    private string bodyLengthMmText;
+    private readonly IRollRepository rolls;
 
-    /// <summary>估算用的参考直径（mm）。</summary>
+    /// <summary>估算用的那支辊（台账里查到的尺寸）；没填或查不到为 null。不属于程序，不存、不算修改。</summary>
+    private RollGeometry? estimateGeometry;
+
+    /// <summary>
+    /// 按哪支辊估时（台账辊号）。参数归属：程序只写"怎么磨"，不收长度直径；时长要按一支实际的辊才算得出来，
+    /// 作业里按那次的辊重算。
+    /// </summary>
     [ObservableProperty]
-    private string nominalDiameterMmText;
+    private string referenceRollText = string.Empty;
+
+    /// <summary>估算辊一行的说明："辊身 2000 mm · 直径 600 mm" / "台账里没有这支辊" / "填辊号估算时长"。</summary>
+    [ObservableProperty]
+    private string referenceRollNote = string.Empty;
 
     [ObservableProperty]
     private StepTypeOptionViewModel? selectedStepType;
@@ -687,9 +696,24 @@ public sealed partial class StepsViewModel : PageViewModelBase
         RefreshDurations();
     }
 
-    partial void OnBodyLengthMmTextChanged(string value) => RefreshDurations();
+    partial void OnReferenceRollTextChanged(string value) =>
+        _ = RunGuardedAsync(token => ApplyEstimateRollAsync(value, token), CancellationToken.None);
 
-    partial void OnNominalDiameterMmTextChanged(string value) => RefreshDurations();
+    private async Task ApplyEstimateRollAsync(string text, CancellationToken cancellationToken)
+    {
+        string id = text.Trim();
+        RollRecord? roll = id.Length == 0 ? null : await this.rolls.GetAsync(id, cancellationToken).ConfigureAwait(true);
+        if (!string.Equals(ReferenceRollText.Trim(), id, StringComparison.Ordinal))
+        {
+            return; // 查的时候又改了：以最后一次为准。
+        }
+
+        this.estimateGeometry = roll is null ? null : RollGeometry.FromDiameter(roll.Geometry.BodyLengthMm, roll.StartDiameterMm);
+        ReferenceRollNote = roll is null
+            ? Localizer[id.Length == 0 ? "Program_EstimateRollPrompt" : "Profile_ReferenceRollUnknown"]
+            : Localizer.Format("Program_EstimateRollFormat", roll.Geometry.BodyLengthMm, roll.StartDiameterMm);
+        RefreshDurations();
+    }
 
     [RelayCommand]
     private void AddStep()
@@ -1017,11 +1041,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
             return null;
         }
 
-        RollGeometry reference =
-            TryParseDouble(BodyLengthMmText, out double bodyLengthMm) && bodyLengthMm > 0.0
-            && TryParseDouble(NominalDiameterMmText, out double diameterMm) && diameterMm > 0.0
-                ? RollGeometry.FromDiameter(bodyLengthMm, diameterMm)
-                : RollGeometry.FromDiameter(this.machine.Workpiece.MinBodyLengthMm, this.machine.Workpiece.MinDiameterMm);
+        // 存程序前的校验要一支辊展开：填了估算辊就按它，没填按机床最大辊（同样转速线速度最高，偏严）。
+        RollGeometry reference = this.estimateGeometry
+            ?? RollGeometry.FromDiameter(this.machine.Workpiece.MaxBodyLengthMm, this.machine.Workpiece.MaxDiameterMm);
 
         ParameterValidationResult result = this.validator.ValidateSteps(steps, reference, this.capability);
         if (!result.IsValid)
@@ -1300,21 +1322,14 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private void RefreshDurations()
     {
         RefreshHints();
-        if (!TryParseDouble(BodyLengthMmText, out double bodyLengthMm)
-            || !TryParseDouble(NominalDiameterMmText, out double nominalDiameterMm))
+        if (this.estimateGeometry is not { } geometry)
         {
-            TotalDurationText = "--";
-            return;
-        }
+            foreach (StepRowViewModel step in Steps)
+            {
+                step.DurationText = string.Empty;
+            }
 
-        RollGeometry geometry;
-        try
-        {
-            geometry = RollGeometry.FromDiameter(bodyLengthMm, nominalDiameterMm);
-        }
-        catch (DomainException)
-        {
-            TotalDurationText = "--";
+            TotalDurationText = Localizer["Program_EstimateNeedsRoll"];
             return;
         }
 

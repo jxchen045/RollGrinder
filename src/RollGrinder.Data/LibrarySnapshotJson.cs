@@ -28,7 +28,7 @@ public static class LibrarySnapshotJson
             ["name"] = profile.Name,
             ["version"] = profile.Version,
             ["bodyLengthMm"] = profile.BodyLengthMm,
-            ["nominalDiameterMm"] = profile.NominalDiameterMm,
+            ["referenceRollId"] = profile.ReferenceRollId,
             ["toleranceMicrometer"] = profile.ToleranceMicrometer,
             ["createdAtUtc"] = profile.CreatedAtUtc.ToString("O", CultureInfo.InvariantCulture),
             ["modifiedAtUtc"] = profile.ModifiedAtUtc.ToString("O", CultureInfo.InvariantCulture),
@@ -49,7 +49,7 @@ public static class LibrarySnapshotJson
             DateTimeOffset.Parse(Text(node, "modifiedAtUtc"), CultureInfo.InvariantCulture))
         {
             Version = node["version"]?.GetValue<int>() ?? 1,
-            NominalDiameterMm = node["nominalDiameterMm"]?.GetValue<double?>(),
+            ReferenceRollId = node["referenceRollId"]?.GetValue<string?>(),
             ToleranceMicrometer = node["toleranceMicrometer"]?.GetValue<double?>(),
         };
     }
@@ -124,6 +124,7 @@ public static class LibrarySnapshotJson
             ["stockMicrometer"] = job.StockMicrometer,
             ["targetDiameterMm"] = job.TargetDiameterMm,
             ["scrapDiameterMm"] = job.ScrapDiameterMm,
+            ["grindStartZMm"] = job.GrindStartZMm,
             ["deviation"] = job.Deviation.ToString(),
             ["deviationReason"] = job.DeviationReason,
             ["options"] = WriteParameters(job.ProgramOptions),

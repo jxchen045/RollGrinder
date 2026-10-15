@@ -51,7 +51,7 @@ public sealed class RollLedgerTests : IDisposable
         {
             Kind = RollKind.WorkRoll,
             CurrentDiameterMm = 642.5,
-            Data = new RollDataSheet(0.0, 1900.0, 10.0, 5200.0, 800.0, 790.0),
+            Data = new RollDataSheet(5200.0, 800.0, 790.0),
 
             // 登记新辊计划必填（关系设计 5.1）；库里没有这两条时只查"填没填"。
             TargetProfileId = "P-STD",
@@ -109,7 +109,7 @@ public sealed class RollLedgerTests : IDisposable
         result.Problems.Should().BeEquivalentTo(new[]
         {
             RollLedgerProblem.MissingRollId, RollLedgerProblem.BodyLengthOutOfRange, RollLedgerProblem.DiameterOutOfRange,
-            RollLedgerProblem.CurrentDiameterOutOfRange, RollLedgerProblem.NegativeWeight, RollLedgerProblem.PlanMissing,
+            RollLedgerProblem.CurrentDiameterOutOfRange, RollLedgerProblem.NegativeWeight,
         });
     }
 

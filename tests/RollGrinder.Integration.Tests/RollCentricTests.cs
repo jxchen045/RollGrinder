@@ -110,6 +110,39 @@ public sealed class RollCentricTests : IDisposable
 
     private static JobCheck Item(JobCheckResult result, string item) => result.Checks.Single(check => check.Item == item);
 
+    // ───────────── 磨削起点（跟着装夹走，归作业） ─────────────
+
+    private static JobCheckResult CheckStart(double? z, bool taught, bool required)
+    {
+        RollRecord roll = Roll();
+        return JobChecklist.Evaluate(
+            new JobCheckInput(roll, Profile(), Program(), roll.StartDiameterMm, true, 350.0, JobDeviation.None, null, z, taught, required),
+            Machine());
+    }
+
+    [Fact]
+    public void The_grind_start_is_only_checked_when_the_nc_wants_it()
+    {
+        CheckStart(null, false, required: false).Checks.Should().NotContain(check => check.Item == JobCheckItems.GrindStart,
+            "NC 自己找端面时不要求示教");
+    }
+
+    [Fact]
+    public void A_missing_grind_start_blocks_the_download()
+    {
+        JobCheckResult result = CheckStart(null, false, required: true);
+        Item(result, JobCheckItems.GrindStart).Status.Should().Be(JobCheckStatus.Block);
+        result.CanDownload.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Reusing_the_last_grind_start_is_shown_but_not_blocked()
+    {
+        Item(CheckStart(312.5, false, required: true), JobCheckItems.GrindStart).Status.Should().Be(JobCheckStatus.Notice,
+            "装夹没动可以沿用，但要让人看见");
+        Item(CheckStart(312.5, true, required: true), JobCheckItems.GrindStart).Status.Should().Be(JobCheckStatus.Pass);
+    }
+
     // ───────────── 2% 规则 ─────────────
 
     [Fact]
@@ -241,7 +274,8 @@ public sealed class RollCentricTests : IDisposable
     public async Task Upgrading_infers_each_rolls_plan_from_its_latest_job_and_flags_it()
     {
         var database = new SqliteDatabase(Path.Combine(this.workspace.Root, "data", SqliteDatabase.FileName));
-        await database.MigrateToAsync(SqliteDatabase.ExpectedSchemaVersion - 1, CancellationToken.None);
+        // 停在"以轧辊为中心"那条迁移之前（其后还有参数归属一条）。
+        await database.MigrateToAsync(SqliteDatabase.ExpectedSchemaVersion - 2, CancellationToken.None);
         await using (SqliteConnection connection = await database.OpenAsync(CancellationToken.None))
         {
             await using SqliteCommand command = connection.CreateCommand();

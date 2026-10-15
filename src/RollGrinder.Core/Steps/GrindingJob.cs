@@ -71,6 +71,13 @@ public sealed record GrindingJob(
     /// <summary>报废直径（mm），随作业下发给 NC（tagmap 登记了 job.scrapDiameterMm 时）。</summary>
     public double? ScrapDiameterMm { get; init; }
 
+    /// <summary>
+    /// 磨削起点（机床 Z 坐标，mm）：辊身头架侧端面这次装夹在机床上的位置。原机在"开始"步骤里用"设置起点"
+    /// 把当前 Z 示教进来——它跟着装夹走（辊颈长短、顶尖位置不同就不同），所以归作业，不归台账也不归辊形。
+    /// 没示教为 null；tagmap 登记了 job.grindStartZMm 时随作业下发。
+    /// </summary>
+    public double? GrindStartZMm { get; init; }
+
     /// <summary>目标直径（mm）；缺磨前直径或磨削量时为 null。</summary>
     public double? TargetDiameterMm => StartDiameterMm is double start && StockMicrometer is double stock ? start - (stock / 1000.0) : null;
 

@@ -99,17 +99,11 @@
                             </Border>
                             <Border Style="{StaticResource ParameterCell}">
                                 <StackPanel>
-                                    <!-- 估时用的参考辊身长度：程序与具体轧辊无关，作业里按那支辊重算。 -->
-                                    <TextBlock Text="{loc:Loc Program_ReferenceBodyLength}" Style="{StaticResource Text.Label}" />
-                                    <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
+                                    <!-- 按哪支辊估时：填台账辊号，尺寸从台账来（程序不收长度直径；作业里按那次的辊重算）。 -->
+                                    <TextBlock Text="{loc:Loc Program_EstimateRoll}" Style="{StaticResource Text.Label}" />
+                                    <TextBox Text="{Binding ReferenceRollText, UpdateSourceTrigger=PropertyChanged}"
                                              Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
-                                </StackPanel>
-                            </Border>
-                            <Border Style="{StaticResource ParameterCell}">
-                                <StackPanel>
-                                    <TextBlock Text="{loc:Loc Program_ReferenceDiameter}" Style="{StaticResource Text.Label}" />
-                                    <TextBox Text="{Binding NominalDiameterMmText, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource ValueTextBox}" Margin="0,8,0,0" />
+                                    <TextBlock Text="{Binding ReferenceRollNote}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,4,0,0" />
                                 </StackPanel>
                             </Border>
                             <Border Style="{StaticResource ParameterCell}">

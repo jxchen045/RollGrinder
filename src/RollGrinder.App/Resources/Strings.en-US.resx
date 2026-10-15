@@ -1681,9 +1681,6 @@
   <data name="Profile_Issue_InputParameter" xml:space="preserve">
     <value>A parameter of the selected segment is not valid (see the cell marked red)</value>
   </data>
-  <data name="Profile_Issue_BodyLengthFormat" xml:space="preserve">
-    <value>The design length must be a number between {0:0} and {1:0} mm</value>
-  </data>
   <data name="Profile_IssuesSummaryFormat" xml:space="preserve">
     <value>{0} error(s): fix them before saving</value>
   </data>
@@ -1857,9 +1854,6 @@
   </data>
   <data name="Program_Header" xml:space="preserve">
     <value>Process program</value>
-  </data>
-  <data name="Program_ReferenceDiameter" xml:space="preserve">
-    <value>Reference diameter mm</value>
   </data>
   <data name="Program_FrameFixed" xml:space="preserve">
     <value>Start and End are fixed first and last; they cannot be removed, moved or added</value>
@@ -3556,9 +3550,6 @@
   <data name="Stock_BelowScrap" xml:space="preserve">
     <value>The target diameter is below the roll's scrap diameter</value>
   </data>
-  <data name="Profile_NominalDiameter" xml:space="preserve">
-    <value>Diameter</value>
-  </data>
   <data name="Profile_Tolerance" xml:space="preserve">
     <value>Tolerance</value>
   </data>
@@ -3922,9 +3913,6 @@
   <data name="Ledger_Problem_CurrentDiameterOutOfRange" xml:space="preserve">
     <value>The current diameter is outside what this machine can grind</value>
   </data>
-  <data name="Ledger_Problem_PlanMissing" xml:space="preserve">
-    <value>A plan is required: pick a profile and a program</value>
-  </data>
   <data name="Ledger_Problem_ScrapNotBelowNominal" xml:space="preserve">
     <value>The scrap diameter must be below the nominal diameter</value>
   </data>
@@ -4083,9 +4071,6 @@
   </data>
   <data name="Program_ApplicableMaterial" xml:space="preserve">
     <value>Applies to material</value>
-  </data>
-  <data name="Program_ReferenceBodyLength" xml:space="preserve">
-    <value>Reference body (mm)</value>
   </data>
   <data name="Reason_CustomerRequest" xml:space="preserve">
     <value>Customer request</value>
@@ -4749,5 +4734,62 @@
   </data>
   <data name="Auto_StepMinutesFormat" xml:space="preserve">
     <value>{0} min</value>
+  </data>
+  <data name="CheckItem_GrindStart" xml:space="preserve">
+    <value>Grind start</value>
+  </data>
+  <data name="Check_GrindStart_Missing" xml:space="preserve">
+    <value>Grind start not set: bring the wheel to the headstock end of the body and press 'Take current Z'</value>
+  </data>
+  <data name="Check_GrindStart_Ok" xml:space="preserve">
+    <value>Grind start Z {0:F3} mm (set this time)</value>
+  </data>
+  <data name="Check_GrindStart_Reused" xml:space="preserve">
+    <value>Reusing the last grind start Z {0:F3} mm; set it again if the roll was re-clamped</value>
+  </data>
+  <data name="Job_GrindStartZ" xml:space="preserve">
+    <value>Grind start Z (mm)</value>
+  </data>
+  <data name="Job_TeachGrindStart" xml:space="preserve">
+    <value>Take current Z</value>
+  </data>
+  <data name="Job_GrindStartNotSet" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="Job_GrindStartTaught" xml:space="preserve">
+    <value>Set this time</value>
+  </data>
+  <data name="Job_GrindStartReused" xml:space="preserve">
+    <value>From last time</value>
+  </data>
+  <data name="Job_GrindStartNoZ" xml:space="preserve">
+    <value>Cannot read the carriage Z position; type the value instead</value>
+  </data>
+  <data name="Profile_ReferenceRoll" xml:space="preserve">
+    <value>Reference roll</value>
+  </data>
+  <data name="Profile_ReferenceRollPrompt" xml:space="preserve">
+    <value>Type a roll ID: the profile is drawn on that roll's body length from the ledger</value>
+  </data>
+  <data name="Profile_ReferenceRollUnknown" xml:space="preserve">
+    <value>No such roll in the ledger</value>
+  </data>
+  <data name="Profile_ReferenceRollFormat" xml:space="preserve">
+    <value>From the ledger: body {0:0} mm</value>
+  </data>
+  <data name="Profile_Issue_ReferenceRoll" xml:space="preserve">
+    <value>Enter a reference roll from the ledger first: the design length is taken from its body length</value>
+  </data>
+  <data name="Program_EstimateRoll" xml:space="preserve">
+    <value>Roll for the estimate</value>
+  </data>
+  <data name="Program_EstimateRollPrompt" xml:space="preserve">
+    <value>Type a roll ID to estimate the time</value>
+  </data>
+  <data name="Program_EstimateRollFormat" xml:space="preserve">
+    <value>Body {0:0} mm · diameter {1:0.#} mm</value>
+  </data>
+  <data name="Program_EstimateNeedsRoll" xml:space="preserve">
+    <value>Type a roll to estimate</value>
   </data>
 </root>

@@ -29,13 +29,11 @@ public sealed class SqliteRollRepository : IRollRepository
             """
             INSERT INTO roll (
                 roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc,
-                grind_start_position_mm, curve_length_mm, curve_tolerance_um,
                 net_weight_kg, head_box_weight_kg, tail_box_weight_kg,
                 roll_kind, current_diameter_mm, scrap_diameter_mm,
                 target_profile_id, program_id, purpose, retired, plan_inferred)
             VALUES (
                 $id, $code, $length, $radius, $material, $created,
-                $grindStart, $curveLength, $curveTolerance,
                 $netWeight, $headBoxWeight, $tailBoxWeight,
                 $kind, $currentDiameter, $scrapDiameter,
                 $profileId, $programId, $purpose, $retired, $inferred)
@@ -44,9 +42,6 @@ public sealed class SqliteRollRepository : IRollRepository
                 body_length_mm = excluded.body_length_mm,
                 nominal_radius_mm = excluded.nominal_radius_mm,
                 material = excluded.material,
-                grind_start_position_mm = excluded.grind_start_position_mm,
-                curve_length_mm = excluded.curve_length_mm,
-                curve_tolerance_um = excluded.curve_tolerance_um,
                 net_weight_kg = excluded.net_weight_kg,
                 head_box_weight_kg = excluded.head_box_weight_kg,
                 tail_box_weight_kg = excluded.tail_box_weight_kg,
@@ -59,9 +54,6 @@ public sealed class SqliteRollRepository : IRollRepository
                 retired = excluded.retired,
                 plan_inferred = excluded.plan_inferred;
             """;
-        SqlMapping.AddParameter(command, "$grindStart", roll.Data.GrindStartPositionMm);
-        SqlMapping.AddParameter(command, "$curveLength", roll.Data.CurveLengthMm);
-        SqlMapping.AddParameter(command, "$curveTolerance", roll.Data.CurveToleranceMicrometer);
         SqlMapping.AddParameter(command, "$netWeight", roll.Data.NetWeightKg);
         SqlMapping.AddParameter(command, "$headBoxWeight", roll.Data.HeadBoxWeightKg);
         SqlMapping.AddParameter(command, "$tailBoxWeight", roll.Data.TailBoxWeightKg);
@@ -165,10 +157,9 @@ public sealed class SqliteRollRepository : IRollRepository
         reader.IsDBNull(4) ? null : reader.GetString(4),
         SqlMapping.ToTimestamp(reader.GetString(5)))
     {
+        // 列 6–8（启磨点、曲线长度、曲线允许误差）停用：启磨点归作业（每次装夹示教），
+        // 曲线长度就是辊身长度、公差只认辊形里的那一个（参数归属，一个数一个出处）。列留着不读不写。
         Data = new RollDataSheet(
-            Nullable(reader, 6),
-            Nullable(reader, 7),
-            Nullable(reader, 8),
             Nullable(reader, 9),
             Nullable(reader, 10),
             Nullable(reader, 11)),

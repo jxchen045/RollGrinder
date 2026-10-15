@@ -31,9 +31,6 @@ public enum RollLedgerProblem
     /// <summary>重量是负数。</summary>
     NegativeWeight = 5,
 
-    /// <summary>新登记的辊没选目标辊形或磨削程序（计划必填）。</summary>
-    PlanMissing = 6,
-
     /// <summary>报废直径不小于公称直径。</summary>
     ScrapNotBelowNominal = 7,
 
@@ -159,7 +156,7 @@ public sealed class RollLedgerService : IRollLedgerService
             problems.Add(RollLedgerProblem.ScrapNotBelowNominal);
         }
 
-        await CheckPlanAsync(roll, isNew, problems, cancellationToken).ConfigureAwait(false);
+        await CheckPlanAsync(roll, problems, cancellationToken).ConfigureAwait(false);
 
         if (problems.Count > 0)
         {
@@ -172,16 +169,12 @@ public sealed class RollLedgerService : IRollLedgerService
     private static bool Within(double value, double minimum, double maximum) => value >= minimum && value <= maximum;
 
     /// <summary>
-    /// 计划核对（关系设计 5.1）：新登记必选目标辊形与磨削程序；选了的要对得上这支辊——
+    /// 计划核对：计划可以后补——操作顺序是 轧辊 → 辊形（按一支已登记的辊画）→ 工艺 → 计划，
+    /// 登记时还没有辊形很正常；没计划的辊下不了作业（作业核对拦）。选了的要对得上这支辊——
     /// 辊形长度按 2% 规则、程序适用类型；停用的不能选。
     /// </summary>
-    private async Task CheckPlanAsync(RollRecord roll, bool isNew, List<RollLedgerProblem> problems, CancellationToken cancellationToken)
+    private async Task CheckPlanAsync(RollRecord roll, List<RollLedgerProblem> problems, CancellationToken cancellationToken)
     {
-        if (isNew && (string.IsNullOrWhiteSpace(roll.TargetProfileId) || string.IsNullOrWhiteSpace(roll.ProgramId)))
-        {
-            problems.Add(RollLedgerProblem.PlanMissing);
-        }
-
         if (!string.IsNullOrWhiteSpace(roll.TargetProfileId)
             && await this.profiles.GetAsync(roll.TargetProfileId, cancellationToken).ConfigureAwait(false) is { } profile)
         {

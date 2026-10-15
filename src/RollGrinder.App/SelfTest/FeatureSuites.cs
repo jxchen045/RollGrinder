@@ -15,6 +15,9 @@ using RollGrinder.Core.Calibration;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
+using RollGrinder.Data;
+using RollGrinder.Data.Model;
+using RollGrinder.Core.Geometry;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Manual;
 using RollGrinder.Services.Records;
@@ -41,6 +44,9 @@ internal static class SelfTestNames
 
     public const string OldProfile = "SelfTest Old Profile";
     public const string LedgerRollId = "SELFTEST-BR1";
+
+    /// <summary>辊形按它的辊身长度画（参数归属：长度只有台账一个出处）。辊形自检开头直接登记进台账。</summary>
+    public const string ProfileRefRollId = "SELFTEST-REF";
     public const string ProgramA = "SelfTest Program A";
     public const string ProgramB = "SelfTest Program B";
     public const string RollId = "SELFTEST-R1";
@@ -133,7 +139,20 @@ internal sealed class ProfileSuite : ISelfTestSuite
         {
             ctx.Check(page.AvailableTypes.Count > 1, "profile types should be registered");
             RollProfileTypeRegistry registry = h.Services.GetRequiredService<RollProfileTypeRegistry>();
-            page.BodyLengthMmText = "2000";
+
+            // 辊形按一支已登记的辊画：先在台账里放一支 2000 mm 的参考辊，再填它的辊号，长度自己带进来。
+            IRollRepository rolls = h.Services.GetRequiredService<IRollRepository>();
+            if (await rolls.GetAsync(SelfTestNames.ProfileRefRollId, default) is null)
+            {
+                await rolls.UpsertAsync(
+                    new RollRecord(SelfTestNames.ProfileRefRollId, SelfTestNames.ProfileRefRollId,
+                        RollGeometry.FromDiameter(2000.0, 600.0), null, DateTimeOffset.UtcNow),
+                    default);
+            }
+
+            page.ReferenceRollText = SelfTestNames.ProfileRefRollId;
+            bool adopted = await h.WaitUntilAsync(() => page.BodyLengthMmText.StartsWith("2000", StringComparison.Ordinal), TimeSpan.FromSeconds(5));
+            ctx.Check(adopted, "the design length should come from the reference roll, is " + page.BodyLengthMmText);
             await RemoveAllAsync(h, page);
             ctx.Check(page.Segments.Count == 0 && page.HasErrors, "an empty profile should be reported");
 
@@ -244,13 +263,13 @@ internal sealed class ProfileSuite : ISelfTestSuite
             ctx.Check(!page.HasErrors, "restoring the length should clear the error: " + Issues(page));
             ctx.Check(h.IsKeyUsable(saveKey), "save should be available again");
 
-            string designLength = page.BodyLengthMmText;
-            page.BodyLengthMmText = "1";
-            await h.SettleAsync(50);
-            ctx.Check(page.HasErrors, "a design length below the machine minimum is an error");
-            page.BodyLengthMmText = designLength;
-            await h.SettleAsync(50);
-            ctx.Check(!page.HasErrors, "restoring the design length should clear the error");
+            string reference = page.ReferenceRollText;
+            page.ReferenceRollText = "NO-SUCH-ROLL";
+            await h.WaitUntilAsync(() => page.HasErrors, TimeSpan.FromSeconds(3));
+            ctx.Check(page.HasErrors, "a reference roll that is not in the ledger is an error");
+            page.ReferenceRollText = reference;
+            await h.WaitUntilAsync(() => !page.HasErrors, TimeSpan.FromSeconds(3));
+            ctx.Check(!page.HasErrors, "restoring the reference roll should clear the error: " + Issues(page));
         });
 
         await h.StepAsync("PointTable", "EditPoints", async ctx =>
@@ -1481,7 +1500,7 @@ internal sealed class RollsSuite : ISelfTestSuite
             return;
         }
 
-        await h.StepAsync("Register", "PlanRequiredAndDuplicateRefused", async ctx =>
+        await h.StepAsync("Register", "SavedWithoutPlanThenPlanAndDuplicateRefused", async ctx =>
         {
             await h.PressVerticalKeyAsync(ctx, "Vk_RegisterRoll");
             ctx.Check(page.IsForm && page.IsNewRoll, "'register' opens an empty form");
@@ -1490,20 +1509,20 @@ internal sealed class RollsSuite : ISelfTestSuite
             page.FormNominalText = "1200";
             page.FormCurrentText = "1188";
             page.FormScrapText = "1100";
+            // 先登记尺寸、计划后补（参数归属：轧辊 → 辊形 → 工艺 的顺序，辊形要按一支已登记的辊画）。
+            // 计划这里顺手选上；同号的辊已在就被拦。
+            await JobFlow.PickAsync(h, ctx, page, "Vk_PickProfile", SelfTestNames.ProfileA, () => page.FormProfileText);
+            await JobFlow.PickAsync(h, ctx, page, "Vk_PickProgram", SelfTestNames.ProgramA, () => page.FormProgramText);
             await h.PressVerticalKeyAsync(ctx, "Vk_Save");
             bool exists = page.FormProblems.Any(p => p == page.Localizer["Ledger_Problem_RollIdTaken"]);
-            ctx.Check(page.IsForm, "a roll without a plan (or a duplicate) must not be saved");
             ctx.Note("problems: " + string.Join(" | ", page.FormProblems));
             if (!exists)
             {
-                ctx.Check(page.FormProblems.Any(p => p == page.Localizer["Ledger_Problem_PlanMissing"]), "a missing plan should be named");
-                await JobFlow.PickAsync(h, ctx, page, "Vk_PickProfile", SelfTestNames.ProfileA, () => page.FormProfileText);
-                await JobFlow.PickAsync(h, ctx, page, "Vk_PickProgram", SelfTestNames.ProgramA, () => page.FormProgramText);
-                await h.PressVerticalKeyAsync(ctx, "Vk_Save");
-                ctx.Check(await h.WaitUntilAsync(() => page.IsLedger, TimeSpan.FromSeconds(5)), "with a plan the roll is saved: " + string.Join(" | ", page.FormProblems));
+                ctx.Check(await h.WaitUntilAsync(() => page.IsLedger, TimeSpan.FromSeconds(5)), "the roll is saved: " + string.Join(" | ", page.FormProblems));
             }
             else
             {
+                ctx.Check(page.IsForm, "a duplicate roll id must not be saved");
                 await h.PressVerticalKeyAsync(ctx, "Vk_Cancel");
             }
         }, StepOptions.Shot);

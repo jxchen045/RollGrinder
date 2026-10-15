@@ -60,25 +60,21 @@ public sealed record RollRecord(
 }
 
 /// <summary>
-/// 一支辊的登记数据。与几何（长度、直径）分开：几何是算辊形要用的，
-/// 这些是吊装、找正、验收要用的。
+/// 一支辊的登记数据。与几何（长度、直径）分开：几何是算辊形要用的，这些是吊装与中心架托瓦压力要用的。
+///
+/// 原机"轧辊数据"屏上另有启磨点、曲线长度、曲线允许误差，这里不收：
+/// 启磨点是这次装夹在机床 Z 上的位置，归作业（每次示教）；曲线就铺满辊身；公差只认辊形里的那一个。
 /// </summary>
-/// <param name="GrindStartPositionMm">启磨点坐标（mm，辊身坐标）。</param>
-/// <param name="CurveLengthMm">曲线长度（mm）：辊形作用在辊身的哪一段上。</param>
-/// <param name="CurveToleranceMicrometer">曲线允许误差（直径量 µm）。</param>
 /// <param name="NetWeightKg">轧辊净重（kg）。</param>
 /// <param name="HeadBoxWeightKg">头架端轴承箱重（kg）。</param>
 /// <param name="TailBoxWeightKg">尾架端轴承箱重（kg）。</param>
 public sealed record RollDataSheet(
-    double? GrindStartPositionMm,
-    double? CurveLengthMm,
-    double? CurveToleranceMicrometer,
     double? NetWeightKg,
     double? HeadBoxWeightKg,
     double? TailBoxWeightKg)
 {
     /// <summary>一项都没登记。</summary>
-    public static RollDataSheet Empty { get; } = new(null, null, null, null, null, null);
+    public static RollDataSheet Empty { get; } = new(null, null, null);
 
     /// <summary>
     /// 吊装总重：净重加两个轴承箱。缺一项就算不出来——

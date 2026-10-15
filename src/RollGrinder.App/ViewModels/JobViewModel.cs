@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Interaction;
 using RollGrinder.App.Localization;
 using RollGrinder.App.Navigation;
+using RollGrinder.Contracts;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core;
 using RollGrinder.Core.Geometry;
@@ -22,6 +23,7 @@ using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Jobs;
 using RollGrinder.Services.Manual;
+using RollGrinder.Services.Monitoring;
 using RollGrinder.Services.Records;
 using RollGrinder.Services.Session;
 
@@ -119,6 +121,8 @@ public sealed partial class JobViewModel : PageViewModelBase
     private readonly IUserSession session;
     private readonly JobDraft draft;
     private readonly IManualGrindingService manualGrinding;
+    private readonly IMachineMonitor monitor;
+    private readonly ITagMap tagMap;
     private readonly FunctionKeyViewModel cancelReviewKey;
     private readonly FunctionKeyViewModel confirmDownloadKey;
     private readonly FunctionKeyViewModel pickKey;
@@ -133,6 +137,7 @@ public sealed partial class JobViewModel : PageViewModelBase
     private JobDeviation profileDeviation;
     private JobDeviation programDeviation;
     private bool startMeasured;
+    private bool grindStartTaught;
     private bool requireMeasure;
     private bool suppressEvaluate;
     private bool choosing;
@@ -156,6 +161,8 @@ public sealed partial class JobViewModel : PageViewModelBase
         PlanPickerViewModel picker,
         JobDraft draft,
         IManualGrindingService manualGrinding,
+        IMachineMonitor monitor,
+        ITagMap tagMap,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator,
@@ -178,6 +185,8 @@ public sealed partial class JobViewModel : PageViewModelBase
         Picker = picker ?? throw new ArgumentNullException(nameof(picker));
         this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
         this.manualGrinding = manualGrinding ?? throw new ArgumentNullException(nameof(manualGrinding));
+        this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
+        this.tagMap = tagMap ?? throw new ArgumentNullException(nameof(tagMap));
 
         this.jobId = NewJobId();
 
@@ -412,6 +421,20 @@ public sealed partial class JobViewModel : PageViewModelBase
     [ObservableProperty]
     private string startDiameterText = string.Empty;
 
+    /// <summary>
+    /// 磨削起点（机床 Z，mm）：这次装夹辊身头架侧端面在机床上的位置。按"取当前 Z"示教（原机"设置起点"），
+    /// 也可以手输；默认带这支辊上一次作业的值（装夹没动就不用再示教）。NC 不要这个数时整行不显示。
+    /// </summary>
+    [ObservableProperty]
+    private string grindStartZText = string.Empty;
+
+    /// <summary>磨削起点这次示教过 / 手输过（否则是沿用上次的值）。</summary>
+    [ObservableProperty]
+    private string grindStartNote = string.Empty;
+
+    /// <summary>NC 要磨削起点（tagmap 登记了 job.grindStartZMm）。</summary>
+    public bool UsesGrindStart => this.tagMap.TryResolve(MachineTagKeys.JobGrindStartZMm, out _);
+
     /// <summary>本次磨削量（直径量 mm）。默认程序标准余量。</summary>
     [ObservableProperty]
     private string stockText = string.Empty;
@@ -471,6 +494,53 @@ public sealed partial class JobViewModel : PageViewModelBase
 
     partial void OnStockTextChanged(string value) => Evaluate();
 
+    partial void OnGrindStartZTextChanged(string value)
+    {
+        if (!this.suppressEvaluate)
+        {
+            this.grindStartTaught = true;
+        }
+
+        RefreshGrindStartNote();
+        Evaluate();
+    }
+
+    private void RefreshGrindStartNote() =>
+        GrindStartNote = string.IsNullOrWhiteSpace(GrindStartZText)
+            ? Localizer["Job_GrindStartNotSet"]
+            : Localizer[this.grindStartTaught ? "Job_GrindStartTaught" : "Job_GrindStartReused"];
+
+    /// <summary>"取当前 Z"：把拖板 Z 现在的位置记成磨削起点（砂轮先对到辊身头架侧端面）。读不到 Z 就在对话行说。</summary>
+    [RelayCommand]
+    private void TeachGrindStart()
+    {
+        AxisDescription? carriage = this.machine.Axes.FirstOrDefault(axis => axis.IsPresent && axis.Role == MachineAxisRoles.Carriage);
+        double? z = carriage is null ? null : this.monitor.Current.GetNumberOrNull(MachineTagKeys.AxisActualPositionMm(carriage.Name));
+        if (z is null)
+        {
+            Interaction.Hint(Localizer["Job_GrindStartNoZ"]);
+            return;
+        }
+
+        GrindStartZText = z.Value.ToString("F3", CultureInfo.CurrentCulture);
+        this.grindStartTaught = true;
+        RefreshGrindStartNote();
+    }
+
+    /// <summary>这支辊最近一次作业示教过的磨削起点；没有为 null。</summary>
+    private async Task<double?> LastGrindStartAsync(string rollId, CancellationToken cancellationToken)
+    {
+        foreach (string id in await this.jobs.ListJobIdsByRollAsync(rollId, 10, cancellationToken).ConfigureAwait(true))
+        {
+            if (await this.jobs.GetAsync(id, cancellationToken).ConfigureAwait(true) is { Job.GrindStartZMm: double z })
+            {
+                return z;
+            }
+        }
+
+        return null;
+    }
+
     partial void OnDeviationReasonChanged(string value) => Evaluate();
 
     [RelayCommand]
@@ -518,6 +588,11 @@ public sealed partial class JobViewModel : PageViewModelBase
         this.startMeasured = false;
         StartDiameterText = this.requireMeasure ? string.Empty : this.roll.StartDiameterMm.ToString("F3", CultureInfo.CurrentCulture);
         StockText = DefaultStockMm().ToString("F3", CultureInfo.CurrentCulture);
+        this.grindStartTaught = false;
+        GrindStartZText = UsesGrindStart && await LastGrindStartAsync(this.roll.RollId, cancellationToken).ConfigureAwait(true) is double lastZ
+            ? lastZ.ToString("F3", CultureInfo.CurrentCulture)
+            : string.Empty;
+        RefreshGrindStartNote();
         this.suppressEvaluate = false;
 
         ReviewTitle = Localizer.Format("Job_ReviewTitleFormat", this.roll.RollId, Localizer["RollKind_" + this.roll.Kind], this.roll.Purpose ?? "--");
@@ -638,7 +713,9 @@ public sealed partial class JobViewModel : PageViewModelBase
         TargetText = (start - stockMm).ToString("F3", CultureInfo.CurrentCulture);
         GrindingProgram normalized = this.program with { Steps = ProgramFrame.Normalize(this.program.Steps, this.stepTypes) };
         JobCheckResult checks = JobChecklist.Evaluate(
-            new JobCheckInput(this.roll, this.profile, normalized, start, this.startMeasured, stockMm * 1000.0, Deviation, NullIfBlank(DeviationReason)),
+            new JobCheckInput(
+                this.roll, this.profile, normalized, start, this.startMeasured, stockMm * 1000.0, Deviation, NullIfBlank(DeviationReason),
+                GrindStartZ(), this.grindStartTaught, UsesGrindStart),
             this.machine);
 
         GrindingJob? job = null;
@@ -831,8 +908,11 @@ public sealed partial class JobViewModel : PageViewModelBase
             DeviationReason = Deviation == JobDeviation.ThisTimeOnly ? NullIfBlank(DeviationReason) : null,
             RegrindOfJobId = this.regrindOf,
             ScrapDiameterMm = this.roll.ScrapDiameterMm,
+            GrindStartZMm = UsesGrindStart ? GrindStartZ() : null,
         };
     }
+
+    private double? GrindStartZ() => TryNumber(GrindStartZText, out double z) ? z : null;
 
     /// <summary>当前这份作业（自检、测试用）；核对没过返回 null。</summary>
     public GrindingJob? BuildJob()

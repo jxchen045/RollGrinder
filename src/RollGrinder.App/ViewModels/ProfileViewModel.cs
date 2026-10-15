@@ -19,6 +19,7 @@ using RollGrinder.Core.Geometry;
 using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Data;
+using RollGrinder.Data.Model;
 using RollGrinder.Core.Units;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Library;
@@ -133,6 +134,8 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
     /// <summary>设计长度框里的内容不成立。</summary>
     private bool bodyLengthInvalid;
+    private readonly IRollRepository rolls;
+    private string committedReferenceRoll = string.Empty;
 
     /// <summary>程序里改输入框时不要反过来又触发一次回写。</summary>
     private bool suppressWriteBack;
@@ -149,6 +152,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         MachineDescription machine,
         HmiSettings settings,
         IRollProfileRepository library,
+        IRollRepository rolls,
         ILibraryService libraryService,
         IUserSession session,
         JobDraft draft,
@@ -162,6 +166,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.library = library ?? throw new ArgumentNullException(nameof(library));
+        this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         this.session = session ?? throw new ArgumentNullException(nameof(session));
         this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
@@ -171,6 +176,8 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.geometry = RollGeometry.FromDiameter(machine.Workpiece.MinBodyLengthMm, machine.Workpiece.MinDiameterMm);
         this.segments.Add(new SequentialSegment(ProfileTypeKeys.Cylindrical, this.geometry.BodyLengthMm, ParameterSet.Empty));
         this.bodyLengthMmText = FormatLength(this.geometry.BodyLengthMm);
+        this.bodyLengthInvalid = true;
+        this.referenceRollNote = localizer["Profile_ReferenceRollPrompt"];
 
         AvailableTypes = new ObservableCollection<string>(profileTypes.All.Select(type => type.Key));
         this.selectedTypeForInsert = AvailableTypes.FirstOrDefault() ?? ProfileTypeKeys.Cylindrical;
@@ -328,36 +335,73 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
     // ── 设计长度与对称 ────────────────────────────────────────────────────────
 
-    /// <summary>设计长度（mm）。段长合计要正好等于它。</summary>
+    /// <summary>设计长度（mm，只读显示）：取自参考轧辊的台账辊身长度。段长合计要正好等于它。</summary>
     [ObservableProperty]
     private string bodyLengthMmText;
 
-    partial void OnBodyLengthMmTextChanged(string value)
+    /// <summary>
+    /// 参考轧辊（台账辊号）：这条辊形按哪支辊画。填了就把那支辊的辊身长度带进来当设计长度——
+    /// 长度只有台账一个出处，辊形里不手填长度、不收直径。没填或台账里没有这支辊不能存。
+    /// </summary>
+    [ObservableProperty]
+    private string referenceRollText = string.Empty;
+
+    /// <summary>参考轧辊一行的说明："辊身 1800 mm" / "台账里没有这支辊" / "填辊号，长度从台账带入"。</summary>
+    [ObservableProperty]
+    private string referenceRollNote = string.Empty;
+
+    partial void OnReferenceRollTextChanged(string value)
     {
         if (this.suppressWriteBack)
         {
             return;
         }
 
-        WorkpieceLimits limits = this.machine.Workpiece;
-        if (!TryParseDouble(value, out double lengthMm)
-            || lengthMm < limits.MinBodyLengthMm
-            || lengthMm > limits.MaxBodyLengthMm)
+        MarkDirty();
+        _ = RunGuardedAsync(token => ApplyReferenceRollAsync(value, adoptLength: true, token), CancellationToken.None);
+    }
+
+    /// <summary>
+    /// 按辊号查台账。<paramref name="adoptLength"/> 为真时把辊身长度当设计长度带进来（改参考轧辊）；
+    /// 打开库里的辊形时为假——设计长度以存的为准，只显示参考辊现在多长。
+    /// </summary>
+    private async Task ApplyReferenceRollAsync(string text, bool adoptLength, CancellationToken cancellationToken)
+    {
+        string id = text.Trim();
+        RollRecord? roll = id.Length == 0 ? null : await this.rolls.GetAsync(id, cancellationToken).ConfigureAwait(true);
+        if (!string.Equals(ReferenceRollText.Trim(), id, StringComparison.Ordinal))
+        {
+            return; // 查的时候又改了：以最后一次为准。
+        }
+
+        if (roll is null)
         {
             this.bodyLengthInvalid = true;
+            ReferenceRollNote = Localizer[id.Length == 0 ? "Profile_ReferenceRollPrompt" : "Profile_ReferenceRollUnknown"];
             RefreshIssues();
             return;
         }
 
+        double lengthMm = roll.Geometry.BodyLengthMm;
+        ReferenceRollNote = Localizer.Format("Profile_ReferenceRollFormat", lengthMm);
         this.bodyLengthInvalid = false;
-        if (Math.Abs(lengthMm - this.geometry.BodyLengthMm) < 1e-9)
+        if (!adoptLength || Math.Abs(lengthMm - this.geometry.BodyLengthMm) < 1e-9)
         {
             RefreshIssues();
             return;
         }
 
-        this.geometry = RollGeometry.FromDiameter(lengthMm, limits.MinDiameterMm);
-        MarkDirty();
+        this.geometry = RollGeometry.FromDiameter(lengthMm, this.machine.Workpiece.MinDiameterMm);
+        this.suppressWriteBack = true;
+        try
+        {
+            BodyLengthMmText = FormatLength(lengthMm);
+        }
+        finally
+        {
+            this.suppressWriteBack = false;
+        }
+
         RecomputeComposite();
         Rebuild(SelectedSegment?.Order);
     }
@@ -686,15 +730,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
     }
 
-    /// <summary>适用公称直径（mm，流程调整方案第 5 节）：估时用；作业里与这支辊的直径差 10% 以上提示。可空。</summary>
-    [ObservableProperty]
-    private string nominalDiameterText = string.Empty;
-
     /// <summary>辊形公差（直径量 µm）：形状规格，随辊形保存。可空。</summary>
     [ObservableProperty]
     private string toleranceText = string.Empty;
-
-    partial void OnNominalDiameterTextChanged(string value) => MarkDirty();
 
     partial void OnToleranceTextChanged(string value) => MarkDirty();
 
@@ -1192,7 +1230,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
                     existing?.CreatedAtUtc ?? now,
                     now)
                 {
-                    NominalDiameterMm = OptionalNumber(NominalDiameterText),
+                    ReferenceRollId = NullIfBlank(ReferenceRollText),
                     ToleranceMicrometer = OptionalNumber(ToleranceText),
                     Disabled = existing?.Disabled ?? false,
                 },
@@ -1203,6 +1241,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             ProfileName = name;
             this.committedComposite = this.composite;
             this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+            this.committedReferenceRoll = ReferenceRollText;
             IsDirty = false;
             Alarms.Raise(AlarmSeverity.Information, "Profile_Saved", ProfileName, AlarmCodes.HandoverCompleted);
             return true;
@@ -1239,7 +1278,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             this.committedBodyLengthMm = this.geometry.BodyLengthMm;
             ProfileId = definition.ProfileId;
             ProfileName = definition.Name;
-            NominalDiameterText = definition.NominalDiameterMm?.ToString("0.#", CultureInfo.CurrentCulture) ?? string.Empty;
+            SetReferenceRollSilently(definition.ReferenceRollId ?? string.Empty);
+            this.committedReferenceRoll = ReferenceRollText;
+            await ApplyReferenceRollAsync(ReferenceRollText, adoptLength: false, cancellationToken).ConfigureAwait(true);
             ToleranceText = definition.ToleranceMicrometer?.ToString("0.#", CultureInfo.CurrentCulture) ?? string.Empty;
             IsDirty = legacy;
             StatusResourceKey = legacy ? "Profile_LegacyConverted" : string.Empty;
@@ -1258,9 +1299,11 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     public override void DiscardChanges()
     {
         SetBodyLength(this.committedBodyLengthMm);
+        SetReferenceRollSilently(this.committedReferenceRoll);
         this.pendingInputErrorKey = null;
         LoadProfile(this.committedComposite);
         base.DiscardChanges();
+        _ = RunGuardedAsync(token => ApplyReferenceRollAsync(ReferenceRollText, adoptLength: false, token), CancellationToken.None);
     }
 
     /// <summary>
@@ -1296,8 +1339,12 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         Rebuild(1);
         ProfileId = null;
         ProfileName = string.Empty;
-        NominalDiameterText = string.Empty;
         ToleranceText = string.Empty;
+        SetReferenceRollSilently(string.Empty);
+        this.committedReferenceRoll = string.Empty;
+        this.bodyLengthInvalid = true;
+        ReferenceRollNote = Localizer["Profile_ReferenceRollPrompt"];
+        RefreshIssues();
         this.committedComposite = this.composite;
         this.committedBodyLengthMm = this.geometry.BodyLengthMm;
         IsDirty = false;
@@ -1312,6 +1359,21 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         RecomputeComposite();
         Rebuild(1);
     }
+
+    private void SetReferenceRollSilently(string text)
+    {
+        this.suppressWriteBack = true;
+        try
+        {
+            ReferenceRollText = text;
+        }
+        finally
+        {
+            this.suppressWriteBack = false;
+        }
+    }
+
+    private static string? NullIfBlank(string text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
     /// <summary>换设计长度（载入、回退），不算一次修改。</summary>
     private void SetBodyLength(double lengthMm)
@@ -1440,10 +1502,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
         if (this.bodyLengthInvalid)
         {
-            errors.Add(Localizer.Format(
-                "Profile_Issue_BodyLengthFormat",
-                this.machine.Workpiece.MinBodyLengthMm,
-                this.machine.Workpiece.MaxBodyLengthMm));
+            errors.Add(Localizer["Profile_Issue_ReferenceRoll"]);
         }
 
         if (this.pendingInputErrorKey is not null)

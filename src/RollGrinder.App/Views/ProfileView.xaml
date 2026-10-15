@@ -28,23 +28,26 @@
                             <TextBox Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}"
                                      Height="46" FontSize="17" VerticalContentAlignment="Center" />
                         </DockPanel>
+                        <!--
+                            参考轧辊 → 设计长度（参数归属：长度只有台账一个出处）。填辊号，长度从台账带入、只读；
+                            辊形不收直径（形状是相对辊面的偏差，与直径无关）。
+                        -->
                         <DockPanel Margin="0,8,0,0">
-                            <TextBlock Text="{loc:Loc Profile_BodyLength}" Style="{StaticResource Text.Label}"
-                                       VerticalAlignment="Center" Width="80" />
-                            <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
-                                       DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
-                            <TextBox Text="{Binding BodyLengthMmText, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBlock Text="{loc:Loc Profile_ReferenceRoll}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" Width="80" TextWrapping="Wrap" />
+                            <TextBox Text="{Binding ReferenceRollText, UpdateSourceTrigger=PropertyChanged}"
                                      Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}"
                                      VerticalContentAlignment="Center" />
                         </DockPanel>
-                        <!-- 适用公称直径、辊形公差（流程调整方案第 5 节）：属于辊形规格，随辊形保存。 -->
-                        <DockPanel Margin="0,8,0,0">
-                            <TextBlock Text="{loc:Loc Profile_NominalDiameter}" Style="{StaticResource Text.Label}"
-                                       VerticalAlignment="Center" Width="80" TextWrapping="Wrap" />
+                        <DockPanel Margin="0,6,0,0">
+                            <TextBlock Text="{loc:Loc Profile_BodyLength}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" Width="80" />
+                            <TextBlock Text="{Binding ReferenceRollNote}" Style="{StaticResource Text.Label}" DockPanel.Dock="Bottom"
+                                       TextWrapping="Wrap" Margin="80,2,0,0" />
                             <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
                                        DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
-                            <TextBox Text="{Binding NominalDiameterText, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="True"
-                                     Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}" VerticalContentAlignment="Center" />
+                            <TextBlock Text="{Binding BodyLengthMmText}" FontSize="17" FontFamily="{StaticResource Font.Mono}"
+                                       VerticalAlignment="Center" />
                         </DockPanel>
                         <DockPanel Margin="0,8,0,0">
                             <TextBlock Text="{loc:Loc Profile_Tolerance}" Style="{StaticResource Text.Label}"

@@ -181,6 +181,19 @@
                                 <TextBlock Text="{Binding TargetText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" />
                             </StackPanel>
                         </Grid>
+
+                        <!--
+                            磨削起点（机床 Z）：这次装夹辊身头架侧端面的位置，跟着装夹走，所以在作业里示教（原机"设置起点"）。
+                            默认带上一次的值；NC 不要这个数（tagmap 没登记 job.grindStartZMm）时整行不显示。
+                        -->
+                        <DockPanel Margin="0,8,0,0" Visibility="{Binding UsesGrindStart, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{loc:Loc Job_GrindStartZ}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                            <Button DockPanel.Dock="Right" Content="{loc:Loc Job_TeachGrindStart}" Command="{Binding TeachGrindStartCommand}"
+                                    Style="{StaticResource SecondaryButton}" Padding="16,0" Margin="12,2,0,2" />
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding GrindStartNote}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            <TextBox Text="{Binding GrindStartZText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                                     ctl:TouchInput.IsNumeric="True" Margin="0,2" />
+                        </DockPanel>
                     </StackPanel>
                 </Border>
 

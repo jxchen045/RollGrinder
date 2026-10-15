@@ -9,6 +9,12 @@ namespace RollGrinder.Core.Geometry;
 /// <param name="NominalRadiusMm">公称半径（mm）。</param>
 public sealed record RollGeometry(double BodyLengthMm, double NominalRadiusMm)
 {
+    /// <summary>
+    /// 只画辊形预览时用的直径（mm）：辊形是相对辊面的偏差量，形状与直径无关，构造几何要一个数而已。
+    /// 不在辊形里收直径（直径只有台账一个出处）。
+    /// </summary>
+    public const double PreviewDiameterMm = 1000.0;
+
     /// <summary>从界面量（辊身长度 mm + 直径 mm）构造。</summary>
     public static RollGeometry FromDiameter(double bodyLengthMm, double nominalDiameterMm) =>
         Create(bodyLengthMm, UnitConversion.DiameterMmToRadiusMm(nominalDiameterMm));

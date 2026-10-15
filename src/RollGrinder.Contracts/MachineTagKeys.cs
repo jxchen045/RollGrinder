@@ -233,6 +233,12 @@ public static class MachineTagKeys
     /// </summary>
     public const string JobScrapDiameterMm = "job.scrapDiameterMm";
 
+    /// <summary>
+    /// 磨削起点（机床 Z，mm，可选）：这次装夹辊身头架侧端面的 Z 坐标，作业页示教（取当前 Z）后随作业下发。
+    /// tagmap 没登记时 NC 程序自己找端面（原机做法），作业核对不要求示教。
+    /// </summary>
+    public const string JobGrindStartZMm = "job.grindStartZMm";
+
     /// <summary>当前工序的第几次走刀。</summary>
     public const string JobCurrentPass = "job.currentPass";
 

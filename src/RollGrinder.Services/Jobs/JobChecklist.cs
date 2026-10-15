@@ -47,6 +47,7 @@ public static class JobCheckItems
     public const string Deviation = "Deviation";
     public const string RemainingLife = "RemainingLife";
     public const string Parameters = "Parameters";
+    public const string GrindStart = "GrindStart";
 }
 
 /// <summary>核对的输入：这支辊、这一次用的辊形与程序、磨前直径与本次磨削量。</summary>
@@ -66,7 +67,10 @@ public sealed record JobCheckInput(
     bool StartMeasured,
     double StockMicrometer,
     JobDeviation Deviation,
-    string? DeviationReason);
+    string? DeviationReason,
+    double? GrindStartZMm = null,
+    bool GrindStartTaught = false,
+    bool GrindStartRequired = false);
 
 /// <summary>核对结果：清单 + 按规则套好的辊形与调整好的工序（全部通过时才下发）。</summary>
 /// <param name="Checks">逐项结论。</param>
@@ -171,6 +175,18 @@ public static class JobChecklist
         checks.Add(roll.Geometry.BodyLengthMm > limits.MaxBodyLengthMm + 1e-9 || roll.Geometry.BodyLengthMm < limits.MinBodyLengthMm - 1e-9
             ? Block(JobCheckItems.Stroke, "Check_Stroke_OutOfRange", roll.Geometry.BodyLengthMm, limits.MinBodyLengthMm, limits.MaxBodyLengthMm)
             : Pass(JobCheckItems.Stroke, "Check_Stroke_Ok", roll.Geometry.BodyLengthMm));
+
+        // 磨削起点（机床 Z）：NC 要这个数时（tagmap 登记了 job.grindStartZMm）才核对。
+        // 它跟着装夹走——沿用上次的值不拦，但要让人看见"装夹动过就得重新示教"。
+        if (input.GrindStartRequired)
+        {
+            checks.Add(input.GrindStartZMm switch
+            {
+                null => Block(JobCheckItems.GrindStart, "Check_GrindStart_Missing"),
+                double z when input.GrindStartTaught => Pass(JobCheckItems.GrindStart, "Check_GrindStart_Ok", z),
+                double z => Notice(JobCheckItems.GrindStart, "Check_GrindStart_Reused", z),
+            });
+        }
 
         // 与计划不同：仅本次必须有原因。
         if (input.Deviation == JobDeviation.ThisTimeOnly && string.IsNullOrWhiteSpace(input.DeviationReason))
