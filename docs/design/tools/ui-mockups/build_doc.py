@@ -3,7 +3,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import mk, screens
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-D = os.path.join(HERE, 'data')
+D = os.path.join(HERE, 'inputs')
 BUILD = os.path.join(HERE, 'build')
 DESIGN = os.path.abspath(os.path.join(HERE, '..', '..'))
 V3 = os.path.join(DESIGN, '界面修订稿（以轧辊为中心）.html')
