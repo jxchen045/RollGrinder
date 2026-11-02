@@ -4169,7 +4169,7 @@
     <value>已导出到 {0}</value>
   </data>
   <data name="Rolls_FormHint" xml:space="preserve">
-    <value>计划必填：这支辊磨哪条辊形、用哪支程序。下作业时默认按它，可仅本次改用。</value>
+    <value>计划：这支辊磨哪条辊形、用哪支程序。可以先空着，画好辊形、编好程序后再补；下作业时默认按它，可仅本次改用。</value>
   </data>
   <data name="Rolls_FormProblems" xml:space="preserve">
     <value>没存进去的原因</value>

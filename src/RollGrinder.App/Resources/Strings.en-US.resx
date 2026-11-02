@@ -4169,7 +4169,7 @@
     <value>Exported to {0}</value>
   </data>
   <data name="Rolls_FormHint" xml:space="preserve">
-    <value>The plan is required: which profile and program this roll is ground with. Jobs follow it unless changed for one time.</value>
+    <value>Plan: which profile and program this roll is ground with. It can stay empty until the profile and program exist; jobs use it by default and can deviate this time only.</value>
   </data>
   <data name="Rolls_FormProblems" xml:space="preserve">
     <value>Why it was not saved</value>
