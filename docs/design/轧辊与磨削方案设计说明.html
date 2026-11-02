@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>轧辊与磨削方案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #F2F4F7; --surface: #FFFFFF; --ink: #16191E; --ink-2: #4A5461; --ink-3: #5A6470;
+    --line: #D3D9E1; --line-soft: #E6EAF0; --fill: #F6F8FA;
+    --accent: #15507F; --accent-ink: #FFFFFF; --accent-soft: #E3EDF6;
+    --danger: #B3241C; --danger-soft: #FBEBE9;
+    --ok: #1F7A4D; --ok-soft: #E2F2E9;
+    --warn: #8A5A00; --warn-soft: #FBF1D9;
+    --next: #F6D24A;
+    --key-bg: #FFFFFF; --key-line: #8C95A1; --nav: #0F4370; --sts: #DDE3EA;
+    --sans: "Noto Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    --mono: "IBM Plex Mono", Consolas, "Cascadia Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+      --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+      --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+      --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+      --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+      --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70; --sts: #232C37;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+    --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+    --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+    --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+    --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+    --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70; --sts: #232C37;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.7; padding-inline: 16px; padding-block: 24px 64px; margin: 0; }
+  .page { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 32px; }
+  @media (min-width: 1120px) {
+    .page { grid-template-columns: 220px minmax(0, 1fr); }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto; }
+  }
+  main { min-width: 0; max-width: 980px; }
+  .toc { font-size: 14px; }
+  .toc h2 { font-size: 13px; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 8px; font-weight: 500; display: block; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { color: var(--ink-2); text-decoration: none; display: block; padding: 3px 8px; border-radius: 4px; }
+  .toc a:hover, .toc a:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+  .toc .sub { padding-left: 14px; font-size: 13px; }
+  .cover { border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+  .eyebrow { font-family: var(--mono); font-size: 13px; color: var(--ink-3); }
+  h1 { font-size: 32px; line-height: 1.3; margin: 6px 0 10px; text-wrap: balance; }
+  .lede { font-size: 17px; color: var(--ink-2); max-width: 66ch; margin: 0; }
+  section { margin-top: 44px; }
+  h2 { font-size: 24px; line-height: 1.35; margin: 0 0 14px; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+  h2 .no { font-family: var(--mono); font-size: 16px; color: var(--accent); font-weight: 600; min-width: 1.6em; }
+  h3 { font-size: 19px; margin: 28px 0 10px; text-wrap: balance; }
+  h4 { font-size: 16px; margin: 18px 0 6px; color: var(--ink-2); }
+  p { margin: 0 0 12px; max-width: 72ch; }
+  ul, ol { margin: 0 0 12px; padding-left: 1.4em; }
+  li { margin: 3px 0; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tw { overflow-x: auto; margin: 0 0 16px; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--fill); font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+  td.num, th.num { font-family: var(--mono); text-align: center; white-space: nowrap; }
+  .nowrap { white-space: nowrap; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 7px; line-height: 1.7; white-space: nowrap; }
+  .pill.src { background: var(--ok-soft); color: var(--ok); }
+  .pill.inf { background: var(--warn-soft); color: var(--warn); }
+  .pill.new { background: var(--accent-soft); color: var(--accent); }
+  .box { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; margin: 0 0 16px; }
+  .box > :last-child { margin-bottom: 0; }
+  .box .tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; padding: 0 8px; margin-bottom: 6px; background: var(--accent-soft); color: var(--accent); }
+  .box.ask .tag { background: var(--warn-soft); color: var(--warn); }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 18px 0 0; }
+  .summary div { background: var(--surface); border: 1px solid var(--line); padding: 12px 14px; }
+  .summary b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .summary span { font-size: 14px; color: var(--ink-2); }
+  .key { display: inline-block; font-size: 13px; font-weight: 500; padding: 0 8px; border: 1px solid var(--key-line); background: var(--key-bg); border-radius: 3px; white-space: nowrap; line-height: 1.8; }
+
+  .co { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #10151A; color: #FFFFFF; font-size: 11px; font-weight: 700; font-style: normal; line-height: 1; flex: none; }
+  .flow { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin: 0 0 6px; }
+  .flow .st { border: 1px solid var(--line); background: var(--surface); padding: 1px 8px; font-size: 14px; white-space: nowrap; }
+  .flow .ar { color: var(--ink-3); }
+  .flow .pb { border-color: var(--danger); color: var(--danger); }
+
+  /* 画面样机：代表机床上的真实屏幕，固定浅色，不随本文深浅色切换；取色见第 8 节 */
+  .scr {
+    --s-bg: #EBF0F6; --s-win: #EBF0F6; --s-winhd: #C6CBD1; --s-act: #0199C8; --s-field: #FFFFFF; --s-ro: #DDE2E7;
+    --s-focus: #67C2DF; --s-sel: #A9DCEC; --s-cur: #B5BEC3; --s-lb: #1B2228; --s-lb-key: #404C58; --s-tile: #3D5466;
+    --s-key: #DDE1EA; --s-gap: #A7B1BA; --s-dim: #8A96A1; --s-ok: #37703D; --s-no: #8E1B1B;
+    --s-ink: #141A1F; --s-ink2: #4A5864; --s-alarm: #C4161C; --s-hd: #E6EBF1; --s-path: #A7B1BA; --s-chan: #6D7F8D;
+    --s-orange: #E8891A; --s-run: #3FAE49; --s-q: #F4E3A1; --s-help: #F9EEAE; --s-helpkey: #F5CF2E; --s-side: #6D7F8D;
+    display: grid; grid-template-columns: 58px minmax(0, 1fr) 150px; grid-template-rows: 44px minmax(0, 1fr) 24px 54px;
+    border: 2px solid #10151A; background: var(--s-bg); color: var(--s-ink); font-size: 12px; line-height: 1.4;
+    min-width: 900px; margin: 0 0 8px; color-scheme: light;
+  }
+  .scr.side { grid-template-columns: 190px 58px minmax(0, 1fr) 150px; }
+  .scr .sd { grid-row: 1 / -1; background: #F3F6F9; border-right: 1px solid var(--s-gap); display: flex; flex-direction: column; font-size: 11px; }
+  .scr .sd b { display: block; background: var(--s-side); color: #FFFFFF; padding: 3px 6px; font-weight: 500; letter-spacing: 0.04em; }
+  .scr .sd div { padding: 2px 6px 4px; }
+  .scr .lb { grid-row: 1 / -1; background: var(--s-lb); display: flex; flex-direction: column; gap: 3px; padding: 4px 3px; }
+  .scr .lb span { color: #FFFFFF; text-align: center; font-size: 10px; padding: 4px 0 3px; line-height: 1.2; border-radius: 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; border-bottom: 1px solid #2E3A44; }
+  .scr .lb span i { font-style: normal; font-size: 16px; line-height: 1.1; }
+  .scr .lb span.on { background: var(--s-act); }
+  .scr .lb .end { margin-top: auto; border-bottom: 0; }
+  .scr .hd { grid-row: 1; display: flex; align-items: center; gap: 14px; padding: 0 10px; background: var(--s-hd); white-space: nowrap; overflow: hidden; }
+  .scr .hd .app { font-weight: 700; font-size: 13px; }
+  .scr .hd .al { color: var(--s-alarm); font-weight: 700; }
+  .scr .hd .ttl { color: var(--s-ink2); }
+  .scr .hd .r { margin-left: auto; color: var(--s-ink2); text-align: right; font-size: 11px; line-height: 1.25; }
+  .scr .tl { grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; }
+  .scr .tl span { background: var(--s-tile); color: #FFFFFF; display: grid; place-items: center; font-weight: 700; font-size: 11px; line-height: 1.15; text-align: center; }
+  .scr .cen { grid-row: 2; display: flex; flex-direction: column; min-width: 0; }
+  .scr .path { background: var(--s-path); color: var(--s-ink); display: flex; justify-content: space-between; gap: 12px; padding: 2px 10px; white-space: nowrap; overflow: hidden; min-height: 20px; }
+  .scr .path.act { background: var(--s-act); color: #FFFFFF; }
+  .scr .path .x { font-weight: 700; }
+  .scr .chan { background: var(--s-chan); color: #FFFFFF; display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; padding: 2px 10px; white-space: nowrap; overflow: hidden; }
+  .scr .chan > :last-child { text-align: right; }
+  .scr .chan .run { color: #9BE3A2; font-weight: 700; }
+  .scr .wa { flex: 1; display: grid; gap: 3px; padding: 3px; min-height: 250px; }
+  .scr .win { background: var(--s-win); border: 1px solid var(--s-gap); min-width: 0; display: flex; flex-direction: column; }
+  .scr .win > h6 { margin: 0; background: var(--s-winhd); padding: 2px 8px; font-size: 12px; font-weight: 500; display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
+  .scr .win.act > h6 { background: var(--s-act); color: #FFFFFF; }
+  .scr .win > div { padding: 3px 8px; flex: 1; min-width: 0; }
+  .scr .win .ft { flex: none; background: var(--s-cur); padding: 1px 8px; font-size: 11px; }
+  .scr .rgt { grid-row: 2; display: flex; flex-direction: column; gap: 3px; background: var(--s-gap); padding: 0 3px 3px; }
+  .scr .fb { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; margin: 0 -3px; }
+  .scr .fb span { background: var(--s-lb-key); color: #FFFFFF; text-align: center; padding: 3px 0; font-size: 11px; }
+  .scr .fb span.on { background: #8BABB8; color: var(--s-ink); }
+  .scr .fb span.dim { color: #7D8A95; }
+  .scr .vk { flex: 1; display: grid; grid-template-rows: repeat(8, minmax(30px, 1fr)); gap: 3px; padding-top: 3px; }
+  .scr .vk span, .scr .hk span { background: var(--s-key); display: grid; place-items: center; text-align: center; padding: 2px 3px; line-height: 1.2; }
+  .scr .vk span.on, .scr .hk span.on { background: var(--s-act); color: #FFFFFF; }
+  .scr .vk span.no { background: var(--s-no); color: #FFFFFF; font-weight: 700; }
+  .scr .vk span.ok { background: var(--s-ok); color: #FFFFFF; font-weight: 700; }
+  .scr .vk span.dim, .scr .hk span.dim { color: var(--s-dim); }
+  .scr .vk.help span { background: var(--s-helpkey); }
+  .scr .dlg { grid-row: 3; background: var(--s-gap); padding: 3px 10px; white-space: nowrap; overflow: hidden; }
+  .scr .dlg.q { background: var(--s-q); font-weight: 700; }
+  .scr .hk { grid-row: 4; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)) 150px; gap: 3px; background: var(--s-gap); padding: 3px; }
+  .scr .hk .ext { display: grid; grid-template-columns: 1fr auto auto; gap: 2px; background: transparent; padding: 0; place-items: stretch; }
+  .scr .hk .ext span { font-size: 16px; font-weight: 700; }
+  .scr .hk .ext span.pg { font-size: 11px; width: 24px; background: var(--s-key); font-weight: 400; }
+  .scr .hk .ext span.pg.on { background: var(--s-tile); color: #FFFFFF; }
+  /* 列位置：普通样机 2 / 3 列，带侧屏的样机整体右移一列 */
+  .scr .hd, .scr .cen { grid-column: 2; }
+  .scr .tl, .scr .rgt { grid-column: 3; }
+  .scr .dlg, .scr .hk { grid-column: 2 / 4; }
+  .scr.side .lb { grid-column: 2; }
+  .scr.side .hd, .scr.side .cen { grid-column: 3; }
+  .scr.side .tl, .scr.side .rgt { grid-column: 4; }
+  .scr.side .dlg, .scr.side .hk { grid-column: 3 / 5; }
+  .scr .fm { display: grid; grid-template-columns: auto minmax(80px, 1fr) auto; gap: 3px 6px; align-items: center; }
+  .scr .fm label { white-space: nowrap; }
+  .scr .fm .v { background: var(--s-field); text-align: right; padding: 0 6px; font-family: var(--mono); white-space: nowrap; }
+  .scr .fm .v.fo { background: var(--s-focus); }
+  .scr .fm .v.tg { text-align: center; font-family: var(--sans); }
+  .scr .fm .v.dd { text-align: center; font-family: var(--sans); }
+  .scr .fm .v.dd::after { content: " ▾"; color: var(--s-ink2); }
+  .scr .fm .ro { color: var(--s-ink2); text-align: right; font-family: var(--mono); }
+  .scr .fm .u { color: var(--s-ink2); font-size: 11px; white-space: nowrap; }
+  .scr .fm .u.tg { background: var(--s-field); color: var(--s-ink); padding: 0 5px; }
+  .scr .fm .sp { grid-column: 1 / -1; height: 4px; }
+  .scr .fm .gh { grid-column: 1 / -1; color: var(--s-ink2); }
+  .scr .pl { background: #FDFEFF; border: 1px solid var(--s-gap); display: flex; flex-direction: column; font-size: 11.5px; min-width: 0; }
+  .scr .pl span { padding: 3px 6px; border-bottom: 1px solid #E1E7EC; white-space: nowrap; overflow: hidden; }
+  .scr .pl span.on { background: var(--s-focus); }
+  .scr .gfx { border: 1px dashed var(--s-gap); background: #F6F8FB; display: grid; place-items: center; text-align: center; color: var(--s-ink2); min-height: 110px; padding: 6px; }
+  .scr .or { color: var(--s-orange); font-weight: 700; }
+  .scr .av { display: grid; grid-template-columns: auto 1fr 1fr; gap: 0 12px; align-items: baseline; }
+  .scr .av b { font-size: 22px; font-weight: 500; }
+  .scr .av .n { font-family: var(--mono); font-size: 22px; font-weight: 500; text-align: right; }
+  .scr .av .n.s { font-size: 13px; }
+  .scr .av .h { font-size: 11px; color: var(--s-ink2); text-align: right; }
+  .scr .tfs { display: grid; grid-template-columns: 30px 1fr auto auto; gap: 0 8px; align-items: baseline; }
+  .scr .tfs b { font-size: 20px; font-weight: 500; }
+  .scr .tfs .n { font-family: var(--mono); }
+  .scr .tfs .n.big { font-size: 18px; }
+  .scr .tfs .sub { grid-column: 2 / -1; font-size: 11px; color: var(--s-ink2); display: flex; justify-content: space-between; gap: 8px; }
+  .scr .bar { grid-column: 2 / -1; height: 5px; background: #FFFFFF; border: 1px solid var(--s-gap); position: relative; margin: 1px 0 3px; }
+  .scr .bar i { position: absolute; inset: 0 auto 0 0; background: var(--s-run); }
+  .scr table { font-size: 11.5px; background: transparent; }
+  .scr th, .scr td { padding: 2px 6px; border: 0; border-bottom: 1px solid #D5DCE3; white-space: nowrap; }
+  .scr th { background: var(--s-winhd); color: var(--s-ink); font-weight: 500; }
+  .scr tr.on td { background: var(--s-sel); }
+  .scr tr.cur td { background: var(--s-cur); }
+  .scr tr.grp td { background: #DCE1E6; color: var(--s-ink2); }
+  .scr tr.dk td { background: #5A6570; color: #FFFFFF; }
+  .scr td.go { text-align: right; }
+  .scr td.go::after { content: "→"; display: inline-block; border: 1px solid #FFFFFF; padding: 0 4px; margin-left: 6px; }
+  .scr .lamp { display: inline-flex; align-items: center; gap: 4px; margin: 0 10px 3px 0; white-space: nowrap; }
+  .scr .lamp::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #B7C0C8; border: 1px solid #7D8994; }
+  .scr .lamp.on::before { background: var(--s-run); border-color: #2E7D32; }
+  .scr .help { background: var(--s-help); border: 2px solid #EED32E; padding: 6px 10px; }
+  .scr .help h6 { margin: 0 0 4px; font-size: 12.5px; text-decoration: underline; }
+  .scr .dd-list { background: #FFFFFF; border: 1px solid var(--s-gap); box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+  .scr .dd-list span { display: block; padding: 3px 8px; text-align: center; }
+  .scr .dd-list span.on { background: var(--s-focus); }
+  /* 曲线：画在样机里，用固定的屏幕颜色 */
+  .scr svg.pt { width: 100%; height: auto; display: block; background: #FFFFFF; border: 1px solid #D5DCE3; }
+  .scr svg.pt text { font-family: var(--sans); font-size: 11px; fill: #4A5864; }
+  .scr .kv { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; font-size: 12px; }
+  .scr .kv span:nth-child(even) { font-family: var(--mono); text-align: right; }
+  .scr .big { font-family: var(--mono); font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .scr .band { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; padding: 3px 8px; background: #F6F8FB; border: 1px solid var(--s-gap); white-space: nowrap; }
+  .scr .band .m { font-family: var(--mono); }
+  .scr .mx td { text-align: right; font-family: var(--mono); }
+  .scr .mx td:first-child { text-align: left; font-family: var(--sans); }
+  .scr .mx th.run, .scr .mx td.run { background: #F4C7C3; }
+  .scr .mx th.nx, .scr .mx td.nx { background: #FBEBB5; }
+  .scr .mx td.ed { color: #B3241C; font-weight: 700; }
+  .scr .err { color: #B3241C; font-weight: 700; }
+  .scr .okc { color: #2E7D32; font-weight: 700; }
+  .lg { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; white-space: nowrap; font-size: 14px; }
+  .lg i { display: inline-block; width: 24px; height: 0; border-top: 3px solid; }
+  .lg i.d { border-top-style: dashed; }
+  .lg i.dot { width: 8px; height: 8px; border: 0; border-radius: 50%; }
+  .cap { font-size: 13px; color: var(--ink-3); margin: 0 0 20px; }
+  footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+  @media (max-width: 560px) { h1 { font-size: 26px; } h2 { font-size: 21px; } }
+  @media print {
+    body { background: #FFFFFF; color: #000000; padding: 0; font-size: 10.5pt; }
+    .toc { display: none; }
+    .page { display: block; max-width: none; }
+    main { max-width: none; }
+    section.major { break-before: page; }
+    table, .box, .scr { break-inside: avoid; }
+    .tw { overflow: visible; }
+    .scr { min-width: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @page { size: A4 landscape; margin: 12mm; }
+</style>
+<style>
+  .pnl { display: grid; grid-template-columns: repeat(7, minmax(86px, 1fr)); gap: 10px 8px; background: #E4E6E3; border: 1px solid #B9BDB8; padding: 14px; min-width: 700px; color-scheme: light; }
+  .pnl .b { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: #1B1F23; text-align: center; }
+  .pnl .b .lb2 { background: #F2B632; color: #1B1F23; padding: 1px 6px; font-weight: 700; white-space: nowrap; border: 2px solid #1B1F23; }
+  .pnl .b .k { width: 46px; height: 46px; border-radius: 50%; border: 5px solid #1B1F23; }
+  .pnl .b .io { font-family: var(--mono); font-size: 11px; color: #4A5864; }
+  .pnl .b.es .k { width: 64px; height: 64px; background: #C8102E; border-color: #F2C200; border-width: 10px; }
+  .pnl .b.sp { opacity: .55; }
+</style>
+<style>
+  .scr .L1 { font-family: var(--mono); font-size: 30px; font-weight: 600; line-height: 1.1; text-align: right; white-space: nowrap; }
+  .scr .L2 { font-family: var(--mono); font-size: 20px; font-weight: 600; line-height: 1.15; white-space: nowrap; }
+  .scr .ax { display: grid; grid-template-columns: 64px 1fr; align-items: center; border-bottom: 1px solid #D5DCE3; padding: 1px 8px; }
+  .scr .ax b { font-size: 22px; font-weight: 600; }
+  .scr .ax small { display: block; font-size: 10.5px; color: #4A5864; font-weight: 400; line-height: 1; }
+  .scr .ax.on { background: var(--s-focus); }
+  .scr .tile { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .scr .tile span { background: #FFFFFF; border: 1px solid #B5BEC3; padding: 6px 4px; text-align: center; font-size: 11.5px; }
+  .scr .tile span.lit { border-color: #2E7D32; box-shadow: inset 4px 0 0 #3FAE49; }
+  .pass { color: var(--ok); font-weight: 700; }
+  .fail { color: var(--danger); font-weight: 700; }
+  table.score td, table.score th { text-align: center; }
+  table.score td:first-child, table.score th:first-child { text-align: left; }
+</style>
+<style>td.bad{color:var(--danger);font-weight:700}td.good{color:var(--ok);font-weight:700}</style>
+</head>
+<body>
+<style>td.bad{color:var(--danger);font-weight:700}td.good{color:var(--ok);font-weight:700}</style>
+<div class="page">
+  <nav class="toc" aria-label="目录">
+    <h2>目录</h2>
+    <ol>
+      <li><a href="#s0">0 结论</a></li>
+      <li><a href="#s1">1 为什么改</a></li>
+      <li><a href="#s2">2 四个名词与关系</a></li>
+      <li><a href="#s3">3 每个数归哪一层</a></li>
+      <li><a href="#s4">4 磨削方案</a></li>
+      <li><a href="#s5">5 作业与两层参数</a></li>
+      <li><a href="#s6">6 记录：存什么、不存什么</a></li>
+      <li><a href="#s7">7 操作流程</a></li>
+      <li><a href="#s8">8 权限与配置</a></li>
+      <li><a href="#s9">9 与现软件的对应与改动清单</a></li>
+      <li><a href="#s10">10 分期</a></li>
+      <li><a href="#s11">11 已定决策、待确认与依据</a></li>
+    </ol>
+  </nav>
+  <main>
+    <header class="cover">
+      <div class="eyebrow">RGX · MK84160 · 设计说明 · 草案 · 2026-11-02 · 待评审，评审通过后取代《轧辊、辊形、程序与作业的关系》第 2′–5 节</div>
+      <h1>轧辊与磨削方案</h1>
+      <p class="lede">以轧辊为中心、强绑定：辊形和工艺不再是被很多支辊共同引用的库条目，而是归某一支辊所有的"磨削方案"。一支辊名下可以有多个方案，其中一个是当前方案；每磨一次开一份作业，作业取当前方案、填这一次的数、下发；磨削记录写清按哪个方案、本次调了什么、实际怎么磨的。方案由工艺员定结构和范围，操作工在范围内调这一次的数。</p>
+    </header>
+
+    <section id="s0" class="major">
+      <h2><span class="no">0</span>结论</h2>
+      <div class="summary">
+        <div><b>辊是唯一的</b><span>一支辊一个辊号，几何尺寸只在轧辊上；方案、作业、记录都挂在辊号下。</span></div>
+        <div><b>方案归辊所有</b><span>磨削方案 = 辊形 + 工艺；长度取自所属轧辊，不再有参考轧辊、运行时 2% 套用规则。</span></div>
+        <div><b>一个当前方案</b><span>一支辊可以有多个方案，同一时刻一个当前，其余为历史；方案可带"用途 / 机架"标签。</span></div>
+        <div><b>用过即冻结</b><span>被作业用过的方案不能改，改就另存为新方案。不再需要版本号、在用清单、停用。</span></div>
+        <div><b>复用靠复制</b><span>新辊、新方案都可以从已有的辊或标准模板复制，并记住来源；不做批量同步。</span></div>
+        <div><b>两层参数</b><span>工艺员定结构与可调范围；操作工在范围内调这一次的数，只进这一次的快照与记录。</span></div>
+        <div><b>记录分轻重</b><span>决定逐条记；倍率这类实时调节按道次存摘要；过程曲线降采样。</span></div>
+      </div>
+    </section>
+
+    <section id="s1" class="major">
+      <h2><span class="no">1</span>为什么改</h2>
+      <h3>现在的模型</h3>
+      <p>辊形库、程序库与具体轧辊无关；台账的"计划"引用一条辊形、一支程序；作业时按这支辊把它们实例化（辊形按 2% 规则套到辊身、粗磨吸收余量差），下发并存快照。</p>
+      <h3>现场使用中的困惑</h3>
+      <ul>
+        <li>辊形要填"参考轧辊"、运行时还要按 2% 规则伸缩，工艺员不容易想清楚"我画的到底是哪根辊"。</li>
+        <li>改一条被引用的辊形要回答"有 n 支辊在用，更新还是另存为"，并配套版本、在用清单、停用，概念多。</li>
+        <li>工艺员和操作工的直觉是"这支辊怎么磨"，而不是"库里哪个条目"。</li>
+      </ul>
+      <h3>行业背景（决定了设计取舍）</h3>
+      <ul>
+        <li><b>磨辊是高频操作</b>：工作辊频繁下机重磨，支承辊几周一磨。软件首先要让"按既定方案再磨一次"最快、最不易错。</li>
+        <li><b>改辊形是低频、高影响操作</b>：每个机架的辊形由轧机与产品决定，一般在换轧制计划、工艺优化时才改，按周、按月计。</li>
+        <li>因此不做"一键批量同步"：低频操作不值得为它承担一次改几十支辊的风险（第 4.6 节用逐支提示代替）。</li>
+        <li>辊形里的长度在行业里通常取轧机 / 辊型设计的名义长度，同一机架、同一图号的辊名义长度相同；跨辊复制时长度不同的情况很少（第 4.5 节）。</li>
+      </ul>
+    </section>
+
+    <section id="s2" class="major">
+      <h2><span class="no">2</span>四个名词与关系</h2>
+      <div class="flow"><span class="st">轧辊（辊号唯一）</span><span class="ar">→ 名下有 →</span><span class="st">磨削方案（辊形 + 工艺，一个当前）</span><span class="ar">→ 每磨一次 →</span><span class="st">磨削作业（本次的数）</span><span class="ar">→</span><span class="st">磨削记录（快照、调整、结果）</span></div>
+      <p class="cap">标准模板（可选）只作为复制的起点，不被轧辊引用。</p>
+      <div class="tw"><table>
+        <thead><tr><th>名词</th><th>是什么</th><th>谁维护</th><th>生命周期</th></tr></thead>
+        <tbody>
+          <tr><td>轧辊</td><td>一根实物辊：辊号、类型、材质、用途、几何尺寸、当前直径、报废直径、重量</td><td>班长 / 操作工</td><td>入厂到报废</td></tr>
+          <tr><td>磨削方案</td><td>这支辊"怎么磨"：辊形 + 工艺（工序、参数标准值与可调范围、程序步骤默认开关）</td><td>工艺员</td><td>长期，可多个，一个当前</td></tr>
+          <tr><td>磨削作业</td><td>某一次磨削：用哪个方案 + 这一次的数（磨前直径、磨削量、起点 Z、本次调整）</td><td>操作工</td><td>一次磨削</td></tr>
+          <tr><td>磨削记录</td><td>那一次实际下发了什么、怎么磨的、磨成什么样</td><td>系统自动</td><td>永久，只读</td></tr>
+          <tr><td>标准模板（可选）</td><td>工艺员维护的少量标准方案，复制的起点</td><td>工艺员</td><td>长期</td></tr>
+        </tbody>
+      </table></div>
+      <p>名词说明："加工实例"不用——在软件里"实例"通常指每次执行生成的那一份，易与作业混淆。"磨削方案"对应工厂的"工艺卡"。"作业"与"磨削任务"同义，沿用"作业"。</p>
+    </section>
+
+    <section id="s3" class="major">
+      <h2><span class="no">3</span>每个数归哪一层</h2>
+      <div class="tw"><table>
+        <thead><tr><th>层</th><th>设什么</th><th>不在这里设</th></tr></thead>
+        <tbody>
+          <tr><td>轧辊</td><td>辊号、类型、材质、用途；辊身长度、公称直径、报废直径、重量；当前直径（磨完自动写回）；当前方案</td><td>辊形、工艺参数、启磨点</td></tr>
+          <tr><td>磨削方案</td><td>辊形（分段、形状参数、公差，长度取自所属轧辊、只读）；工艺（工序顺序与类型、参数标准值、每个可调参数的范围、标准余量、程序步骤默认开关）；用途 / 机架标签；来源</td><td>长度、直径（取自轧辊）</td></tr>
+          <tr><td>磨削作业</td><td>磨前直径（默认当前直径，可实测）、本次磨削量（→ 目标直径）、磨削起点 Z、本次程序步骤开关、范围内的本次调整</td><td>辊形、工序结构</td></tr>
+          <tr><td>机床配置（制造商）</td><td>机床能力（各参数硬上限）、默认可调范围表、阈值</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <h3>下发时怎么合成</h3>
+      <div class="tw"><table>
+        <thead><tr><th>下发给 NC 的量</th><th>来源</th></tr></thead>
+        <tbody>
+          <tr><td>辊半径</td><td>作业的磨前直径</td></tr>
+          <tr><td>辊身长度</td><td>轧辊</td></tr>
+          <tr><td>辊形点列</td><td>方案的辊形（就是按这支辊画的，不再伸缩）</td></tr>
+          <tr><td>各工序参数</td><td>方案的标准值，覆盖本次调整；粗磨余量按本次磨削量调整</td></tr>
+          <tr><td>报废直径、磨削起点 Z</td><td>轧辊、作业（标签映射登记了对应逻辑名时）</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="s4" class="major">
+      <h2><span class="no">4</span>磨削方案</h2>
+      <h3>4.1 内容</h3>
+      <ul>
+        <li><b>辊形</b>：分段（圆柱、凸度、锥度、CVC、点表，可组合；不修形的端部写成圆柱段），形状参数，公差。设计长度取自所属轧辊，只读；另记录"设计名义长度"（复制时比较用）。</li>
+        <li><b>工艺</b>：工序顺序与类型（开始、结束固定），每道工序参数的标准值与可调范围，标准余量与余量分配，程序步骤默认开关。</li>
+        <li><b>属性</b>：方案号（这支辊内编号，如"方案 3"）、名称、用途 / 机架标签（可选）、来源、建立人与时间、是否当前、是否已冻结。</li>
+      </ul>
+      <h3>4.2 当前方案与历史</h3>
+      <ul>
+        <li>一支辊同一时刻只有一个当前方案；待磨清单和作业核对默认用它。</li>
+        <li>其余为历史方案，可查看、复制、重新设为当前（例如辊调回原机架）。换当前方案记一条改动。</li>
+        <li>这一次想用别的方案：作业核对页"换方案"，只影响这一次（必须选原因）。</li>
+      </ul>
+      <h3>4.3 用过即冻结</h3>
+      <ul>
+        <li>没被作业用过的方案可以随意修改、删除。</li>
+        <li>被任何一次作业用过的方案冻结：不能改、不能删。工艺员打开冻结方案修改，按保存时自动另存为新方案并设为当前，提示"原方案已用于磨削，已另存为方案 n"。</li>
+        <li>效果：任何一条记录指向的方案内容永远不变；取代原来的版本号、在用清单、更新或另存为、停用。</li>
+      </ul>
+      <h3>4.4 来源</h3>
+      <p>每个方案记住从哪里来：空白新建、复制自本辊方案 n、复制自轧辊 X 的方案 n、复制自标准模板 Y、存自作业 J 的调整。界面标出"与来源一致 / 已改动"。</p>
+      <h3>4.5 跨辊复制（长度不同时）</h3>
+      <div class="tw"><table>
+        <thead><tr><th>情况</th><th>处理</th></tr></thead>
+        <tbody>
+          <tr><td>两支辊名义辊身长度相同（差不超过可配置的门槛，默认 1 mm）</td><td class="good">直接复制</td></tr>
+          <tr><td>长度不同，辊形只含凸度、锥度、圆柱等解析段</td><td>按"两端段保持绝对长度、中间段铺满"套用；<b>套用前显示新旧曲线对比，确认后才复制</b></td></tr>
+          <tr><td>长度不同，辊形含 CVC 或点表</td><td class="bad">不套用：提示"CVC / 点表按轧机坐标定义，请在本辊上重新输入或导入"</td></tr>
+        </tbody>
+      </table></div>
+      <p>长度规则只在复制这一刻出现一次、看得见；作业下发时不再伸缩。CVC 后续若要支持跨长度复用，按"以辊身中心为基准、绝对坐标计算、不缩放"处理。工艺部分与几何无关，直接复制。</p>
+      <h3>4.6 标准模板与"标准更新了"</h3>
+      <ul>
+        <li>工艺员可维护少量标准模板（标准辊形、标准工艺），仅作复制起点，不被轧辊引用。</li>
+        <li>标准模板改了，<b>不批量改任何轧辊</b>。某支辊下次来磨时，若它的当前方案复制自该模板且模板已更新，作业核对页提示一次："复制自'F3 凸度 300'，标准已更新，本次改用新的吗？"——确认则从新模板复制出新方案并设为当前。</li>
+        <li>好处：每次只影响一支辊、在磨前、有人确认；在轧机上的辊天然不受影响。</li>
+      </ul>
+      <h3>4.7 工艺参数的表达（待定）</h3>
+      <p>头架转速、拖板速度目前按机床量（r/min、mm/min）存。可选改为按工艺量存（工件线速度 m/min、每转进给），作业时按这支辊换算；方案归辊后这一项不再是必须，见第 11 节待确认。</p>
+    </section>
+
+    <section id="s5" class="major">
+      <h2><span class="no">5</span>作业与两层参数</h2>
+      <h3>5.1 分工</h3>
+      <div class="tw"><table>
+        <thead><tr><th></th><th>方案层（工艺员）</th><th>作业层（操作工）</th></tr></thead>
+        <tbody>
+          <tr><td>定什么</td><td>结构：辊形、工序顺序与类型、程序步骤默认开关；每个参数的标准值与允许调整的范围</td><td>这一次的数：磨前直径、本次磨削量、磨削起点 Z、本次开关；在范围内微调</td></tr>
+          <tr><td>频率</td><td>低</td><td>高</td></tr>
+          <tr><td>改了以后</td><td>用过即冻结，再改另存为新方案</td><td>只进这一次的快照与记录；下次默认回到方案值</td></tr>
+        </tbody>
+      </table></div>
+      <h3>5.2 三道限制</h3>
+      <ol>
+        <li><b>机床限制</b>（制造商，硬上限）：机床能力。谁都超不过。</li>
+        <li><b>方案范围</b>（工艺员）：每个可调参数的上下限或调整幅度；未填的取机床配置里的默认范围表。</li>
+        <li><b>作业取值</b>（操作工）：在前两道以内按这支辊的实际情况调；超出不收并说明原因。</li>
+      </ol>
+      <h3>5.3 默认可调范围（初稿，待甲方工艺员确认）</h3>
+      <div class="tw"><table>
+        <thead><tr><th>参数</th><th>作业里</th></tr></thead>
+        <tbody>
+          <tr><td>磨削量、磨前直径、磨削起点 Z、本次程序步骤开关</td><td class="good">作业本来就要填</td></tr>
+          <tr><td>拖板速度、头架转速</td><td>可调，±10%</td></tr>
+          <tr><td>周期进给 / 连续进给（切深）</td><td>只能调小</td></tr>
+          <tr><td>光磨道次</td><td>只能加</td></tr>
+          <tr><td>折返时间</td><td>可调，±50%</td></tr>
+          <tr><td>辊形、工序顺序、增删工序、砂轮线速度、变速设置</td><td class="bad">不能调（要改就改方案）</td></tr>
+        </tbody>
+      </table></div>
+      <h3>5.4 调整怎么呈现与记录</h3>
+      <ul>
+        <li>核对页与自动页参数区标出"方案值 → 本次值"，核对页顶部写"本次调整 n 项"。</li>
+        <li>每项调整记入作业：参数、方案值、本次值、人、时间（核对时与运行中都算）。运行中调整仍走"先标红、确认才写、NC 下一道次读取"。</li>
+        <li>下次磨默认回到方案值；该辊上次有调整时，核对页提示"上次调整过 …，要沿用吗"。</li>
+        <li>记录页对有调整的作业提供 <span class="st">存为新方案…</span>（工艺员权限），新方案来源记为该作业。</li>
+      </ul>
+    </section>
+
+    <section id="s6" class="major">
+      <h2><span class="no">6</span>记录：存什么、不存什么</h2>
+      <div class="tw"><table>
+        <thead><tr><th>类别</th><th>例子</th><th>怎么存</th></tr></thead>
+        <tbody>
+          <tr><td>决定</td><td>下发的方案值、作业里的调整、换方案及原因</td><td><b>逐条记</b></td></tr>
+          <tr><td>实时调节</td><td>进给 / 砂轮 / 头架倍率（机床面板上随手拧）</td><td><b>不逐条记</b>，按道次或工序存摘要</td></tr>
+          <tr><td>过程数据</td><td>电流、直径、位置</td><td>曲线降采样后存；关键测量结果全存</td></tr>
+          <tr><td>事件</td><td>报警、越界（倍率 &lt; 50% 或 &gt; 110%、整道非 100% 等）</td><td>逐条记，可筛选</td></tr>
+        </tbody>
+      </table></div>
+      <h3>倍率摘要（每道 / 每工序一行）</h3>
+      <p>平均值、最低 / 最高值、非 100% 时间占比。记录页显示实际有效值，例如"拖板设定 2300 × 平均倍率 93% ≈ 2140 mm/min"。</p>
+      <h3>判断标准：能否回答这五个问题</h3>
+      <ol>
+        <li>按什么设定磨的？——下发快照（含方案号）。</li>
+        <li>人做了哪些决定？——作业调整、换方案与原因。</li>
+        <li>实际怎么磨的？——倍率摘要、过程曲线。</li>
+        <li>结果如何？——测量结果、合格判定。</li>
+        <li>出过什么事？——报警与越界事件。</li>
+      </ol>
+      <p>其余高频细节（每次拧倍率、每 100 ms 采样）只在运行时显示，不进记录。保留期按 <code>recordRetentionDays</code>（默认 730 天）。</p>
+    </section>
+
+    <section id="s7" class="major">
+      <h2><span class="no">7</span>操作流程</h2>
+      <h3>新辊入厂</h3>
+      <div class="flow"><span class="st">新建轧辊（或从已有辊复制）</span><span class="ar">→</span><span class="st">填辊号、类型、几何</span><span class="ar">→ 保存 →</span><span class="st">提示"建第一个方案"</span><span class="ar">→</span><span class="st">辊形</span><span class="ar">→</span><span class="st">工艺</span><span class="ar">→</span><span class="st">设为当前</span></div>
+      <p>从已有辊复制：复制几何与当前方案（方案来源记为原辊），改辊号、按实测改尺寸；长度不同按第 4.5 节处理。</p>
+      <h3>磨辊（高频）</h3>
+      <div class="flow"><span class="st">待磨清单点辊</span><span class="ar">→</span><span class="st">默认当前方案</span><span class="ar">→</span><span class="st">核对页：磨前直径、磨削量、起点 Z、（可选）本次调整</span><span class="ar">→</span><span class="st">✓ 确认下发</span><span class="ar">→</span><span class="st">自动磨削</span><span class="ar">→</span><span class="st">记录</span></div>
+      <h3>改辊形或工艺</h3>
+      <div class="flow"><span class="st">复制当前方案</span><span class="ar">→</span><span class="st">修改</span><span class="ar">→</span><span class="st">保存</span><span class="ar">→</span><span class="st">设为当前</span></div>
+      <h3>辊调去别的机架</h3>
+      <p>历史方案里有对应用途的就设回当前；没有就新建（可从同用途的其他辊复制）。</p>
+      <h3>中断、返磨</h3>
+      <p>沿用现有做法：中断待续置顶，续磨先重新量磨前直径；不合格一键返磨，用同一方案新开作业。</p>
+    </section>
+
+    <section id="s8" class="major">
+      <h2><span class="no">8</span>权限与配置</h2>
+      <div class="tw"><table>
+        <thead><tr><th>动作</th><th>默认角色</th><th>配置</th></tr></thead>
+        <tbody>
+          <tr><td>登记 / 修改轧辊、下作业、本次调整（范围内）、下发</td><td>操作者</td><td>—</td></tr>
+          <tr><td>建方案、改方案、设当前方案、存为新方案、维护标准模板</td><td>管理员（工艺员）</td><td><code>hmi.json</code> 新开关：方案编辑权限 operator / administrator</td></tr>
+          <tr><td>默认可调范围表、机床能力</td><td>制造商</td><td>machine.json</td></tr>
+        </tbody>
+      </table></div>
+      <p>依据：配方管理分两层（ISA-88 的主配方 / 控制配方）——主配方由工程人员制定并受变更控制，批次相关设定值在控制配方里调整、受主配方给的范围约束。磨削方案对应主配方，作业对应控制配方。</p>
+    </section>
+
+    <section id="s9" class="major">
+      <h2><span class="no">9</span>与现软件的对应与改动清单</h2>
+      <div class="tw"><table>
+        <thead><tr><th>现在</th><th>改成</th></tr></thead>
+        <tbody>
+          <tr><td>辊形库、程序库被轧辊引用</td><td>辊形 + 工艺组成方案，归轧辊所有；库改为可选标准模板</td></tr>
+          <tr><td>轧辊的计划 = 引用辊形 + 程序</td><td>轧辊的当前方案</td></tr>
+          <tr><td>辊形填参考轧辊</td><td>去掉；长度取自所属轧辊</td></tr>
+          <tr><td>运行时 2% 套用</td><td>只在跨辊复制时，可见、需确认</td></tr>
+          <tr><td>库条目版本、在用清单、更新 / 另存为、停用</td><td>去掉；用"用过即冻结 + 另存为新方案"</td></tr>
+          <tr><td>作业换辊形 / 换程序</td><td>作业换方案（仅本次）</td></tr>
+          <tr><td>运行中改参数直接写</td><td>作业层调整：受范围约束、记"方案值 → 本次值"</td></tr>
+          <tr><td>记录：快照、测量、判定</td><td>另加：方案号、本次调整清单、倍率摘要、越界事件</td></tr>
+        </tbody>
+      </table></div>
+      <h3>改动范围</h3>
+      <ul>
+        <li><b>数据</b>：新表"磨削方案"（所属轧辊、方案号、名称、用途、来源、冻结、建立信息），方案的辊形段与工艺工序 / 参数；参数可调范围；作业的方案号与调整清单；记录的倍率摘要与越界事件。测试阶段不做旧数据迁移。</li>
+        <li><b>界面</b>：轧辊页增加"方案"列表与操作（新建、复制、设为当前、查看历史）；辊形页、工艺页改为"编辑某支辊的某个方案"，入口从轧辊进；复制向导（含长度对比）；作业核对页的"换方案""本次调整""上次调整 / 标准已更新"提示；记录页的方案号、调整清单、倍率摘要、"存为新方案"。</li>
+        <li><b>服务</b>：方案服务（复制、冻结、设当前、来源）；作业实例化从方案取值并合并本次调整；调整范围校验；倍率按道次汇总。</li>
+        <li><b>基本不变</b>：作业核对清单、下发与快照、自动磨削、手动、砂轮、诊断。</li>
+      </ul>
+    </section>
+
+    <section id="s10" class="major">
+      <h2><span class="no">10</span>分期</h2>
+      <div class="tw"><table>
+        <thead><tr><th>期</th><th>内容</th><th>验收</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>方案数据与服务；轧辊页方案列表；辊形 / 工艺按方案编辑；用过即冻结；作业取当前方案、换方案</td><td>新辊 → 方案 → 磨 → 改方案（自动另存）→ 再磨，记录指向正确方案；自检全流程通过</td></tr>
+          <tr><td class="num">2</td><td>复制：从辊复制新辊、跨辊复制方案（长度对比与套用确认）、来源标记；标准模板</td><td>长度相同直接复制；凸度类套用须确认；CVC / 点表长度不同被拒</td></tr>
+          <tr><td class="num">3</td><td>两层参数：可调范围（默认表 + 方案覆盖）、本次调整呈现与记录、下次回到方案值与沿用提示、存为新方案</td><td>超范围不收；记录列出调整；存为新方案来源正确</td></tr>
+          <tr><td class="num">4</td><td>记录补充：倍率按道次摘要、越界事件、有效值显示；"标准已更新"逐支提示</td><td>仿真里拧倍率后记录有摘要且无逐条明细</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="s11" class="major">
+      <h2><span class="no">11</span>已定决策、待确认与依据</h2>
+      <h3>已定决策</h3>
+      <ol>
+        <li>以轧辊为中心、强绑定：方案归辊所有。</li>
+        <li>一个当前方案 + 历史，方案带可选用途 / 机架标签。</li>
+        <li>用过即冻结，修改即另存为新方案。</li>
+        <li>不做批量同步；标准更新按"下次磨时逐支提示"。</li>
+        <li>跨辊复制：名义长度相同直接复制；解析辊形套用须确认；CVC / 点表不套用。</li>
+        <li>方案由工艺员建；操作工在范围内调这一次的数（开关可放开）。</li>
+        <li>倍率按道次存摘要，不逐条记。</li>
+      </ol>
+      <h3>请甲方确认</h3>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>问题</th><th>影响</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>这台磨床主要磨工作辊、支承辊还是都磨？服务哪条轧机？</td><td>每天磨多少支、界面优先照顾哪种操作</td></tr>
+          <tr><td class="num">2</td><td>工作辊重磨后会不会调到别的机架用？</td><td>"用途 / 机架"标签与多方案的使用频率</td></tr>
+          <tr><td class="num">3</td><td>同一机架、同一用途的辊有几支？名义辊身长度是否完全一致？</td><td>复制与标准模板的重要性、长度门槛</td></tr>
+          <tr><td class="num">4</td><td>辊形多久改一次？由谁决定？</td><td>逐支提示的节奏是否跟得上</td></tr>
+          <tr><td class="num">5</td><td>操作工按辊况调哪些参数、调多少？（第 5.3 节表）</td><td>默认可调范围</td></tr>
+          <tr><td class="num">6</td><td>是否用 CVC 辊？曲线由谁提供？</td><td>CVC 处理规则</td></tr>
+          <tr><td class="num">7</td><td>现在辊形与工艺怎么管（纸卡、Excel、原机库）？</td><td>贴近现有习惯</td></tr>
+          <tr><td class="num">8</td><td>是否有 MES / 轧辊管理系统，将来是否对接？</td><td>来源记录、标准模板的粒度</td></tr>
+          <tr><td class="num">9</td><td>头架转速、拖板速度是否改按工艺量（m/min、每转进给）存？</td><td>第 4.7 节</td></tr>
+        </tbody>
+      </table></div>
+      <h3>依据</h3>
+      <ul>
+        <li>原机 RGI 操作手册：辊形、程序各有列表，开始自动磨削前选曲线名与程序名（共享库模式）；本设计改为以轧辊为中心。</li>
+        <li>Herkules、Pomini Tenova 的轧辊车间管理系统以每支辊的档案为中心（<a href="https://www.herkules-machinetools.com/technologies/roll-shop-systemsoftware/">Herkules Software</a>、<a href="https://tenova.com/sites/default/files/files/solutions/2023/Tenova%20-%20Pomini%20Roll%20Grinders%202023-06.pdf">Pomini Roll Grinders</a>）；其内部辊形 / 程序组织方式未公开。</li>
+        <li>辊形在归一化轴向坐标上定义、按轧机名义长度换算（<a href="https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/8191392">US8191392</a>、<a href="https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/8210015">US8210015</a>）。</li>
+        <li>配方两层（主配方 / 控制配方）与范围约束（<a href="https://sgsystemsglobal.com/glossary/batch-recipe-execution/">SG Systems：Batch Recipe Execution</a>）。</li>
+        <li>工作辊高频重磨、支承辊周期较长、辊形按质量问题调整（行业资料，数字差异大，以甲方实际为准：<a href="https://oxmaint.com/industries/steel-plant/rolling-mill-work-roll-management-grinding-change">OxMaint</a>）。</li>
+      </ul>
+    </section>
+  </main>
+</div>
+</body>
+</html>
