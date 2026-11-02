@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>方案模型界面草图</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #F2F4F7; --surface: #FFFFFF; --ink: #16191E; --ink-2: #4A5461; --ink-3: #5A6470;
+    --line: #D3D9E1; --line-soft: #E6EAF0; --fill: #F6F8FA;
+    --accent: #15507F; --accent-ink: #FFFFFF; --accent-soft: #E3EDF6;
+    --danger: #B3241C; --danger-soft: #FBEBE9;
+    --ok: #1F7A4D; --ok-soft: #E2F2E9;
+    --warn: #8A5A00; --warn-soft: #FBF1D9;
+    --next: #F6D24A;
+    --key-bg: #FFFFFF; --key-line: #8C95A1; --nav: #0F4370; --sts: #DDE3EA;
+    --sans: "Noto Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    --mono: "IBM Plex Mono", Consolas, "Cascadia Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+      --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+      --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+      --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+      --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+      --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70; --sts: #232C37;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+    --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+    --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+    --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+    --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+    --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70; --sts: #232C37;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.7; padding-inline: 16px; padding-block: 24px 64px; margin: 0; }
+  .page { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 32px; }
+  @media (min-width: 1120px) {
+    .page { grid-template-columns: 220px minmax(0, 1fr); }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto; }
+  }
+  main { min-width: 0; max-width: 980px; }
+  .toc { font-size: 14px; }
+  .toc h2 { font-size: 13px; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 8px; font-weight: 500; display: block; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { color: var(--ink-2); text-decoration: none; display: block; padding: 3px 8px; border-radius: 4px; }
+  .toc a:hover, .toc a:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+  .toc .sub { padding-left: 14px; font-size: 13px; }
+  .cover { border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+  .eyebrow { font-family: var(--mono); font-size: 13px; color: var(--ink-3); }
+  h1 { font-size: 32px; line-height: 1.3; margin: 6px 0 10px; text-wrap: balance; }
+  .lede { font-size: 17px; color: var(--ink-2); max-width: 66ch; margin: 0; }
+  section { margin-top: 44px; }
+  h2 { font-size: 24px; line-height: 1.35; margin: 0 0 14px; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+  h2 .no { font-family: var(--mono); font-size: 16px; color: var(--accent); font-weight: 600; min-width: 1.6em; }
+  h3 { font-size: 19px; margin: 28px 0 10px; text-wrap: balance; }
+  h4 { font-size: 16px; margin: 18px 0 6px; color: var(--ink-2); }
+  p { margin: 0 0 12px; max-width: 72ch; }
+  ul, ol { margin: 0 0 12px; padding-left: 1.4em; }
+  li { margin: 3px 0; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tw { overflow-x: auto; margin: 0 0 16px; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--fill); font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+  td.num, th.num { font-family: var(--mono); text-align: center; white-space: nowrap; }
+  .nowrap { white-space: nowrap; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 7px; line-height: 1.7; white-space: nowrap; }
+  .pill.src { background: var(--ok-soft); color: var(--ok); }
+  .pill.inf { background: var(--warn-soft); color: var(--warn); }
+  .pill.new { background: var(--accent-soft); color: var(--accent); }
+  .box { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; margin: 0 0 16px; }
+  .box > :last-child { margin-bottom: 0; }
+  .box .tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; padding: 0 8px; margin-bottom: 6px; background: var(--accent-soft); color: var(--accent); }
+  .box.ask .tag { background: var(--warn-soft); color: var(--warn); }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 18px 0 0; }
+  .summary div { background: var(--surface); border: 1px solid var(--line); padding: 12px 14px; }
+  .summary b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .summary span { font-size: 14px; color: var(--ink-2); }
+  .key { display: inline-block; font-size: 13px; font-weight: 500; padding: 0 8px; border: 1px solid var(--key-line); background: var(--key-bg); border-radius: 3px; white-space: nowrap; line-height: 1.8; }
+
+  .co { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #10151A; color: #FFFFFF; font-size: 11px; font-weight: 700; font-style: normal; line-height: 1; flex: none; }
+  .flow { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin: 0 0 6px; }
+  .flow .st { border: 1px solid var(--line); background: var(--surface); padding: 1px 8px; font-size: 14px; white-space: nowrap; }
+  .flow .ar { color: var(--ink-3); }
+  .flow .pb { border-color: var(--danger); color: var(--danger); }
+
+  /* 画面样机：代表机床上的真实屏幕，固定浅色，不随本文深浅色切换；取色见第 8 节 */
+  .scr {
+    --s-bg: #EBF0F6; --s-win: #EBF0F6; --s-winhd: #C6CBD1; --s-act: #0199C8; --s-field: #FFFFFF; --s-ro: #DDE2E7;
+    --s-focus: #67C2DF; --s-sel: #A9DCEC; --s-cur: #B5BEC3; --s-lb: #1B2228; --s-lb-key: #404C58; --s-tile: #3D5466;
+    --s-key: #DDE1EA; --s-gap: #A7B1BA; --s-dim: #8A96A1; --s-ok: #37703D; --s-no: #8E1B1B;
+    --s-ink: #141A1F; --s-ink2: #4A5864; --s-alarm: #C4161C; --s-hd: #E6EBF1; --s-path: #A7B1BA; --s-chan: #6D7F8D;
+    --s-orange: #E8891A; --s-run: #3FAE49; --s-q: #F4E3A1; --s-help: #F9EEAE; --s-helpkey: #F5CF2E; --s-side: #6D7F8D;
+    display: grid; grid-template-columns: 58px minmax(0, 1fr) 150px; grid-template-rows: 44px minmax(0, 1fr) 24px 54px;
+    border: 2px solid #10151A; background: var(--s-bg); color: var(--s-ink); font-size: 12px; line-height: 1.4;
+    min-width: 900px; margin: 0 0 8px; color-scheme: light;
+  }
+  .scr.side { grid-template-columns: 190px 58px minmax(0, 1fr) 150px; }
+  .scr .sd { grid-row: 1 / -1; background: #F3F6F9; border-right: 1px solid var(--s-gap); display: flex; flex-direction: column; font-size: 11px; }
+  .scr .sd b { display: block; background: var(--s-side); color: #FFFFFF; padding: 3px 6px; font-weight: 500; letter-spacing: 0.04em; }
+  .scr .sd div { padding: 2px 6px 4px; }
+  .scr .lb { grid-row: 1 / -1; background: var(--s-lb); display: flex; flex-direction: column; gap: 3px; padding: 4px 3px; }
+  .scr .lb span { color: #FFFFFF; text-align: center; font-size: 10px; padding: 4px 0 3px; line-height: 1.2; border-radius: 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; border-bottom: 1px solid #2E3A44; }
+  .scr .lb span i { font-style: normal; font-size: 16px; line-height: 1.1; }
+  .scr .lb span.on { background: var(--s-act); }
+  .scr .lb .end { margin-top: auto; border-bottom: 0; }
+  .scr .hd { grid-row: 1; display: flex; align-items: center; gap: 14px; padding: 0 10px; background: var(--s-hd); white-space: nowrap; overflow: hidden; }
+  .scr .hd .app { font-weight: 700; font-size: 13px; }
+  .scr .hd .al { color: var(--s-alarm); font-weight: 700; }
+  .scr .hd .ttl { color: var(--s-ink2); }
+  .scr .hd .r { margin-left: auto; color: var(--s-ink2); text-align: right; font-size: 11px; line-height: 1.25; }
+  .scr .tl { grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; }
+  .scr .tl span { background: var(--s-tile); color: #FFFFFF; display: grid; place-items: center; font-weight: 700; font-size: 11px; line-height: 1.15; text-align: center; }
+  .scr .cen { grid-row: 2; display: flex; flex-direction: column; min-width: 0; }
+  .scr .path { background: var(--s-path); color: var(--s-ink); display: flex; justify-content: space-between; gap: 12px; padding: 2px 10px; white-space: nowrap; overflow: hidden; min-height: 20px; }
+  .scr .path.act { background: var(--s-act); color: #FFFFFF; }
+  .scr .path .x { font-weight: 700; }
+  .scr .chan { background: var(--s-chan); color: #FFFFFF; display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; padding: 2px 10px; white-space: nowrap; overflow: hidden; }
+  .scr .chan > :last-child { text-align: right; }
+  .scr .chan .run { color: #9BE3A2; font-weight: 700; }
+  .scr .wa { flex: 1; display: grid; gap: 3px; padding: 3px; min-height: 250px; }
+  .scr .win { background: var(--s-win); border: 1px solid var(--s-gap); min-width: 0; display: flex; flex-direction: column; }
+  .scr .win > h6 { margin: 0; background: var(--s-winhd); padding: 2px 8px; font-size: 12px; font-weight: 500; display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
+  .scr .win.act > h6 { background: var(--s-act); color: #FFFFFF; }
+  .scr .win > div { padding: 3px 8px; flex: 1; min-width: 0; }
+  .scr .win .ft { flex: none; background: var(--s-cur); padding: 1px 8px; font-size: 11px; }
+  .scr .rgt { grid-row: 2; display: flex; flex-direction: column; gap: 3px; background: var(--s-gap); padding: 0 3px 3px; }
+  .scr .fb { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; margin: 0 -3px; }
+  .scr .fb span { background: var(--s-lb-key); color: #FFFFFF; text-align: center; padding: 3px 0; font-size: 11px; }
+  .scr .fb span.on { background: #8BABB8; color: var(--s-ink); }
+  .scr .fb span.dim { color: #7D8A95; }
+  .scr .vk { flex: 1; display: grid; grid-template-rows: repeat(8, minmax(30px, 1fr)); gap: 3px; padding-top: 3px; }
+  .scr .vk span, .scr .hk span { background: var(--s-key); display: grid; place-items: center; text-align: center; padding: 2px 3px; line-height: 1.2; }
+  .scr .vk span.on, .scr .hk span.on { background: var(--s-act); color: #FFFFFF; }
+  .scr .vk span.no { background: var(--s-no); color: #FFFFFF; font-weight: 700; }
+  .scr .vk span.ok { background: var(--s-ok); color: #FFFFFF; font-weight: 700; }
+  .scr .vk span.dim, .scr .hk span.dim { color: var(--s-dim); }
+  .scr .vk.help span { background: var(--s-helpkey); }
+  .scr .dlg { grid-row: 3; background: var(--s-gap); padding: 3px 10px; white-space: nowrap; overflow: hidden; }
+  .scr .dlg.q { background: var(--s-q); font-weight: 700; }
+  .scr .hk { grid-row: 4; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)) 150px; gap: 3px; background: var(--s-gap); padding: 3px; }
+  .scr .hk .ext { display: grid; grid-template-columns: 1fr auto auto; gap: 2px; background: transparent; padding: 0; place-items: stretch; }
+  .scr .hk .ext span { font-size: 16px; font-weight: 700; }
+  .scr .hk .ext span.pg { font-size: 11px; width: 24px; background: var(--s-key); font-weight: 400; }
+  .scr .hk .ext span.pg.on { background: var(--s-tile); color: #FFFFFF; }
+  /* 列位置：普通样机 2 / 3 列，带侧屏的样机整体右移一列 */
+  .scr .hd, .scr .cen { grid-column: 2; }
+  .scr .tl, .scr .rgt { grid-column: 3; }
+  .scr .dlg, .scr .hk { grid-column: 2 / 4; }
+  .scr.side .lb { grid-column: 2; }
+  .scr.side .hd, .scr.side .cen { grid-column: 3; }
+  .scr.side .tl, .scr.side .rgt { grid-column: 4; }
+  .scr.side .dlg, .scr.side .hk { grid-column: 3 / 5; }
+  .scr .fm { display: grid; grid-template-columns: auto minmax(80px, 1fr) auto; gap: 3px 6px; align-items: center; }
+  .scr .fm label { white-space: nowrap; }
+  .scr .fm .v { background: var(--s-field); text-align: right; padding: 0 6px; font-family: var(--mono); white-space: nowrap; }
+  .scr .fm .v.fo { background: var(--s-focus); }
+  .scr .fm .v.tg { text-align: center; font-family: var(--sans); }
+  .scr .fm .v.dd { text-align: center; font-family: var(--sans); }
+  .scr .fm .v.dd::after { content: " ▾"; color: var(--s-ink2); }
+  .scr .fm .ro { color: var(--s-ink2); text-align: right; font-family: var(--mono); }
+  .scr .fm .u { color: var(--s-ink2); font-size: 11px; white-space: nowrap; }
+  .scr .fm .u.tg { background: var(--s-field); color: var(--s-ink); padding: 0 5px; }
+  .scr .fm .sp { grid-column: 1 / -1; height: 4px; }
+  .scr .fm .gh { grid-column: 1 / -1; color: var(--s-ink2); }
+  .scr .pl { background: #FDFEFF; border: 1px solid var(--s-gap); display: flex; flex-direction: column; font-size: 11.5px; min-width: 0; }
+  .scr .pl span { padding: 3px 6px; border-bottom: 1px solid #E1E7EC; white-space: nowrap; overflow: hidden; }
+  .scr .pl span.on { background: var(--s-focus); }
+  .scr .gfx { border: 1px dashed var(--s-gap); background: #F6F8FB; display: grid; place-items: center; text-align: center; color: var(--s-ink2); min-height: 110px; padding: 6px; }
+  .scr .or { color: var(--s-orange); font-weight: 700; }
+  .scr .av { display: grid; grid-template-columns: auto 1fr 1fr; gap: 0 12px; align-items: baseline; }
+  .scr .av b { font-size: 22px; font-weight: 500; }
+  .scr .av .n { font-family: var(--mono); font-size: 22px; font-weight: 500; text-align: right; }
+  .scr .av .n.s { font-size: 13px; }
+  .scr .av .h { font-size: 11px; color: var(--s-ink2); text-align: right; }
+  .scr .tfs { display: grid; grid-template-columns: 30px 1fr auto auto; gap: 0 8px; align-items: baseline; }
+  .scr .tfs b { font-size: 20px; font-weight: 500; }
+  .scr .tfs .n { font-family: var(--mono); }
+  .scr .tfs .n.big { font-size: 18px; }
+  .scr .tfs .sub { grid-column: 2 / -1; font-size: 11px; color: var(--s-ink2); display: flex; justify-content: space-between; gap: 8px; }
+  .scr .bar { grid-column: 2 / -1; height: 5px; background: #FFFFFF; border: 1px solid var(--s-gap); position: relative; margin: 1px 0 3px; }
+  .scr .bar i { position: absolute; inset: 0 auto 0 0; background: var(--s-run); }
+  .scr table { font-size: 11.5px; background: transparent; }
+  .scr th, .scr td { padding: 2px 6px; border: 0; border-bottom: 1px solid #D5DCE3; white-space: nowrap; }
+  .scr th { background: var(--s-winhd); color: var(--s-ink); font-weight: 500; }
+  .scr tr.on td { background: var(--s-sel); }
+  .scr tr.cur td { background: var(--s-cur); }
+  .scr tr.grp td { background: #DCE1E6; color: var(--s-ink2); }
+  .scr tr.dk td { background: #5A6570; color: #FFFFFF; }
+  .scr td.go { text-align: right; }
+  .scr td.go::after { content: "→"; display: inline-block; border: 1px solid #FFFFFF; padding: 0 4px; margin-left: 6px; }
+  .scr .lamp { display: inline-flex; align-items: center; gap: 4px; margin: 0 10px 3px 0; white-space: nowrap; }
+  .scr .lamp::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #B7C0C8; border: 1px solid #7D8994; }
+  .scr .lamp.on::before { background: var(--s-run); border-color: #2E7D32; }
+  .scr .help { background: var(--s-help); border: 2px solid #EED32E; padding: 6px 10px; }
+  .scr .help h6 { margin: 0 0 4px; font-size: 12.5px; text-decoration: underline; }
+  .scr .dd-list { background: #FFFFFF; border: 1px solid var(--s-gap); box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+  .scr .dd-list span { display: block; padding: 3px 8px; text-align: center; }
+  .scr .dd-list span.on { background: var(--s-focus); }
+  /* 曲线：画在样机里，用固定的屏幕颜色 */
+  .scr svg.pt { width: 100%; height: auto; display: block; background: #FFFFFF; border: 1px solid #D5DCE3; }
+  .scr svg.pt text { font-family: var(--sans); font-size: 11px; fill: #4A5864; }
+  .scr .kv { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; font-size: 12px; }
+  .scr .kv span:nth-child(even) { font-family: var(--mono); text-align: right; }
+  .scr .big { font-family: var(--mono); font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .scr .band { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; padding: 3px 8px; background: #F6F8FB; border: 1px solid var(--s-gap); white-space: nowrap; }
+  .scr .band .m { font-family: var(--mono); }
+  .scr .mx td { text-align: right; font-family: var(--mono); }
+  .scr .mx td:first-child { text-align: left; font-family: var(--sans); }
+  .scr .mx th.run, .scr .mx td.run { background: #F4C7C3; }
+  .scr .mx th.nx, .scr .mx td.nx { background: #FBEBB5; }
+  .scr .mx td.ed { color: #B3241C; font-weight: 700; }
+  .scr .err { color: #B3241C; font-weight: 700; }
+  .scr .okc { color: #2E7D32; font-weight: 700; }
+  .lg { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; white-space: nowrap; font-size: 14px; }
+  .lg i { display: inline-block; width: 24px; height: 0; border-top: 3px solid; }
+  .lg i.d { border-top-style: dashed; }
+  .lg i.dot { width: 8px; height: 8px; border: 0; border-radius: 50%; }
+  .cap { font-size: 13px; color: var(--ink-3); margin: 0 0 20px; }
+  footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+  @media (max-width: 560px) { h1 { font-size: 26px; } h2 { font-size: 21px; } }
+  @media print {
+    body { background: #FFFFFF; color: #000000; padding: 0; font-size: 10.5pt; }
+    .toc { display: none; }
+    .page { display: block; max-width: none; }
+    main { max-width: none; }
+    section.major { break-before: page; }
+    table, .box, .scr { break-inside: avoid; }
+    .tw { overflow: visible; }
+    .scr { min-width: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @page { size: A4 landscape; margin: 12mm; }
+</style>
+<style>
+  .pnl { display: grid; grid-template-columns: repeat(7, minmax(86px, 1fr)); gap: 10px 8px; background: #E4E6E3; border: 1px solid #B9BDB8; padding: 14px; min-width: 700px; color-scheme: light; }
+  .pnl .b { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: #1B1F23; text-align: center; }
+  .pnl .b .lb2 { background: #F2B632; color: #1B1F23; padding: 1px 6px; font-weight: 700; white-space: nowrap; border: 2px solid #1B1F23; }
+  .pnl .b .k { width: 46px; height: 46px; border-radius: 50%; border: 5px solid #1B1F23; }
+  .pnl .b .io { font-family: var(--mono); font-size: 11px; color: #4A5864; }
+  .pnl .b.es .k { width: 64px; height: 64px; background: #C8102E; border-color: #F2C200; border-width: 10px; }
+  .pnl .b.sp { opacity: .55; }
+</style>
+<style>
+  .scr .L1 { font-family: var(--mono); font-size: 30px; font-weight: 600; line-height: 1.1; text-align: right; white-space: nowrap; }
+  .scr .L2 { font-family: var(--mono); font-size: 20px; font-weight: 600; line-height: 1.15; white-space: nowrap; }
+  .scr .ax { display: grid; grid-template-columns: 64px 1fr; align-items: center; border-bottom: 1px solid #D5DCE3; padding: 1px 8px; }
+  .scr .ax b { font-size: 22px; font-weight: 600; }
+  .scr .ax small { display: block; font-size: 10.5px; color: #4A5864; font-weight: 400; line-height: 1; }
+  .scr .ax.on { background: var(--s-focus); }
+  .scr .tile { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .scr .tile span { background: #FFFFFF; border: 1px solid #B5BEC3; padding: 6px 4px; text-align: center; font-size: 11.5px; }
+  .scr .tile span.lit { border-color: #2E7D32; box-shadow: inset 4px 0 0 #3FAE49; }
+  .pass { color: var(--ok); font-weight: 700; }
+  .fail { color: var(--danger); font-weight: 700; }
+  table.score td, table.score th { text-align: center; }
+  table.score td:first-child, table.score th:first-child { text-align: left; }
+</style>
+<style>td.bad{color:var(--danger);font-weight:700}td.good{color:var(--ok);font-weight:700}</style>
+</head>
+<body>
+<style>
+td.bad{color:var(--danger);font-weight:700}td.good{color:var(--ok);font-weight:700}
+.wfs{container-type:inline-size;width:100%;margin:14px 0 6px}
+.wf{aspect-ratio:16/9;border:2px solid var(--ink-2,#555);border-radius:6px;display:grid;grid-template-columns:4.5% 1fr 11%;grid-template-rows:5% 1fr;font-size:1.05cqw;line-height:1.35;background:var(--bg,#fff);color:var(--ink,#222);overflow:hidden}
+.wf .wft{grid-column:1/4;border-bottom:1px solid #999;display:flex;align-items:center;gap:2cqw;padding:0 1cqw;font-size:.95cqw;opacity:.85}
+.wf .wfl{border-right:1px solid #999;display:flex;flex-direction:column;gap:.5cqw;padding:.5cqw .3cqw}
+.wf .wfl i{display:block;border:1px solid #aaa;border-radius:3px;height:3.6cqw;font-style:normal;font-size:.8cqw;text-align:center;padding-top:1.1cqw}
+.wf .wfl i.wfon{background:#0003;font-weight:700}
+.wf .wfm{padding:.8cqw 1cqw;overflow:hidden;display:flex;flex-direction:column;gap:.7cqw}
+.wf .wfk{border-left:1px solid #999;display:flex;flex-direction:column;gap:.35cqw;padding:.5cqw .4cqw}
+.wf .wfk b{display:block;border:1px solid #888;border-radius:3px;height:4.1cqw;font-weight:400;font-size:.95cqw;padding:.4cqw;line-height:1.2}
+.wf .wfk b.wfp{border-width:2px;font-weight:700}
+.wf .wfk b.wfo{opacity:.35}
+.wfb{border:1px solid #999;border-radius:4px;padding:.5cqw .7cqw}
+.wfb h5{margin:0 0 .4cqw;font-size:1cqw}
+.wfr{display:flex;gap:.8cqw}
+.wfr>*{flex:1}
+.wf table{width:100%;border-collapse:collapse;font-size:.95cqw}
+.wf th,.wf td{border-bottom:1px solid #ccc;padding:.2cqw .4cqw;text-align:left}
+.wf tr.wfsel td{background:#0002;font-weight:700}
+.wfg{display:inline-block;border:1px solid #888;border-radius:999px;padding:0 .5cqw;font-size:.8cqw;margin-left:.3cqw}
+.wfw{border:1.5px solid #c80;background:#c801;border-radius:4px;padding:.4cqw .7cqw}
+.wfi{border:1.5px solid #27c;background:#27c1;border-radius:4px;padding:.4cqw .7cqw}
+.wfchg{font-weight:700;text-decoration:underline}
+.wfbig{font-size:2.2cqw;font-weight:700}
+.wfc{height:9cqw;border:1px dashed #999;border-radius:4px;position:relative}
+.wfc svg{width:100%;height:100%}
+.dlg{position:relative}
+.wfa{font-size:14px;color:var(--ink-2,#555);margin:2px 0 10px}
+</style>
+<div class="page">
+  <nav class="toc" aria-label="目录">
+    <h2>目录</h2>
+    <ol>
+      <li><a href="#s0">0 说明</a></li>
+      <li><a href="#s1">1 轧辊页与方案列表</a></li>
+      <li><a href="#s2">2 方案编辑：辊形</a></li>
+      <li><a href="#s3">3 方案编辑：工艺</a></li>
+      <li><a href="#s4">4 复制向导</a></li>
+      <li><a href="#s5">5 作业核对页</a></li>
+      <li><a href="#s6">6 自动页参数区</a></li>
+      <li><a href="#s7">7 磨削记录</a></li>
+      <li><a href="#s8">8 标准模板"必须采用"</a></li>
+      <li><a href="#s9">9 汇总：请甲方和操作工确认</a></li>
+    </ol>
+  </nav>
+  <main>
+    <header class="cover">
+      <div class="eyebrow">RGX · MK84160 · 界面草图（低保真）· 2026-11-02 · 用于确认流程，不是视觉定稿</div>
+      <h1>方案模型界面草图</h1>
+      <p class="lede">按《轧辊与磨削方案设计说明》画出受影响的 8 个画面，沿用《界面最终稿》的屏幕分区（1920×1080：顶部状态带、左侧快捷入口、右侧 8 个竖键）。只表达"放什么、按什么、提示什么"，颜色、字号、图标以最终稿为准。每个画面下面列出需要现场确认的问题。</p>
+    </header>
+
+    <section id="s0" class="major">
+      <h2><span class="no">0</span>说明</h2>
+      <ul>
+        <li>草图里的辊号、数值都是示例。</li>
+        <li>竖键：粗框是这一页的主操作；灰色是当前不可用（例如方案已冻结时的"删除"）。</li>
+        <li>不变的画面（手动、砂轮、诊断、自动页曲线区）不画。</li>
+        <li>入口变化：辊形页、工艺页不再从左侧快捷入口直接进"库"，而是从轧辊页进入"编辑某支辊的某个方案"；左侧原"库"入口改为"标准模板"（工艺员）。</li>
+      </ul>
+    </section>
+
+    <section id="s1" class="major">
+      <h2><span class="no">1</span>轧辊页与方案列表</h2>
+      <div class="wfs"><div class="wf">
+        <div class="wft"><span>■ 轧辊</span><span>操作者：张三</span><span>机床：就绪</span><span style="margin-left:auto">2026-11-02 09:41</span></div>
+        <div class="wfl"><i>待磨</i><i class="wfon">轧辊</i><i>自动</i><i>手动</i><i>记录</i><i>模板</i><i>诊断</i></div>
+        <div class="wfm">
+          <div class="wfr" style="flex:1">
+            <div class="wfb" style="flex:1.1">
+              <h5>轧辊（筛选：全部 · 工作辊 · F3）</h5>
+              <table>
+                <tr><th>辊号</th><th>类型</th><th>用途</th><th>当前直径</th><th>当前方案</th></tr>
+                <tr><td>W-1021</td><td>工作辊</td><td>F3</td><td>652.40</td><td>方案 2</td></tr>
+                <tr class="wfsel"><td>W-1023</td><td>工作辊</td><td>F3</td><td>649.85</td><td>方案 3</td></tr>
+                <tr><td>W-1024</td><td>工作辊</td><td>F4</td><td>655.10</td><td>方案 1</td></tr>
+                <tr><td>W-1030</td><td>工作辊</td><td>—</td><td>660.00</td><td><span class="wfg">无方案</span></td></tr>
+              </table>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:.7cqw">
+              <div class="wfb">
+                <h5>W-1023 · 工作辊 · Cr5 · F3</h5>
+                <div class="wfr"><div>名义辊身长度<br><b>2050.0 mm</b></div><div>实测辊身长度<br><b>2048.0 mm</b></div><div>当前直径<br><b>649.85</b></div><div>报废直径<br><b>620.00</b></div></div>
+              </div>
+              <div class="wfb" style="flex:1">
+                <h5>磨削方案</h5>
+                <table>
+                  <tr><th>方案</th><th>名称 / 用途</th><th>来源</th><th>状态</th><th>最近使用</th></tr>
+                  <tr class="wfsel"><td>方案 3 ★</td><td>F3 凸度 0.30</td><td>模板 F3-凸度300 <span class="wfg">一致</span></td><td>当前 · 已用</td><td>10-28</td></tr>
+                  <tr><td>方案 2</td><td>F3 凸度 0.25</td><td>方案 1</td><td>历史 · 已用</td><td>09-15</td></tr>
+                  <tr><td>方案 1</td><td>F4 圆柱</td><td>轧辊 W-1021 方案 1</td><td>历史 · 已用</td><td>08-02</td></tr>
+                </table>
+                <div style="margin-top:.4cqw;opacity:.7">显示当前方案与最近用过的 3 个 · <u>全部方案（5）</u></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wfk"><b class="wfp">磨这支辊</b><b>新建轧辊</b><b>从此辊复制</b><b>编辑轧辊</b><b>新建方案</b><b>复制方案</b><b>设为当前</b><b>编辑方案</b></div>
+      </div></div>
+      <ul>
+        <li>左边选辊，右边上半是几何（名义与实测长度分开），下半是这支辊的方案列表；★ 为当前方案。</li>
+        <li>"编辑方案"打开选中方案；已用过的方案打开后可改，保存时另存为新方案（见第 2 节）。</li>
+        <li>"磨这支辊"直接进作业核对页，等同于从待磨清单点进来。</li>
+        <li>没有方案的辊：方案区显示"还没有方案"，主键变为"新建方案"；"磨这支辊"不可用。</li>
+        <li>新建、复制、编辑方案、设为当前需要工艺员权限（按配置），操作者看到的是灰键。</li>
+      </ul>
+      <p class="wfa"><b>要确认</b>：① 方案列表放在轧辊页右侧，还是单独一页？② "用途 / 机架"是否作为筛选条件？③ 操作者是否需要看到历史方案？</p>
+    </section>
+
+    <section id="s2" class="major">
+      <h2><span class="no">2</span>方案编辑：辊形</h2>
+      <div class="wfs"><div class="wf">
+        <div class="wft"><span>■ 轧辊 W-1023 › 方案 3 › 辊形</span><span>工艺员：李四</span><span style="margin-left:auto">2026-11-02 09:45</span></div>
+        <div class="wfl"><i>待磨</i><i class="wfon">轧辊</i><i>自动</i><i>手动</i><i>记录</i><i>模板</i><i>诊断</i></div>
+        <div class="wfm">
+          <div class="wfw">方案 3 已用于 4 次磨削，内容不能改。修改后按"保存"将<b>另存为方案 4</b>并设为当前；方案 3 保留为历史。</div>
+          <div class="wfr">
+            <div class="wfb">名义长度 <b>2050.0 mm</b>（取自轧辊，随方案保存）</div>
+            <div class="wfb">端部非工作区 <b>每端 40 mm</b>（默认取端部圆柱段）</div>
+            <div class="wfb">坐标：辊身中心 = 0</div>
+          </div>
+          <div class="wfc"><svg viewBox="0 0 400 60" preserveAspectRatio="none"><line x1="0" y1="50" x2="400" y2="50" stroke="#999" stroke-dasharray="3 3"/><path d="M0 50 L8 50 Q200 -10 392 50 L400 50" fill="none" stroke="currentColor" stroke-width="2"/><line x1="8" y1="0" x2="8" y2="60" stroke="#c80" stroke-dasharray="2 2"/><line x1="392" y1="0" x2="392" y2="60" stroke="#c80" stroke-dasharray="2 2"/></svg></div>
+          <div class="wfb" style="flex:1">
+            <h5>分段</h5>
+            <table>
+              <tr><th>#</th><th>类型</th><th>长度</th><th>参数</th><th>公差</th></tr>
+              <tr><td>1</td><td>圆柱</td><td>40.0</td><td>—</td><td>±0.005</td></tr>
+              <tr class="wfsel"><td>2</td><td>凸度</td><td>铺满（1970.0）</td><td>凸度 <span class="wfchg">0.30 → 0.28</span> mm · 抛物线</td><td>±0.005</td></tr>
+              <tr><td>3</td><td>圆柱</td><td>40.0</td><td>—</td><td>±0.005</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="wfk"><b class="wfp">保存（另存为方案 4）</b><b>工艺 ›</b><b>插入段</b><b>删除段</b><b>导入点表</b><b>对称</b><b class="wfo">删除方案</b><b>取消</b></div>
+      </div></div>
+      <ul>
+        <li>顶部面包屑说明"在改哪支辊的哪个方案"。</li>
+        <li>冻结方案的提示在动手之前就显示，保存键上直接写"另存为方案 4"，不弹第二次确认。</li>
+        <li>名义长度只读；曲线上用虚线标出端部非工作区边界。</li>
+        <li>改过的值标出"原值 → 新值"。</li>
+      </ul>
+      <p class="wfa"><b>要确认</b>：端部非工作区默认取端部圆柱段长度是否合适？是否要单独填写？</p>
+    </section>
+
+    <section id="s3" class="major">
+      <h2><span class="no">3</span>方案编辑：工艺（含可调范围）</h2>
+      <div class="wfs"><div class="wf">
+        <div class="wft"><span>■ 轧辊 W-1023 › 方案 3 › 工艺</span><span>工艺员：李四</span><span style="margin-left:auto">2026-11-02 09:47</span></div>
+        <div class="wfl"><i>待磨</i><i class="wfon">轧辊</i><i>自动</i><i>手动</i><i>记录</i><i>模板</i><i>诊断</i></div>
+        <div class="wfm">
+          <div class="wfr">
+            <div class="wfb" style="flex:.6">
+              <h5>工序</h5>
+              <table>
+                <tr><td>1 开始</td></tr><tr><td>2 粗磨</td></tr><tr class="wfsel"><td>3 半精磨</td></tr><tr><td>4 精磨</td></tr><tr><td>5 光磨</td></tr><tr><td>6 结束</td></tr>
+              </table>
+            </div>
+            <div class="wfb" style="flex:2">
+              <h5>3 半精磨 · 参数与可调范围</h5>
+              <table>
+                <tr><th>参数</th><th>标准值</th><th>作业里可调</th><th>范围来源</th></tr>
+                <tr><td>拖板速度</td><td>2300 mm/min</td><td>±10%（2070–2530）</td><td>默认</td></tr>
+                <tr><td>头架转速</td><td>28 r/min</td><td>±10%</td><td>默认</td></tr>
+                <tr><td>周期进给</td><td>0.010 mm</td><td>只能调小</td><td>默认</td></tr>
+                <tr><td>磨削道次</td><td>6</td><td><span class="wfchg">±2 道</span></td><td>本方案</td></tr>
+                <tr><td>光磨道次</td><td>1</td><td>只能加</td><td>默认</td></tr>
+                <tr><td>折返时间</td><td>1.0 s</td><td>±50%</td><td>默认</td></tr>
+                <tr><td>砂轮线速度</td><td>35 m/s</td><td>不能调</td><td>默认</td></tr>
+                <tr><td>变速</td><td>开 · 5% · 4 转</td><td>不能调</td><td>默认</td></tr>
+              </table>
+            </div>
+          </div>
+          <div class="wfb">程序步骤默认开关：自动对刀 ☑ · 磨前测量 ☑ · 磨后测量 ☑ · 修整 ☐</div>
+        </div>
+        <div class="wfk"><b class="wfp">保存</b><b>‹ 辊形</b><b>插入工序</b><b>删除工序</b><b>上移</b><b>下移</b><b>改范围</b><b>恢复默认范围</b></div>
+      </div></div>
+      <ul>
+        <li>每个参数多一列"作业里可调"，未改的显示机床配置里的默认范围，改过的标"本方案"。</li>
+        <li>"改范围"只能收窄或在机床能力以内放宽，超出机床能力不收。</li>
+      </ul>
+      <p class="wfa"><b>要确认</b>：① 默认范围表（拖板 / 头架 ±10%、进给只降、光磨只加、折返 ±50%）是否合适？② 工艺员是否需要逐个参数改范围，还是只用默认？</p>
+    </section>
+
+    <section id="s4" class="major">
+      <h2><span class="no">4</span>复制向导（长度不一致时）</h2>
+      <div class="wfs"><div class="wf">
+        <div class="wft"><span>■ 轧辊 W-1040 › 复制方案</span><span>工艺员：李四</span><span style="margin-left:auto">2026-11-02 10:02</span></div>
+        <div class="wfl"><i>待磨</i><i class="wfon">轧辊</i><i>自动</i><i>手动</i><i>记录</i><i>模板</i><i>诊断</i></div>
+        <div class="wfm">
+          <div class="wfr">
+            <div class="wfb">来源：轧辊 W-1023 · 方案 3 · F3 凸度 0.30</div>
+            <div class="wfb">来源名义长度 <b>2050.0</b> → 本辊 <b>2000.0</b> mm（差 −50.0）</div>
+          </div>
+          <div class="wfi">辊形只含圆柱、凸度段：两端圆柱段保持 40.0 mm，凸度段由 1970.0 改为 1920.0 mm，凸度值不变。请对比后确认。</div>
+          <div class="wfc" style="height:14cqw"><svg viewBox="0 0 400 60" preserveAspectRatio="none"><path d="M0 50 L8 50 Q200 -10 392 50 L400 50" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="5 3"/><path d="M5 50 L13 50 Q200 -10 387 50 L395 50" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+          <div style="opacity:.75">虚线：来源 · 实线：本辊 · 工艺部分直接复制</div>
+          <div class="wfw">若辊形含 CVC 或点表：本辊更短 → 以中心为基准截掉两端；稍长（在容差内）→ 两端切线延伸；超出容差 → 不复制，提示在本辊上重新输入或导入。</div>
+        </div>
+        <div class="wfk"><b class="wfp">确认复制</b><b>放大端部</b><b>只复制工艺</b><b>换来源</b><b>取消</b><b class="wfo"> </b><b class="wfo"> </b><b class="wfo"> </b></div>
+      </div></div>
+      <p class="wfa"><b>要确认</b>：复制时是否需要"只复制工艺"（辊形在本辊重新画）？</p>
+    </section>
+
+    <section id="s5" class="major">
+      <h2><span class="no">5</span>作业核对页</h2>
+      <div class="wfs"><div class="wf">
+        <div class="wft"><span>■ 作业核对 · W-1023</span><span>操作者：张三</span><span>机床：就绪</span><span style="margin-left:auto">2026-11-02 10:15</span></div>
+        <div class="wfl"><i class="wfon">待磨</i><i>轧辊</i><i>自动</i><i>手动</i><i>记录</i><i>模板</i><i>诊断</i></div>
+        <div class="wfm">
+          <div class="wfr">
+            <div class="wfb"><h5>✓ 方案</h5>方案 3 · F3 凸度 0.30 <span class="wfg">当前</span></div>
+            <div class="wfb"><h5>✓ 磨前直径</h5><span class="wfbig">649.85</span> mm（台账）</div>
+            <div class="wfb"><h5>✓ 磨削量</h5><span class="wfbig">0.40</span> mm → 目标 649.45</div>
+            <div class="wfb"><h5>✓ 磨削起点 Z</h5><span class="wfbig">125.0</span> mm</div>
+          </div>
+          <div class="wfi">辊身实测 2048.0 mm，比名义短 2.0 mm：两端各截 1.0 mm（在端部非工作区内）。下发快照将记录此项。</div>
+          <div class="wfw">上次（10-28）调整过：拖板速度 2300 → 2100、光磨道次 1 → 2。<u>沿用</u> · <u>不沿用</u></div>
+          <div class="wfb" style="flex:1">
+            <h5>本次调整 2 项</h5>
+            <table>
+              <tr><th>工序</th><th>参数</th><th>方案值</th><th>本次值</th><th>允许</th></tr>
+              <tr><td>3 半精磨</td><td>拖板速度</td><td>2300</td><td class="wfchg">2100</td><td>2070–2530</td></tr>
+              <tr><td>5 光磨</td><td>光磨道次</td><td>1</td><td class="wfchg">2</td><td>≥ 1</td></tr>
+            </table>
+          </div>
+          <div class="wfb">程序步骤：自动对刀 ☑ · 磨前测量 ☑ · 磨后测量 ☑ · 修整 ☐</div>
+        </div>
+        <div class="wfk"><b class="wfp">✓ 确认下发</b><b>换方案</b><b>本次调整</b><b>实测直径</b><b>示教起点 Z</b><b>看辊形</b><b>看工艺</b><b>返回</b></div>
+      </div></div>
+      <ul>
+        <li>四项必填放最上面，沿用现有核对清单；新增三类提示按优先级从上到下：长度对齐（信息）、上次调整（选择）、标准已更新（选择，见下）。</li>
+        <li>"换方案"只影响这一次，必须选原因（列表）。</li>
+        <li>"本次调整"打开参数表，只列可调参数，输入超范围不收并说明范围。</li>
+        <li>标准模板已更新时，在长度提示下方显示："复制自'F3-凸度300'，标准已更新（11-01）。<u>本次改用新的</u> · <u>继续用方案 3</u>"；若为"必须采用"，只显示说明和"知道了"。</li>
+      </ul>
+      <p class="wfa"><b>要确认</b>：① "上次调整"默认选沿用还是不沿用？② 三类提示同时出现时是否太多？是否需要合并成一个"本次注意"框？③ 换方案的原因列表有哪些？</p>
+    </section>
+
+    <section id="s6" class="major">
+      <h2><span class="no">6</span>自动页参数区（运行中调整）</h2>
+      <div class="wfs"><div class="wf">
+        <div class="wft"><span>■ 自动磨削 · W-1023 · 方案 3 · 半精磨 第 3/6 道</span><span>操作者：张三</span><span style="margin-left:auto">2026-11-02 10:40</span></div>
+        <div class="wfl"><i>待磨</i><i>轧辊</i><i class="wfon">自动</i><i>手动</i><i>记录</i><i>模板</i><i>诊断</i></div>
+        <div class="wfm">
+          <div class="wfc" style="height:13cqw;display:flex;align-items:center;justify-content:center;opacity:.6">（曲线区不变）</div>
+          <div class="wfr">
+            <div class="wfb">
+              <h5>速度</h5>
+              <table>
+                <tr><td>拖板速度</td><td>方案 2300</td><td class="wfchg">本次 2100</td></tr>
+                <tr><td>头架转速</td><td>28</td><td>28</td></tr>
+                <tr><td>砂轮线速度</td><td>35</td><td>🔒</td></tr>
+              </table>
+            </div>
+            <div class="wfb">
+              <h5>进给 · 道次</h5>
+              <table>
+                <tr><td>周期进给</td><td>0.010</td><td class="wfchg">0.008 ⏳</td></tr>
+                <tr><td>磨削道次</td><td>6</td><td>6</td></tr>
+                <tr><td>光磨道次</td><td>1</td><td class="wfchg">2</td></tr>
+              </table>
+            </div>
+          </div>
+          <div class="wfw">周期进给 0.010 → 0.008：已下发，等待生效（NC 下一道次采用）。上一次修改生效前不能再改。</div>
+        </div>
+        <div class="wfk"><b>循环启动</b><b>进给保持</b><b class="wfp">改参数</b><b>跳到工序</b><b>提前结束</b><b>补偿</b><b>测量</b><b>结束</b></div>
+      </div></div>
+      <ul>
+        <li>参数区每行显示"方案值 / 本次值"，本次改过的加下划线；不可调的显示锁。</li>
+        <li>按接口约定第 3 节：改完显示"等待生效"，NC 采用后变为"第 4 道起生效"；未生效前不收新的修改。</li>
+      </ul>
+    </section>
+
+    <section id="s7" class="major">
+      <h2><span class="no">7</span>磨削记录</h2>
+      <div class="wfs"><div class="wf">
+        <div class="wft"><span>■ 记录 · W-1023 · 2026-11-02 10:15</span><span>操作者：张三</span><span style="margin-left:auto">合格</span></div>
+        <div class="wfl"><i>待磨</i><i>轧辊</i><i>自动</i><i>手动</i><i class="wfon">记录</i><i>模板</i><i>诊断</i></div>
+        <div class="wfm">
+          <div class="wfr">
+            <div class="wfb"><h5>按什么设定</h5>方案 3 · 下发序号 118（NC 已确认）<br>长度对齐：两端各截 1.0 mm</div>
+            <div class="wfb"><h5>人做了哪些决定</h5>核对时调整 2 项 · 运行中调整 1 项（第 4 道起）<br>换方案：无</div>
+            <div class="wfb"><h5>结果</h5>649.86 → 649.46 · 凸度 0.301 · 合格</div>
+            <div class="wfb"><h5>出过什么事</h5>倍率越界 1 次（第 5 道 &lt; 50%）<br>道次表完整</div>
+          </div>
+          <div class="wfb" style="flex:1">
+            <h5>道次表（实际怎么磨的）</h5>
+            <table>
+              <tr><th>工序</th><th>道次</th><th>左折返 Z / 停留 / 倍率</th><th>右折返 Z / 停留 / 倍率</th><th>补偿</th><th>平均倍率</th><th>非 100%</th></tr>
+              <tr><td>半精磨</td><td>3</td><td>−1023.9 / 1.0 / 100%</td><td>1024.0 / 1.0 / 100%</td><td>+0.002</td><td>100%</td><td>0%</td></tr>
+              <tr><td>半精磨</td><td>4</td><td>−1024.0 / 1.0 / 100%</td><td>1023.9 / 1.1 / 95%</td><td>+0.001</td><td>97%</td><td>18%</td></tr>
+              <tr><td>半精磨</td><td>5</td><td>−1023.9 / 1.0 / 45%</td><td>1024.0 / 1.0 / 100%</td><td>+0.001</td><td>88%</td><td>31%</td></tr>
+            </table>
+            <div style="margin-top:.3cqw;opacity:.75">拖板设定 2100 × 平均倍率 93% ≈ 1950 mm/min · 曲线（降采样）见"过程曲线"</div>
+          </div>
+        </div>
+        <div class="wfk"><b>过程曲线</b><b>下发快照</b><b>调整清单</b><b>事件</b><b class="wfp">存为新方案…</b><b>返磨</b><b>打印</b><b>返回</b></div>
+      </div></div>
+      <ul>
+        <li>顶部四格对应"五个问题"中的四个，第五个（实际怎么磨的）是下面的道次表。</li>
+        <li>"存为新方案…"只在有调整的记录上可用，工艺员权限；新方案来源记为这次作业。</li>
+      </ul>
+      <p class="wfa"><b>要确认</b>：道次表默认展开还是折叠？质检最常看的是哪几列？</p>
+    </section>
+
+    <section id="s8" class="major">
+      <h2><span class="no">8</span>标准模板"必须采用"</h2>
+      <div class="wfs"><div class="wf">
+        <div class="wft"><span>■ 标准模板 › F3-凸度300 › 保存更新</span><span>工艺员：李四</span><span style="margin-left:auto">2026-11-02 14:10</span></div>
+        <div class="wfl"><i>待磨</i><i>轧辊</i><i>自动</i><i>手动</i><i>记录</i><i class="wfon">模板</i><i>诊断</i></div>
+        <div class="wfm">
+          <div class="wfb">本次更新：凸度 0.30 → 0.28 · 半精磨拖板速度 2300 → 2200　　☑ 必须采用</div>
+          <div class="wfb" style="flex:1">
+            <h5>当前方案复制自本模板的轧辊（6 支）</h5>
+            <table>
+              <tr><th>辊号</th><th>当前方案</th><th>与模板</th><th>下次来磨时</th></tr>
+              <tr><td>W-1021</td><td>方案 2</td><td class="good">一致</td><td>必须采用</td></tr>
+              <tr><td>W-1023</td><td>方案 3</td><td class="good">一致</td><td>必须采用</td></tr>
+              <tr><td>W-1025</td><td>方案 1</td><td class="good">一致</td><td>必须采用</td></tr>
+              <tr class="wfsel"><td>W-1027</td><td>方案 4</td><td class="bad">已改动（精磨道次 3 → 4）</td><td>[ 改为普通提示 ▾ ]</td></tr>
+              <tr><td>W-1028</td><td>方案 2</td><td class="good">一致</td><td>必须采用</td></tr>
+              <tr><td>W-1033</td><td>方案 1</td><td class="bad">已改动（凸度 0.32）</td><td>[ 不提示 ▾ ]</td></tr>
+            </table>
+          </div>
+          <div class="wfi">不会立即改任何轧辊。每支辊下次来磨时，从新模板复制出新方案并设为当前，原方案转为历史。</div>
+        </div>
+        <div class="wfk"><b class="wfp">确认保存</b><b>全部必须采用</b><b>全部普通提示</b><b>看差异</b><b>取消</b><b class="wfo"> </b><b class="wfo"> </b><b class="wfo"> </b></div>
+      </div></div>
+      <ul>
+        <li>"已改动"的辊默认"改为普通提示"，可逐支改为"必须采用"或"不提示"。</li>
+        <li>不勾"必须采用"时，列表仍显示，全部默认"普通提示"。</li>
+      </ul>
+    </section>
+
+    <section id="s9" class="major">
+      <h2><span class="no">9</span>汇总：请甲方和操作工确认</h2>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>画面</th><th>问题</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>轧辊页</td><td>方案列表放轧辊页右侧，还是单独一页？操作者是否需要看到历史方案？</td></tr>
+          <tr><td class="num">2</td><td>轧辊页</td><td>"用途 / 机架"是否作为筛选条件？</td></tr>
+          <tr><td class="num">3</td><td>辊形</td><td>端部非工作区默认取端部圆柱段，是否需要单独填写？</td></tr>
+          <tr><td class="num">4</td><td>工艺</td><td>默认可调范围是否合适？工艺员是否逐个参数改范围？</td></tr>
+          <tr><td class="num">5</td><td>复制</td><td>是否需要"只复制工艺"？</td></tr>
+          <tr><td class="num">6</td><td>核对</td><td>"上次调整"默认沿用还是不沿用？三类提示是否合并？换方案原因有哪些？</td></tr>
+          <tr><td class="num">7</td><td>记录</td><td>道次表默认展开还是折叠？质检最常看哪几列？</td></tr>
+          <tr><td class="num">8</td><td>全局</td><td>方案编辑权限默认给工艺员（管理员）是否合适？现场是否有专职工艺员？</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NC 接口约定</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #F2F4F7; --surface: #FFFFFF; --ink: #16191E; --ink-2: #4A5461; --ink-3: #5A6470;
+    --line: #D3D9E1; --line-soft: #E6EAF0; --fill: #F6F8FA;
+    --accent: #15507F; --accent-ink: #FFFFFF; --accent-soft: #E3EDF6;
+    --danger: #B3241C; --danger-soft: #FBEBE9;
+    --ok: #1F7A4D; --ok-soft: #E2F2E9;
+    --warn: #8A5A00; --warn-soft: #FBF1D9;
+    --next: #F6D24A;
+    --key-bg: #FFFFFF; --key-line: #8C95A1; --nav: #0F4370; --sts: #DDE3EA;
+    --sans: "Noto Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    --mono: "IBM Plex Mono", Consolas, "Cascadia Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+      --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+      --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+      --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+      --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+      --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70; --sts: #232C37;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0F141A; --surface: #171E26; --ink: #E6EBF1; --ink-2: #A9B4C1; --ink-3: #97A3B1;
+    --line: #2D3845; --line-soft: #222B35; --fill: #1B232C;
+    --accent: #7FB3DE; --accent-ink: #0F141A; --accent-soft: #1C2D3E;
+    --danger: #F0877D; --danger-soft: #3A201E; --ok: #6CC39A; --ok-soft: #17302A;
+    --warn: #E3B454; --warn-soft: #33290F; --next: #E8C54A;
+    --key-bg: #1D2530; --key-line: #4D5A68; --nav: #1E4A70; --sts: #232C37;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.7; padding-inline: 16px; padding-block: 24px 64px; margin: 0; }
+  .page { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 32px; }
+  @media (min-width: 1120px) {
+    .page { grid-template-columns: 220px minmax(0, 1fr); }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow: auto; }
+  }
+  main { min-width: 0; max-width: 980px; }
+  .toc { font-size: 14px; }
+  .toc h2 { font-size: 13px; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 8px; font-weight: 500; display: block; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a { color: var(--ink-2); text-decoration: none; display: block; padding: 3px 8px; border-radius: 4px; }
+  .toc a:hover, .toc a:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+  .toc .sub { padding-left: 14px; font-size: 13px; }
+  .cover { border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+  .eyebrow { font-family: var(--mono); font-size: 13px; color: var(--ink-3); }
+  h1 { font-size: 32px; line-height: 1.3; margin: 6px 0 10px; text-wrap: balance; }
+  .lede { font-size: 17px; color: var(--ink-2); max-width: 66ch; margin: 0; }
+  section { margin-top: 44px; }
+  h2 { font-size: 24px; line-height: 1.35; margin: 0 0 14px; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+  h2 .no { font-family: var(--mono); font-size: 16px; color: var(--accent); font-weight: 600; min-width: 1.6em; }
+  h3 { font-size: 19px; margin: 28px 0 10px; text-wrap: balance; }
+  h4 { font-size: 16px; margin: 18px 0 6px; color: var(--ink-2); }
+  p { margin: 0 0 12px; max-width: 72ch; }
+  ul, ol { margin: 0 0 12px; padding-left: 1.4em; }
+  li { margin: 3px 0; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tw { overflow-x: auto; margin: 0 0 16px; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 14.5px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--fill); font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+  td.num, th.num { font-family: var(--mono); text-align: center; white-space: nowrap; }
+  .nowrap { white-space: nowrap; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 7px; line-height: 1.7; white-space: nowrap; }
+  .pill.src { background: var(--ok-soft); color: var(--ok); }
+  .pill.inf { background: var(--warn-soft); color: var(--warn); }
+  .pill.new { background: var(--accent-soft); color: var(--accent); }
+  .box { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; margin: 0 0 16px; }
+  .box > :last-child { margin-bottom: 0; }
+  .box .tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; padding: 0 8px; margin-bottom: 6px; background: var(--accent-soft); color: var(--accent); }
+  .box.ask .tag { background: var(--warn-soft); color: var(--warn); }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 18px 0 0; }
+  .summary div { background: var(--surface); border: 1px solid var(--line); padding: 12px 14px; }
+  .summary b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .summary span { font-size: 14px; color: var(--ink-2); }
+  .key { display: inline-block; font-size: 13px; font-weight: 500; padding: 0 8px; border: 1px solid var(--key-line); background: var(--key-bg); border-radius: 3px; white-space: nowrap; line-height: 1.8; }
+
+  .co { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #10151A; color: #FFFFFF; font-size: 11px; font-weight: 700; font-style: normal; line-height: 1; flex: none; }
+  .flow { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin: 0 0 6px; }
+  .flow .st { border: 1px solid var(--line); background: var(--surface); padding: 1px 8px; font-size: 14px; white-space: nowrap; }
+  .flow .ar { color: var(--ink-3); }
+  .flow .pb { border-color: var(--danger); color: var(--danger); }
+
+  /* 画面样机：代表机床上的真实屏幕，固定浅色，不随本文深浅色切换；取色见第 8 节 */
+  .scr {
+    --s-bg: #EBF0F6; --s-win: #EBF0F6; --s-winhd: #C6CBD1; --s-act: #0199C8; --s-field: #FFFFFF; --s-ro: #DDE2E7;
+    --s-focus: #67C2DF; --s-sel: #A9DCEC; --s-cur: #B5BEC3; --s-lb: #1B2228; --s-lb-key: #404C58; --s-tile: #3D5466;
+    --s-key: #DDE1EA; --s-gap: #A7B1BA; --s-dim: #8A96A1; --s-ok: #37703D; --s-no: #8E1B1B;
+    --s-ink: #141A1F; --s-ink2: #4A5864; --s-alarm: #C4161C; --s-hd: #E6EBF1; --s-path: #A7B1BA; --s-chan: #6D7F8D;
+    --s-orange: #E8891A; --s-run: #3FAE49; --s-q: #F4E3A1; --s-help: #F9EEAE; --s-helpkey: #F5CF2E; --s-side: #6D7F8D;
+    display: grid; grid-template-columns: 58px minmax(0, 1fr) 150px; grid-template-rows: 44px minmax(0, 1fr) 24px 54px;
+    border: 2px solid #10151A; background: var(--s-bg); color: var(--s-ink); font-size: 12px; line-height: 1.4;
+    min-width: 900px; margin: 0 0 8px; color-scheme: light;
+  }
+  .scr.side { grid-template-columns: 190px 58px minmax(0, 1fr) 150px; }
+  .scr .sd { grid-row: 1 / -1; background: #F3F6F9; border-right: 1px solid var(--s-gap); display: flex; flex-direction: column; font-size: 11px; }
+  .scr .sd b { display: block; background: var(--s-side); color: #FFFFFF; padding: 3px 6px; font-weight: 500; letter-spacing: 0.04em; }
+  .scr .sd div { padding: 2px 6px 4px; }
+  .scr .lb { grid-row: 1 / -1; background: var(--s-lb); display: flex; flex-direction: column; gap: 3px; padding: 4px 3px; }
+  .scr .lb span { color: #FFFFFF; text-align: center; font-size: 10px; padding: 4px 0 3px; line-height: 1.2; border-radius: 2px; display: flex; flex-direction: column; align-items: center; gap: 1px; border-bottom: 1px solid #2E3A44; }
+  .scr .lb span i { font-style: normal; font-size: 16px; line-height: 1.1; }
+  .scr .lb span.on { background: var(--s-act); }
+  .scr .lb .end { margin-top: auto; border-bottom: 0; }
+  .scr .hd { grid-row: 1; display: flex; align-items: center; gap: 14px; padding: 0 10px; background: var(--s-hd); white-space: nowrap; overflow: hidden; }
+  .scr .hd .app { font-weight: 700; font-size: 13px; }
+  .scr .hd .al { color: var(--s-alarm); font-weight: 700; }
+  .scr .hd .ttl { color: var(--s-ink2); }
+  .scr .hd .r { margin-left: auto; color: var(--s-ink2); text-align: right; font-size: 11px; line-height: 1.25; }
+  .scr .tl { grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; }
+  .scr .tl span { background: var(--s-tile); color: #FFFFFF; display: grid; place-items: center; font-weight: 700; font-size: 11px; line-height: 1.15; text-align: center; }
+  .scr .cen { grid-row: 2; display: flex; flex-direction: column; min-width: 0; }
+  .scr .path { background: var(--s-path); color: var(--s-ink); display: flex; justify-content: space-between; gap: 12px; padding: 2px 10px; white-space: nowrap; overflow: hidden; min-height: 20px; }
+  .scr .path.act { background: var(--s-act); color: #FFFFFF; }
+  .scr .path .x { font-weight: 700; }
+  .scr .chan { background: var(--s-chan); color: #FFFFFF; display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; padding: 2px 10px; white-space: nowrap; overflow: hidden; }
+  .scr .chan > :last-child { text-align: right; }
+  .scr .chan .run { color: #9BE3A2; font-weight: 700; }
+  .scr .wa { flex: 1; display: grid; gap: 3px; padding: 3px; min-height: 250px; }
+  .scr .win { background: var(--s-win); border: 1px solid var(--s-gap); min-width: 0; display: flex; flex-direction: column; }
+  .scr .win > h6 { margin: 0; background: var(--s-winhd); padding: 2px 8px; font-size: 12px; font-weight: 500; display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
+  .scr .win.act > h6 { background: var(--s-act); color: #FFFFFF; }
+  .scr .win > div { padding: 3px 8px; flex: 1; min-width: 0; }
+  .scr .win .ft { flex: none; background: var(--s-cur); padding: 1px 8px; font-size: 11px; }
+  .scr .rgt { grid-row: 2; display: flex; flex-direction: column; gap: 3px; background: var(--s-gap); padding: 0 3px 3px; }
+  .scr .fb { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--s-lb); padding: 2px; margin: 0 -3px; }
+  .scr .fb span { background: var(--s-lb-key); color: #FFFFFF; text-align: center; padding: 3px 0; font-size: 11px; }
+  .scr .fb span.on { background: #8BABB8; color: var(--s-ink); }
+  .scr .fb span.dim { color: #7D8A95; }
+  .scr .vk { flex: 1; display: grid; grid-template-rows: repeat(8, minmax(30px, 1fr)); gap: 3px; padding-top: 3px; }
+  .scr .vk span, .scr .hk span { background: var(--s-key); display: grid; place-items: center; text-align: center; padding: 2px 3px; line-height: 1.2; }
+  .scr .vk span.on, .scr .hk span.on { background: var(--s-act); color: #FFFFFF; }
+  .scr .vk span.no { background: var(--s-no); color: #FFFFFF; font-weight: 700; }
+  .scr .vk span.ok { background: var(--s-ok); color: #FFFFFF; font-weight: 700; }
+  .scr .vk span.dim, .scr .hk span.dim { color: var(--s-dim); }
+  .scr .vk.help span { background: var(--s-helpkey); }
+  .scr .dlg { grid-row: 3; background: var(--s-gap); padding: 3px 10px; white-space: nowrap; overflow: hidden; }
+  .scr .dlg.q { background: var(--s-q); font-weight: 700; }
+  .scr .hk { grid-row: 4; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)) 150px; gap: 3px; background: var(--s-gap); padding: 3px; }
+  .scr .hk .ext { display: grid; grid-template-columns: 1fr auto auto; gap: 2px; background: transparent; padding: 0; place-items: stretch; }
+  .scr .hk .ext span { font-size: 16px; font-weight: 700; }
+  .scr .hk .ext span.pg { font-size: 11px; width: 24px; background: var(--s-key); font-weight: 400; }
+  .scr .hk .ext span.pg.on { background: var(--s-tile); color: #FFFFFF; }
+  /* 列位置：普通样机 2 / 3 列，带侧屏的样机整体右移一列 */
+  .scr .hd, .scr .cen { grid-column: 2; }
+  .scr .tl, .scr .rgt { grid-column: 3; }
+  .scr .dlg, .scr .hk { grid-column: 2 / 4; }
+  .scr.side .lb { grid-column: 2; }
+  .scr.side .hd, .scr.side .cen { grid-column: 3; }
+  .scr.side .tl, .scr.side .rgt { grid-column: 4; }
+  .scr.side .dlg, .scr.side .hk { grid-column: 3 / 5; }
+  .scr .fm { display: grid; grid-template-columns: auto minmax(80px, 1fr) auto; gap: 3px 6px; align-items: center; }
+  .scr .fm label { white-space: nowrap; }
+  .scr .fm .v { background: var(--s-field); text-align: right; padding: 0 6px; font-family: var(--mono); white-space: nowrap; }
+  .scr .fm .v.fo { background: var(--s-focus); }
+  .scr .fm .v.tg { text-align: center; font-family: var(--sans); }
+  .scr .fm .v.dd { text-align: center; font-family: var(--sans); }
+  .scr .fm .v.dd::after { content: " ▾"; color: var(--s-ink2); }
+  .scr .fm .ro { color: var(--s-ink2); text-align: right; font-family: var(--mono); }
+  .scr .fm .u { color: var(--s-ink2); font-size: 11px; white-space: nowrap; }
+  .scr .fm .u.tg { background: var(--s-field); color: var(--s-ink); padding: 0 5px; }
+  .scr .fm .sp { grid-column: 1 / -1; height: 4px; }
+  .scr .fm .gh { grid-column: 1 / -1; color: var(--s-ink2); }
+  .scr .pl { background: #FDFEFF; border: 1px solid var(--s-gap); display: flex; flex-direction: column; font-size: 11.5px; min-width: 0; }
+  .scr .pl span { padding: 3px 6px; border-bottom: 1px solid #E1E7EC; white-space: nowrap; overflow: hidden; }
+  .scr .pl span.on { background: var(--s-focus); }
+  .scr .gfx { border: 1px dashed var(--s-gap); background: #F6F8FB; display: grid; place-items: center; text-align: center; color: var(--s-ink2); min-height: 110px; padding: 6px; }
+  .scr .or { color: var(--s-orange); font-weight: 700; }
+  .scr .av { display: grid; grid-template-columns: auto 1fr 1fr; gap: 0 12px; align-items: baseline; }
+  .scr .av b { font-size: 22px; font-weight: 500; }
+  .scr .av .n { font-family: var(--mono); font-size: 22px; font-weight: 500; text-align: right; }
+  .scr .av .n.s { font-size: 13px; }
+  .scr .av .h { font-size: 11px; color: var(--s-ink2); text-align: right; }
+  .scr .tfs { display: grid; grid-template-columns: 30px 1fr auto auto; gap: 0 8px; align-items: baseline; }
+  .scr .tfs b { font-size: 20px; font-weight: 500; }
+  .scr .tfs .n { font-family: var(--mono); }
+  .scr .tfs .n.big { font-size: 18px; }
+  .scr .tfs .sub { grid-column: 2 / -1; font-size: 11px; color: var(--s-ink2); display: flex; justify-content: space-between; gap: 8px; }
+  .scr .bar { grid-column: 2 / -1; height: 5px; background: #FFFFFF; border: 1px solid var(--s-gap); position: relative; margin: 1px 0 3px; }
+  .scr .bar i { position: absolute; inset: 0 auto 0 0; background: var(--s-run); }
+  .scr table { font-size: 11.5px; background: transparent; }
+  .scr th, .scr td { padding: 2px 6px; border: 0; border-bottom: 1px solid #D5DCE3; white-space: nowrap; }
+  .scr th { background: var(--s-winhd); color: var(--s-ink); font-weight: 500; }
+  .scr tr.on td { background: var(--s-sel); }
+  .scr tr.cur td { background: var(--s-cur); }
+  .scr tr.grp td { background: #DCE1E6; color: var(--s-ink2); }
+  .scr tr.dk td { background: #5A6570; color: #FFFFFF; }
+  .scr td.go { text-align: right; }
+  .scr td.go::after { content: "→"; display: inline-block; border: 1px solid #FFFFFF; padding: 0 4px; margin-left: 6px; }
+  .scr .lamp { display: inline-flex; align-items: center; gap: 4px; margin: 0 10px 3px 0; white-space: nowrap; }
+  .scr .lamp::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #B7C0C8; border: 1px solid #7D8994; }
+  .scr .lamp.on::before { background: var(--s-run); border-color: #2E7D32; }
+  .scr .help { background: var(--s-help); border: 2px solid #EED32E; padding: 6px 10px; }
+  .scr .help h6 { margin: 0 0 4px; font-size: 12.5px; text-decoration: underline; }
+  .scr .dd-list { background: #FFFFFF; border: 1px solid var(--s-gap); box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+  .scr .dd-list span { display: block; padding: 3px 8px; text-align: center; }
+  .scr .dd-list span.on { background: var(--s-focus); }
+  /* 曲线：画在样机里，用固定的屏幕颜色 */
+  .scr svg.pt { width: 100%; height: auto; display: block; background: #FFFFFF; border: 1px solid #D5DCE3; }
+  .scr svg.pt text { font-family: var(--sans); font-size: 11px; fill: #4A5864; }
+  .scr .kv { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; font-size: 12px; }
+  .scr .kv span:nth-child(even) { font-family: var(--mono); text-align: right; }
+  .scr .big { font-family: var(--mono); font-size: 26px; font-weight: 600; line-height: 1.1; }
+  .scr .band { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; padding: 3px 8px; background: #F6F8FB; border: 1px solid var(--s-gap); white-space: nowrap; }
+  .scr .band .m { font-family: var(--mono); }
+  .scr .mx td { text-align: right; font-family: var(--mono); }
+  .scr .mx td:first-child { text-align: left; font-family: var(--sans); }
+  .scr .mx th.run, .scr .mx td.run { background: #F4C7C3; }
+  .scr .mx th.nx, .scr .mx td.nx { background: #FBEBB5; }
+  .scr .mx td.ed { color: #B3241C; font-weight: 700; }
+  .scr .err { color: #B3241C; font-weight: 700; }
+  .scr .okc { color: #2E7D32; font-weight: 700; }
+  .lg { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; white-space: nowrap; font-size: 14px; }
+  .lg i { display: inline-block; width: 24px; height: 0; border-top: 3px solid; }
+  .lg i.d { border-top-style: dashed; }
+  .lg i.dot { width: 8px; height: 8px; border: 0; border-radius: 50%; }
+  .cap { font-size: 13px; color: var(--ink-3); margin: 0 0 20px; }
+  footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+  @media (max-width: 560px) { h1 { font-size: 26px; } h2 { font-size: 21px; } }
+  @media print {
+    body { background: #FFFFFF; color: #000000; padding: 0; font-size: 10.5pt; }
+    .toc { display: none; }
+    .page { display: block; max-width: none; }
+    main { max-width: none; }
+    section.major { break-before: page; }
+    table, .box, .scr { break-inside: avoid; }
+    .tw { overflow: visible; }
+    .scr { min-width: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @page { size: A4 landscape; margin: 12mm; }
+</style>
+<style>
+  .pnl { display: grid; grid-template-columns: repeat(7, minmax(86px, 1fr)); gap: 10px 8px; background: #E4E6E3; border: 1px solid #B9BDB8; padding: 14px; min-width: 700px; color-scheme: light; }
+  .pnl .b { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: #1B1F23; text-align: center; }
+  .pnl .b .lb2 { background: #F2B632; color: #1B1F23; padding: 1px 6px; font-weight: 700; white-space: nowrap; border: 2px solid #1B1F23; }
+  .pnl .b .k { width: 46px; height: 46px; border-radius: 50%; border: 5px solid #1B1F23; }
+  .pnl .b .io { font-family: var(--mono); font-size: 11px; color: #4A5864; }
+  .pnl .b.es .k { width: 64px; height: 64px; background: #C8102E; border-color: #F2C200; border-width: 10px; }
+  .pnl .b.sp { opacity: .55; }
+</style>
+<style>
+  .scr .L1 { font-family: var(--mono); font-size: 30px; font-weight: 600; line-height: 1.1; text-align: right; white-space: nowrap; }
+  .scr .L2 { font-family: var(--mono); font-size: 20px; font-weight: 600; line-height: 1.15; white-space: nowrap; }
+  .scr .ax { display: grid; grid-template-columns: 64px 1fr; align-items: center; border-bottom: 1px solid #D5DCE3; padding: 1px 8px; }
+  .scr .ax b { font-size: 22px; font-weight: 600; }
+  .scr .ax small { display: block; font-size: 10.5px; color: #4A5864; font-weight: 400; line-height: 1; }
+  .scr .ax.on { background: var(--s-focus); }
+  .scr .tile { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .scr .tile span { background: #FFFFFF; border: 1px solid #B5BEC3; padding: 6px 4px; text-align: center; font-size: 11.5px; }
+  .scr .tile span.lit { border-color: #2E7D32; box-shadow: inset 4px 0 0 #3FAE49; }
+  .pass { color: var(--ok); font-weight: 700; }
+  .fail { color: var(--danger); font-weight: 700; }
+  table.score td, table.score th { text-align: center; }
+  table.score td:first-child, table.score th:first-child { text-align: left; }
+</style>
+<style>td.bad{color:var(--danger);font-weight:700}td.good{color:var(--ok);font-weight:700}</style>
+</head>
+<body>
+<style>td.bad{color:var(--danger);font-weight:700}td.good{color:var(--ok);font-weight:700}pre{background:var(--fill);padding:12px 14px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.5}</style>
+<div class="page">
+  <nav class="toc" aria-label="目录">
+    <h2>目录</h2>
+    <ol>
+      <li><a href="#s0">0 目的与原则</a></li>
+      <li><a href="#s1">1 现有接口</a></li>
+      <li><a href="#s2">2 作业下发握手</a></li>
+      <li><a href="#s3">3 运行中改参数</a></li>
+      <li><a href="#s4">4 道次数据环形缓冲</a></li>
+      <li><a href="#s5">5 辊形点列</a></li>
+      <li><a href="#s6">6 补偿与 DRF</a></li>
+      <li><a href="#s7">7 新增变量清单</a></li>
+      <li><a href="#s8">8 联调测试用例</a></li>
+      <li><a href="#s9">9 请 NC 程序员确认</a></li>
+    </ol>
+  </nav>
+  <main>
+    <header class="cover">
+      <div class="eyebrow">RGX · MK84160 · SINUMERIK ONE · 接口约定 · 初稿 · 2026-11-02 · 待 NC 程序员 / 机床厂确认后双方签认</div>
+      <h1>上位机与 NC 接口约定</h1>
+      <p class="lede">本文是《轧辊与磨削方案设计说明》第 0 期的交付物，约定上位机（RGX）与 NC 之间的数据交换：作业下发、运行中改参数、道次数据回传、辊形点列、补偿与 DRF。上位机只按逻辑名读写，物理地址全部由 <code>tagmap.json</code> 决定；本文给出的地址是建议值，以 NC 程序员定稿为准。</p>
+    </header>
+
+    <section id="s0" class="major">
+      <h2><span class="no">0</span>目的与原则</h2>
+      <div class="summary">
+        <div><b>上位机不在控制回路里</b><span>补偿、折返、进给全部由 NC 完成。上位机关掉、断网、卡死，机床照常把这支辊磨完。</span></div>
+        <div><b>NC 只在启动前等上位机</b><span>唯一允许的等待：循环启动前参数必须完整有效。运动中 NC 程序不得出现等待上位机信号的 WAIT 或条件循环。</span></div>
+        <div><b>一个变量只有一个写方</b><span>每个变量要么上位机写、要么 NC 写，不共用；状态靠序号比较，不靠"置位—清零"。</span></div>
+        <div><b>序号最后写</b><span>写一组数据时，数据先写完，最后写序号或有效标志；读方看到序号变化才读，避免读到一半。</span></div>
+        <div><b>命令位是脉冲</b><span>沿用现有约定：上位机写 true → 等脉宽 → 写 false，PLC 上升沿触发并自复位。</span></div>
+      </div>
+    </section>
+
+    <section id="s1" class="major">
+      <h2><span class="no">1</span>现有接口（tagmap.sample.json）</h2>
+      <p>现在的样例映射全部用通道 R 参数，地址是占位值。本文不改变它们的含义，只补充握手和新数据。</p>
+      <div class="tw"><table>
+        <thead><tr><th>R 参数</th><th>逻辑名</th><th>写方</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td class="num">R100–R102</td><td><code>job.rollRadiusMm</code>、<code>job.bodyLengthMm</code>、<code>job.feedMmPerMin</code></td><td>上位机</td><td>辊件几何与默认进给</td></tr>
+          <tr><td class="num">R110</td><td><code>job.parametersValid</code></td><td>上位机</td><td>参数有效；现在只在下发最后写 true（见第 2 节）</td></tr>
+          <tr><td class="num">R120–R125</td><td><code>job.stepCount</code>、<code>currentStepOrder</code>、<code>currentPass</code>、<code>totalPasses</code>、<code>cycleComplete</code>、<code>control.targetStepOrder</code></td><td>混合</td><td>工序数（上位机），当前工序 / 道次 / 结束（NC），跳转目标（上位机）</td></tr>
+          <tr><td class="num">R130–R131</td><td>圆度、偏心</td><td>测量系统</td><td>—</td></tr>
+          <tr><td class="num">R200</td><td><code>job.profile.pointCount</code></td><td>上位机</td><td>辊形点数</td></tr>
+          <tr><td class="num">R210–R213</td><td>前馈 a、b，行程版本号，降级级别</td><td>NC</td><td>补偿状态</td></tr>
+          <tr><td class="num">R300–R400 / R500–R600</td><td><code>job.profile.bodyPositionMm</code> / <code>radiusOffsetMm</code></td><td>上位机</td><td>辊形点列，各 101 个</td></tr>
+          <tr><td class="num">R620–R935</td><td><code>job.step.*</code></td><td>上位机</td><td>每道工序参数，各 16 个槽位</td></tr>
+          <tr><td class="num">R1000–R1127</td><td><code>job.step.extra</code></td><td>上位机</td><td>辅助工序参数</td></tr>
+          <tr><td>aaOff[u1,1]</td><td><code>compensation.realtimeOffsetMm</code></td><td>NC</td><td><code>$AA_OFF</code></td></tr>
+        </tbody>
+      </table></div>
+      <p><b>建议</b>：新增的块（改参数暂存区、道次缓冲）优先放在 GUD 数组里（结构清楚，不会被操作工在 R 参数画面误改）；NC 程序员若坚持用 R 参数，本文第 7 节给出 R1200 起的建议区段，与现有占用不冲突。</p>
+    </section>
+
+    <section id="s2" class="major">
+      <h2><span class="no">2</span>作业下发握手</h2>
+      <h3>现状与问题</h3>
+      <p>上位机下发时把全部参数写一遍，最后写 <code>parametersValid = true</code>。但开始写之前没有先把它置为 false：如果上一份作业留下的是 true，上位机写到一半崩溃，NC 会把"一半新、一半旧"的参数当成有效。</p>
+      <h3>约定</h3>
+      <div class="flow"><span class="st">① 写 valid = false</span><span class="ar">→</span><span class="st">② 读回确认为 false</span><span class="ar">→</span><span class="st">③ 写全部参数</span><span class="ar">→</span><span class="st">④ 写下发序号 downloadSeq + 1</span><span class="ar">→</span><span class="st">⑤ 写 valid = true</span></div>
+      <ul>
+        <li><b>NC 只在循环启动时检查</b>：valid 不为 true 拒绝启动并报警；为 true 时把 <code>downloadSeq</code> 锁存到 <code>acceptedSeq</code>。上位机读 <code>acceptedSeq</code> 确认"NC 正在磨的就是我下发的那一份"，并写进磨削记录。</li>
+        <li>运动中 NC 不再看 valid；上位机也不得在加工中重新下发整份作业（现有软件已在核对页挡住）。</li>
+        <li>中断后续磨：沿用同一份参数时不重新下发，<code>acceptedSeq</code> 不变；重新量过磨前直径需要重新下发的，走完整流程。</li>
+        <li>上位机在 ①–⑤ 任何一步失败：valid 停在 false，NC 拒绝启动，界面提示"下发未完成"。</li>
+      </ul>
+    </section>
+
+    <section id="s3" class="major">
+      <h2><span class="no">3</span>运行中改参数（原子生效）</h2>
+      <h3>现状与问题</h3>
+      <p>现在改参数是直接重写那一道工序的 R 参数，NC 在下一道次开始时读取，不重新置有效标志。问题：一道工序有多个参数，上位机逐个写的过程中 NC 恰好到了道次开始，就会读到"进给已改、道次数未改"这种组合；上位机也不知道新值是否已生效。</p>
+      <h3>约定：暂存区 + 序号</h3>
+      <div class="tw"><table>
+        <thead><tr><th>变量</th><th>写方</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td><code>job.edit.stepOrder</code></td><td>上位机</td><td>要改第几道工序</td></tr>
+          <tr><td><code>job.edit.*</code>（与 <code>job.step.*</code> 同名的一组单值）</td><td>上位机</td><td>该工序改后的全部参数（整组写，不只写改动项）</td></tr>
+          <tr><td><code>job.edit.seq</code></td><td>上位机</td><td>改参数序号，暂存区写完后加一</td></tr>
+          <tr><td><code>job.edit.appliedSeq</code></td><td>NC</td><td>NC 已采用的序号</td></tr>
+        </tbody>
+      </table></div>
+      <ul>
+        <li><b>上位机</b>：只有在 <code>appliedSeq == seq</code>（上一次已被采用）时才写暂存区；写完全部参数后最后写 <code>seq + 1</code>。否则提示"上一次修改尚未生效"，不收新的修改。</li>
+        <li><b>NC</b>：每个道次开始时比较，若 <code>seq ≠ appliedSeq</code>，把暂存区整组拷到对应工序槽位，再写 <code>appliedSeq = seq</code>。拷贝在 NC 程序内完成，对 NC 自己是原子的。NC 不等待，不比较就继续。</li>
+        <li><b>无竞争</b>：暂存区只有在"已采用"状态下才会被上位机改写，NC 只在序号变化后读它，两方不会同时操作同一块数据。</li>
+        <li><b>上位机显示</b>："已下发，等待生效" → 看到 <code>appliedSeq</code> 追上后显示"第 n 道起生效"，记录写入生效道次；超过一道次仍未生效显示"未生效"，不重发、不干预。</li>
+        <li>目标工序已磨完、或在当前道次改了不允许在线调整的参数：上位机侧照现有规则挡住，不写暂存区。</li>
+      </ul>
+    </section>
+
+    <section id="s4" class="major">
+      <h2><span class="no">4</span>道次数据环形缓冲</h2>
+      <p>用途：磨削记录的"道次表"（每道次左右折返的实际值、本道次补偿量），用于追溯端部质量与补偿收敛。只用于记录，所以采用 NC 不等上位机的环形缓冲。</p>
+      <h3>4.1 结构</h3>
+      <div class="tw"><table>
+        <thead><tr><th>变量</th><th>写方</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td><code>pass.slotCount</code></td><td>NC（常量）</td><td>槽位数 N，建议 16</td></tr>
+          <tr><td><code>pass.writeSeq</code></td><td>NC</td><td>已写完的最后一行的序号（从作业开始计，单调递增）</td></tr>
+          <tr><td><code>pass.overflowCount</code></td><td>NC</td><td>覆盖了未读行的次数</td></tr>
+          <tr><td><code>pass.readSeq</code></td><td>上位机</td><td>上位机已存库的最后序号（仅供 NC 判断溢出）</td></tr>
+          <tr><td><code>pass.row[k]</code>，k = seq mod N</td><td>NC</td><td>一行，字段见 4.2</td></tr>
+        </tbody>
+      </table></div>
+      <h3>4.2 一行的字段（建议 16 个实数）</h3>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>字段</th><th>单位</th><th>NC 侧来源（候选，待确认）</th></tr></thead>
+        <tbody>
+          <tr><td class="num">0</td><td>行序号 seq（<b>NC 最后写</b>）</td><td>—</td><td>计数器</td></tr>
+          <tr><td class="num">1</td><td>工序序号</td><td>—</td><td>即 <code>job.currentStepOrder</code></td></tr>
+          <tr><td class="num">2</td><td>道次号</td><td>—</td><td>即 <code>job.currentPass</code></td></tr>
+          <tr><td class="num">3–6</td><td>左折返：实际 Z、实际停留时间、折返时进给倍率、折返时实际 X</td><td>mm、s、%、mm</td><td>折返瞬间同步动作锁存：Z / X 实际位置、倍率、停留计时</td></tr>
+          <tr><td class="num">7–10</td><td>右折返：同上</td><td>mm、s、%、mm</td><td>同上</td></tr>
+          <tr><td class="num">11</td><td>本道次行程间补偿量</td><td>mm（半径）</td><td>NC 补偿程序</td></tr>
+          <tr><td class="num">12</td><td>补偿版本号</td><td>—</td><td>即 <code>compensation.strokeVersion</code></td></tr>
+          <tr><td class="num">13</td><td>DRF 偏置（X）</td><td>mm</td><td>DRF 偏置系统变量；自动时禁用则恒 0</td></tr>
+          <tr><td class="num">14</td><td>本道次平均磨削电流（可选）</td><td>A</td><td>NC 累加平均</td></tr>
+          <tr><td class="num">15</td><td>备用</td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <p>"折返瞬间"怎么界定、用哪些系统变量，由 NC 程序员按现有折返程序定（候选：Z 轴到达折返位置的程序段结束、或停留开始时，用同步动作把值写入 GUD）。字段顺序可调整，调整后同步改 tagmap 与本表。</p>
+      <h3>4.3 NC 侧规则</h3>
+      <pre>每道次结束（右折返之后或按程序定义）：
+  k = (writeSeq + 1) mod N
+  若 writeSeq + 1 − readSeq &gt; N：overflowCount += 1   （仍然覆盖，不等）
+  写 row[k] 的字段 1–15
+  写 row[k].seq = writeSeq + 1      ← 行内最后写
+  writeSeq = writeSeq + 1           ← 全局最后写
+作业开始（循环启动锁存 acceptedSeq 时）：writeSeq = 0，overflowCount = 0，各行 seq 清 0</pre>
+      <p><b>禁止</b>：任何 WAIT、等待 <code>readSeq</code> 的循环、因上位机不读而报警停机。</p>
+      <h3>4.4 上位机侧规则</h3>
+      <pre>周期读 writeSeq（与现有监视同周期，约 100–250 ms）
+对每个 s ∈ (readSeq, writeSeq]：
+  k = s mod N
+  读 row[k].seq → a；读字段 1–15；再读 row[k].seq → b
+  若 a == b == s：存库，readSeq = s
+  若 a ≠ s 或 b ≠ s：该行已被覆盖 → 记"缺第 s 道"，readSeq = s
+写回 readSeq</pre>
+      <ul>
+        <li>上位机给每行打上读取时间戳；NC 不需要提供时间。</li>
+        <li>记录里缺号显示"道次表不完整，缺第 x–y 道"，并记一条通信异常事件；不报警、不干预机床。</li>
+        <li><b>看门狗</b>：机床处于加工中、且连续 T 秒（默认 10 s，<code>hmi.json</code> 可配）读不到任何变量更新时，界面显示"道次数据未更新"并记事件。只提示。</li>
+        <li>缓冲深度：N = 16 时，一道次按最短 30 s 算，上位机可离线约 8 分钟不丢数据。</li>
+      </ul>
+    </section>
+
+    <section id="s5" class="major">
+      <h2><span class="no">5</span>辊形点列</h2>
+      <ul>
+        <li><b>坐标</b>：<code>bodyPositionMm</code> 现在是 0 到辊身长度（等距采样），0 在辊身哪一端（头架侧 / 尾架侧）需确认。上位机内部按辊身中心为 0 定义辊形，下发时换算，NC 侧不变。</li>
+        <li><b>NC 按位置数组插值，不假设等距</b>：上位机今后会在分段交界处补点（凸度段与圆柱段的交界不落在等距点上时，等距采样会把拐点削平），点距因此不再相等。NC 在相邻两点之间按 <code>bodyPositionMm</code> 查找区间。</li>
+        <li><b>插值方式：线性</b>。上位机负责保证弦高误差：任意两点之间，原曲线与连线的最大偏差 ≤ 0.5 µm（半径），超出则在该区间加密；点数仍受数组长度（现为 101）限制，放不下时下发前报错，不静默降精度。估算：2000 mm 辊身、凸度 0.30 mm 的抛物线，101 点线性插值的弦高误差约 0.03 µm，远小于门槛。</li>
+        <li><b>点数</b>：<code>job.profile.pointCount</code> 给出有效点数，NC 只用前 n 个。</li>
+        <li>端部截取 / 延伸（设计说明第 4.5 节）在上位机完成，NC 收到的已是本次辊身上的点列。</li>
+      </ul>
+    </section>
+
+    <section id="s6" class="major">
+      <h2><span class="no">6</span>补偿与 DRF</h2>
+      <h3>行程间补偿</h3>
+      <ul>
+        <li>由 NC 完成，上位机只读：<code>compensation.strokeVersion</code>、<code>realtimeOffsetMm</code>、<code>degradationLevel</code>、前馈 a / b。</li>
+        <li>每道次的补偿量与版本号进道次缓冲（第 4 节字段 11–12），上位机不再靠 100 ms 监视去"赶上"版本号变化。</li>
+        <li>上位机侧的补偿曲线（测量后生成）只影响下一次下发的辊形点列，不在运行中写 NC。</li>
+      </ul>
+      <h3>DRF 手轮偏置</h3>
+      <ul>
+        <li>先确认：自动磨削时是否允许操作工用 DRF。建议默认<b>禁止</b>（DRF 改变实际磨削位置，却不在任何参数里）。</li>
+        <li>若允许：NC 在每道次行里报当前 DRF（字段 13）；上位机发现值变化就记一条"决定"类事件（时间、道次、变化前后值）。另外提供一个单值变量 <code>drf.offsetXMm</code> 供界面实时显示。</li>
+      </ul>
+    </section>
+
+    <section id="s7" class="major">
+      <h2><span class="no">7</span>新增变量清单</h2>
+      <p>建议地址：优先 GUD（如 <code>/NC/_N_NC_GD_ACX/</code> 下的 <code>RGX_EDIT[...]</code>、<code>RGX_PASS[16,16]</code>）；以下给出 R 参数备选，与现有 R100–R1127 不冲突。</p>
+      <div class="tw"><table>
+        <thead><tr><th>逻辑名</th><th>类型</th><th>写方</th><th>R 备选</th></tr></thead>
+        <tbody>
+          <tr><td><code>job.downloadSeq</code></td><td>Int32</td><td>上位机</td><td class="num">R111</td></tr>
+          <tr><td><code>job.acceptedSeq</code></td><td>Int32</td><td>NC</td><td class="num">R112</td></tr>
+          <tr><td><code>job.edit.stepOrder</code></td><td>Int32</td><td>上位机</td><td class="num">R1200</td></tr>
+          <tr><td><code>job.edit.seq</code></td><td>Int32</td><td>上位机</td><td class="num">R1201</td></tr>
+          <tr><td><code>job.edit.appliedSeq</code></td><td>Int32</td><td>NC</td><td class="num">R1202</td></tr>
+          <tr><td><code>job.edit.*</code>（与 <code>job.step.*</code> 一一对应，16 项）</td><td>Double</td><td>上位机</td><td class="num">R1210–R1225</td></tr>
+          <tr><td><code>pass.slotCount</code></td><td>Int32</td><td>NC</td><td class="num">R1240</td></tr>
+          <tr><td><code>pass.writeSeq</code></td><td>Int32</td><td>NC</td><td class="num">R1241</td></tr>
+          <tr><td><code>pass.overflowCount</code></td><td>Int32</td><td>NC</td><td class="num">R1242</td></tr>
+          <tr><td><code>pass.readSeq</code></td><td>Int32</td><td>上位机</td><td class="num">R1243</td></tr>
+          <tr><td><code>pass.row</code>（16 × 16）</td><td>Double</td><td>NC</td><td class="num">R1250–R1505</td></tr>
+          <tr><td><code>drf.offsetXMm</code>（若允许 DRF）</td><td>Double</td><td>NC</td><td class="num">R1244</td></tr>
+        </tbody>
+      </table></div>
+      <p>NC 侧需确认 R 参数总数（机床数据 <code>MD28050 $MC_MM_NUM_R_PARAM</code>）是否覆盖到 R1505；不够则改用 GUD。</p>
+    </section>
+
+    <section id="s8" class="major">
+      <h2><span class="no">8</span>联调测试用例</h2>
+      <p>先在上位机仿真（RollGrinder.Sim）里按本约定实现 NC 一侧逻辑跑通，再到机床联调。</p>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>场景</th><th>期望</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>下发写到一半杀掉上位机，然后按循环启动</td><td>NC 拒绝启动（valid = false）</td></tr>
+          <tr><td class="num">2</td><td>正常下发后启动</td><td><code>acceptedSeq == downloadSeq</code>，记录中一致</td></tr>
+          <tr><td class="num">3</td><td>运行中改一道工序的三个参数</td><td>NC 在某一道次开始时整组采用，<code>appliedSeq</code> 追上；记录写明生效道次；不出现部分采用</td></tr>
+          <tr><td class="num">4</td><td>上一次修改未生效时再改</td><td>上位机拒收，提示"上一次修改尚未生效"</td></tr>
+          <tr><td class="num">5</td><td>加工中拔掉上位机网线 5 分钟再插上</td><td>机床不停、不报警；恢复后补读全部道次，无缺号</td></tr>
+          <tr><td class="num">6</td><td>拔网线超过缓冲深度</td><td>机床不停；<code>overflowCount</code> 增加；记录标"缺第 x–y 道"</td></tr>
+          <tr><td class="num">7</td><td>上位机进程卡死（不退出、不读）</td><td>同 5 / 6；机床照常磨完</td></tr>
+          <tr><td class="num">8</td><td>辊形含分段交界、点距不等</td><td>NC 按位置插值，测量轮廓与下发曲线偏差在公差内</td></tr>
+          <tr><td class="num">9</td><td>（若允许 DRF）自动中摇 DRF</td><td>道次行字段 13 变化，记录有对应事件</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="s9" class="major">
+      <h2><span class="no">9</span>请 NC 程序员确认</h2>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>问题</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>新增块放 GUD 还是 R 参数？R 参数总数够不够（R1505）？</td></tr>
+          <tr><td class="num">2</td><td>折返时刻怎么界定？折返的实际位置、停留时间、倍率分别用哪个系统变量锁存？</td></tr>
+          <tr><td class="num">3</td><td>"道次结束"在程序里的位置；每道次写一行是否方便（左右折返合在一行）？</td></tr>
+          <tr><td class="num">4</td><td>道次开始时检查 <code>job.edit.seq</code> 并整组拷贝是否可行？哪些参数在道次中途也会被读（应禁止在线改）？</td></tr>
+          <tr><td class="num">5</td><td>辊形插值现在是否假设等距？改为按位置数组线性插值是否可行？</td></tr>
+          <tr><td class="num">6</td><td><code>bodyPositionMm = 0</code> 在头架侧还是尾架侧？</td></tr>
+          <tr><td class="num">7</td><td>自动磨削时是否允许 DRF？若允许，DRF 偏置读哪个变量？</td></tr>
+          <tr><td class="num">8</td><td>循环启动时检查 <code>parametersValid</code> 并锁存 <code>acceptedSeq</code> 是否可行？</td></tr>
+          <tr><td class="num">9</td><td>本道次补偿量在 NC 里是否有现成变量？平均磨削电流是否容易累加？</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
