@@ -74,6 +74,17 @@
                             <TextBox Text="{Binding ToleranceText, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="True"
                                      Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}" VerticalContentAlignment="Center" />
                         </DockPanel>
+                        <!-- 按方案编辑：端部非工作区（截取 / 延伸只许发生在这里），空着取端部圆柱段的长度。 -->
+                        <DockPanel Margin="0,8,0,0" Visibility="{Binding IsPlanMode, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{loc:Loc Plan_EndZone}" Style="{StaticResource Text.Label}"
+                                       VerticalAlignment="Center" Width="80" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding EndZoneNote}" Style="{StaticResource Text.Label}" DockPanel.Dock="Bottom"
+                                       TextWrapping="Wrap" Margin="80,2,0,0" />
+                            <TextBlock Text="{loc:Loc Unit_Millimeter}" Style="{StaticResource Text.Label}"
+                                       DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
+                            <TextBox Text="{Binding EndZoneText, UpdateSourceTrigger=PropertyChanged}" ctl:TouchInput.IsNumeric="True"
+                                     Height="46" FontSize="17" FontFamily="{StaticResource Font.Mono}" VerticalContentAlignment="Center" />
+                        </DockPanel>
                         <!-- 对称只是编辑辅助：勾上只编头架端，尾架端镜像生成；含 CVC 时置灰。 -->
                         <CheckBox Content="{loc:Loc Profile_Symmetric}" IsChecked="{Binding IsSymmetric}"
                                   IsEnabled="{Binding CanToggleSymmetry}" ToolTip="{loc:Loc Profile_SymmetricHint}"

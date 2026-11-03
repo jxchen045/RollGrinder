@@ -132,6 +132,15 @@ public partial class ProfileView : UserControl
             line.Color = Color.FromHex("#8D97A3");
         }
 
+        // 按方案编辑：端部非工作区边界画点线（截取 / 延伸只许发生在线外，设计说明 4.5）。
+        foreach (double mark in this.viewModel.EndZoneMarks)
+        {
+            var zone = PreviewPlot.Plot.Add.VerticalLine(mark - offset);
+            zone.LineWidth = 1.5f;
+            zone.LinePattern = LinePattern.Dotted;
+            zone.Color = Color.FromHex("#8A5A00");
+        }
+
         // 当前段加粗、换色。
         if (this.viewModel.SelectedSegmentPoints.Count >= 2)
         {

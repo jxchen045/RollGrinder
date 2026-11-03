@@ -218,7 +218,7 @@ internal sealed record StepsSnapshot(
 /// 不含辊号、尺寸、辊形——那些属于作业（作业页）与轧辊（台账）。
 /// 界面按注册表与 schema 生成，新增一类工序不改这里。
 /// </summary>
-public sealed partial class StepsViewModel : PageViewModelBase
+public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
 {
     private readonly GrindingStepTypeRegistry stepTypes;
     private readonly IProgramRepository programs;
@@ -236,6 +236,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
     private readonly ILibraryService libraryService;
     private readonly IUserSession session;
     private readonly IGrindingPlanService plans;
+    private readonly PlanEditSession planSession;
+    private readonly IReadOnlyList<FunctionKeyViewModel?> stepKeys;
     private readonly FunctionKeyViewModel listKey;
     private bool suppressDirty;
 
@@ -253,7 +255,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         IRollRepository rolls,
         ILibraryService libraryService,
         IUserSession session,
-        IGrindingPlanService plans,
+        PlanEditSession planSession,
         ICalibrationService calibration,
         JobDraft jobDraft,
         GrindingJobValidator validator,
@@ -274,7 +276,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         this.session = session ?? throw new ArgumentNullException(nameof(session));
-        this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
+        this.planSession = planSession ?? throw new ArgumentNullException(nameof(planSession));
+        this.plans = planSession.Plans;
+        planSession.Register(this);
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
@@ -295,7 +299,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
             ?? StepTypeOptions.FirstOrDefault();
 
         // 竖向软键：对选中的工序操作。插入工序 ▸ 先选类别、再选工序，插在选中工序之后（修改稿 5.3）。
-        SetVerticalKeys(new[]
+        this.stepKeys = new FunctionKeyViewModel?[]
         {
             new FunctionKeyViewModel("Vk_InsertStep", new RelayCommand(OpenInsertStepMenu), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_DeleteStep", new RelayCommand(() => RemoveStep(SelectedStep)), localizer, requiresEditable: true),
@@ -306,7 +310,8 @@ public sealed partial class StepsViewModel : PageViewModelBase
             // 阶段 2 线框上的另外两个键（修改稿 5.3）：余量分配、默认值。程序步骤开关不在这里——那是每一支辊开磨前的取舍，在作业核对页。
             new FunctionKeyViewModel("Vk_AllocateStock", new RelayCommand(AllocateStock), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_StepDefaults", new RelayCommand(() => Ask("Steps_AskDefaults", () => ResetStepToDefaults(SelectedStep))), localizer, requiresEditable: true),
-        });
+        };
+        SetVerticalKeys(this.stepKeys);
 
         Steps.CollectionChanged += (_, _) =>
         {
@@ -942,7 +947,9 @@ public sealed partial class StepsViewModel : PageViewModelBase
     {
         if (IsPlanMode)
         {
-            return await StorePlanAsync(ProgramName, cancellationToken).ConfigureAwait(true);
+            return await SavePlanDraftAsync(
+                this.planSession, this.planContent!.Plan.PlanId, this.planContent.Plan.PlanNo, this.planIsCurrent,
+                this.session.CurrentUser?.UserName ?? string.Empty, () => SetVerticalKeys(this.stepKeys), cancellationToken).ConfigureAwait(true);
         }
 
         string name = ProgramName.Trim();
@@ -1233,8 +1240,63 @@ public sealed partial class StepsViewModel : PageViewModelBase
     [ObservableProperty]
     private bool planFrozen;
 
-    private async Task OpenPlanAsync(string planId, CancellationToken cancellationToken)
+    /// <summary>正在编辑的方案；按模板编辑时为 null。</summary>
+    public string? PlanId => this.planContent?.Plan.PlanId;
+
+    string IPlanDraftPart.PartLabelKey => "Plan_PartProgram";
+
+    string? IPlanDraftPart.DraftProblem
     {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(ProgramName))
+            {
+                return "Program_NeedsName";
+            }
+
+            return CheckProgram() is null ? "Program_HasErrors" : null;
+        }
+    }
+
+    void IPlanDraftPart.Contribute(PlanEditBuilder builder)
+    {
+        List<GrindingJobStep>? steps = CheckProgram();
+        if (this.planContent is not { } content || steps is null)
+        {
+            return;
+        }
+
+        builder.Program = GrindingProgram.Create(content.Program.ProgramId, ProgramName.Trim(), steps, content.Program.CreatedAtUtc) with
+        {
+            ModifiedAtUtc = DateTimeOffset.UtcNow,
+            StandardStockMicrometer = TryParseDouble(TotalStockText, out double stock) && stock > 0.0 ? stock : null,
+            ApplicableRollKind = ApplicableRollKind,
+            ApplicableMaterial = string.IsNullOrWhiteSpace(ApplicableMaterial) ? null : ApplicableMaterial.Trim(),
+        };
+    }
+
+    async Task IPlanDraftPart.ReloadPlanAsync(string planId, CancellationToken cancellationToken)
+    {
+        await OpenPlanAsync(planId, cancellationToken, force: true).ConfigureAwait(true);
+        StatusResourceKey = "Program_SavedStatus";
+    }
+
+    void IPlanDraftPart.DiscardPlanDraft() => DiscardOwnChanges();
+
+    /// <summary>按方案编辑时，辊形或工艺哪一页没存都算没存。</summary>
+    public override bool HasUnsavedWork => IsPlanMode ? this.planSession.HasUnsavedWork(PlanId!) : IsDirty;
+
+    /// <summary>同一方案的辊形页：草稿跟着走，不先问保存。</summary>
+    public override bool KeepsDraftGoingTo(PageKey target) => IsPlanMode && target == PageKey.Profile;
+
+    /// <summary>打开一个方案的工艺。已经在编辑同一方案、还有没存的改动时（从辊形页切回来）不重读。</summary>
+    private async Task OpenPlanAsync(string planId, CancellationToken cancellationToken, bool force = false)
+    {
+        if (!force && PlanId == planId && IsDirty)
+        {
+            return;
+        }
+
         PlanContent? content = await this.plans.GetContentAsync(planId, cancellationToken).ConfigureAwait(true);
         if (content is null)
         {
@@ -1272,6 +1334,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     {
         OnPropertyChanged(nameof(IsPlanMode));
         OnPropertyChanged(nameof(IsTemplateMode));
+        OnPropertyChanged(nameof(PlanId));
         this.listKey.LabelResourceKey = IsPlanMode ? "Fn_PlanList" : "Fn_ProgramLibrary";
         SaveProgramAsCommand.NotifyCanExecuteChanged();
         NewProgramCommand.NotifyCanExecuteChanged();
@@ -1301,77 +1364,6 @@ public sealed partial class StepsViewModel : PageViewModelBase
         {
             this.jobDraft.PlanToEdit = content.Plan.PlanId;
             Navigator.GoTo(PageKey.Profile);
-        }
-    }
-
-    /// <summary>存方案的工艺：没用过的就地改；用过的先问一句，辊形与工艺一起另存为新方案（设计稿 v4 5.5.4）。</summary>
-    private async Task<bool> StorePlanAsync(string name, CancellationToken cancellationToken, bool usedConfirmed = false)
-    {
-        if (this.planContent is not { } content)
-        {
-            return false;
-        }
-
-        name = (name ?? string.Empty).Trim();
-        if (name.Length == 0)
-        {
-            Alarms.Raise(AlarmSeverity.Warning, "Program_NeedsName", code: AlarmCodes.DomainFailure);
-            return false;
-        }
-
-        List<GrindingJobStep>? steps = CheckProgram();
-        if (steps is null)
-        {
-            return false;
-        }
-
-        try
-        {
-            this.planUseCount = (await this.plans.UsageAsync(content.Plan.PlanId, cancellationToken).ConfigureAwait(true)).UseCount;
-            if (this.planUseCount > 0 && !usedConfirmed)
-            {
-                Interaction.Choose(
-                    Localizer.Format(this.planIsCurrent ? "Plan_AskSaveUsedCurrentFormat" : "Plan_AskSaveUsedFormat", content.Plan.PlanNo, this.planUseCount),
-                    "Vk_SaveAsNewPlan",
-                    () => StorePlanAsync(name, CancellationToken.None, usedConfirmed: true));
-                return false;
-            }
-
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-            GrindingProgram program = GrindingProgram.Create(content.Program.ProgramId, name, steps, content.Program.CreatedAtUtc) with
-            {
-                ModifiedAtUtc = now,
-                StandardStockMicrometer = TryParseDouble(TotalStockText, out double stock) && stock > 0.0 ? stock : null,
-                ApplicableRollKind = ApplicableRollKind,
-                ApplicableMaterial = string.IsNullOrWhiteSpace(ApplicableMaterial) ? null : ApplicableMaterial.Trim(),
-            };
-            PlanSaveOutcome outcome = await this.plans.SaveProgramAsync(
-                content.Plan.PlanId, program, setCurrentIfNew: this.planIsCurrent, this.session.CurrentUser?.UserName ?? string.Empty, cancellationToken)
-                .ConfigureAwait(true);
-
-            await OpenPlanAsync(outcome.Plan.PlanId, cancellationToken).ConfigureAwait(true);
-            StatusResourceKey = "Program_SavedStatus";
-            if (outcome.SavedAsNew)
-            {
-                Interaction.Say(Localizer.Format(
-                    outcome.IsCurrent ? "Plan_SavedAsNewCurrentFormat" : "Plan_SavedAsNewFormat", outcome.OriginalPlanNo, outcome.Plan.PlanNo));
-            }
-            else
-            {
-                Alarms.Raise(AlarmSeverity.Information, "Program_Saved", ProgramName, AlarmCodes.HandoverCompleted);
-            }
-
-            return true;
-        }
-        catch (DataStoreException ex)
-        {
-            Alarms.RaiseException(ex);
-            return false;
-        }
-        catch (DomainException ex)
-        {
-            Alarms.RaiseException(ex);
-            return false;
         }
     }
 
@@ -1408,8 +1400,19 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// <summary>放弃修改：回到进入本页（或上次下发成功）时的程序。</summary>
     public override void DiscardChanges()
     {
+        if (IsPlanMode)
+        {
+            this.planSession.DiscardAll(PlanId!);
+            return;
+        }
+
+        DiscardOwnChanges();
+    }
+
+    private void DiscardOwnChanges()
+    {
         Restore(this.committed);
-        base.DiscardChanges();
+        IsDirty = false;
     }
 
     /// <summary>把当前程序存成"干净"版本。</summary>

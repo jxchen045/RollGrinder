@@ -252,4 +252,79 @@ public sealed class GrindingPlanTests : IDisposable
         migrated.TargetProfileId.Should().Be(plan.ProfileId, "台账的目标辊形换成方案自己的那一份");
         migrated.PlanInferred.Should().BeTrue("推断来的计划下发一次才算确认");
     }
+
+    [Fact]
+    public async Task Profile_process_and_end_zone_are_saved_together_as_one_new_plan_and_need_not_become_current()
+    {
+        await using ServiceProvider services = await BuildAsync();
+        await services.GetRequiredService<IMachineGateway>().ConnectAsync(CancellationToken.None);
+        await RegisterAsync(services, "R-400");
+        var plans = services.GetRequiredService<IGrindingPlanService>();
+        GrindingPlanRecord first = (await plans.CurrentAsync("R-400", CancellationToken.None))!;
+        (await GrindAsync(services, "R-400", "J-400")).Download.Succeeded.Should().BeTrue();
+        PlanContent content = (await plans.GetContentAsync(first.PlanId, CancellationToken.None))!;
+
+        // 一次保存：辊形、工艺、端部非工作区都改了；第 6 键"另存但不设当前"。
+        PlanSaveOutcome saved = await plans.SavePlanAsync(
+            first.PlanId,
+            new PlanEdit(content.Profile with { Profile = CrownWithEnds(260.0) }, content.Program with { Name = "慢拖板" }, EndZoneChanged: true, EndZoneMm: 30.0),
+            setCurrentIfNew: false,
+            "工艺员",
+            CancellationToken.None);
+
+        saved.SavedAsNew.Should().BeTrue();
+        saved.IsCurrent.Should().BeFalse();
+        (await plans.ListAsync("R-400", CancellationToken.None)).Should().HaveCount(2, "两样改动只另存出一个新方案");
+        (await plans.CurrentAsync("R-400", CancellationToken.None))!.PlanId.Should().Be(first.PlanId, "不设为当前");
+        PlanContent created = (await plans.GetContentAsync(saved.Plan.PlanId, CancellationToken.None))!;
+        created.Plan.EndZoneMm.Should().Be(30.0);
+        created.Program.Name.Should().Be("慢拖板");
+        created.Profile.Profile.Segments[1].Parameters.Get(CrownProfileType.CrownDiameterMicrometerKey).Number.Should().Be(260.0);
+        PlanContent kept = (await plans.GetContentAsync(first.PlanId, CancellationToken.None))!;
+        kept.Plan.EndZoneMm.Should().BeNull("原方案不改");
+        kept.Program.Name.Should().Be("工作辊标准");
+
+        // 没改什么就不存。
+        PlanSaveOutcome nothing = await plans.SavePlanAsync(saved.Plan.PlanId, new PlanEdit(null, null), false, "工艺员", CancellationToken.None);
+        nothing.SavedAsNew.Should().BeFalse();
+        nothing.Plan.PlanId.Should().Be(saved.Plan.PlanId);
+    }
+
+    [Fact]
+    public async Task An_end_zone_set_on_an_unused_plan_is_saved_in_place_and_lets_a_cvc_be_trimmed()
+    {
+        await using ServiceProvider services = await BuildAsync();
+        await RegisterAsync(services, "R-500");
+        var plans = services.GetRequiredService<IGrindingPlanService>();
+        MachineDescription machine = services.GetRequiredService<MachineDescription>();
+        var registry = services.GetRequiredService<RollProfileTypeRegistry>();
+        GrindingPlanRecord plan = (await plans.CurrentAsync("R-500", CancellationToken.None))!;
+        PlanContent content = (await plans.GetContentAsync(plan.PlanId, CancellationToken.None))!;
+        RollProfileDefinition cvc = content.Profile with
+        {
+            Profile = CompositeRollProfile.Sequential(0.0, new[]
+            {
+                new SequentialSegment(ProfileTypeKeys.Cvc, 1800.0, new CvcProfileType().Schema.CreateDefaults()
+                    .With(CvcProfileType.A1DiameterMicrometerKey, ParameterValue.FromNumber(200.0))),
+            }),
+        };
+
+        PlanSaveOutcome noZone = await plans.SavePlanAsync(plan.PlanId, new PlanEdit(cvc, null), false, "工艺员", CancellationToken.None);
+        noZone.SavedAsNew.Should().BeFalse("没用过的方案就地改");
+        PlanContent stored = (await plans.GetContentAsync(plan.PlanId, CancellationToken.None))!;
+        GrindingPlanService.AlignForJob(stored.Profile, 1797.0, stored.Plan.EndZoneMm, machine, registry, 401)
+            .Kind.Should().Be(LengthAlignmentKind.OutOfTolerance, "整根 CVC 没有端部圆柱段，默认非工作区为 0");
+
+        PlanSaveOutcome withZone = await plans.SavePlanAsync(
+            plan.PlanId, new PlanEdit(null, null, EndZoneChanged: true, EndZoneMm: 10.0), false, "工艺员", CancellationToken.None);
+        withZone.SavedAsNew.Should().BeFalse();
+        withZone.Plan.EndZoneMm.Should().Be(10.0);
+        stored = (await plans.GetContentAsync(plan.PlanId, CancellationToken.None))!;
+        GrindingPlanService.AlignForJob(stored.Profile, 1797.0, stored.Plan.EndZoneMm, machine, registry, 401)
+            .Kind.Should().Be(LengthAlignmentKind.Trimmed);
+
+        await FluentActions.Invoking(() => plans.SavePlanAsync(
+                plan.PlanId, new PlanEdit(null, null, EndZoneChanged: true, EndZoneMm: -1.0), false, "工艺员", CancellationToken.None))
+            .Should().ThrowAsync<DomainException>();
+    }
 }

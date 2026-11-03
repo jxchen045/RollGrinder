@@ -154,6 +154,14 @@ public abstract partial class PageViewModelBase : ViewModelBase
     public virtual void DiscardChanges() => IsDirty = false;
 
     /// <summary>
+    /// 离开本页时会丢掉的修改。默认就是本页脏没脏；按方案编辑时辊形与工艺共用一份草稿，哪一页没存都算。
+    /// </summary>
+    public virtual bool HasUnsavedWork => IsDirty;
+
+    /// <summary>去 <paramref name="target"/> 时草稿跟着走、不必先问保存（同一方案的辊形 ⇄ 工艺）。</summary>
+    public virtual bool KeepsDraftGoingTo(PageKey target) => false;
+
+    /// <summary>
     /// 本页有没有开着一个要先答完的框（例如另存为的命名框）。开着的时候外壳不响应横键，
     /// 免得框还没答完又按出别的动作。
     /// </summary>
@@ -402,6 +410,93 @@ public abstract partial class PageViewModelBase : ViewModelBase
     /// <summary>同步动作的便捷重载。</summary>
     protected void Ask(string questionResourceKey, Action action, params object?[] arguments) =>
         Interaction.Ask(Localizer.Format(questionResourceKey, arguments), action);
+
+    /// <summary>
+    /// 问一句、给两个去处（不自动取消）：第 8 格是稳妥的一边（<paramref name="safeLabelKey"/>），
+    /// 第 6 格是另一边（<paramref name="alternativeLabelKey"/>，带"…"），第 7 格取消。答完用 <paramref name="restoreKeys"/> 把本页竖键放回去。
+    /// </summary>
+    protected void ChooseWithAlternative(
+        string question, string safeLabelKey, Func<Task> safe, string alternativeLabelKey, Func<Task> alternative, Action restoreKeys)
+    {
+        ArgumentNullException.ThrowIfNull(safe);
+        ArgumentNullException.ThrowIfNull(alternative);
+        ArgumentNullException.ThrowIfNull(restoreKeys);
+        bool alternativeChosen = false;
+        var alternativeKey = new FunctionKeyViewModel(
+            alternativeLabelKey,
+            new RelayCommand(() =>
+            {
+                alternativeChosen = true;
+                Interaction.Confirmations.Cancel();
+            }),
+            Localizer,
+            requiresEditable: true);
+        SetVerticalKeys(new FunctionKeyViewModel?[] { null, null, null, null, null, alternativeKey });
+        Interaction.Choose(question, safeLabelKey, safe, outcome =>
+        {
+            restoreKeys();
+            if (alternativeChosen)
+            {
+                _ = alternative();
+            }
+        });
+    }
+
+    /// <summary>
+    /// 按方案编辑时的保存（设计稿 v4 5.5.4）：辊形与工艺两页对同一方案的改动一起存一次。
+    /// 没用过的方案就地改；用过的先问：源是当前方案时第 8 格"另存并设为当前"、第 6 格"另存但不设当前…"，
+    /// 源是历史方案时两键互换。返回 false 表示这次没存（在等回答，或存不了）。
+    /// </summary>
+    protected async Task<bool> SavePlanDraftAsync(
+        PlanEditSession session, string planId, int planNo, bool isCurrent, string user, Action restoreKeys, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        if (session.Problem(planId) is { } problem)
+        {
+            Alarms.Raise(AlarmSeverity.Warning, problem, code: AlarmCodes.DomainFailure);
+            return false;
+        }
+
+        IReadOnlyList<IPlanDraftPart> dirty = session.DirtyParts(planId);
+        if (dirty.Count == 0)
+        {
+            return true;
+        }
+
+        int useCount = (await session.Plans.UsageAsync(planId, cancellationToken).ConfigureAwait(true)).UseCount;
+        if (useCount == 0)
+        {
+            return await CommitPlanDraftAsync(session, planId, isCurrent, user, cancellationToken).ConfigureAwait(true);
+        }
+
+        string changed = string.Join(Localizer["Plan_PartSeparator"], dirty.Select(part => Localizer[part.PartLabelKey]));
+        ChooseWithAlternative(
+            Localizer.Format(isCurrent ? "Plan_AskSaveUsedCurrentFormat" : "Plan_AskSaveUsedFormat", planNo, useCount, changed),
+            isCurrent ? "Vk_SaveAsNewPlanCurrent" : "Vk_SaveAsNewPlanOnly",
+            () => CommitPlanDraftAsync(session, planId, isCurrent, user, CancellationToken.None),
+            isCurrent ? "Vk_SaveAsNewPlanNotCurrent" : "Vk_SaveAsNewPlanAndCurrent",
+            () => CommitPlanDraftAsync(session, planId, !isCurrent, user, CancellationToken.None),
+            restoreKeys);
+        return false;
+    }
+
+    private async Task<bool> CommitPlanDraftAsync(
+        PlanEditSession session, string planId, bool setCurrentIfNew, string user, CancellationToken cancellationToken)
+    {
+        try
+        {
+            Services.Jobs.PlanSaveOutcome outcome = await session.SaveAsync(planId, setCurrentIfNew, user, cancellationToken).ConfigureAwait(true);
+            Interaction.Say(outcome.SavedAsNew
+                ? Localizer.Format(outcome.IsCurrent ? "Plan_SavedAsNewCurrentFormat" : "Plan_SavedAsNewFormat", outcome.OriginalPlanNo, outcome.Plan.PlanNo)
+                : Localizer.Format("Plan_SavedFormat", outcome.Plan.PlanNo));
+            return true;
+        }
+        catch (Exception ex) when (ex is Data.DataStoreException or Core.DomainException)
+        {
+            Alarms.RaiseException(ex);
+            return false;
+        }
+    }
 
     /// <summary>对话行：一条消息（3 秒后消失）。</summary>
     protected void Say(string resourceKey, params object?[] arguments) =>

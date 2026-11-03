@@ -233,6 +233,7 @@ public static class Program
         builder.Services.AddSingleton<PageViewModelBase, PlansViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, CommissioningViewModel>();
         builder.Services.AddSingleton<JobDraft>();
+        builder.Services.AddSingleton<PlanEditSession>();
 
         // 选辊形 / 选程序子视图：作业页与轧辊区各有一份（各自的选中与过滤互不干扰）。
         builder.Services.AddTransient<PlanPickerViewModel>();

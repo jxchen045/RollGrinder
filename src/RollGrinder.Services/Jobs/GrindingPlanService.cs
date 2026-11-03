@@ -42,6 +42,19 @@ public sealed record PlanContent(GrindingPlanRecord Plan, RollProfileDefinition 
 /// <param name="IsCurrent">保存后它是不是当前方案。</param>
 public sealed record PlanSaveOutcome(GrindingPlanRecord Plan, bool SavedAsNew, int OriginalPlanNo, bool IsCurrent);
 
+/// <summary>
+/// 一次保存方案的改动（设计稿 v4 P2：辊形与工艺共用一份草稿、一次保存）。没改的那一样为 null。
+/// </summary>
+/// <param name="Profile">改过的辊形；没改为 null。</param>
+/// <param name="Program">改过的工艺；没改为 null。</param>
+/// <param name="EndZoneChanged">端部非工作区宽度改了。</param>
+/// <param name="EndZoneMm">新的端部非工作区宽度（mm）；null 取默认（端部圆柱段长度）。</param>
+public sealed record PlanEdit(RollProfileDefinition? Profile, GrindingProgram? Program, bool EndZoneChanged = false, double? EndZoneMm = null)
+{
+    /// <summary>什么都没改。</summary>
+    public bool IsEmpty => Profile is null && Program is null && !EndZoneChanged;
+}
+
 /// <summary>按模板建方案的结果。</summary>
 /// <param name="Plan">建出来的方案；建不了为 null。</param>
 /// <param name="ProblemKey">建不了的原因（资源键）。</param>
@@ -87,6 +100,13 @@ public interface IGrindingPlanService
     /// <summary>保存方案的工艺：同上（辊形一起复制）。</summary>
     Task<PlanSaveOutcome> SaveProgramAsync(
         string planId, GrindingProgram program, bool setCurrentIfNew, string user, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 一次保存辊形、工艺、端部非工作区的改动：没用过的就地改；用过的另存为一个新方案（没改的那样照原方案复制），
+    /// <paramref name="setCurrentIfNew"/> 决定新方案是否设为当前。
+    /// </summary>
+    Task<PlanSaveOutcome> SavePlanAsync(
+        string planId, PlanEdit edit, bool setCurrentIfNew, string user, CancellationToken cancellationToken);
 
     /// <summary>设为当前方案（记一条改动）。</summary>
     Task SetCurrentAsync(string planId, string? reason, string user, CancellationToken cancellationToken);
@@ -312,14 +332,14 @@ public sealed class GrindingPlanService : IGrindingPlanService
         string planId, RollProfileDefinition profile, bool setCurrentIfNew, string user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(profile);
-        return await SaveAsync(planId, profile, null, setCurrentIfNew, user, cancellationToken).ConfigureAwait(false);
+        return await SavePlanAsync(planId, new PlanEdit(profile, null), setCurrentIfNew, user, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PlanSaveOutcome> SaveProgramAsync(
         string planId, GrindingProgram program, bool setCurrentIfNew, string user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(program);
-        return await SaveAsync(planId, null, program, setCurrentIfNew, user, cancellationToken).ConfigureAwait(false);
+        return await SavePlanAsync(planId, new PlanEdit(null, program), setCurrentIfNew, user, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task SetCurrentAsync(string planId, string? reason, string user, CancellationToken cancellationToken)
@@ -385,9 +405,12 @@ public sealed class GrindingPlanService : IGrindingPlanService
 
     // ───────────── 内部 ─────────────
 
-    private async Task<PlanSaveOutcome> SaveAsync(
-        string planId, RollProfileDefinition? profile, GrindingProgram? program, bool setCurrentIfNew, string user, CancellationToken cancellationToken)
+    public async Task<PlanSaveOutcome> SavePlanAsync(
+        string planId, PlanEdit edit, bool setCurrentIfNew, string user, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(edit);
+        RollProfileDefinition? profile = edit.Profile;
+        GrindingProgram? program = edit.Program;
         await this.gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -397,6 +420,17 @@ public sealed class GrindingPlanService : IGrindingPlanService
                 ?? throw new DomainException($"Roll '{content.Plan.RollId}' does not exist.");
             bool isCurrent = roll.CurrentPlanId == planId;
             DateTimeOffset now = this.timeProvider.GetUtcNow();
+            if (edit.EndZoneMm is double zone && (zone < 0.0 || !double.IsFinite(zone)))
+            {
+                throw new DomainException("The end zone width must be zero or positive.");
+            }
+
+            if (edit.IsEmpty)
+            {
+                return new PlanSaveOutcome(content.Plan, false, content.Plan.PlanNo, isCurrent);
+            }
+
+            double? endZone = edit.EndZoneChanged ? edit.EndZoneMm : content.Plan.EndZoneMm;
 
             if ((await UsageAsync(planId, cancellationToken).ConfigureAwait(false)).UseCount == 0)
             {
@@ -415,9 +449,19 @@ public sealed class GrindingPlanService : IGrindingPlanService
                         cancellationToken).ConfigureAwait(false);
                 }
 
-                await LogAsync(roll.RollId, Label(content.Plan), null, profile is not null ? "profile" : "program", user, cancellationToken)
-                    .ConfigureAwait(false);
-                return new PlanSaveOutcome(content.Plan, false, content.Plan.PlanNo, isCurrent);
+                GrindingPlanRecord kept = content.Plan;
+                if (edit.EndZoneChanged && endZone != content.Plan.EndZoneMm)
+                {
+                    kept = content.Plan with { EndZoneMm = endZone };
+                    await this.plans.SaveAsync(kept, cancellationToken).ConfigureAwait(false);
+                }
+
+                string what = string.Join(
+                    "+",
+                    new[] { profile is not null ? "profile" : null, program is not null ? "program" : null, edit.EndZoneChanged ? "endZone" : null }
+                        .Where(part => part is not null));
+                await LogAsync(roll.RollId, Label(content.Plan), null, what, user, cancellationToken).ConfigureAwait(false);
+                return new PlanSaveOutcome(kept, false, content.Plan.PlanNo, isCurrent);
             }
 
             // 用过即冻结：原方案内容不改，另存为新方案（辊形与工艺一起），来源记为原方案。
@@ -429,7 +473,7 @@ public sealed class GrindingPlanService : IGrindingPlanService
                 content.Plan.Purpose,
                 PlanSourceKind.ThisRollPlan,
                 content.Plan.PlanNo.ToString(CultureInfo.InvariantCulture),
-                content.Plan.EndZoneMm,
+                endZone,
                 setCurrentIfNew,
                 user,
                 cancellationToken,

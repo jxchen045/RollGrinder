@@ -4858,9 +4858,6 @@
   <data name="Vk_DeletePlan" xml:space="preserve">
     <value>删除…</value>
   </data>
-  <data name="Vk_SaveAsNewPlan" xml:space="preserve">
-    <value>✓ 另存为新方案</value>
-  </data>
   <data name="Vk_SwitchPlan" xml:space="preserve">
     <value>换方案…</value>
   </data>
@@ -5024,10 +5021,10 @@
     <value>没用过：保存即改这个方案</value>
   </data>
   <data name="Plan_AskSaveUsedCurrentFormat" xml:space="preserve">
-    <value>方案 {0} 已用 {1} 次，内容不改。✓ 另存为新方案并设为当前；方案 {0} 留作历史，要退回在方案列表设回（不自动取消）</value>
+    <value>方案 {0} 已用 {1} 次，内容不改（改了：{2}）。✓ 另存为新方案并设为当前，方案 {0} 留作历史；第 6 键 另存但不设当前…（不自动取消）</value>
   </data>
   <data name="Plan_AskSaveUsedFormat" xml:space="preserve">
-    <value>方案 {0} 已用 {1} 次，内容不改。✓ 另存为新方案（不设为当前）（不自动取消）</value>
+    <value>方案 {0} 已用 {1} 次，内容不改（改了：{2}）。✓ 另存为新方案（不设为当前）；第 6 键 另存并设为当前…（不自动取消）</value>
   </data>
   <data name="Plan_SavedAsNewCurrentFormat" xml:space="preserve">
     <value>原方案已用于磨削：方案 {0} 不改，已另存为方案 {1} 并设为当前</value>
@@ -5085,5 +5082,41 @@
   </data>
   <data name="Ledger_MeasuredBodyLength" xml:space="preserve">
     <value>实测辊身长度（可选）</value>
+  </data>
+  <data name="Plan_PartProfile" xml:space="preserve">
+    <value>辊形</value>
+  </data>
+  <data name="Plan_PartProgram" xml:space="preserve">
+    <value>工艺</value>
+  </data>
+  <data name="Plan_PartSeparator" xml:space="preserve">
+    <value>、</value>
+  </data>
+  <data name="Vk_SaveAsNewPlanCurrent" xml:space="preserve">
+    <value>✓ 另存并设为当前</value>
+  </data>
+  <data name="Vk_SaveAsNewPlanNotCurrent" xml:space="preserve">
+    <value>另存但不设当前…</value>
+  </data>
+  <data name="Vk_SaveAsNewPlanOnly" xml:space="preserve">
+    <value>✓ 另存为新方案</value>
+  </data>
+  <data name="Vk_SaveAsNewPlanAndCurrent" xml:space="preserve">
+    <value>另存并设为当前…</value>
+  </data>
+  <data name="Plan_SavedFormat" xml:space="preserve">
+    <value>方案 {0} 已保存（辊形与工艺一起）</value>
+  </data>
+  <data name="Plan_EndZone" xml:space="preserve">
+    <value>端部非工作区</value>
+  </data>
+  <data name="Plan_EndZoneTyped" xml:space="preserve">
+    <value>两端都按填的宽度；截取 / 延伸超出它按超出容差处理</value>
+  </data>
+  <data name="Plan_EndZoneDefaultFormat" xml:space="preserve">
+    <value>空着 = 默认取端部圆柱段：头 {0:F0} / 尾 {1:F0} mm</value>
+  </data>
+  <data name="Plan_EndZoneInvalid" xml:space="preserve">
+    <value>端部非工作区要填 0 到半个名义长度之间的数，或空着</value>
   </data>
 </root>

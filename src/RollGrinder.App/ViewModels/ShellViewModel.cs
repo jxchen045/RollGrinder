@@ -857,7 +857,7 @@ public sealed partial class ShellViewModel : ViewModelBase
             return;
         }
 
-        if (CurrentPage.IsDirty && page != this.model.CurrentPage)
+        if (CurrentPage.HasUnsavedWork && page != this.model.CurrentPage && !CurrentPage.KeepsDraftGoingTo(page))
         {
             OpenLeaveConfirm(page, isTaskReturn, returnTo, groupKey);
             return;

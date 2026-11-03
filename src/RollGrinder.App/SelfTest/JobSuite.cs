@@ -324,5 +324,60 @@ internal sealed class JobSuite : ISelfTestSuite
             bool back = await h.WaitUntilAsync(() => job.IsQueue, TimeSpan.FromSeconds(5));
             ctx.Check(back, "'back to queue' should close the review");
         });
+
+        await h.StepAsync("Plan", "ProfileAndProcessSaveTogether", async ctx =>
+        {
+            // 设计稿 v4 P2：辊形与工艺共用一份草稿——改了辊形切到工艺页不问保存，在工艺页一次存下两样。
+            // 用一个复制出来、没用过的方案，存完删掉，不动这支辊的当前方案。
+            IGrindingPlanService plans = h.Services.GetRequiredService<IGrindingPlanService>();
+            if (await plans.CurrentAsync(SelfTestNames.JobRollId, default) is not { } current)
+            {
+                ctx.Skip("the self-test roll has no plan");
+                return;
+            }
+
+            GrindingPlanRecord copy = await plans.CopyAsync(current.PlanId, "selftest-draft", setCurrent: false, "selftest", default);
+            try
+            {
+                ProfileViewModel profile = h.Page<ProfileViewModel>();
+                StepsViewModel steps = h.Page<StepsViewModel>();
+                h.Services.GetRequiredService<JobDraft>().PlanToEdit = copy.PlanId;
+                await h.GoToAsync(PageKey.Profile, ctx);
+                ctx.Check(await h.WaitUntilAsync(() => profile.PlanId == copy.PlanId, TimeSpan.FromSeconds(10)), "the profile page should open the plan");
+                string profileName = profile.ProfileName + "-T";
+                profile.ProfileName = profileName;
+                ctx.Check(profile.IsDirty, "renaming the profile is an edit");
+
+                await h.PressKeyAsync(ctx, "Fn_PlanProgram");
+                bool moved = await h.WaitUntilAsync(
+                    () => h.Shell.CurrentPage.Key == PageKey.Steps && steps.PlanId == copy.PlanId, TimeSpan.FromSeconds(10));
+                ctx.Check(moved && !h.Shell.IsLeaveConfirmOpen, "going to the process page of the same plan keeps the draft without asking");
+                ctx.Check(steps.HasUnsavedWork, "the process page knows the profile is not saved yet");
+                string programName = steps.ProgramName + "-T";
+                steps.ProgramName = programName;
+
+                bool saved = await steps.SaveAsync(default);
+                ctx.Check(saved, "an unused plan saves in place");
+                PlanContent? stored = await plans.GetContentAsync(copy.PlanId, default);
+                ctx.Check(stored?.Profile.Name == profileName && stored.Program.Name == programName, "one save stores the profile and the process");
+                ctx.Check(!profile.IsDirty && !steps.IsDirty, "both pages are clean after the save");
+                h.TryScreenshot("plan-shared-draft");
+            }
+            finally
+            {
+                // 收尾：两页放回按模板编辑（后面的套件按模板新建程序 / 辊形），删掉复制的方案。
+                ProfileViewModel profilePage = h.Page<ProfileViewModel>();
+                StepsViewModel stepsPage = h.Page<StepsViewModel>();
+                profilePage.DiscardChanges();
+                stepsPage.DiscardChanges();
+                JobDraft draft = h.Services.GetRequiredService<JobDraft>();
+                draft.ProgramToOpen = JobDraft.NewEntry;
+                await h.GoToAsync(PageKey.Steps, ctx);
+                draft.ProfileToOpen = JobDraft.NewEntry;
+                await h.GoToAsync(PageKey.Profile, ctx);
+                await h.GoToAsync(PageKey.Job, ctx);
+                await plans.DeleteAsync(copy.PlanId, "selftest", default);
+            }
+        }, StepOptions.Shot);
     }
 }

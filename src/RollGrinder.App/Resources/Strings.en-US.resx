@@ -4858,9 +4858,6 @@
   <data name="Vk_DeletePlan" xml:space="preserve">
     <value>Delete…</value>
   </data>
-  <data name="Vk_SaveAsNewPlan" xml:space="preserve">
-    <value>✓ Save as new plan</value>
-  </data>
   <data name="Vk_SwitchPlan" xml:space="preserve">
     <value>Change plan…</value>
   </data>
@@ -5024,10 +5021,10 @@
     <value>Not used yet: saving changes this plan</value>
   </data>
   <data name="Plan_AskSaveUsedCurrentFormat" xml:space="preserve">
-    <value>Plan {0} was used {1} times and stays as is. ✓ saves a new plan and makes it current; plan {0} stays as history and can be set back in the plan list (no timeout)</value>
+    <value>Plan {0} was used {1} times and stays as is (changed: {2}). ✓ saves a new plan and makes it current, plan {0} stays as history; key 6 saves without making it current… (no timeout)</value>
   </data>
   <data name="Plan_AskSaveUsedFormat" xml:space="preserve">
-    <value>Plan {0} was used {1} times and stays as is. ✓ saves a new plan (not made current) (no timeout)</value>
+    <value>Plan {0} was used {1} times and stays as is (changed: {2}). ✓ saves a new plan (not current); key 6 saves and makes it current… (no timeout)</value>
   </data>
   <data name="Plan_SavedAsNewCurrentFormat" xml:space="preserve">
     <value>The plan was used for grinding: plan {0} is kept, saved as plan {1} and made current</value>
@@ -5085,5 +5082,41 @@
   </data>
   <data name="Ledger_MeasuredBodyLength" xml:space="preserve">
     <value>Measured body length (optional)</value>
+  </data>
+  <data name="Plan_PartProfile" xml:space="preserve">
+    <value>profile</value>
+  </data>
+  <data name="Plan_PartProgram" xml:space="preserve">
+    <value>process</value>
+  </data>
+  <data name="Plan_PartSeparator" xml:space="preserve">
+    <value>, </value>
+  </data>
+  <data name="Vk_SaveAsNewPlanCurrent" xml:space="preserve">
+    <value>✓ Save as new, make current</value>
+  </data>
+  <data name="Vk_SaveAsNewPlanNotCurrent" xml:space="preserve">
+    <value>Save as new, not current…</value>
+  </data>
+  <data name="Vk_SaveAsNewPlanOnly" xml:space="preserve">
+    <value>✓ Save as new plan</value>
+  </data>
+  <data name="Vk_SaveAsNewPlanAndCurrent" xml:space="preserve">
+    <value>Save as new, make current…</value>
+  </data>
+  <data name="Plan_SavedFormat" xml:space="preserve">
+    <value>Plan {0} saved (profile and process together)</value>
+  </data>
+  <data name="Plan_EndZone" xml:space="preserve">
+    <value>End zone</value>
+  </data>
+  <data name="Plan_EndZoneTyped" xml:space="preserve">
+    <value>Both ends use this width; trimming or extending beyond it counts as out of tolerance</value>
+  </data>
+  <data name="Plan_EndZoneDefaultFormat" xml:space="preserve">
+    <value>Empty = end cylinders: head {0:F0} / tail {1:F0} mm</value>
+  </data>
+  <data name="Plan_EndZoneInvalid" xml:space="preserve">
+    <value>The end zone must be between 0 and half the nominal length, or empty</value>
   </data>
 </root>
