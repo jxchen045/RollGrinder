@@ -289,7 +289,7 @@
   </nav>
   <main>
     <header class="cover">
-      <div class="eyebrow">RGX · MK84160 · SINUMERIK ONE · 接口约定 · 初稿 · 2026-11-02 · 待 NC 程序员 / 机床厂确认后双方签认</div>
+      <div class="eyebrow">RGX · MK84160 · SINUMERIK ONE · 接口约定 · 初稿 · 2026-11-02（11-03 补第 9 节第 10 问） · 待 NC 程序员 / 机床厂确认后双方签认</div>
       <h1>上位机与 NC 接口约定</h1>
       <p class="lede">本文是《轧辊与磨削方案设计说明》第 0 期的交付物，约定上位机（RGX）与 NC 之间的数据交换：作业下发、运行中改参数、道次数据回传、辊形点列、补偿与 DRF。上位机只按逻辑名读写，物理地址全部由 <code>tagmap.json</code> 决定；本文给出的地址是建议值，以 NC 程序员定稿为准。</p>
     </header>
@@ -501,6 +501,7 @@
           <tr><td class="num">7</td><td>自动磨削时是否允许 DRF？若允许，DRF 偏置读哪个变量？</td></tr>
           <tr><td class="num">8</td><td>循环启动时检查 <code>parametersValid</code> 并锁存 <code>acceptedSeq</code> 是否可行？</td></tr>
           <tr><td class="num">9</td><td>本道次补偿量在 NC 里是否有现成变量？平均磨削电流是否容易累加？</td></tr>
+          <tr><td class="num">10</td><td>NC 程序里的"磨前测量"步骤测得的直径与下发的磨前直径（<code>job.rollRadiusMm</code>）不同时，NC 怎么处理？约定方向：目标直径固定，差值由粗磨吸收（与上位机 StockAdjustment 一致）；差值超过多少时 NC 停在测量后报警、等人确认？是否回传实测值供记录？</td></tr>
         </tbody>
       </table></div>
     </section>

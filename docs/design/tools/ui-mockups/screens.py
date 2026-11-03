@@ -25,16 +25,31 @@ def split(work, *fr, gap=None, vertical=False):
         w = span * f / tot; out.append((x, y0, x + w, y1)); x += w + g
     return out
 
+LAST_WIN = {}
+
 def win(c, r, title, active=False, right='', rc=None):
+    LAST_WIN['r'] = r; LAST_WIN['right'] = bool(right)
     return window(c, r[0], r[1], r[2] - r[0], r[3] - r[1], title, active, right, rc)
 
-def profile_chart(c, r, legend, series, note='纵向放大 ×900', end=40, real=None, marks=(), extra_v=()):
+def profile_chart(c, r, legend, series, note='纵向放大 ×900', end=40, real=None, marks=(), extra_v=(), tol=None):
+    """辊形图。"纵向放大"写进所在窗口的标题栏右侧（R3-7），图内顶部只留图例与复位视图；tol 给出时沿最后一条曲线画 ±公差带。"""
     x0, y0, x1, y1 = r
+    p = c.p
+    wr = LAST_WIN.get('r')
+    if note and wr and not LAST_WIN.get('right') and wr[0] <= x0 <= wr[2] and wr[1] <= y0 <= wr[3]:
+        c.text(wr[2] - 8, wr[1] + p.wtH * 0.68, note, p.wtRF, C['ink'], 'end')
     bands = [(-L / 2, -L / 2 + end, 'url(#hatch)', 1, ''), (L / 2 - end, L / 2, 'url(#hatch)', 1, '')]
     v = [(0, '中心 0', '#8D97A3', '6 3 2 3')] + list(extra_v)
-    return chart(c, x0, y0, x1 - x0, y1 - y0, series, (-L / 2, L / 2), (-100, 400), xlab='Z mm（中心 0，头架 ← → 尾架）',
+    X, Y = chart(c, x0, y0, x1 - x0, y1 - y0, series, (-L / 2, L / 2), (-100, 400), xlab='Z mm（中心 0，头架 ← → 尾架）',
                  ylab='直径量 µm', legend=legend, xt=[-900, -450, 0, 450, 900], yt=[-100, 0, 100, 200, 300, 400],
-                 vlines=v, bands=bands, note=note, marks=marks)
+                 vlines=v, bands=bands, note='', marks=marks)
+    if tol:
+        pts, col, sw, dash = series[-1]
+        up = ' L'.join(f'{X(a):.1f},{Y(b + tol):.1f}' for a, b in pts)
+        dn = ' L'.join(f'{X(a):.1f},{Y(b - tol):.1f}' for a, b in reversed(pts))
+        c.path('M' + up + ' L' + dn + ' Z', C['okLine'], 1, fill=C['okSoft'], op=0.9)
+        c.path('M' + ' L'.join(f'{X(a):.1f},{Y(b):.1f}' for a, b in pts), col, sw, dash=dash)
+    return X, Y
 
 def cr(c0=300, end=40, Lr=L):
     return [(z - Lr / 2, v) for z, v in crown(Lr, c0, end, 80)]
@@ -42,6 +57,28 @@ def cr(c0=300, end=40, Lr=L):
 def wavy(c0=300):
     import math
     return [(z, v + 8 * math.sin(z / 37.0) + 30) for z, v in cr(c0)]
+
+def steps_grid(c, r, items, cols=3):
+    """程序步骤（R3-3）：3 列网格，块高 54 / 44（戴手套可点）；开 = #3D5466 底白字 ✓，关 = 白底框 ○。"""
+    p = c.p; x0, y0, x1, y1 = r; g = 8
+    h = 54 if p.name == 'std' else 44
+    w = (x1 - x0 - g * (cols - 1)) / cols
+    for i, (t, on) in enumerate(items):
+        x = x0 + (i % cols) * (w + g); y = y0 + (i // cols) * (h + g)
+        s_ = (t + ' ✓') if on else ('○ ' + t)
+        c.rect(x, y, w, h, '#3D5466' if on else '#FFFFFF', None if on else C['border'])
+        c.text(x + w / 2, y + h * 0.64, s_, p.f, '#FFFFFF' if on else C['ink2'], 'middle')
+    return y0 + ((len(items) + cols - 1) // cols) * (h + g)
+
+def gray_title(svg, title, p):
+    """把某个窗口的青色标题改成灰色（焦点不在这里，R3-5）。"""
+    x, y, w_, h = find_win(svg, title)
+    head = f'<rect x="{x:.1f}" y="{y:.1f}" width="{w_:.1f}" height="{p.wtH:.1f}" fill="#0199C8" />'
+    svg = svg.replace(head, head.replace('#0199C8', C['hdr']))
+    def fix(m):
+        yy = float(m.group(1))
+        return m.group(0).replace('fill="#FFFFFF"', f'fill="{C["ink"]}"') if y < yy < y + p.wtH else m.group(0)
+    return re.sub(r'<text x="[\d.]+" y="([\d.]+)"[^>]*fill="#FFFFFF"[^>]*>', fix, svg)
 
 def steps_chips(c, x, y, items):
     """程序步骤（V1）：开 = #3D5466 底白字 ✓；关 = 1px 框 ○。"""
@@ -78,7 +115,9 @@ def note_row(c, x, y, w, kind, icon, title, right='', state='', sub=''):
 
 
 # =========================== 作业 ===========================
-@screen('5.2.2', '核对页（一页）', '改', '"这支辊的磨法"写辊形名 + 工艺名，方案号小字。四项输入：本次磨削量为主，磨削起点 Z 默认沿用上次。'
+@screen('5.2.2', '核对页（一页）', '改', '"这支辊的磨法"写辊形名 + 工艺名，方案号小字。四项输入：本次磨削量为主；磨前直径带来源徽标［台账］/［实测］；'
+        '目标直径固定，磨前实测差由粗磨吸收（与现有 StockAdjustment 一致）；磨削起点 Z 是机床坐标（示教值，徽标"沿用上次"），下方小字换算到辊身中心。'
+        '图只画设定辊形与 ±公差带；刚测过磨前时再叠"磨前实测"、换了方案时叠"原方案"。程序步骤 3 × 2 大块（54 / 44 px）。'
         '"本次注意"只陈述、不拦人：长度对齐、模板已更新、上次调整都默认取稳妥项（按方案、按设定值），要改用竖键 6 / 2。竖键 8 只给"确认下发"。')
 def s522(p):
     c, w = shell(p, 'machine', 'JOG', PATH_M + ' · 作业未下发', machine=True, clock='2026-11-02 10:12',
@@ -95,13 +134,18 @@ def s522(p):
     y += p.f * 1.55
     c.text(X + W - 4, y + p.fs * 0.9, '方案 3 · 名义 1800.0 / 实测 1798.0 mm', p.fs, C['ink2'], 'end')
     y += p.fs * 1.6
-    y = field(c, X, y, W, '磨前直径', '600.350', 'mm')
+    y = field(c, X, y, W, '磨前直径', '600.350', 'mm', lbadge=('台账', 'info'))
     y = field(c, X, y, W, '本次磨削量', '0.350', 'mm', 'sel')
-    c.text(X + 4, y + p.fieldH * 0.7, '预计目标直径', p.f, C['ink'])
+    c.text(X + 4, y + p.fieldH * 0.7, '目标直径', p.f, C['ink'])
     c.text(X + W - tw('mm', p.fs) - 22, y + p.fieldH * 0.71, '600.000', p.fv, C['ink'], 'end', mono=True)
     c.text(X + W - tw('mm', p.fs) - 8, y + p.fieldH * 0.66, 'mm', p.fs, C['ink2'])
-    y += p.fieldH + 10
-    y = field(c, X, y, W, '磨削起点 Z', '−880.0', 'mm', note='沿用上次')
+    y += p.fieldH
+    c.text(X + 4, y + p.fs * 0.95, '目标直径固定；磨前实测差由粗磨吸收', p.fs, C['ink2'])
+    y += p.fs * 1.5
+    y = field(c, X, y, W, '磨削起点 Z', '140.0', 'mm', lbadge=('沿用上次', 'info'))
+    y -= (4 if p.name == 'std' else 2)
+    c.text(X + 4, y + p.fs * 0.6, '机床坐标 · 距辊身中心 −760', p.fs, C['ink2'])
+    y += p.fs * 1.3
     y = banner(c, X, y, W, '✓ 7 项核对通过', 'ok', '展开 ▸')
     c.text(X + 2, y + p.fs * 1.2, '本次注意 · 3 条，都不用回答', p.fs, C['ink2'], weight=700)
     y += p.fs * 1.6
@@ -111,13 +155,13 @@ def s522(p):
                  sub='拖板 2300→2100 mm/min · 光磨 1→2 道')
     if p.name == 'std':
         c.text(X + 2, y + p.fs * 1.4, '本次调整：无（全部按设定值）', p.fs, C['ink2'])
-    A, B = split(R_, 0.7, 0.3, vertical=True)
+    A, B = split(R_, 0.66, 0.34, vertical=True)
     x0, y0, x1, y1 = win(c, A, '磨成什么样（含程序倒角）')
-    profile_chart(c, (x0 + 4, y0 + 4, x1 - 4, y1 - 4), '━ 方案 3（设定）  ┅ 上次磨后  ▨ 端部非工作区',
-                  [(wavy(), C['pre'], 2, '6 4'), (cr(), C['target'], 3, None)])
+    profile_chart(c, (x0 + 4, y0 + 4, x1 - 4, y1 - 4), '━ 方案 3（设定）  ▭ 公差带 ±5 µm  ▨ 端部非工作区',
+                  [(cr(), C['target'], 3, None)], tol=5)
     x0, y0, x1, y1 = win(c, B, '程序步骤（本次，点一下切换）')
-    yy = steps_chips(c, x0 + 8, y0 + 10, [('磨前测量', True), ('磨后测量', True), ('在线测量', True), ('打印磨后', True)])
-    steps_chips(c, x0 + 8, yy + 10, [('安装误差', False), ('涡流探伤', False)])
+    steps_grid(c, (x0 + 8, y0 + 8, x1 - 8, y1 - 8), [('磨前测量', True), ('磨后测量', True), ('在线测量', True),
+                                                       ('打印磨后', True), ('安装误差', False), ('涡流探伤', False)])
     return finish(c)
 
 JOGK = ['作业', '手动磨削', '测量臂', '尾架', '头架拨盘', '托瓦', '测量对中', '辅助循环 ▸']
@@ -127,7 +171,7 @@ def wrect(svg, title):
     x, y, w_, h = find_win(svg, title); return (x, y, x + w_, y + h)
 
 # ---------- 5.2.1 待磨清单 ----------
-@screen('5.2.1', '作业首页：待磨清单', '改', '右边"这支辊的磨法"：辊形名 + 工艺名（L2）、两个徽标（Δ 上次有调整、↑ 模板已更新）、中心为 0 的辊形图；不放来源、冻结等管理信息（O15）。')
+@screen('5.2.1', '作业首页：待磨清单', '改', '焦点在辊号框时只有框内为青色，列表标题灰（R3-5）；按方向键进列表时列表标题变青。右边"这支辊的磨法"：辊形名 + 工艺名（L2）、两个徽标（Δ 上次有调整、↑ 模板已更新）、中心为 0 的辊形图；不放来源、冻结等管理信息（O15）。')
 def s521(p):
     def draw(c, p, src):
         r = wrect(src, 'R-2026-031 · 下次怎么磨')
@@ -143,12 +187,14 @@ def s521(p):
         badge(c, bx, y + p.fs * 1.1, '↑ 模板已更新', 'warn')
         y += p.fs * 2.0
         profile_chart(c, (X, y, x1 - 6, y1 - 6), '━ 方案 3（设定）', [(cr(), C['target'], 3, None)], note='纵向放大 ×900')
-    return patch('5.2.1', p, drops=[wrect(v3svg('5.2.1', p), 'R-2026-031 · 下次怎么磨')], draw=draw)
+    svg = patch('5.2.1', p, drops=[wrect(v3svg('5.2.1', p), 'R-2026-031 · 下次怎么磨')], draw=draw)
+    svg = svg.replace('stroke="#0199C8" stroke-width="2"', f'stroke="{C["border"]}" stroke-width="1"')
+    return gray_title(svg, '待磨清单', p)
 
 # ---------- 5.2.3 选方案（作业：换方案） ----------
 def plan_picker(p, purpose='job'):
     if purpose == 'job':
-        vk = [('本辊方案', 'on'), '其他辊 ▸', '模板 ▸', '', '', '设为这支辊的\n当前方案…', ('✕ 取消', 'cancel'), ('✓ 仅本次用', 'ok')]
+        vk = [('本辊方案', 'on'), '其他辊 ▸', '模板 ▸', '', '', ('设为这支辊的\n当前方案…', 'off'), ('✕ 取消', 'cancel'), ('✓ 仅本次用', 'ok')]
         dlg = '本次改用方案 2（凸度250）？✓ 仅本次用 = 以后仍按方案 3，下一步选原因；设为当前… 要管理员（不自动取消）'
         crumb = '作业 › 核对 › 换方案'
     else:
@@ -158,18 +204,19 @@ def plan_picker(p, purpose='job'):
     if True:
         c, w = shell(p, 'machine', 'JOG', PATH_M + ' · 作业未下发', machine=True, clock='2026-11-02 10:12',
                      chan=('// 复位 · 已回参考点', '机床 ● 已起动', crumb), vkeys=vk, hkeys=JOGK, hk_on=0,
-                     dialog=dlg, ask=True)
+                     dialog=dlg, ask=True, modal=True)
     L_, R_ = split(w, 0.42, 0.58)
     x0, y0, x1, y1 = win(c, L_, f'{ROLL} 的方案（3）', True, '用途：全部 ▸')
     tbl(c, x0, y0, x1 - x0, [('方案', 1.0), ('辊形 · 工艺', 2.6), ('用途', 0.7, 'l', True), ('最近', 0.8, 'r')],
         [[{'t': '★ 3', 'b': True}, '凸度300 · 工作辊标准', 'F3', '10-28'],
          ['2', '凸度250 · 工作辊标准', 'F3', '09-15'],
          ['1', '圆柱 · 支承过渡', 'F4', '08-02']], sel=1)
-    A, B = split(R_, 0.42, 0.58, vertical=True)
+    A, B = split(R_, 0.5, 0.5, vertical=True)
     x0, y0, x1, y1 = win(c, A, '当前 vs 本次')
     tbl(c, x0, y0, x1 - x0, [('项', 1.4), ('当前 · 方案 3', 1.3, 'r'), ('本次 · 方案 2', 1.3, 'r')],
         [['辊形', '凸度300', {'t': '凸度250', 'b': True}], ['凸度 µm（直径）', '300', {'t': '250', 'b': True}],
-         ['工序 5 光磨道次', '1', {'t': '2', 'b': True}], ['长度对齐', '两端各截 1.0', '两端各截 1.0']], rowh=p.rowH * 0.86)
+         ['工序 5 光磨道次', '1', {'t': '2', 'b': True}], ['长度对齐', '两端各截 1.0', '两端各截 1.0'],
+         ['标准余量 / 预计时长', '0.350 · 64 min', {'t': '0.350 · 68 min', 'b': True}]], rowh=p.rowH * 0.86)
     if purpose == 'reason':
         c.text(x0 + 8, y1 - 12, '仅本次用 → 原因：（请在竖键选）', p.f, '#8A4A00', weight=700)
     x0, y0, x1, y1 = win(c, B, '叠图')
@@ -409,7 +456,7 @@ def s542(p):
 def s543(p):
     c, w = shell(p, 'rolls', 'JOG', '轧辊 / 台账 › 多选 › 从模板建方案', '« 返回 多选', user='管理员 张工',
                  vkeys=['换模板 ▸', '看这支对齐', '排除这支', '', '', '只建立…', ('✕ 取消', 'cancel'), ('✓ 建立并\n设为当前', 'ok')],
-                 hkeys=ROLLK, hk_on=0, ask=True,
+                 hkeys=ROLLK, hk_on=0, ask=True, modal=True,
                  dialog='给 6 支建方案（1 支须先确认对齐，1 支排除）。✓ 建立并设为当前：每支一条改动记录（不自动取消）')
     L_, R_ = split(w, 0.38, 0.62)
     A, B = split(L_, 0.42, 0.58, vertical=True)
@@ -553,7 +600,7 @@ def s553(p):
 def s554(p):
     c, w = shell(p, 'plan', 'JOG', PATH_P + ' › 保存', '', user='管理员 张工', modeL='方案',
                  vkeys=['', '', '', '', '', '另存但\n不设当前…', ('✕ 取消', 'cancel'), ('✓ 另存为方案 5\n并设为当前', 'ok')],
-                 hkeys=PLANK, hk_on=None, ask=True,
+                 hkeys=PLANK, hk_on=None, ask=True, modal=True,
                  dialog='方案 3 已用 4 次，内容不改。✓ 另存为方案 5 并设为当前；方案 3 留作历史，要退回在方案列表设回（不自动取消）')
     L_, R_ = split(w, 0.45, 0.55)
     x0, y0, x1, y1 = win(c, L_, '改了什么（2 项）', True)
@@ -576,7 +623,7 @@ def s554(p):
 def s555(p):
     c, w = shell(p, 'plan', 'JOG', '方案 / R-2026-044 › 复制来', '« 返回 方案列表', user='管理员 张工', modeL='方案',
                  vkeys=['本辊方案', ('其他辊 ▸', 'on'), '模板 ▸', '放大端部', '只复制工艺…', '复制范围 ▸', ('✕ 取消', 'cancel'), ('✓ 复制到本辊', 'ok')],
-                 hkeys=PLANK, hk_on=0, ask=True,
+                 hkeys=PLANK, hk_on=0, ask=True, modal=True,
                  dialog='长度不同（−10.0 mm）：凸度段 1720 → 1710，凸度值不变。看清叠图后 ✓ 复制到本辊（新方案不设为当前）')
     L_, R_ = split(w, 0.36, 0.64)
     x0, y0, x1, y1 = win(c, L_, '其他辊 · 用途 F3', True, '输尾号')
@@ -599,7 +646,7 @@ def s555(p):
 @screen('5.5.6', '命名（弹出框样板）', '不变', '全机仍只有 3 种弹出框（命名、登录、报表预览）之一；v4 用于"新方案名""模板名"。名字在同一支辊内不能重复。')
 def s556(p):
     c, w = shell(p, 'plan', 'JOG', PATH_P + ' › 保存 › 新方案名', '', user='管理员 张工', modeL='方案',
-                 vkeys=['', '', '', '', '', '', ('✕ 取消', 'cancel'), ('✓ 确定', 'ok')], hkeys=PLANK, hk_on=None,
+                 vkeys=['', '', '', '', '', '', ('✕ 取消', 'cancel'), ('✓ 确定', 'ok')], hkeys=PLANK, hk_on=None, modal=True,
                  dialog='输入新方案名；✓ 确定后回到保存页，再决定是否设为当前')
     x0, y0, x1, y1 = w
     c.rect(x0, y0, x1 - x0, y1 - y0, '#DDE2E9')
@@ -644,7 +691,7 @@ def s561(p):
 def s562(p):
     c, w = shell(p, 'tpl', 'JOG', '模板 / F3 标准凸度 › 保存', '', user='管理员 张工', modeL='模板',
                  vkeys=['一致的\n全部必须采用', '这支：普通提示', '这支：必须采用', '这支：不提示', '看差异', '保存并\n必须采用…', ('✕ 取消', 'cancel'), ('✓ 保存\n（普通提示）', 'ok')],
-                 hkeys=TPLK, hk_on=None, ask=True,
+                 hkeys=TPLK, hk_on=None, ask=True, modal=True,
                  dialog='保存 F3 标准凸度的更新：✓ 保存 = 各辊下次来磨时提示；保存并必须采用… = 按下表执行（不自动取消）')
     x0, y0, x1, y1 = w
     y = strip(c, x0, y0, x1 - x0, [('本次更新', '凸度 300 → 280 · 工序 4 精磨拖板 800 → 760'), ('说明', '换轧制计划 F3-26Q4')] if p.name == 'std'
@@ -751,7 +798,7 @@ def s583(p):
 def s584(p):
     c, w = shell(p, 'records', 'JOG', '记录 / 磨削记录 › 存为新方案', 'R-2026-031 · 作业 J20261102-04', user='管理员 张工',
                  vkeys=['勾选 / 取消', '', '', '', '', '另存并\n设为当前…', ('✕ 取消', 'cancel'), ('✓ 另存为方案 6\n（不设当前）', 'ok')],
-                 hkeys=RECK, hk_on=1, ask=True, dialog='把勾选的 2 项存成方案 6（来源：这次作业）。✓ 另存 = 不改变以后怎么磨（不自动取消）')
+                 hkeys=RECK, hk_on=1, ask=True, modal=True, dialog='把勾选的 2 项存成方案 6（来源：这次作业）。✓ 另存 = 不改变以后怎么磨（不自动取消）')
     L_, R_ = split(w, 0.6, 0.4)
     x0, y0, x1, y1 = win(c, L_, '这次的调整（3 项，勾选 2）', True)
     tbl(c, x0, y0, x1 - x0, [('', 0.35, 'c'), ('来自', 1.3), ('参数', 1.8), ('设定值', 0.75, 'r'), ('本次值', 0.75, 'r'), ('新方案', 0.8, 'r')],
@@ -841,15 +888,30 @@ def s5102(p):
          ['砂轮线速度', lock, '—', '≤ 45 m/s', ''], ['变速设置', lock, '—', '—', ''], ['辊形、工序顺序', lock, '—', '—', '改方案']], sel=0)
     return finish(c)
 
-def copy_screen(sid, v3id, title, cap, subs=(), over=None, tag='不变'):
+def copy_screen(sid, v3id, title, cap, subs=(), over=None, tag='不变', post=None):
     @screen(sid, title, tag, cap)
-    def f(p, v3id=v3id, subs=subs, over=over):
-        return patch(v3id, p, subs=subs, over=over)
+    def f(p, v3id=v3id, subs=subs, over=over, post=post):
+        svg = patch(v3id, p, subs=subs, over=over(p) if callable(over) else over)
+        return post(svg, p) if post else svg
     return f
 
-for _sid, _t in [('5.1.1', '手动磨削（JOG 基本画面）'), ('5.1.2', '测量臂（手动动作页样板）'), ('5.1.3', '尾架'), ('5.1.4', '头架拨盘'),
-                 ('5.1.5', '托瓦'), ('5.1.6', '测量对中'), ('5.1.7', '辅助循环 ▸（横键展开）')]:
-    copy_screen(_sid, _sid, _t, '内容同 v3；只换 v4 外壳（左栏"方案 · 模板"）与路径条写法（辊形名 + 工艺名，方案号）。')
+def cmp_l1(svg, p):
+    """R3-4：紧凑档手动页位置值 28 → 38 px（L1 紧凑档）。"""
+    return re.sub(r'font-size="28"([^>]*class="m")', r'font-size="38"\1', svg) if p.name == 'cmp' else svg
+
+def jog_confirm(p):
+    """R3-1：确认态只留停止类与不需确认的键；其余竖键与横键灰。"""
+    return dict(vkeys=['砂轮停止', ('拖板往复…', 'off'), '冷却液 关', ('带启动装置', 'off'), ('定位 ▸', 'off'), ('各轴归位…', 'off'),
+                       ('✕ 取消', 'cancel'), ('✓ 确认', 'ok')], modal=True,
+                dialog=('砂轮给定 35.0 → 38.0 m/s（590 → 640 r/min）。按 ✓ 确认写入；砂轮在转，转速立即变（5 秒不按自动取消）'
+                        if p.name == 'std' else '砂轮给定 35.0 → 38.0 m/s，转速立即变。✓ 确认写入（5 s 自动取消）'))
+
+copy_screen('5.1.1', '5.1.1', '手动磨削（JOG 基本画面）', '同 v3，图示改砂轮给定后等确认（5 秒）。确认态（R3-1）：会提问的动作键与横键全部变灰，'
+            '只留停止类（砂轮停止）与不需确认的键（冷却液）；按停止键即取消当前确认。紧凑档位置值 38 px（R3-4）。', over=jog_confirm, post=cmp_l1, tag='改')
+for _sid, _t in [('5.1.2', '测量臂（手动动作页样板）'), ('5.1.3', '尾架'), ('5.1.4', '头架拨盘'), ('5.1.5', '托瓦'), ('5.1.6', '测量对中')]:
+    copy_screen(_sid, _sid, _t, '内容同 v3；换 v4 外壳与路径条写法；紧凑档位置值 38 px（R3-4）。', post=cmp_l1)
+copy_screen('5.1.7', '5.1.7', '辅助循环 ▸（横键展开）', '同 v3：横键换成循环清单；图示为启动砂轮修整等确认（5 秒），确认态下其余键灰（R3-1）。',
+            over=dict(vkeys=[('启动修整…', 'off'), '', '', '', '', '', ('✕ 取消', 'cancel'), ('✓ 确认', 'ok')], modal=True), tag='改')
 @screen('5.2.4', '换方案：选原因', '改', '同 v3 的做法：选了"仅本次用"后竖键换成常用原因，只有"其他…"要输入；记录标"例外"。画面沿用选方案子视图。')
 def s524(p):
     return plan_picker(p, 'reason')

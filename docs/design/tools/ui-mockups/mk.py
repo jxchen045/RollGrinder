@@ -29,6 +29,8 @@ CMP = P(name='cmp', W=1366, H=768, left=64, itemY=4, itemH=73, itemP=76, iconF=2
         gap=4, wtH=34, wtF=20, wtRF=16, f=20, fs=16, fv=20, rowH=46, hdrH=36.8, kvP=35.9, fieldH=36, pad=8,
         L1=40, L2=28)
 
+WARN = []  # 生成时的版式告警（build.py 打印）
+
 AREAS = [('machine', '⚙', '机床'), ('rolls', '◍', '轧辊'), ('plan', '⌒', '方案'), ('tpl', '▦', '模板'),
          ('wheel', '◎', '砂轮'), ('records', '▤', '记录'), ('diag', '⚠', '诊断')]
 
@@ -74,7 +76,7 @@ class Canvas:
 
 # ---------- 外壳 ----------
 def shell(p, area, mode, path, path_r='', machine=False, chan=('', '', ''), vkeys=(), hkeys=(), hk_on=None,
-          dialog='', ask=False, user='操作者 李工', clock='2026-11-02 10:31', modeL=None, more=True, areas=None):
+          dialog='', ask=False, user='操作者 李工', clock='2026-11-02 10:31', modeL=None, more=True, areas=None, modal=False):
     c = Canvas(p)
     c.rect(0, 0, p.W, p.H, C['bg'])
     c.rect(0, 0, p.left, p.H, C['left'])
@@ -134,6 +136,8 @@ def shell(p, area, mode, path, path_r='', machine=False, chan=('', '', ''), vkey
     # 对话行
     c.rect(p.left, p.dlgY, p.W - p.left, p.dlgH, C['ask'] if ask else C['path'])
     c.text(p.left + 10, p.dlgY + p.dlgH * 0.73, dialog, p.dlgF, C['ink'], weight=700 if ask else 400)
+    if tw(dialog, p.dlgF) * 1.08 > p.W - p.left - 34:  # 8% 留给字体差异
+        WARN.append(f'{p.name} 对话行过长（{tw(dialog, p.dlgF):.0f} px）：{dialog[:24]}…')
     # 横键
     c.rect(p.left, p.hkY, p.W - p.left, p.hkH, C['path'])
     hk = list(hkeys) + [''] * (8 - len(hkeys))
@@ -141,6 +145,7 @@ def shell(p, area, mode, path, path_r='', machine=False, chan=('', '', ''), vkey
         x = p.hkX + i * p.hkP
         on = (i == hk_on); off = False
         if isinstance(k, tuple): k, off = k[0], k[1] == 'off'
+        if modal and not on: off = True
         c.rect(x, p.hkY + 4, p.hkW, p.hkKH, C['blue'] if on else C['key'])
         c.text(x + p.hkW / 2, p.hkY + 4 + p.hkKH * 0.604, k, p.hkF, C['white'] if on else (C['keyOff'] if off else C['ink']), 'middle')
     c.rect(p.lastX, p.hkY + 4, p.lastW, p.hkKH, C['key'])
@@ -295,9 +300,10 @@ def kv(c, x, y, w, pairs, pitch=None, lw=None, fs=None, vb=False):
         yy += pitch
     return yy
 
-def field(c, x, y, w, lab, val, unit='', state='normal', lw=0.42, note=''):
+def field(c, x, y, w, lab, val, unit='', state='normal', lw=0.42, note='', lbadge=None):
     p = c.p; h = p.fieldH
     c.text(x + 4, y + h * 0.7, lab, p.f, C['ink'])
+    if lbadge: badge(c, x + 4 + tw(lab, p.f) + 10, y + h * 0.68, lbadge[0], lbadge[1])
     fx = x + w * lw; fw = w * (1 - lw) - (tw(unit, p.fs) + 18 if unit else 4)
     fill = {'normal': C['white'], 'sel': C['cur'], 'ro': C['ro'], 'chg': C['chgSoft']}[state]
     c.rect(fx, y, fw, h, fill, C['chgLine'] if state == 'chg' else None)

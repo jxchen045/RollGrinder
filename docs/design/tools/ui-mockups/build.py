@@ -32,4 +32,6 @@ if __name__ == '__main__':
     only = sys.argv[1:]
     extract_v3()
     render(only)
+    import mk
+    for w in mk.WARN: print('告警：', w)
     import build_doc  # noqa: F401  导入即拼装

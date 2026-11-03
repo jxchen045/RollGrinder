@@ -76,6 +76,7 @@ for ln in open(os.path.join(D, 'decisions_r1.md'), encoding='utf-8'):
     elif ln.startswith('不采纳汇总'): dec_rej = ln.strip()
 
 r2 = open(os.path.join(D, 'review_r2.html'), encoding='utf-8').read() if os.path.exists(os.path.join(D, 'review_r2.html')) else ''
+r3 = open(os.path.join(D, 'review_r3.html'), encoding='utf-8').read() if os.path.exists(os.path.join(D, 'review_r3.html')) else ''
 
 # ---------- 画面 ----------
 GROUPS = [('5.1', '机床区 · JOG（手动）'), ('5.2', '机床区 · 作业（选辊 → 核对 → 下发）'), ('5.3', '机床区 · AUTO（自动）'),
@@ -99,7 +100,7 @@ n_new = sum(1 for s in scr if s[2] == '新'); n_chg = sum(1 for s in scr if s[2]
 
 body = open(os.path.join(D, 'doc_body.html'), encoding='utf-8').read()
 body = (body.replace('{{R1}}', r1).replace('{{DEC}}', ''.join(dec)).replace('{{DECREJ}}', e(dec_rej))
-            .replace('{{R2}}', r2).replace('{{SCREENS}}', ''.join(parts)).replace('{{TOC6}}', ''.join(toc6))
+            .replace('{{R2}}', r2).replace('{{R3}}', r3).replace('{{SCREENS}}', ''.join(parts)).replace('{{TOC6}}', ''.join(toc6))
             .replace('{{N}}', str(len(scr))).replace('{{NNEW}}', str(n_new)).replace('{{NCHG}}', str(n_chg)).replace('{{NSAME}}', str(n_same))
             .replace('{{KO}}', e(keep_line('review_r1_PO.md', 'O 坚持'))).replace('{{KP}}', e(keep_line('review_r1_PO.md', 'P 坚持')))
             .replace('{{KV}}', e(keep_line('review_r1_V.md', 'V 坚持'))).replace('{{KI}}', e(keep_line('review_r1_I.md', 'I 坚持'))))
