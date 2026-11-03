@@ -25,18 +25,21 @@ namespace RollGrinder.Services.Jobs;
 /// <param name="MissingTags">tagmap 里缺失的必需逻辑名。</param>
 /// <param name="RecordId">本次磨削记录标识，未下发时为空。</param>
 /// <param name="WriteCount">实际写入的变量条数。</param>
+/// <param name="DownloadSequence">这次的下发序号（接口约定第 2 节）；tagmap 没映射时为空。</param>
 public sealed record JobDownloadResult(
     bool Succeeded,
     IReadOnlyList<ParameterViolation> Violations,
     IReadOnlyList<string> MissingTags,
     string? RecordId,
-    int WriteCount);
+    int WriteCount,
+    int? DownloadSequence = null);
 
 /// <summary>参数下发。</summary>
 public interface IJobDownloadService
 {
     /// <summary>
-    /// 校验并下发一份作业：先写全部参数，最后写"参数有效"标志。
+    /// 校验并下发一份作业（接口约定第 2 节）：① 参数有效置 false ② 读回确认 ③ 写全部参数
+    /// ④ 下发序号加一 ⑤ 参数有效置 true。
     /// 标志写完之后磨削由 NC 与 PLC 负责，上位机即使被强制结束，这支辊也能磨完。
     /// </summary>
     Task<JobDownloadResult> DownloadAsync(GrindingJob job, CancellationToken cancellationToken);
@@ -131,10 +134,25 @@ public sealed class JobDownloadService : IJobDownloadService
         RollProfile? compensation = await LoadCompensationAsync(job.JobId, cancellationToken).ConfigureAwait(false);
         DateTimeOffset now = this.timeProvider.GetUtcNow();
 
-        NcDownload download = this.translator.Translate(job, compensation, this.settings.ProfileSampleCount, now);
+        // 上一次的序号要从 NC 读回来；tagmap 把它声明成只写的就不发序号（诊断页显示 "--"）。
+        int? sequence = this.translator.IsReadable(MachineTagKeys.JobDownloadSeq)
+            ? await NextDownloadSequenceAsync(cancellationToken).ConfigureAwait(false)
+            : null;
+        // 上一支辊可能留着没被采用的修改：下发时把改参数序号对齐到 NC 已采用的，作废它。
+        int? appliedEdit = this.translator.SupportsStagedEdits && this.translator.IsReadable(MachineTagKeys.JobEditAppliedSeq)
+            ? ToInt((await this.gateway.ReadTagAsync(MachineTagKeys.JobEditAppliedSeq, cancellationToken).ConfigureAwait(false)).Raw)
+            : null;
+        NcDownload download = this.translator.Translate(
+            job, compensation, this.settings.ProfileSampleCount, now, sequence, appliedEdit);
 
-        // 先写机床：写不进去就不该在库里留下"已下发"。
+        // ① ② 先把"参数有效"置 false 并读回：以前开始写之前不清它，上一支辊留下的 true
+        // 会让 NC 在上位机写到一半时把半新半旧的参数当成有效（接口约定第 2 节）。
+        await InvalidateAsync(now, cancellationToken).ConfigureAwait(false);
+
+        // ③ ④ ⑤ 先写机床：写不进去就不该在库里留下"已下发"。写到一半失败，
+        // 参数有效停在 false，NC 拒绝启动。
         await this.gateway.WriteTagsAsync(download.Writes, cancellationToken).ConfigureAwait(false);
+        int writeCount = download.Writes.Count + 1;
 
         string recordId = Guid.NewGuid().ToString("N");
         try
@@ -153,14 +171,16 @@ public sealed class JobDownloadService : IJobDownloadService
                         .ToArray(),
                     checks.Select(check => (check.Item, check.Status.ToString(), check.MessageKey)).ToArray(),
                     operatorName,
-                    now),
+                    now,
+                    sequence),
                 cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is DataStoreException or Microsoft.Data.Sqlite.SqliteException)
         {
             // 参数已经在 NC 手里，这支辊照磨；只是记录没落库，必须让人看见。
             this.alarms.Raise(AlarmSeverity.Error, HandoverNotArchivedResourceKey, ex.Message, AlarmCodes.HandoverNotArchived);
-            return new JobDownloadResult(true, Array.Empty<ParameterViolation>(), Array.Empty<string>(), null, download.Writes.Count);
+            return new JobDownloadResult(
+                true, Array.Empty<ParameterViolation>(), Array.Empty<string>(), null, writeCount, sequence);
         }
 
         this.alarms.Raise(AlarmSeverity.Information, HandoverCompletedResourceKey, job.JobId, AlarmCodes.HandoverCompleted);
@@ -169,8 +189,55 @@ public sealed class JobDownloadService : IJobDownloadService
 
         await QueuePreGrindReportAsync(job, recordId, cancellationToken).ConfigureAwait(false);
 
-        return new JobDownloadResult(true, Array.Empty<ParameterViolation>(), Array.Empty<string>(), recordId, download.Writes.Count);
+        return new JobDownloadResult(
+            true, Array.Empty<ParameterViolation>(), Array.Empty<string>(), recordId, writeCount, sequence);
     }
+
+    /// <summary>"参数有效"置 false 并读回；读回不是 false 就不往下写。</summary>
+    private async Task InvalidateAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        TagWrite invalidate = this.translator.InvalidateWrite(now);
+        await this.gateway.WriteTagAsync(invalidate.LogicalName, invalidate.Value, cancellationToken).ConfigureAwait(false);
+
+        // 老 tagmap 可能把有效标志声明成只写：读不回来就只能信写成功了，不拦下发。
+        if (!this.translator.IsReadable(MachineTagKeys.JobParametersValid))
+        {
+            return;
+        }
+
+        TagValue readBack = await this.gateway
+            .ReadTagAsync(MachineTagKeys.JobParametersValid, cancellationToken).ConfigureAwait(false);
+        if (IsSet(readBack.Raw))
+        {
+            throw new GatewayException(
+                "NC still reports parametersValid = true after it was cleared; the download was not started.");
+        }
+    }
+
+    /// <summary>上一次的下发序号加一。读不到（新机床、变量刚建）按 0 算。</summary>
+    private async Task<int> NextDownloadSequenceAsync(CancellationToken cancellationToken)
+    {
+        TagValue current = await this.gateway
+            .ReadTagAsync(MachineTagKeys.JobDownloadSeq, cancellationToken).ConfigureAwait(false);
+        int last = ToInt(current.Raw);
+        return last is < 0 or int.MaxValue ? 1 : last + 1;
+    }
+
+    private static int ToInt(object? raw) => raw switch
+    {
+        int number => number,
+        double number => (int)number,
+        IConvertible convertible => convertible.ToInt32(System.Globalization.CultureInfo.InvariantCulture),
+        _ => 0,
+    };
+
+    private static bool IsSet(object? raw) => raw switch
+    {
+        bool flag => flag,
+        int number => number != 0,
+        double number => number != 0.0,
+        _ => false,
+    };
 
     /// <summary>
     /// 勾了"打印磨前数据"就出一张磨前工艺单交给界面去打。

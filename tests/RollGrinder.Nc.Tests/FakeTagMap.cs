@@ -82,6 +82,20 @@ internal sealed class FakeTagMap : ITagMap
 
     public FakeTagMap Without(string key) => new(Tags.Where(tag => tag.Key != key));
 
+    /// <summary>再加上接口约定第 2、3 节的变量：下发序号、改参数暂存区与序号。</summary>
+    public FakeTagMap WithNcInterface() => new(Tags
+        .Concat(Tags
+            .Where(tag => tag.Key.StartsWith("job.step.", StringComparison.Ordinal) && tag.Key != MachineTagKeys.JobStepExtra)
+            .Select(tag => Scalar(MachineTagKeys.JobEditOf(tag.Key), tag.DataType)))
+        .Concat(new[]
+        {
+            Scalar(MachineTagKeys.JobDownloadSeq, TagDataType.Int32),
+            Scalar(MachineTagKeys.JobEditStepOrder, TagDataType.Int32),
+            Scalar(MachineTagKeys.JobEditSeq, TagDataType.Int32),
+            Scalar(MachineTagKeys.JobEditAppliedSeq, TagDataType.Int32),
+            Array(MachineTagKeys.JobEditExtra, TagDataType.Double, MachineTagKeys.JobStepExtraCount),
+        }));
+
     private static TagDescriptor Scalar(string key, TagDataType dataType) =>
         new(key, "sim://" + key, dataType, TagAccess.ReadWrite);
 

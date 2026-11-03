@@ -41,11 +41,20 @@ public sealed class NcJobTranslator
     /// <param name="compensation">补偿曲线（半径量 mm），无补偿传 null。</param>
     /// <param name="requestedProfileSampleCount">期望的辊形采样点数；实际点数还受 tagmap 的数组长度限制。</param>
     /// <param name="timestampUtc">写入值的时间戳。</param>
+    /// <param name="voidStagedEditAs">
+    /// NC 已采用的改参数序号：给出时把 <see cref="MachineTagKeys.JobEditSeq"/> 写成它，作废暂存区残留。
+    /// </param>
+    /// <param name="downloadSequence">
+    /// 下发序号（接口约定第 2 节）：写在全部参数之后、"参数有效"之前，NC 在循环启动时锁存。
+    /// 为 null 或 tagmap 没映射 <see cref="MachineTagKeys.JobDownloadSeq"/> 时不写。
+    /// </param>
     public NcDownload Translate(
         GrindingJob job,
         RollProfile? compensation,
         int requestedProfileSampleCount,
-        DateTimeOffset timestampUtc)
+        DateTimeOffset timestampUtc,
+        int? downloadSequence = null,
+        int? voidStagedEditAs = null)
     {
         ArgumentNullException.ThrowIfNull(job);
         if (requestedProfileSampleCount < 2)
@@ -124,6 +133,19 @@ public sealed class NcJobTranslator
             AddNumber(writes, Indexed(MachineTagKeys.JobProfileRadiusOffsetMm, i), point.RadiusOffsetMm, timestampUtc);
         }
 
+        // 作废暂存区里上一支辊没被采用的修改：改参数序号对齐到 NC 已采用的序号，
+        // NC 就不会在新作业的第一道把旧作业的参数拷进来（接口约定第 3 节）。
+        if (voidStagedEditAs is int applied)
+        {
+            AddInteger(writes, MachineTagKeys.JobEditSeq, applied, timestampUtc);
+        }
+
+        // 下发序号在参数之后、有效标志之前：NC 锁存到的序号一定对应一整份写完的参数。
+        if (downloadSequence is int sequence)
+        {
+            AddInteger(writes, MachineTagKeys.JobDownloadSeq, sequence, timestampUtc);
+        }
+
         // 必须最后一条：NC 见到它才认这组参数。
         writes.Add(new TagWrite(
             MachineTagKeys.JobParametersValid,
@@ -171,6 +193,107 @@ public sealed class NcJobTranslator
         var writes = new List<TagWrite>();
         AppendStep(writes, step, plan, index, timestampUtc);
         return writes;
+    }
+
+    /// <summary>
+    /// 下发第一步：把"参数有效"置为 false（接口约定第 2 节）。之后才写参数——
+    /// 上位机写到一半崩溃，NC 看到的是 false，拒绝启动，不会把半新半旧的参数当成有效。
+    /// </summary>
+    public TagWrite InvalidateWrite(DateTimeOffset timestampUtc)
+    {
+        var writes = new List<TagWrite>(1);
+        AddBoolean(writes, MachineTagKeys.JobParametersValid, false, timestampUtc);
+        return writes.Count == 1
+            ? writes[0]
+            : throw new GatewayException($"tagmap.json does not map '{MachineTagKeys.JobParametersValid}'.");
+    }
+
+    /// <summary>tagmap 里有没有这个逻辑名（数组变量写 base[index]）。</summary>
+    public bool IsMapped(string logicalName) => this.tagMap.TryResolve(logicalName, out _);
+
+    /// <summary>这个逻辑名映射了、而且不是只写的（读得回来）。</summary>
+    public bool IsReadable(string logicalName) =>
+        this.tagMap.TryResolve(logicalName, out TagDescriptor? descriptor)
+        && descriptor is not null
+        && descriptor.Access != TagAccess.Write;
+
+    /// <summary>
+    /// 改参数走不走暂存区握手（接口约定第 3 节）：序号、已采用序号、工序号三个都映射了才走。
+    /// 没映射的老 tagmap 退回直接改 <c>job.step.*</c>（不是原子的，诊断页会写明）。
+    /// </summary>
+    public bool SupportsStagedEdits =>
+        IsMapped(MachineTagKeys.JobEditSeq)
+        && IsMapped(MachineTagKeys.JobEditAppliedSeq)
+        && IsMapped(MachineTagKeys.JobEditStepOrder);
+
+    /// <summary>
+    /// 把一道工序改后的**整组**参数写进暂存区，再写工序号，最后写改参数序号。
+    /// NC 在道次开始时看到序号变了，整组拷到那一道的槽位并回报已采用的序号——
+    /// 不会出现"进给已改、道次数未改"的半组参数。
+    /// </summary>
+    /// <param name="job">改过参数之后的整支作业。</param>
+    /// <param name="stepOrder">要改的工序，从 1 起。</param>
+    /// <param name="editSequence">这次的改参数序号（上一次 + 1）。</param>
+    /// <param name="timestampUtc">时间戳。</param>
+    public IReadOnlyList<TagWrite> TranslateStepEdit(
+        GrindingJob job, int stepOrder, int editSequence, DateTimeOffset timestampUtc)
+    {
+        IReadOnlyList<TagWrite> stepWrites = TranslateStepParameters(job, stepOrder, timestampUtc);
+        int index = stepOrder - 1;
+
+        var writes = new List<TagWrite>(stepWrites.Count + 2);
+        var missing = new List<string>();
+        foreach (TagWrite write in stepWrites)
+        {
+            if (!TagKeySyntax.TrySplit(write.LogicalName, out string baseKey, out int slot))
+            {
+                throw new GatewayException($"'{write.LogicalName}' is not an indexed step parameter.");
+            }
+
+            string editKey = string.Equals(baseKey, MachineTagKeys.JobStepExtra, StringComparison.Ordinal)
+                ? TagKeySyntax.Indexed(MachineTagKeys.JobEditExtra, slot - (index * MachineTagKeys.JobStepExtraCount))
+                : MachineTagKeys.JobEditOf(baseKey);
+
+            if (!this.tagMap.TryResolve(editKey, out TagDescriptor? descriptor) || descriptor is null)
+            {
+                missing.Add(editKey);
+                continue;
+            }
+
+            writes.Add(new TagWrite(
+                editKey,
+                new TagValue(editKey, descriptor.DataType, Coerce(write.Value.Raw, descriptor.DataType), timestampUtc)));
+        }
+
+        // 暂存区缺一项，NC 拷过去的就是上一次留下的旧值：宁可不改，也不能改出半组。
+        if (missing.Count > 0)
+        {
+            throw new GatewayException(
+                "tagmap.json does not map the edit staging variables: " + string.Join(", ", missing));
+        }
+
+        AddInteger(writes, MachineTagKeys.JobEditStepOrder, stepOrder, timestampUtc);
+
+        // 必须最后一条：NC 见到序号变了才拷暂存区。
+        AddInteger(writes, MachineTagKeys.JobEditSeq, editSequence, timestampUtc);
+        return writes;
+    }
+
+    private static object Coerce(object? raw, TagDataType dataType)
+    {
+        double number = raw switch
+        {
+            bool flag => flag ? 1.0 : 0.0,
+            IConvertible convertible => convertible.ToDouble(System.Globalization.CultureInfo.InvariantCulture),
+            _ => 0.0,
+        };
+
+        return dataType switch
+        {
+            TagDataType.Boolean => number != 0.0,
+            TagDataType.Double => number,
+            _ => (int)Math.Round(number),
+        };
     }
 
     /// <summary>

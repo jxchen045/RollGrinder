@@ -292,6 +292,7 @@
       <div class="eyebrow">RGX · MK84160 · SINUMERIK ONE · 接口约定 · 初稿 · 2026-11-02（11-03 补第 9 节第 10 问） · 待 NC 程序员 / 机床厂确认后双方签认</div>
       <h1>上位机与 NC 接口约定</h1>
       <p class="lede">本文是《轧辊与磨削方案设计说明》第 0 期的交付物，约定上位机（RGX）与 NC 之间的数据交换：作业下发、运行中改参数、道次数据回传、辊形点列、补偿与 DRF。上位机只按逻辑名读写，物理地址全部由 <code>tagmap.json</code> 决定；本文给出的地址是建议值，以 NC 程序员定稿为准。</p>
+      <p class="cap">实现状态（2026-11-03）：上位机一侧与仿真 NC 已按第 2–4 节实现并通过仿真联调用例（第 8 节 1–7 的仿真版，见 <code>tests/RollGrinder.Integration.Tests/NcInterfaceContractTests.cs</code>）；变量地址按第 7 节 R 参数备选写入 <code>config/tagmap.sample.json</code>。真机 NC 一侧待 NC 程序员按第 9 节确认后实现。</p>
     </header>
 
     <section id="s0" class="major">
@@ -358,7 +359,8 @@
         <li><b>上位机</b>：只有在 <code>appliedSeq == seq</code>（上一次已被采用）时才写暂存区；写完全部参数后最后写 <code>seq + 1</code>。否则提示"上一次修改尚未生效"，不收新的修改。</li>
         <li><b>NC</b>：每个道次开始时比较，若 <code>seq ≠ appliedSeq</code>，把暂存区整组拷到对应工序槽位，再写 <code>appliedSeq = seq</code>。拷贝在 NC 程序内完成，对 NC 自己是原子的。NC 不等待，不比较就继续。</li>
         <li><b>无竞争</b>：暂存区只有在"已采用"状态下才会被上位机改写，NC 只在序号变化后读它，两方不会同时操作同一块数据。</li>
-        <li><b>上位机显示</b>："已下发，等待生效" → 看到 <code>appliedSeq</code> 追上后显示"第 n 道起生效"，记录写入生效道次；超过一道次仍未生效显示"未生效"，不重发、不干预。</li>
+        <li><b>下发作废残留</b>：上一支辊可能留着没被采用的修改。上位机每次下发时，在参数之后、序号与有效标志之前，把 <code>job.edit.seq</code> 写成 NC 当前的 <code>appliedSeq</code>——两者相等，NC 就不会在新作业第一道把旧作业的暂存区拷进来。</li>
+                <li><b>上位机显示</b>："已下发，等待生效" → 看到 <code>appliedSeq</code> 追上后显示"第 n 道起生效"，记录写入生效道次；超过一道次仍未生效显示"未生效"，不重发、不干预。</li>
         <li>目标工序已磨完、或在当前道次改了不允许在线调整的参数：上位机侧照现有规则挡住，不写暂存区。</li>
       </ul>
     </section>

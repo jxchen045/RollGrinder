@@ -19,6 +19,69 @@ public static class MachineTagKeys
     /// <summary>已下发参数是否有效（上位机写、NC 读）。</summary>
     public const string JobParametersValid = "job.parametersValid";
 
+    // ── NC 接口约定（docs/design/上位机与NC接口约定.html）。一个变量只有一个写方；状态靠序号比较。──
+
+    /// <summary>下发序号（上位机写）：参数写完、置有效之前加一。可选：没映射就不写。</summary>
+    public const string JobDownloadSeq = "job.downloadSeq";
+
+    /// <summary>NC 已确认的下发序号（NC 写）：循环启动检查参数有效时锁存 <see cref="JobDownloadSeq"/>。</summary>
+    public const string JobAcceptedSeq = "job.acceptedSeq";
+
+    /// <summary>改参数暂存区的逻辑名前缀（上位机写）。与 <c>job.step.*</c> 一一对应，但每项只有一个值。</summary>
+    public const string JobEditPrefix = "job.edit.";
+
+    /// <summary>暂存区里的参数要拷到第几道工序（从 1 起，上位机写）。</summary>
+    public const string JobEditStepOrder = "job.edit.stepOrder";
+
+    /// <summary>改参数序号（上位机写）：暂存区整组写完后最后加一。</summary>
+    public const string JobEditSeq = "job.edit.seq";
+
+    /// <summary>NC 已采用的改参数序号（NC 写）：道次开始时整组拷贝后置为 <see cref="JobEditSeq"/>。</summary>
+    public const string JobEditAppliedSeq = "job.edit.appliedSeq";
+
+    /// <summary>暂存区里的工序专属参数（扁平，<see cref="JobStepExtraCount"/> 个）。</summary>
+    public const string JobEditExtra = "job.edit.extra";
+
+    /// <summary>某个 <c>job.step.*</c> 数组变量在暂存区里的对应单值逻辑名。</summary>
+    public static string JobEditOf(string stepKey)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(stepKey);
+        const string stepPrefix = "job.step.";
+        if (!stepKey.StartsWith(stepPrefix, StringComparison.Ordinal))
+        {
+            throw new ArgumentException($"'{stepKey}' is not a step parameter key.", nameof(stepKey));
+        }
+
+        return JobEditPrefix + stepKey[stepPrefix.Length..];
+    }
+
+    /// <summary>道次缓冲的槽位数（NC 常量）。</summary>
+    public const string PassSlotCount = "pass.slotCount";
+
+    /// <summary>NC 已写完的最后一行的序号（NC 写，作业开始清 0，单调递增）。</summary>
+    public const string PassWriteSeq = "pass.writeSeq";
+
+    /// <summary>上位机已存的最后一行的序号（上位机写，NC 只用来判断溢出，从不等它）。</summary>
+    public const string PassReadSeq = "pass.readSeq";
+
+    /// <summary>覆盖了未读行的次数（NC 写）。</summary>
+    public const string PassOverflowCount = "pass.overflowCount";
+
+    /// <summary>道次缓冲（扁平数组：槽位 × <see cref="PassRowFieldCount"/>，NC 写）。</summary>
+    public const string PassRow = "pass.row";
+
+    /// <summary>道次缓冲每行的字段数（接口约定 4.2）。</summary>
+    public const int PassRowFieldCount = 16;
+
+    /// <summary>道次缓冲第 <paramref name="slot"/> 行第 <paramref name="field"/> 个字段。</summary>
+    public static string PassRowField(int slot, int field)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(slot);
+        ArgumentOutOfRangeException.ThrowIfNegative(field);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(field, PassRowFieldCount);
+        return TagKeySyntax.Indexed(PassRow, (slot * PassRowFieldCount) + field);
+    }
+
     /// <summary>辊件公称半径（mm）。</summary>
     public const string JobRollRadiusMm = "job.rollRadiusMm";
 
@@ -482,6 +545,16 @@ public static class MachineTagKeys
             CompensationRealtimeOffsetMm,
             CompensationDegradationLevel,
             MachineAlarmCount,
+
+            // NC 接口约定：只读序号，行数据由道次缓冲读取服务按需单独读。
+            JobDownloadSeq,
+            JobAcceptedSeq,
+            JobEditSeq,
+            JobEditAppliedSeq,
+            PassSlotCount,
+            PassWriteSeq,
+            PassReadSeq,
+            PassOverflowCount,
         };
 
         // 机床报警：号与文本各一组。没映射的读不到，界面上就只有上位机自己的报警。

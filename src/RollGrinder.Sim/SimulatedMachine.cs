@@ -78,6 +78,25 @@ public sealed class SimulatedMachine
     private int strokeVersion;
     private readonly double wheelDiameterMm = 890.24;
 
+    // ── NC 接口约定（docs/design/上位机与NC接口约定.html）：这台假 NC 照约定的 NC 一侧做。──
+
+    /// <summary>道次缓冲的槽位数（接口约定 4.1 建议 16）。</summary>
+    public const int PassSlots = 16;
+
+    /// <summary>循环启动时锁存的下发序号（job.acceptedSeq）。</summary>
+    private int acceptedSeq;
+
+    /// <summary>已采用的改参数序号（job.edit.appliedSeq）。</summary>
+    private int editAppliedSeq;
+
+    /// <summary>道次缓冲：扁平下标 = 槽位 × 16 + 字段。</summary>
+    private readonly Dictionary<int, double> passRows = new();
+
+    private int passWriteSeq;
+    private int passOverflowCount;
+    private double lastLeftReversalMm = double.NaN;
+    private double lastRightReversalMm = double.NaN;
+
     // ── 手动磨削（界面最终稿 5.1）：拖板往复、定位、方式请求。只在通道空闲时动，和真 PLC 的联锁一致。──
 
     /// <summary>拖板在手动往复。</summary>
@@ -376,6 +395,28 @@ public sealed class SimulatedMachine
     /// <summary>读取一个逻辑变量；仿真不认识的变量返回 null，由调用方决定怎么处理。</summary>
     public object? Read(string logicalName)
     {
+        switch (logicalName)
+        {
+            case MachineTagKeys.JobAcceptedSeq:
+                return this.acceptedSeq;
+            case MachineTagKeys.JobEditAppliedSeq:
+                return this.editAppliedSeq;
+            case MachineTagKeys.PassSlotCount:
+                return PassSlots;
+            case MachineTagKeys.PassWriteSeq:
+                return this.passWriteSeq;
+            case MachineTagKeys.PassOverflowCount:
+                return this.passOverflowCount;
+            default:
+                break;
+        }
+
+        if (TagKeySyntax.TrySplit(logicalName, out string rowKey, out int rowIndex)
+            && string.Equals(rowKey, MachineTagKeys.PassRow, StringComparison.Ordinal))
+        {
+            return this.passRows.TryGetValue(rowIndex, out double field) ? field : 0.0;
+        }
+
         if (logicalName == MachineTagKeys.JobCycleComplete)
         {
             return this.cycleComplete ? 1 : 0;
@@ -716,16 +757,109 @@ public sealed class SimulatedMachine
 
     private void CompleteStroke()
     {
+        // 折返：记下这一端的实际位置，这一道写进道次缓冲（NC 不等上位机）。
+        if (this.carriageDirection < 0)
+        {
+            this.lastRightReversalMm = this.carriagePositionMm;
+        }
+        else
+        {
+            this.lastLeftReversalMm = this.carriagePositionMm;
+        }
+
+        WritePassRow();
+
         // 一个来回算一道；走完本工序的道次就推进到下一道工序。
         this.currentPass++;
         this.strokeVersion++;
         if (this.currentPass < CurrentStepTotalPasses)
         {
+            ApplyStagedEdit();
             return;
         }
 
         this.currentPass = 0;
         AdvanceToNextStep();
+        ApplyStagedEdit();
+    }
+
+    /// <summary>
+    /// 道次缓冲（接口约定 4.3）：数据先写、行序号行内最后写、全局写序号最后写。
+    /// 追上上位机的读序号就覆盖最旧一行并把溢出计数加一——照样写，不等。
+    /// </summary>
+    private void WritePassRow()
+    {
+        int sequence = this.passWriteSeq + 1;
+        int slot = sequence % PassSlots;
+        int readSeq = (int)Written(MachineTagKeys.PassReadSeq);
+        if (sequence - readSeq > PassSlots)
+        {
+            this.passOverflowCount++;
+        }
+
+        double dwell = Written(TagKeySyntax.Indexed(MachineTagKeys.JobStepReversalDwellSeconds, this.currentStepOrder - 1));
+        double[] fields =
+        {
+            0.0,
+            this.currentStepOrder,
+            this.currentPass + 1,
+            this.lastLeftReversalMm, dwell, 100.0, this.currentRadiusMm,
+            this.lastRightReversalMm, dwell, 100.0, this.currentRadiusMm,
+            Noise() * 6.0 * 1000.0,
+            this.strokeVersion,
+            0.0,
+            this.surface.GrindingCurrentA(RemovalRateMmPerMinute, this.carriagePositionMm, true),
+            0.0,
+        };
+
+        int baseIndex = slot * MachineTagKeys.PassRowFieldCount;
+        for (int field = 1; field < fields.Length; field++)
+        {
+            this.passRows[baseIndex + field] = fields[field];
+        }
+
+        this.passRows[baseIndex] = sequence;
+        this.passWriteSeq = sequence;
+    }
+
+    /// <summary>
+    /// 道次开始时：改参数序号变了，就把暂存区整组拷到那一道的槽位，再回报已采用的序号
+    /// （接口约定第 3 节）。拷贝在 NC 程序内完成，对 NC 自己是原子的。
+    /// </summary>
+    private void ApplyStagedEdit()
+    {
+        if (!this.writtenValues.ContainsKey(MachineTagKeys.JobEditSeq))
+        {
+            return;
+        }
+
+        int sequence = (int)Written(MachineTagKeys.JobEditSeq);
+        if (sequence == this.editAppliedSeq)
+        {
+            return;
+        }
+
+        int index = (int)Written(MachineTagKeys.JobEditStepOrder) - 1;
+        if (index >= 0)
+        {
+            foreach (KeyValuePair<string, TagValue> staged in this.writtenValues.ToArray())
+            {
+                string key = staged.Key;
+                if (!key.StartsWith(MachineTagKeys.JobEditPrefix, StringComparison.Ordinal)
+                    || key is MachineTagKeys.JobEditSeq or MachineTagKeys.JobEditStepOrder or MachineTagKeys.JobEditAppliedSeq)
+                {
+                    continue;
+                }
+
+                string stepKey = TagKeySyntax.TrySplit(key, out string baseKey, out int extra)
+                    && string.Equals(baseKey, MachineTagKeys.JobEditExtra, StringComparison.Ordinal)
+                    ? MachineTagKeys.JobStepExtraAt(index, extra)
+                    : TagKeySyntax.Indexed("job.step." + key[MachineTagKeys.JobEditPrefix.Length..], index);
+                Write(stepKey, staged.Value with { Key = stepKey });
+            }
+        }
+
+        this.editAppliedSeq = sequence;
     }
 
     private void AdvanceToNextStep()
@@ -772,6 +906,18 @@ public sealed class SimulatedMachine
         this.currentPass = 0;
         this.stepDwellSeconds = 0.0;
         this.strokeVersion = 0;
+
+        // 循环启动：参数有效 → 锁存下发序号；道次缓冲从头记（接口约定 2、4.3）。
+        this.acceptedSeq = this.writtenValues.ContainsKey(MachineTagKeys.JobDownloadSeq)
+            ? (int)Written(MachineTagKeys.JobDownloadSeq)
+            : this.acceptedSeq;
+        this.passRows.Clear();
+        this.passWriteSeq = 0;
+        this.passOverflowCount = 0;
+        this.lastLeftReversalMm = double.NaN;
+        this.lastRightReversalMm = double.NaN;
+        ApplyStagedEdit();
+
         ChannelState = NcChannelState.Running;
         ProgramName = string.Create(
             CultureInfo.InvariantCulture,

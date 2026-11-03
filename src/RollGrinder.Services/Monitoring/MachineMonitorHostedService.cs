@@ -15,8 +15,15 @@ public sealed class MachineMonitorHostedService : IHostedService
     private readonly IMachineMonitor monitor;
     private readonly IAlarmSink alarms;
 
-    public MachineMonitorHostedService(IMachineMonitor monitor, IAlarmSink alarms)
+    /// <param name="monitor">监视服务。</param>
+    /// <param name="alarms">报警。</param>
+    /// <param name="passData">
+    /// 道次数据读取：订阅监视快照，所以要在取数开始前建好（单例默认是用到才建）。
+    /// </param>
+    public MachineMonitorHostedService(
+        IMachineMonitor monitor, IAlarmSink alarms, NcInterface.IPassDataCollector passData)
     {
+        ArgumentNullException.ThrowIfNull(passData);
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         this.alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
     }

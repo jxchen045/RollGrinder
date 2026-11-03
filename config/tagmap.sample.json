@@ -250,6 +250,209 @@
       "description": "Set by the HMI once a complete parameter set has been transferred"
     },
     {
+      "key": "job.downloadSeq",
+      "address": "ns=2;s=/Channel/Parameter/R[111]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "下发序号：上位机在参数写完、置有效之前加一（接口约定第 2 节）"
+    },
+    {
+      "key": "job.acceptedSeq",
+      "address": "ns=2;s=/Channel/Parameter/R[112]",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "NC 在循环启动检查参数有效时锁存的下发序号"
+    },
+    {
+      "key": "job.edit.stepOrder",
+      "address": "ns=2;s=/Channel/Parameter/R[1200]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "改参数暂存区要拷到第几道工序（从 1 起）"
+    },
+    {
+      "key": "job.edit.seq",
+      "address": "ns=2;s=/Channel/Parameter/R[1201]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "改参数序号：暂存区整组写完后最后加一（接口约定第 3 节）"
+    },
+    {
+      "key": "job.edit.appliedSeq",
+      "address": "ns=2;s=/Channel/Parameter/R[1202]",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "NC 在道次开始时整组拷贝后回报的已采用序号"
+    },
+    {
+      "key": "job.edit.typeCode",
+      "address": "ns=2;s=/Channel/Parameter/R[1210]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "改参数暂存区：job.step.typeCode 的单值"
+    },
+    {
+      "key": "job.edit.passCount",
+      "address": "ns=2;s=/Channel/Parameter/R[1211]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "改参数暂存区：job.step.passCount 的单值"
+    },
+    {
+      "key": "job.edit.infeedPerPassRadiusMm",
+      "address": "ns=2;s=/Channel/Parameter/R[1212]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "description": "改参数暂存区：job.step.infeedPerPassRadiusMm 的单值"
+    },
+    {
+      "key": "job.edit.feedMmPerMin",
+      "address": "ns=2;s=/Channel/Parameter/R[1213]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm/min",
+      "description": "改参数暂存区：job.step.feedMmPerMin 的单值"
+    },
+    {
+      "key": "job.edit.workpieceSpeedRpm",
+      "address": "ns=2;s=/Channel/Parameter/R[1214]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "rpm",
+      "description": "改参数暂存区：job.step.workpieceSpeedRpm 的单值"
+    },
+    {
+      "key": "job.edit.wheelSpeedRpm",
+      "address": "ns=2;s=/Channel/Parameter/R[1215]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "rpm",
+      "description": "改参数暂存区：job.step.wheelSpeedRpm 的单值"
+    },
+    {
+      "key": "job.edit.sparkOutPassCount",
+      "address": "ns=2;s=/Channel/Parameter/R[1216]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "改参数暂存区：job.step.sparkOutPassCount 的单值"
+    },
+    {
+      "key": "job.edit.feedMode",
+      "address": "ns=2;s=/Channel/Parameter/R[1217]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "改参数暂存区：job.step.feedMode 的单值"
+    },
+    {
+      "key": "job.edit.continuousInfeedRadiusMmPerMin",
+      "address": "ns=2;s=/Channel/Parameter/R[1218]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm/min",
+      "description": "改参数暂存区：job.step.continuousInfeedRadiusMmPerMin 的单值"
+    },
+    {
+      "key": "job.edit.targetStockRadiusMm",
+      "address": "ns=2;s=/Channel/Parameter/R[1219]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "mm",
+      "description": "改参数暂存区：job.step.targetStockRadiusMm 的单值"
+    },
+    {
+      "key": "job.edit.wheelSurfaceSpeedMPerSec",
+      "address": "ns=2;s=/Channel/Parameter/R[1220]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "m/s",
+      "description": "改参数暂存区：job.step.wheelSurfaceSpeedMPerSec 的单值"
+    },
+    {
+      "key": "job.edit.reversalDwellSeconds",
+      "address": "ns=2;s=/Channel/Parameter/R[1221]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "s",
+      "description": "改参数暂存区：job.step.reversalDwellSeconds 的单值"
+    },
+    {
+      "key": "job.edit.inProcessMeasurement",
+      "address": "ns=2;s=/Channel/Parameter/R[1222]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "改参数暂存区：job.step.inProcessMeasurement 的单值"
+    },
+    {
+      "key": "job.edit.speedVariationTarget",
+      "address": "ns=2;s=/Channel/Parameter/R[1223]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "改参数暂存区：job.step.speedVariationTarget 的单值"
+    },
+    {
+      "key": "job.edit.speedVariationPercent",
+      "address": "ns=2;s=/Channel/Parameter/R[1224]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "%",
+      "description": "改参数暂存区：job.step.speedVariationPercent 的单值"
+    },
+    {
+      "key": "job.edit.speedVariationPeriodRevolutions",
+      "address": "ns=2;s=/Channel/Parameter/R[1225]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "unit": "r",
+      "description": "改参数暂存区：job.step.speedVariationPeriodRevolutions 的单值"
+    },
+    {
+      "key": "job.edit.extra",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Double",
+      "access": "ReadWrite",
+      "arrayLength": 8,
+      "indexOffset": 1226,
+      "description": "改参数暂存区：工序专属参数（8 个）"
+    },
+    {
+      "key": "pass.slotCount",
+      "address": "ns=2;s=/Channel/Parameter/R[1240]",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "道次缓冲槽位数（NC 常量，建议 16）"
+    },
+    {
+      "key": "pass.writeSeq",
+      "address": "ns=2;s=/Channel/Parameter/R[1241]",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "NC 已写完的最后一行序号（作业开始清 0）（接口约定第 4 节）"
+    },
+    {
+      "key": "pass.overflowCount",
+      "address": "ns=2;s=/Channel/Parameter/R[1242]",
+      "dataType": "Int32",
+      "access": "Read",
+      "description": "覆盖了未读行的次数"
+    },
+    {
+      "key": "pass.readSeq",
+      "address": "ns=2;s=/Channel/Parameter/R[1243]",
+      "dataType": "Int32",
+      "access": "ReadWrite",
+      "description": "上位机已存的最后序号（NC 只用来判断溢出，不等它）"
+    },
+    {
+      "key": "pass.row",
+      "address": "ns=2;s=/Channel/Parameter/R[{index}]",
+      "dataType": "Double",
+      "access": "Read",
+      "arrayLength": 256,
+      "indexOffset": 1250,
+      "description": "道次缓冲：16 槽 × 16 字段，字段 0 为行序号（NC 最后写）"
+    },
+    {
       "key": "job.profile.bodyPositionMm",
       "address": "ns=2;s=/Channel/Parameter/R[{index}]",
       "dataType": "Double",

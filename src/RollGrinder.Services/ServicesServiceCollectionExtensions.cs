@@ -66,6 +66,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<ICompensationService, CompensationService>();
         services.AddSingleton<ICompensationTuningService, CompensationTuningService>();
         services.AddSingleton<IStrokeCompensationLog, StrokeCompensationLog>();
+        services.AddSingleton<NcInterface.IPassDataCollector, NcInterface.PassDataCollector>();
         services.AddSingleton<Audit.IChangeLog, Audit.ChangeLog>();
         services.AddSingleton<IRecordService, RecordService>();
         services.AddSingleton<IRollLedgerService, RollLedgerService>();

@@ -702,6 +702,13 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     [ObservableProperty]
     private string matrixMessage = string.Empty;
 
+    /// <summary>
+    /// 已写进暂存区、NC 还没采用的改参数序号（接口约定第 3 节，界面设计稿 v4 5.3.1 的 ⧗ 等待生效）。
+    /// NC 回报的已采用序号追上它，就改报"已生效（第 n 道起）"。
+    /// </summary>
+    [ObservableProperty]
+    private int? waitingEditSequence;
+
     /// <summary>机床当前跑到第几道；0 表示还没开始。</summary>
     private int currentStepOrder;
 
@@ -729,6 +736,14 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     {
         if (this.activeJob is null || !HasPendingEdits)
         {
+            return;
+        }
+
+        // 上一次修改还在等 NC 采用：现在改写暂存区，NC 可能正拷到一半（服务里也会挡）。
+        if (WaitingEditSequence is not null)
+        {
+            MatrixMessage = Localizer["Auto_MatrixEditPending"];
+            Interaction.Fail(MatrixMessage);
             return;
         }
 
@@ -762,7 +777,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
             BuildMatrix(edited);
             UpdateMatrixState(this.currentStepOrder);
-            MatrixMessage = Localizer["Auto_MatrixSaved"];
+            WaitingEditSequence = result.EditSequence;
+            MatrixMessage = result.EditSequence is int sequence
+                ? Localizer.Format("Auto_MatrixWaiting", sequence)
+                : Localizer["Auto_MatrixSaved"];
             Interaction.Say(MatrixMessage);
         }
         catch (GatewayException ex)
@@ -770,6 +788,21 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             Alarms.RaiseException(ex);
             MatrixMessage = Localizer["Auto_MatrixWriteFailed"];
         }
+    }
+
+    /// <summary>NC 回报的已采用序号追上了等待中的改动：⧗ 等待生效 → ✓ 已生效（第 n 道起）。</summary>
+    private void UpdateEditHandshake(MachineStateSnapshot snapshot)
+    {
+        if (WaitingEditSequence is not int waiting
+            || snapshot.GetNumberOrNull(MachineTagKeys.JobEditAppliedSeq) is not double applied
+            || (int)applied < waiting)
+        {
+            return;
+        }
+
+        int pass = (int)(snapshot.GetNumberOrNull(MachineTagKeys.JobCurrentPass) ?? 0.0);
+        WaitingEditSequence = null;
+        MatrixMessage = Localizer.Format("Auto_MatrixApplied", waiting, pass + 1);
     }
 
     /// <summary>丢掉没下发的改动，回到机床里那一份。</summary>
@@ -790,6 +823,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         StepUpdateRefusal.NothingChanged => Localizer["Auto_MatrixNothingChanged"],
         StepUpdateRefusal.NotJustParameters => Localizer["Auto_MatrixNotJustParameters"],
         StepUpdateRefusal.StepAlreadyDone => Localizer["Auto_MatrixStepDone"],
+        StepUpdateRefusal.PreviousEditPending => Localizer["Auto_MatrixEditPending"],
+        StepUpdateRefusal.OneStepAtATime => Localizer["Auto_MatrixOneStepAtATime"],
         StepUpdateRefusal.NotLiveEditable => Localizer.Format(
             "Auto_MatrixNotLiveEditable",
             string.Join("、", result.BlockedParameterKeys.Select(key => Localizer["Parameter_" + key]))),
@@ -988,6 +1023,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         UpdateDiameters(snapshot);
         UpdateSequence(snapshot);
         UpdateBlocks(snapshot);
+        UpdateEditHandshake(snapshot);
 
         // 循环正常结束的上升沿：等收尾写完，弹结果横幅。
         bool complete = snapshot.GetNumberOrNull(MachineTagKeys.JobCycleComplete) is double flag && flag > 0.5;

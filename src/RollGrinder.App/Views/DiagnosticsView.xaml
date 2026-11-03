@@ -197,6 +197,42 @@
                     </DockPanel>
                 </Border>
 
+                <!-- NC 接口（界面设计稿 v4 5.9.2）：下发序号、改参数序号、道次缓冲、看门狗。序号对得上标绿，对不上标红，只提示。 -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                            <TextBlock Text="{loc:Loc Diag_NcInterfaceHeader}" Style="{StaticResource Text.CardTitle}" />
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding NcInterfaceRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource DataRowBorder}">
+                                        <DockPanel>
+                                            <TextBlock Text="{Binding Label}" FontSize="{StaticResource Size.Body}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding ValueText}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Body}"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Right" Margin="12,0,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsGood}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsBad}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+
                 <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                     <DockPanel>
                         <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">

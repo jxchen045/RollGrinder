@@ -4792,4 +4792,49 @@
   <data name="Profile_ReferenceRollNone" xml:space="preserve">
     <value>No reference roll: using the stored design length {0:0} mm</value>
   </data>
+  <data name="Auto_MatrixWaiting" xml:space="preserve">
+    <value>Change #{0} written — ⧗ waiting for the NC to take it at the start of the next pass; no further change until then</value>
+  </data>
+  <data name="Auto_MatrixApplied" xml:space="preserve">
+    <value>✓ Change #{0} in effect (from pass {1})</value>
+  </data>
+  <data name="Auto_MatrixEditPending" xml:space="preserve">
+    <value>The previous change has not been taken yet (the NC takes it at the start of the next pass); wait until it is in effect</value>
+  </data>
+  <data name="Auto_MatrixOneStepAtATime" xml:space="preserve">
+    <value>One step at a time: send this step, then change the next one once it is in effect</value>
+  </data>
+  <data name="Diag_NcInterfaceHeader" xml:space="preserve">
+    <value>NC interface (contract v1)</value>
+  </data>
+  <data name="Diag_NcDownload" xml:space="preserve">
+    <value>Download sequence / NC accepted</value>
+  </data>
+  <data name="Diag_NcValid" xml:space="preserve">
+    <value>Parameters valid</value>
+  </data>
+  <data name="Diag_NcEdit" xml:space="preserve">
+    <value>Change sequence / applied</value>
+  </data>
+  <data name="Diag_NcEditPending" xml:space="preserve">
+    <value>⧗ waiting</value>
+  </data>
+  <data name="Diag_NcEditDirect" xml:space="preserve">
+    <value>No staging area mapped: writes step slots directly (not atomic)</value>
+  </data>
+  <data name="Diag_NcPass" xml:space="preserve">
+    <value>Pass buffer write / read</value>
+  </data>
+  <data name="Diag_NcPassValue" xml:space="preserve">
+    <value>{0} / {1} · {2} slots · overflow {3} · missing {4}</value>
+  </data>
+  <data name="Diag_NcWatchdog" xml:space="preserve">
+    <value>Pass data watchdog</value>
+  </data>
+  <data name="Diag_NcWatchdogOk" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Diag_NcWatchdogStale" xml:space="preserve">
+    <value>Record data delayed — the machine keeps grinding</value>
+  </data>
 </root>

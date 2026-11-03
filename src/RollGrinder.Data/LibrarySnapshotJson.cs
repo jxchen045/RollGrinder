@@ -106,11 +106,13 @@ public static class LibrarySnapshotJson
         IReadOnlyList<(double ZMm, double DiameterMicrometer)> points,
         IReadOnlyList<(string Item, string Status, string MessageKey)> checks,
         string operatorName,
-        DateTimeOffset atUtc)
+        DateTimeOffset atUtc,
+        int? downloadSequence = null)
     {
         ArgumentNullException.ThrowIfNull(job);
         var node = new JsonObject
         {
+            ["downloadSequence"] = downloadSequence,
             ["jobId"] = job.JobId,
             ["rollId"] = job.RollId,
             ["downloadedAtUtc"] = atUtc.ToString("O", CultureInfo.InvariantCulture),

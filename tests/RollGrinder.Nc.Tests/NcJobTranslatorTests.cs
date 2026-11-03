@@ -254,6 +254,52 @@ public sealed class NcJobTranslatorTests
     }
 
     [Fact]
+    public void Download_sequence_sits_between_the_parameters_and_the_handover_flag()
+    {
+        // 接口约定第 2 节：NC 锁存到的序号一定对应一整份写完的参数。
+        NcDownload download = CreateTranslator(FakeTagMap.Complete().WithNcInterface())
+            .Translate(CreateJob(), null, 21, Now, downloadSequence: 118);
+
+        download.Writes[^2].LogicalName.Should().Be(MachineTagKeys.JobDownloadSeq);
+        download.Writes[^2].Value.Raw.Should().Be(118);
+        download.Writes[^1].LogicalName.Should().Be(MachineTagKeys.JobParametersValid);
+    }
+
+    [Fact]
+    public void A_staged_edit_is_the_whole_step_then_the_step_order_then_the_sequence_last()
+    {
+        NcJobTranslator translator = CreateTranslator(FakeTagMap.Complete().WithNcInterface());
+
+        translator.SupportsStagedEdits.Should().BeTrue();
+        IReadOnlyList<TagWrite> writes = translator.TranslateStepEdit(CreateJob(), 1, 7, Now);
+
+        writes.Should().OnlyContain(write => write.LogicalName.StartsWith(MachineTagKeys.JobEditPrefix, StringComparison.Ordinal));
+        writes.Should().Contain(write => write.LogicalName == MachineTagKeys.JobEditOf(MachineTagKeys.JobStepFeedMmPerMin));
+        writes[^2].LogicalName.Should().Be(MachineTagKeys.JobEditStepOrder);
+        writes[^2].Value.Raw.Should().Be(1);
+        writes[^1].LogicalName.Should().Be(MachineTagKeys.JobEditSeq);
+        writes[^1].Value.Raw.Should().Be(7);
+    }
+
+    [Fact]
+    public void A_staging_area_with_a_hole_refuses_rather_than_sending_half_a_step()
+    {
+        // 暂存区缺一项，NC 拷过去的就是上一次留下的旧值：宁可不改，也不能改出半组。
+        FakeTagMap tagMap = FakeTagMap.Complete().WithNcInterface()
+            .Without(MachineTagKeys.JobEditOf(MachineTagKeys.JobStepPassCount));
+
+        Action act = () => CreateTranslator(tagMap).TranslateStepEdit(CreateJob(), 1, 1, Now);
+
+        act.Should().Throw<GatewayException>().WithMessage("*job.edit.passCount*");
+    }
+
+    [Fact]
+    public void Without_the_handshake_variables_edits_fall_back_to_the_step_slots()
+    {
+        CreateTranslator(FakeTagMap.Complete()).SupportsStagedEdits.Should().BeFalse();
+    }
+
+    [Fact]
     public void Geometry_is_handed_over_as_radius_in_millimetres()
     {
         NcDownload download = CreateTranslator(FakeTagMap.Complete()).Translate(CreateJob(), null, 21, Now);

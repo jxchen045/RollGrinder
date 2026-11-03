@@ -4792,4 +4792,49 @@
   <data name="Profile_ReferenceRollNone" xml:space="preserve">
     <value>未记参考轧辊：按存的设计长度 {0:0} mm</value>
   </data>
+  <data name="Auto_MatrixWaiting" xml:space="preserve">
+    <value>改动 #{0} 已写入，⧗ 等 NC 在下一道开始时采用；生效前不能再改</value>
+  </data>
+  <data name="Auto_MatrixApplied" xml:space="preserve">
+    <value>✓ 改动 #{0} 已生效（第 {1} 道起）</value>
+  </data>
+  <data name="Auto_MatrixEditPending" xml:space="preserve">
+    <value>上一次修改尚未生效（NC 在下一道开始时采用），生效前不能再改</value>
+  </data>
+  <data name="Auto_MatrixOneStepAtATime" xml:space="preserve">
+    <value>一次只改一道工序：先下发这一道，生效后再改下一道</value>
+  </data>
+  <data name="Diag_NcInterfaceHeader" xml:space="preserve">
+    <value>NC 接口（接口约定 v1）</value>
+  </data>
+  <data name="Diag_NcDownload" xml:space="preserve">
+    <value>下发序号 / NC 已确认</value>
+  </data>
+  <data name="Diag_NcValid" xml:space="preserve">
+    <value>参数有效</value>
+  </data>
+  <data name="Diag_NcEdit" xml:space="preserve">
+    <value>改动序号 / 已采用</value>
+  </data>
+  <data name="Diag_NcEditPending" xml:space="preserve">
+    <value>⧗ 等待采用</value>
+  </data>
+  <data name="Diag_NcEditDirect" xml:space="preserve">
+    <value>无暂存区映射：直接写工序槽位（非原子）</value>
+  </data>
+  <data name="Diag_NcPass" xml:space="preserve">
+    <value>道次缓冲 写 / 读</value>
+  </data>
+  <data name="Diag_NcPassValue" xml:space="preserve">
+    <value>{0} / {1} · {2} 槽 · 溢出 {3} · 缺 {4}</value>
+  </data>
+  <data name="Diag_NcWatchdog" xml:space="preserve">
+    <value>道次数据看门狗</value>
+  </data>
+  <data name="Diag_NcWatchdogOk" xml:space="preserve">
+    <value>正常</value>
+  </data>
+  <data name="Diag_NcWatchdogStale" xml:space="preserve">
+    <value>记录数据暂缺，机床照常磨</value>
+  </data>
 </root>

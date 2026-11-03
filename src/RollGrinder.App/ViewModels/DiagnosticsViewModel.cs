@@ -23,6 +23,7 @@ using RollGrinder.Services.Audit;
 using RollGrinder.Services.Calibration;
 using RollGrinder.Services.Diagnostics;
 using RollGrinder.Services.Monitoring;
+using RollGrinder.Services.NcInterface;
 
 namespace RollGrinder.App.ViewModels;
 
@@ -124,6 +125,14 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
     private readonly DiagnosticRowViewModel realtimeOffset;
     private readonly DiagnosticRowViewModel strokeVersion;
 
+    // NC 接口（界面设计稿 v4 5.9.2，接口约定第 2–4 节）。
+    private readonly IPassDataCollector passData;
+    private readonly DiagnosticRowViewModel ncDownload;
+    private readonly DiagnosticRowViewModel ncValid;
+    private readonly DiagnosticRowViewModel ncEdit;
+    private readonly DiagnosticRowViewModel ncPass;
+    private readonly DiagnosticRowViewModel ncWatchdog;
+
     private long lastShownAlarmId = -1;
 
     public DiagnosticsViewModel(
@@ -139,10 +148,12 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         IChangeLog changeLog,
         IAlarmSink alarms,
         INavigator navigator,
-        ShellInteraction interaction)
+        ShellInteraction interaction,
+        IPassDataCollector passData)
         : base(alarms, localizer, navigator, interaction)
     {
         this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
+        this.passData = passData ?? throw new ArgumentNullException(nameof(passData));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         this.tagMap = tagMap ?? throw new ArgumentNullException(nameof(tagMap));
         this.translator = translator ?? throw new ArgumentNullException(nameof(translator));
@@ -174,6 +185,16 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         CompensationRows = new ObservableCollection<DiagnosticRowViewModel>
         {
             this.measuringChannel, this.compensationAxis, this.realtimeOffset, this.strokeVersion,
+        };
+
+        this.ncDownload = new DiagnosticRowViewModel("Diag_NcDownload", localizer);
+        this.ncValid = new DiagnosticRowViewModel("Diag_NcValid", localizer);
+        this.ncEdit = new DiagnosticRowViewModel("Diag_NcEdit", localizer);
+        this.ncPass = new DiagnosticRowViewModel("Diag_NcPass", localizer);
+        this.ncWatchdog = new DiagnosticRowViewModel("Diag_NcWatchdog", localizer);
+        NcInterfaceRows = new ObservableCollection<DiagnosticRowViewModel>
+        {
+            this.ncDownload, this.ncValid, this.ncEdit, this.ncPass, this.ncWatchdog,
         };
 
         Capabilities = new ObservableCollection<CapabilityRow>(
@@ -396,6 +417,9 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
 
     public ObservableCollection<DiagnosticRowViewModel> CompensationRows { get; }
 
+    /// <summary>NC 接口（接口约定）：两边的序号与道次缓冲，一眼看出握手是否跟上。</summary>
+    public ObservableCollection<DiagnosticRowViewModel> NcInterfaceRows { get; }
+
     public ObservableCollection<CapabilityRow> Capabilities { get; }
 
     public ObservableCollection<AlarmRowViewModel> Events { get; } = new();
@@ -483,6 +507,8 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
             ? "--"
             : "v " + ((int)version.Value).ToString(CultureInfo.InvariantCulture);
 
+        RefreshNcInterface(NcInterfaceStatus.From(snapshot, this.passData, this.translator.SupportsStagedEdits, nowUtc));
+
         double? level = snapshot.GetNumberOrNull(MachineTagKeys.CompensationDegradationLevel);
         if (level is not null && Enum.IsDefined((DegradationLevel)(int)level.Value))
         {
@@ -495,6 +521,48 @@ public sealed partial class DiagnosticsViewModel : PageViewModelBase
         {
             RefreshTagMonitor(snapshot);
         }
+    }
+
+    /// <summary>NC 接口一块：序号对得上标绿；对不上（等待采用、缺道次、看门狗）标红，都只提示。</summary>
+    private void RefreshNcInterface(NcInterfaceStatus status)
+    {
+        static string Number(int? value) => value?.ToString(CultureInfo.InvariantCulture) ?? "--";
+
+        this.ncDownload.ValueText = $"{Number(status.DownloadSeq)} / {Number(status.AcceptedSeq)}";
+        this.ncDownload.IsGood = status.DownloadConfirmed;
+        this.ncDownload.IsBad = false;
+
+        this.ncValid.ValueText = status.ParametersValid switch
+        {
+            true => "true",
+            false => "false",
+            _ => "--",
+        };
+
+        if (!status.StagedEdits)
+        {
+            this.ncEdit.ValueText = Localizer["Diag_NcEditDirect"];
+            this.ncEdit.IsGood = false;
+            this.ncEdit.IsBad = true;
+        }
+        else
+        {
+            this.ncEdit.ValueText = $"{Number(status.EditSeq)} / {Number(status.EditAppliedSeq)}"
+                + (status.EditPending ? " · " + Localizer["Diag_NcEditPending"] : string.Empty);
+            this.ncEdit.IsGood = !status.EditPending;
+            this.ncEdit.IsBad = false;
+        }
+
+        PassBufferStatus pass = status.Pass;
+        this.ncPass.ValueText = pass.IsMapped
+            ? Localizer.Format("Diag_NcPassValue", pass.WriteSeq, pass.ReadSeq, pass.SlotCount, pass.OverflowCount, pass.MissingCount)
+            : Localizer["Common_NotConfigured"];
+        this.ncPass.IsGood = pass.IsMapped && pass.MissingCount == 0 && pass.WriteSeq == pass.ReadSeq;
+        this.ncPass.IsBad = pass.MissingCount > 0;
+
+        this.ncWatchdog.ValueText = status.PassDataStale ? Localizer["Diag_NcWatchdogStale"] : Localizer["Diag_NcWatchdogOk"];
+        this.ncWatchdog.IsGood = !status.PassDataStale;
+        this.ncWatchdog.IsBad = status.PassDataStale;
     }
 
     /// <summary>变量监视：把当前快照里的每个变量原样列出来，不做单位换算也不补默认值。</summary>

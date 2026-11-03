@@ -34,6 +34,12 @@ public enum StepUpdateRefusal
 
     /// <summary>改完之后作业校验不过。</summary>
     Invalid = 5,
+
+    /// <summary>上一次修改 NC 还没采用（接口约定第 3 节）：生效前不收新的修改。</summary>
+    PreviousEditPending = 6,
+
+    /// <summary>暂存区一次只装一道工序：同时改了几道工序，要分开改。</summary>
+    OneStepAtATime = 7,
 }
 
 /// <summary>改参数的结果。</summary>
@@ -43,13 +49,17 @@ public enum StepUpdateRefusal
 /// <param name="BlockedParameterKeys">不允许在线调整、却被改动了的参数键。</param>
 /// <param name="ChangedStepOrders">实际写下去的工序序号。</param>
 /// <param name="WriteCount">写入的变量条数。</param>
+/// <param name="EditSequence">
+/// 走暂存区握手时这次的改参数序号；NC 回报的已采用序号追上它，才算生效。直接改（老 tagmap）为空。
+/// </param>
 public sealed record StepUpdateResult(
     bool Succeeded,
     StepUpdateRefusal Refusal,
     IReadOnlyList<ParameterViolation> Violations,
     IReadOnlyList<string> BlockedParameterKeys,
     IReadOnlyList<int> ChangedStepOrders,
-    int WriteCount)
+    int WriteCount,
+    int? EditSequence = null)
 {
     internal static StepUpdateResult Refused(
         StepUpdateRefusal refusal,
@@ -192,9 +202,37 @@ public sealed class StepParameterUpdateService : IStepParameterUpdateService
 
         DateTimeOffset now = this.timeProvider.GetUtcNow();
         var writes = new List<TagWrite>();
-        foreach (int order in changedOrders)
+        int? editSequence = null;
+        if (this.translator.SupportsStagedEdits)
         {
-            writes.AddRange(this.translator.TranslateStepParameters(edited, order, now));
+            // 暂存区 + 序号（接口约定第 3 节）：NC 在道次开始时整组采用，不会读到半组。
+            if (changedOrders.Count > 1)
+            {
+                return StepUpdateResult.Refused(StepUpdateRefusal.OneStepAtATime);
+            }
+
+            MachineStateSnapshot handshake = await this.gateway.ReadStateAsync(
+                new[] { MachineTagKeys.JobEditSeq, MachineTagKeys.JobEditAppliedSeq }, cancellationToken)
+                .ConfigureAwait(false);
+            int sent = (int)(handshake.GetNumberOrNull(MachineTagKeys.JobEditSeq) ?? 0.0);
+            int applied = (int)(handshake.GetNumberOrNull(MachineTagKeys.JobEditAppliedSeq) ?? 0.0);
+
+            // 上一次还在暂存区里没被采用：现在改写暂存区，NC 可能正拷到一半。
+            if (sent != applied)
+            {
+                return StepUpdateResult.Refused(StepUpdateRefusal.PreviousEditPending);
+            }
+
+            editSequence = sent is < 0 or int.MaxValue ? 1 : sent + 1;
+            writes.AddRange(this.translator.TranslateStepEdit(edited, changedOrders[0], editSequence.Value, now));
+        }
+        else
+        {
+            // 老 tagmap 没有暂存区：直接改那一道的 R 参数（不是原子的，诊断页写明）。
+            foreach (int order in changedOrders)
+            {
+                writes.AddRange(this.translator.TranslateStepParameters(edited, order, now));
+            }
         }
 
         // 先写机床：写不进去就不该在库里留下改过的样子。
@@ -212,7 +250,7 @@ public sealed class StepParameterUpdateService : IStepParameterUpdateService
             this.alarms.Raise(AlarmSeverity.Error, UpdateNotArchivedResourceKey, ex.Message, AlarmCodes.HandoverNotArchived);
             return new StepUpdateResult(
                 true, StepUpdateRefusal.None, Array.Empty<ParameterViolation>(), Array.Empty<string>(),
-                changedOrders, writes.Count);
+                changedOrders, writes.Count, editSequence);
         }
 
         this.alarms.Raise(
@@ -223,7 +261,7 @@ public sealed class StepParameterUpdateService : IStepParameterUpdateService
 
         return new StepUpdateResult(
             true, StepUpdateRefusal.None, Array.Empty<ParameterViolation>(), Array.Empty<string>(),
-            changedOrders, writes.Count);
+            changedOrders, writes.Count, editSequence);
     }
 
     private static bool IsLiveEditable(ParameterSchema schema, string key) =>

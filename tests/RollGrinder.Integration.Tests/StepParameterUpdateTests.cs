@@ -105,7 +105,7 @@ public sealed class StepParameterUpdateTests : IDisposable
     }
 
     [Fact]
-    public async Task The_handover_flag_is_not_pulsed_again()
+    public async Task The_handover_flag_is_not_pulsed_and_the_edit_goes_through_the_staging_area()
     {
         // 作业的身份没变；再脉冲一次握手标志会让 NC 以为来了一份新作业。
         await using ServiceProvider services = await BuildAsync();
@@ -127,9 +127,12 @@ public sealed class StepParameterUpdateTests : IDisposable
         await service.UpdateAsync(job, edited, 1, "wang", CancellationToken.None);
 
         recorder.WrittenNames.Should().NotContain(MachineTagKeys.JobParametersValid);
-        recorder.WrittenNames.Should().Contain(TagKeySyntax.Indexed(MachineTagKeys.JobStepFeedMmPerMin, 0));
-        recorder.WrittenNames.Should().NotContain(
-            TagKeySyntax.Indexed(MachineTagKeys.JobStepFeedMmPerMin, 1), "没改的工序不该被重写");
+
+        // 接口约定第 3 节：改的是暂存区，整组写完最后写序号；不直接碰 job.step.*，NC 在道次开始时整组拷。
+        recorder.WrittenNames.Should().Contain(MachineTagKeys.JobEditOf(MachineTagKeys.JobStepFeedMmPerMin));
+        recorder.WrittenNames.Should().NotContain(name => name.StartsWith("job.step.", StringComparison.Ordinal),
+            "改参数不再直接写工序槽位，免得 NC 读到半组");
+        recorder.WrittenNames.Last().Should().Be(MachineTagKeys.JobEditSeq, "序号必须最后写");
     }
 
     [Fact]
