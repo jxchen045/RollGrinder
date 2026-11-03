@@ -44,6 +44,9 @@ public enum PageKey
 
     /// <summary>程序库（工艺区横键"程序库"）：同上。</summary>
     ProgramLibrary = 12,
+
+    /// <summary>方案列表（方案区入口）：一支辊的磨削方案——当前、用了几次、来源；打开辊形 / 工艺、设为当前、删除没用过的。</summary>
+    Plans = 13,
 }
 
 /// <summary>
@@ -55,10 +58,10 @@ public enum AreaKey
     /// <summary>机床：随 NC 方式显示手动磨削（JOG）或自动磨削（AUTO）。</summary>
     Machine = 0,
 
-    /// <summary>辊形。</summary>
+    /// <summary>方案（设计稿 v4）：方案列表、某个方案的辊形与工艺。键名沿用原"辊形"区。</summary>
     Profile = 1,
 
-    /// <summary>工艺程序。</summary>
+    /// <summary>模板：辊形模板与工艺模板（原辊形库、程序库），只作复制方案的起点。键名沿用原"工艺"区。</summary>
     Steps = 2,
 
     /// <summary>轧辊（以轧辊为中心：台账、计划、导入导出）。原"库"区的位置。</summary>

@@ -22,6 +22,7 @@ using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Core.Units;
 using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Jobs;
 using RollGrinder.Services.Library;
 using RollGrinder.Services.Session;
 
@@ -106,7 +107,18 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     private readonly IRollProfileRepository library;
     private readonly ILibraryService libraryService;
     private readonly IUserSession session;
+    private readonly IGrindingPlanService plans;
     private readonly AsyncRelayCommand saveKeyCommand;
+    private readonly FunctionKeyViewModel listKey;
+
+    /// <summary>按方案编辑时：哪个方案（设计稿 v4 5.5.2）；按模板（库）编辑时为 null。</summary>
+    private PlanContent? planContent;
+
+    /// <summary>方案用了几次（打开时读；保存时再读一次）。</summary>
+    private int planUseCount;
+
+    /// <summary>方案是这支辊的当前方案。</summary>
+    private bool planIsCurrent;
 
     /// <summary>"插值方式 ▸"：只有选中的是点表段才按得下去。</summary>
     private readonly RelayCommand interpolationMenuCommand;
@@ -161,6 +173,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         IRollRepository rolls,
         ILibraryService libraryService,
         IUserSession session,
+        IGrindingPlanService plans,
         JobDraft draft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
@@ -175,6 +188,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         this.session = session ?? throw new ArgumentNullException(nameof(session));
+        this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
         NamePrompt = new NamePromptViewModel(localizer);
         AttachPrompt(NamePrompt);
@@ -221,12 +235,18 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.saveKeyCommand = new AsyncRelayCommand(() => SaveAsync(CancellationToken.None), () => !HasErrors);
         // 横键（最终稿 5.7）：辊形库 · 保存 · 另存为… · 空 · 点表导入 · 生成点列 · 导入对照线 · 校验。
         // 辊形库在库区（找东西只有一个地方）；要选文件的三个键对话框在视图里，这里只负责触发与收结果。
+        // 按方案编辑时第 1 格是"方案列表"、第 4 格"工艺"（方案区横键）；按模板编辑时第 1 格回模板库。
+        this.listKey = FunctionKeyViewModel.ForAction("Fn_ProfileLibrary", localizer,
+            () => Navigator.GoTo(IsPlanMode ? PageKey.Plans : PageKey.ProfileLibrary));
         SetFunctionKeys(new FunctionKeyViewModel?[]
         {
-            FunctionKeyViewModel.ForAction("Fn_ProfileLibrary", localizer, () => Navigator.GoTo(PageKey.ProfileLibrary)),
+            this.listKey,
             new FunctionKeyViewModel("Fn_Save", this.saveKeyCommand, localizer, requiresEditable: true) { PreconditionResourceKey = "Profile_HasErrors" },
             new FunctionKeyViewModel("Fn_SaveAs", SaveAsCommand, localizer, requiresEditable: true) { PreconditionResourceKey = "Profile_HasErrors" },
-            null,
+            new FunctionKeyViewModel("Fn_PlanProgram", new RelayCommand(OpenPlanProgram, () => IsPlanMode), localizer)
+            {
+                PreconditionResourceKey = "Plan_NotInPlan",
+            },
             new FunctionKeyViewModel("Fn_ImportPoints", RequestImportPointsCommand, localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_GeneratePoints", RequestGeneratePointsCommand, localizer),
             new FunctionKeyViewModel("Fn_ImportReference", RequestImportReferenceCommand, localizer),
@@ -255,6 +275,22 @@ public sealed partial class ProfileViewModel : PageViewModelBase
 
     /// <summary>离线可用：只和数据库与配置打交道，不碰机床。</summary>
     public override bool WorksOffline => true;
+
+    /// <summary>按方案编辑（设计稿 v4 5.5.2）：名义长度取自方案（台账带来、不能改），坐标以辊身中心为 0，保存走方案。</summary>
+    public bool IsPlanMode => this.planContent is not null;
+
+    /// <summary>段表、预览的横坐标减去它：按方案编辑时是名义长度的一半（中心为 0），按模板编辑时 0。</summary>
+    public double ZOffsetMm => IsPlanMode ? this.geometry.BodyLengthMm / 2.0 : 0.0;
+
+    /// <summary>
+    /// 方案信息条："方案 3 · ★ 当前 · 已用 4 次：内容不改，保存时另存为新方案"（已用）或"没用过：保存即改这个方案"。按模板编辑时空。
+    /// </summary>
+    [ObservableProperty]
+    private string planBanner = string.Empty;
+
+    /// <summary>方案信息条是"已用"的那种（橙色）。</summary>
+    [ObservableProperty]
+    private bool planFrozen;
 
     public ObservableCollection<SegmentRowViewModel> Segments { get; } = new();
 
@@ -566,7 +602,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         SequentialSegment current = this.segments[index];
 
         if (!TryParseDouble(SegmentLengthText, out double lengthMm) || lengthMm <= 0.0
-            || (index == 0 && (!TryParseDouble(SegmentStartText, out double start) || start < 0.0)))
+            || (index == 0 && (!TryParseDouble(SegmentStartText, out double start) || start + ZOffsetMm < 0.0)))
         {
             ShowInputError("Profile_Issue_InputLength");
             return;
@@ -597,9 +633,9 @@ public sealed partial class ProfileViewModel : PageViewModelBase
             pairs.Add(new KeyValuePair<string, ParameterValue>(PointTableProfileType.PointsKey, ParameterValue.FromPoints(points)));
         }
 
-        if (index == 0)
+        if (index == 0 && TryParseDouble(SegmentStartText, out double typedStart))
         {
-            TryParseDouble(SegmentStartText, out this.startZMm);
+            this.startZMm = typedStart + ZOffsetMm;
         }
 
         this.pendingInputErrorKey = null;
@@ -1103,6 +1139,11 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     /// </summary>
     public override async Task<bool> SaveAsync(CancellationToken cancellationToken)
     {
+        if (IsPlanMode)
+        {
+            return await StorePlanAsync(ProfileName, cancellationToken).ConfigureAwait(true);
+        }
+
         string name = ProfileName.Trim();
         string targetId = ProfileId ?? NewProfileId();
         if (name.Length > 0 && !HasErrors)
@@ -1156,7 +1197,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         string.IsNullOrWhiteSpace(ProfileName) ? string.Empty : Localizer.Format("Library_CopyNameFormat", ProfileName.Trim()),
         (name, overwrite, token) => SaveUnderNameAsync(name, NewProfileId(), overwrite, token));
 
-    private bool CanStore() => !HasErrors;
+    private bool CanStore() => !HasErrors && !IsPlanMode;
 
     /// <summary>按指定名字存；名字被库里另一条占了，要么覆盖那一条（存进它的标识），要么退回去让人改名。</summary>
     private async Task<NamePromptOutcome> SaveUnderNameAsync(
@@ -1301,6 +1342,173 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         }
     }
 
+    // ───────────── 按方案编辑（设计稿 v4 5.5.2、5.5.4） ─────────────
+
+    /// <summary>把一个方案的辊形调进编辑器：名义长度取自方案，参考轧辊就是方案所属的辊。</summary>
+    private async Task OpenPlanAsync(string planId, CancellationToken cancellationToken)
+    {
+        PlanContent? content = await this.plans.GetContentAsync(planId, cancellationToken).ConfigureAwait(true);
+        if (content is null)
+        {
+            LeavePlanMode();
+            return;
+        }
+
+        this.planContent = content;
+        RollRecord? owner = await this.rolls.GetAsync(content.Plan.RollId, cancellationToken).ConfigureAwait(true);
+        this.planIsCurrent = owner?.CurrentPlanId == planId;
+        this.planUseCount = (await this.plans.UsageAsync(planId, cancellationToken).ConfigureAwait(true)).UseCount;
+
+        RollProfileDefinition definition = content.Profile;
+        SetBodyLength(definition.BodyLengthMm);
+        LoadProfile(definition.Profile);
+        this.committedComposite = definition.Profile;
+        this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+        ProfileId = definition.ProfileId;
+        ProfileName = definition.Name;
+        this.referenceRequired = false;
+        this.bodyLengthInvalid = false;
+        SetReferenceRollSilently(content.Plan.RollId);
+        this.committedReferenceRoll = ReferenceRollText;
+        ReferenceRollNote = Localizer.Format(
+            "Plan_LengthStripFormat",
+            definition.BodyLengthMm,
+            owner?.MeasuredBodyLengthMm is double measured ? measured.ToString("F1", CultureInfo.CurrentCulture) : "--");
+        ToleranceText = definition.ToleranceMicrometer?.ToString("0.#", CultureInfo.CurrentCulture) ?? string.Empty;
+        RefreshPlanBanner();
+        RefreshRowPositions();
+        RefreshPreview();
+        RefreshIssues();
+        IsDirty = false;
+        StatusResourceKey = string.Empty;
+        NotifyPlanMode();
+    }
+
+    private void LeavePlanMode()
+    {
+        if (this.planContent is null)
+        {
+            return;
+        }
+
+        this.planContent = null;
+        PlanBanner = string.Empty;
+        PlanFrozen = false;
+        NotifyPlanMode();
+    }
+
+    private void NotifyPlanMode()
+    {
+        OnPropertyChanged(nameof(IsPlanMode));
+        OnPropertyChanged(nameof(ZOffsetMm));
+        this.listKey.LabelResourceKey = IsPlanMode ? "Fn_PlanList" : "Fn_ProfileLibrary";
+        SaveAsCommand.NotifyCanExecuteChanged();
+        RefreshRowPositions();
+        if (SelectedSegment is { } selected)
+        {
+            this.suppressWriteBack = true;
+            SegmentStartText = selected.StartText;
+            this.suppressWriteBack = false;
+        }
+    }
+
+    private void RefreshPlanBanner()
+    {
+        if (this.planContent is not { } content)
+        {
+            PlanBanner = string.Empty;
+            PlanFrozen = false;
+            return;
+        }
+
+        string head = Localizer.Format("Plan_BannerHeadFormat", content.Plan.PlanNo, content.Plan.Name)
+            + (this.planIsCurrent ? " · " + Localizer["Mark_CurrentPlan"] : string.Empty);
+        PlanFrozen = this.planUseCount > 0;
+        PlanBanner = head + " · " + (PlanFrozen
+            ? Localizer.Format("Plan_BannerFrozenFormat", this.planUseCount)
+            : Localizer["Plan_BannerEditable"]);
+    }
+
+    /// <summary>横键"工艺"：同一个方案的工艺页。</summary>
+    private void OpenPlanProgram()
+    {
+        if (this.planContent is { } content)
+        {
+            this.draft.PlanToEdit = content.Plan.PlanId;
+            Navigator.GoTo(PageKey.Steps);
+        }
+    }
+
+    /// <summary>
+    /// 存方案的辊形。没用过的就地改；用过的先问一句（不自动取消）：内容不改，辊形与工艺一起另存为新方案，
+    /// 原方案是当前方案时新方案设为当前（设计稿 v4 5.5.4）。
+    /// </summary>
+    private async Task<bool> StorePlanAsync(string name, CancellationToken cancellationToken, bool usedConfirmed = false)
+    {
+        if (this.planContent is not { } content)
+        {
+            return false;
+        }
+
+        name = (name ?? string.Empty).Trim();
+        if (name.Length == 0)
+        {
+            Alarms.Raise(AlarmSeverity.Warning, "Profile_NeedsName", code: AlarmCodes.DomainFailure);
+            return false;
+        }
+
+        if (HasErrors || this.composite is null)
+        {
+            Alarms.Raise(AlarmSeverity.Warning, "Profile_HasErrors", code: AlarmCodes.DomainFailure);
+            return false;
+        }
+
+        try
+        {
+            this.planUseCount = (await this.plans.UsageAsync(content.Plan.PlanId, cancellationToken).ConfigureAwait(true)).UseCount;
+            if (this.planUseCount > 0 && !usedConfirmed)
+            {
+                Interaction.Choose(
+                    Localizer.Format(this.planIsCurrent ? "Plan_AskSaveUsedCurrentFormat" : "Plan_AskSaveUsedFormat", content.Plan.PlanNo, this.planUseCount),
+                    "Vk_SaveAsNewPlan",
+                    () => StorePlanAsync(name, CancellationToken.None, usedConfirmed: true));
+                return false;
+            }
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            var definition = new RollProfileDefinition(
+                content.Profile.ProfileId, name, this.geometry.BodyLengthMm, this.composite, content.Profile.CreatedAtUtc, now)
+            {
+                ToleranceMicrometer = OptionalNumber(ToleranceText),
+                ReferenceRollId = content.Plan.RollId,
+            };
+            PlanSaveOutcome outcome = await this.plans.SaveProfileAsync(
+                content.Plan.PlanId, definition, setCurrentIfNew: this.planIsCurrent, this.session.CurrentUser?.UserName ?? string.Empty, cancellationToken)
+                .ConfigureAwait(true);
+
+            this.committedComposite = this.composite;
+            this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+            IsDirty = false;
+            await OpenPlanAsync(outcome.Plan.PlanId, cancellationToken).ConfigureAwait(true);
+            if (outcome.SavedAsNew)
+            {
+                Interaction.Say(Localizer.Format(
+                    outcome.IsCurrent ? "Plan_SavedAsNewCurrentFormat" : "Plan_SavedAsNewFormat", outcome.OriginalPlanNo, outcome.Plan.PlanNo));
+            }
+            else
+            {
+                Alarms.Raise(AlarmSeverity.Information, "Profile_Saved", ProfileName, AlarmCodes.HandoverCompleted);
+            }
+
+            return true;
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+            return false;
+        }
+    }
+
     /// <summary>新条目的标识。精确到毫秒：只到秒的话，一秒内另存两次会悄悄盖掉前一条。</summary>
     private static string NewProfileId() =>
         string.Create(CultureInfo.InvariantCulture, $"P{DateTimeOffset.Now:yyyyMMddHHmmssfff}");
@@ -1313,7 +1521,10 @@ public sealed partial class ProfileViewModel : PageViewModelBase
         this.pendingInputErrorKey = null;
         LoadProfile(this.committedComposite);
         base.DiscardChanges();
-        _ = RunGuardedAsync(token => ApplyReferenceRollAsync(ReferenceRollText, adoptLength: false, token), CancellationToken.None);
+        if (!IsPlanMode)
+        {
+            _ = RunGuardedAsync(token => ApplyReferenceRollAsync(ReferenceRollText, adoptLength: false, token), CancellationToken.None);
+        }
     }
 
     /// <summary>
@@ -1324,9 +1535,17 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     {
         this.committedComposite = this.composite;
         this.committedBodyLengthMm = this.geometry.BodyLengthMm;
+        if (this.draft.PlanToEdit is { } planId)
+        {
+            this.draft.PlanToEdit = null;
+            _ = RunGuardedAsync(token => OpenPlanAsync(planId, token), CancellationToken.None);
+            return;
+        }
+
         if (this.draft.ProfileToOpen is { } id)
         {
             this.draft.ProfileToOpen = null;
+            LeavePlanMode();
             if (id == JobDraft.NewEntry)
             {
                 StartNewProfile();
@@ -1341,6 +1560,7 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     /// <summary>库的"新建"：一张空辊形（一段圆柱、最小设计长度、没名字、还没进库）。</summary>
     private void StartNewProfile()
     {
+        LeavePlanMode();
         SetBodyLength(this.machine.Workpiece.MinBodyLengthMm);
         SetSymmetricSilently(false);
         this.startZMm = 0.0;
@@ -1447,7 +1667,8 @@ public sealed partial class ProfileViewModel : PageViewModelBase
     /// <summary>段表各行的起点、长度、终点（改了某段长度，后面各行就地跟着变）。</summary>
     private void RefreshRowPositions()
     {
-        double z = this.startZMm;
+        // 按方案编辑：Z 以辊身中心为 0（设计稿 v4 P1）。
+        double z = this.startZMm - ZOffsetMm;
         for (int i = 0; i < Segments.Count && i < this.segments.Count; i++)
         {
             double length = this.segments[i].LengthMm;

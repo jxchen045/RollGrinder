@@ -24,6 +24,12 @@ public sealed class JobDraft
     /// <summary>磨削记录进来时要选中的那份作业（库 › 作业"打开"、自动页"磨削记录（本支辊）"）。</summary>
     public string? RecordsJobId { get; set; }
 
+    /// <summary>方案区要列哪支辊的方案（轧辊页"方案 ▸"、作业核对"方案 ▸"）。</summary>
+    public string? PlanRollId { get; set; }
+
+    /// <summary>要在辊形 / 工艺页按方案打开来改的那个方案（方案列表"打开"、作业核对"打开辊形 / 工艺"）。</summary>
+    public string? PlanToEdit { get; set; }
+
     /// <summary><see cref="ProfileToOpen"/> / <see cref="ProgramToOpen"/> 取这个值表示"开一张新的"（库的"新建"）。</summary>
     public const string NewEntry = "*new*";
 }

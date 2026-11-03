@@ -1,0 +1,432 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using RollGrinder.App.Interaction;
+using RollGrinder.App.Localization;
+using RollGrinder.App.Navigation;
+using RollGrinder.Contracts.Dtos;
+using RollGrinder.Core;
+using RollGrinder.Core.Geometry;
+using RollGrinder.Core.Profiles;
+using RollGrinder.Core.Units;
+using RollGrinder.Data;
+using RollGrinder.Data.Model;
+using RollGrinder.Services.Alarms;
+using RollGrinder.Services.Jobs;
+using RollGrinder.Services.Session;
+
+namespace RollGrinder.App.ViewModels;
+
+/// <summary>方案列表的一行（设计稿 v4 5.5.1）。</summary>
+public sealed record PlanRowViewModel(
+    PlanOverview Overview,
+    string NoText,
+    string NameText,
+    string PurposeText,
+    string SourceText,
+    string NominalText,
+    string UsedText,
+    string LastText,
+    string CreatedText)
+{
+    public string PlanId => Overview.Plan.PlanId;
+
+    public bool IsCurrent => Overview.IsCurrent;
+
+    public bool IsUsed => Overview.IsUsed;
+}
+
+/// <summary>
+/// 方案区入口：一支辊的磨削方案（设计稿 v4 5.5.1，设计说明第 4 节）。
+/// 只列"这支辊"的方案：★ 当前、用了几次（0 = 没用过，可改可删）、来源、名义长度。
+/// 竖键：选轧辊 · 打开辊形 · 打开工艺 · 新建方案…（复制选中的）· 命名… · 设为当前… · 删除…（只对没用过的）。
+/// 方案用过即冻结：在辊形 / 工艺页改它，保存时自动另存为新方案。
+/// </summary>
+public sealed partial class PlansViewModel : PageViewModelBase
+{
+    private readonly IGrindingPlanService plans;
+    private readonly IRollRepository rolls;
+    private readonly IUserSession session;
+    private readonly RollProfileTypeRegistry profileTypes;
+    private readonly HmiSettings settings;
+    private readonly JobDraft draft;
+    private readonly FunctionKeyViewModel listKey;
+    private readonly List<FunctionKeyViewModel> selectionKeys = new();
+    private int loadVersion;
+
+    public PlansViewModel(
+        IGrindingPlanService plans,
+        IRollRepository rolls,
+        IUserSession session,
+        RollProfileTypeRegistry profileTypes,
+        HmiSettings settings,
+        JobDraft draft,
+        IStringLocalizer localizer,
+        IAlarmSink alarms,
+        INavigator navigator,
+        ShellInteraction interaction)
+        : base(alarms, localizer, navigator, interaction)
+    {
+        this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
+        this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
+        this.session = session ?? throw new ArgumentNullException(nameof(session));
+        this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
+        this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
+        NamePrompt = new NamePromptViewModel(localizer);
+        AttachPrompt(NamePrompt);
+
+        // 横键（设计稿 v4 方案区）：方案列表 · 辊形 · 工艺。
+        this.listKey = FunctionKeyViewModel.ForAction("Fn_PlanList", localizer, () => { });
+        FunctionKeyViewModel?[] horizontal =
+        {
+            this.listKey,
+            new FunctionKeyViewModel("Fn_PlanProfile", new RelayCommand(() => OpenEditor(PageKey.Profile), HasSelection), localizer)
+            {
+                PreconditionResourceKey = "Plan_NothingSelected",
+            },
+            new FunctionKeyViewModel("Fn_PlanProgram", new RelayCommand(() => OpenEditor(PageKey.Steps), HasSelection), localizer)
+            {
+                PreconditionResourceKey = "Plan_NothingSelected",
+            },
+        };
+        SetFunctionKeys(horizontal);
+        MarkActiveFunctionKey(this.listKey);
+
+        FunctionKeyViewModel?[] vertical =
+        {
+            FunctionKeyViewModel.ForAction("Vk_PickRoll", localizer, () => Navigator.GoTo(PageKey.Rolls)),
+            new FunctionKeyViewModel("Vk_OpenPlanProfile", new RelayCommand(() => OpenEditor(PageKey.Profile), HasSelection), localizer)
+            {
+                PreconditionResourceKey = "Plan_NothingSelected",
+            },
+            new FunctionKeyViewModel("Vk_OpenPlanProgram", new RelayCommand(() => OpenEditor(PageKey.Steps), HasSelection), localizer)
+            {
+                PreconditionResourceKey = "Plan_NothingSelected",
+            },
+            new FunctionKeyViewModel("Vk_NewPlan", new RelayCommand(AskNewPlan, HasSelection), localizer, requiresEditable: true)
+            {
+                PreconditionResourceKey = "Plan_NothingSelected",
+            },
+            new FunctionKeyViewModel("Vk_RenamePlan", new RelayCommand(AskRename, HasSelection), localizer, requiresEditable: true)
+            {
+                PreconditionResourceKey = "Plan_NothingSelected",
+            },
+            new FunctionKeyViewModel("Vk_SetCurrentPlan", new RelayCommand(AskSetCurrent, () => SelectedRow is { IsCurrent: false }), localizer)
+            {
+                RequiredPermission = Permission.EditRollPlans,
+                PreconditionResourceKey = "Plan_AlreadyCurrent",
+            },
+            new FunctionKeyViewModel("Vk_DeletePlan", new RelayCommand(AskDelete, () => SelectedRow is { IsUsed: false, IsCurrent: false }), localizer, requiresEditable: true)
+            {
+                PreconditionResourceKey = "Plan_DeleteOnlyUnused",
+            },
+        };
+        SetVerticalKeys(vertical);
+        this.selectionKeys.AddRange(vertical.Skip(1).Concat(horizontal.Skip(1)).OfType<FunctionKeyViewModel>());
+    }
+
+    public override PageKey Key => PageKey.Plans;
+
+    public override string TitleResourceKey => "Page_Plans";
+
+    /// <summary>离线可用：只和数据库打交道。</summary>
+    public override bool WorksOffline => true;
+
+    /// <summary>方案归工艺员（管理员）维护；操作者只看。</summary>
+    public override Permission? EditPermission => Permission.EditProfiles;
+
+    /// <summary>新方案名、改名的命名框（3 种弹出框之一）。</summary>
+    public NamePromptViewModel NamePrompt { get; }
+
+    public override bool HasModalPrompt => NamePrompt.IsOpen;
+
+    public override bool TryDismissPrompt()
+    {
+        if (!NamePrompt.IsOpen)
+        {
+            return false;
+        }
+
+        NamePrompt.CancelCommand.Execute(null);
+        return true;
+    }
+
+    /// <summary>列的是哪支辊；还没选为 null。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasRoll))]
+    private string? rollId;
+
+    public bool HasRoll => RollId is not null;
+
+    /// <summary>表头："R-2026-031 的方案 · 共 4 个 · 当前 方案 3"。</summary>
+    [ObservableProperty]
+    private string listTitle = string.Empty;
+
+    public ObservableCollection<PlanRowViewModel> Rows { get; } = new();
+
+    [ObservableProperty]
+    private PlanRowViewModel? selectedRow;
+
+    /// <summary>选中方案的摘要。</summary>
+    public ObservableCollection<LabelValueViewModel> DetailRows { get; } = new();
+
+    [ObservableProperty]
+    private string detailTitle = string.Empty;
+
+    /// <summary>选中方案的辊形（横轴以辊身中心为 0，直径量 µm）。</summary>
+    public IReadOnlyList<(double CenteredZMm, double DiameterMicrometer)> PreviewCurve { get; private set; } = Array.Empty<(double, double)>();
+
+    /// <summary>预览曲线的名义长度。</summary>
+    public double PreviewLengthMm { get; private set; } = 1.0;
+
+    /// <summary>预览变了（视图重画）。</summary>
+    public event EventHandler? PreviewChanged;
+
+    /// <summary>最近一次刷新的任务（自检等它）。</summary>
+    public Task Loading { get; private set; } = Task.CompletedTask;
+
+    private string UserName => this.session.CurrentUser?.UserName ?? string.Empty;
+
+    public override void OnActivated()
+    {
+        if (this.draft.PlanRollId is { } requested)
+        {
+            this.draft.PlanRollId = null;
+            RollId = requested;
+        }
+
+        Interaction.Hint(RollId is null ? Localizer["Plan_PickRollHint"] : Localizer["Plan_FrozenHint"]);
+        Loading = RunGuardedAsync(token => ReloadAsync(SelectedRow?.PlanId, token), CancellationToken.None);
+    }
+
+    partial void OnSelectedRowChanged(PlanRowViewModel? value)
+    {
+        RefreshKeyStates();
+        _ = RunRefreshAsync(token => ShowDetailAsync(value, token), CancellationToken.None);
+    }
+
+    private bool HasSelection() => SelectedRow is not null;
+
+    /// <summary>重读这支辊的方案；<paramref name="keep"/> 选回原来那一行。</summary>
+    public async Task ReloadAsync(string? keep, CancellationToken cancellationToken)
+    {
+        int version = ++this.loadVersion;
+        Rows.Clear();
+        if (RollId is not { } id)
+        {
+            ListTitle = Localizer["Plan_NoRoll"];
+            SelectedRow = null;
+            return;
+        }
+
+        RollRecord? roll = await this.rolls.GetAsync(id, cancellationToken).ConfigureAwait(true);
+        IReadOnlyList<PlanOverview> list = await this.plans.ListAsync(id, cancellationToken).ConfigureAwait(true);
+        if (version != this.loadVersion)
+        {
+            return;
+        }
+
+        foreach (PlanOverview overview in list)
+        {
+            Rows.Add(Row(overview));
+        }
+
+        PlanOverview? current = list.FirstOrDefault(row => row.IsCurrent);
+        ListTitle = Localizer.Format(
+            "Plan_ListTitleFormat",
+            id,
+            roll is null ? "--" : Localizer["RollKind_" + roll.Kind],
+            roll?.Purpose ?? "--",
+            list.Count,
+            current is null ? "--" : current.Plan.PlanNo.ToString(CultureInfo.CurrentCulture));
+        SelectedRow = Rows.FirstOrDefault(row => row.PlanId == keep) ?? Rows.FirstOrDefault();
+        if (SelectedRow is null)
+        {
+            await ShowDetailAsync(null, cancellationToken).ConfigureAwait(true);
+        }
+    }
+
+    private PlanRowViewModel Row(PlanOverview overview)
+    {
+        GrindingPlanRecord plan = overview.Plan;
+        return new PlanRowViewModel(
+            overview,
+            (overview.IsCurrent ? "★ " : string.Empty) + plan.PlanNo.ToString(CultureInfo.CurrentCulture),
+            overview.ProfileName + " · " + overview.ProgramName,
+            plan.Purpose ?? "--",
+            SourceText(plan),
+            overview.NominalLengthMm.ToString("F0", CultureInfo.CurrentCulture),
+            overview.Usage.UseCount.ToString(CultureInfo.CurrentCulture),
+            overview.Usage.LastUsedUtc?.ToLocalTime().ToString("MM-dd", CultureInfo.CurrentCulture) ?? "--",
+            plan.CreatedAtUtc.ToLocalTime().ToString("MM-dd", CultureInfo.CurrentCulture) + " " + plan.CreatedBy);
+    }
+
+    /// <summary>来源一句话：空白新建、复制自本辊方案 n、模板、作业 J 的调整、旧计划。</summary>
+    public string SourceText(GrindingPlanRecord plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        return Localizer.Format("PlanSource_" + plan.SourceKind, plan.SourceRef ?? "--");
+    }
+
+    private async Task ShowDetailAsync(PlanRowViewModel? row, CancellationToken cancellationToken)
+    {
+        DetailRows.Clear();
+        PreviewCurve = Array.Empty<(double, double)>();
+        DetailTitle = row is null ? string.Empty : Localizer.Format("Plan_DetailTitleFormat", row.Overview.Plan.PlanNo, row.Overview.Plan.Name);
+        if (row is not null && await this.plans.GetContentAsync(row.PlanId, cancellationToken).ConfigureAwait(true) is { } content
+            && SelectedRow?.PlanId == row.PlanId)
+        {
+            (double head, double tail) = content.Plan.EndZoneMm is double zone
+                ? (zone, zone)
+                : ProfileLengthAlignment.DefaultEndZones(content.Profile.Profile);
+            DetailRows.Add(new LabelValueViewModel("Plan_DetailProfile", content.Profile.Name
+                + (content.Profile.ToleranceMicrometer is double tol ? Localizer.Format("Plan_ToleranceFormat", tol) : string.Empty), Localizer));
+            DetailRows.Add(new LabelValueViewModel("Plan_DetailProgram", content.Program.Name, Localizer));
+            DetailRows.Add(new LabelValueViewModel("Plan_DetailNominal", content.Profile.BodyLengthMm.ToString("F1", CultureInfo.CurrentCulture), Localizer));
+            DetailRows.Add(new LabelValueViewModel("Plan_DetailEndZones", Localizer.Format("Plan_EndZonesFormat", head, tail), Localizer));
+            DetailRows.Add(new LabelValueViewModel("Plan_DetailSource", SourceText(content.Plan), Localizer));
+            DetailRows.Add(new LabelValueViewModel("Plan_DetailUsed", row.IsUsed
+                ? Localizer.Format("Plan_UsedFormat", row.Overview.Usage.UseCount, row.LastText)
+                : Localizer["Plan_NotUsed"], Localizer));
+            DetailRows.Add(new LabelValueViewModel("Plan_DetailCreated", row.CreatedText, Localizer));
+
+            double length = content.Profile.BodyLengthMm;
+            PreviewLengthMm = length;
+            PreviewCurve = content.Profile.Profile
+                .Compose(RollGeometry.FromDiameter(length, RollGeometry.PreviewDiameterMm), this.profileTypes, this.settings.ProfileSampleCount)
+                .Points
+                .Select(point => (point.BodyPositionMm - (length / 2.0), UnitConversion.RadiusMmToDiameterMicrometer(point.RadiusOffsetMm)))
+                .ToArray();
+        }
+
+        PreviewChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void RefreshKeyStates()
+    {
+        foreach (FunctionKeyViewModel key in this.selectionKeys)
+        {
+            (key.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+        }
+    }
+
+    // ───────────── 动作 ─────────────
+
+    /// <summary>到辊形 / 工艺页打开选中的方案。</summary>
+    private void OpenEditor(PageKey page)
+    {
+        if (SelectedRow is not { } row)
+        {
+            return;
+        }
+
+        this.draft.PlanToEdit = row.PlanId;
+        Navigator.GoTo(page);
+    }
+
+    /// <summary>新建方案：复制选中的方案（新编号，来源记为它），先起名字；不设为当前。</summary>
+    private void AskNewPlan()
+    {
+        if (SelectedRow is not { } row)
+        {
+            return;
+        }
+
+        string planId = row.PlanId;
+        NamePrompt.Open(
+            Localizer["Plan_NewTitle"],
+            Localizer.Format("Library_CopyNameFormat", row.Overview.Plan.Name),
+            async (name, _, token) =>
+            {
+                if (await this.plans.NameTakenAsync(RollId!, name, null, token).ConfigureAwait(true))
+                {
+                    return NamePromptOutcome.Refused(Localizer.Format("Plan_NameTakenFormat", name));
+                }
+
+                GrindingPlanRecord created = await this.plans.CopyAsync(planId, name, setCurrent: false, UserName, token).ConfigureAwait(true);
+                await ReloadAsync(created.PlanId, token).ConfigureAwait(true);
+                Say("Plan_CreatedFormat", created.PlanNo, row.Overview.Plan.PlanNo);
+                return NamePromptOutcome.Done;
+            });
+    }
+
+    /// <summary>命名：名字在同一支辊内不能重复（5.5.6）。</summary>
+    private void AskRename()
+    {
+        if (SelectedRow is not { } row)
+        {
+            return;
+        }
+
+        string planId = row.PlanId;
+        string? purpose = row.Overview.Plan.Purpose;
+        NamePrompt.Open(
+            Localizer["Plan_RenameTitle"],
+            row.Overview.Plan.Name,
+            async (name, _, token) =>
+            {
+                if (!await this.plans.RenameAsync(planId, name, purpose, UserName, token).ConfigureAwait(true))
+                {
+                    return NamePromptOutcome.Refused(Localizer.Format("Plan_NameTakenFormat", name));
+                }
+
+                await ReloadAsync(planId, token).ConfigureAwait(true);
+                return NamePromptOutcome.Done;
+            });
+    }
+
+    /// <summary>设为当前：问一句（不自动取消），记一条改动。</summary>
+    private void AskSetCurrent()
+    {
+        if (SelectedRow is not { IsCurrent: false } row)
+        {
+            return;
+        }
+
+        string planId = row.PlanId;
+        Interaction.Choose(
+            Localizer.Format("Plan_AskSetCurrentFormat", row.Overview.Plan.PlanNo, row.Overview.Plan.Name, RollId ?? "--"),
+            "Vk_SetCurrentPlanConfirm",
+            () => RunGuardedAsync(
+                async token =>
+                {
+                    await this.plans.SetCurrentAsync(planId, null, UserName, token).ConfigureAwait(true);
+                    await ReloadAsync(planId, token).ConfigureAwait(true);
+                    Say("Plan_SetCurrentDoneFormat", row.Overview.Plan.PlanNo);
+                },
+                CancellationToken.None));
+    }
+
+    /// <summary>删除：只对没用过、不是当前的方案。</summary>
+    private void AskDelete()
+    {
+        if (SelectedRow is not { IsUsed: false, IsCurrent: false } row)
+        {
+            return;
+        }
+
+        string planId = row.PlanId;
+        Ask("Plan_AskDeleteFormat",
+            () => RunGuardedAsync(
+                async token =>
+                {
+                    if (await this.plans.DeleteAsync(planId, UserName, token).ConfigureAwait(true) is { } problem)
+                    {
+                        Interaction.Refuse(Localizer[problem]);
+                        return;
+                    }
+
+                    await ReloadAsync(null, token).ConfigureAwait(true);
+                },
+                CancellationToken.None),
+            row.Overview.Plan.PlanNo,
+            row.Overview.Plan.Name);
+    }
+}

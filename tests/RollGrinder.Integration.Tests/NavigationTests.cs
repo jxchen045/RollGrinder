@@ -38,7 +38,7 @@ public sealed class NavigationTests
 
         model.HomePage.Should().Be(PageKey.Steps);
         model.CurrentPage.Should().Be(PageKey.Steps);
-        model.CurrentArea.Should().Be(AreaKey.Steps);
+        model.CurrentArea.Should().Be(AreaKey.Profile, "工艺页在方案区（设计稿 v4）");
     }
 
     [Fact]

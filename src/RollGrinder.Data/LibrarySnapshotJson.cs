@@ -117,11 +117,26 @@ public static class LibrarySnapshotJson
             ["rollId"] = job.RollId,
             ["downloadedAtUtc"] = atUtc.ToString("O", CultureInfo.InvariantCulture),
             ["operator"] = operatorName,
+            ["planId"] = job.PlanId,
+            ["planNo"] = job.PlanNo,
             ["profileName"] = job.ProfileName,
             ["profileVersion"] = job.ProfileVersion,
             ["programName"] = job.ProgramName,
             ["programVersion"] = job.ProgramVersion,
             ["bodyLengthMm"] = job.Geometry.BodyLengthMm,
+            ["lengthAlignment"] = job.Alignment is { } alignment
+                ? new JsonObject
+                {
+                    ["kind"] = alignment.Kind.ToString(),
+                    ["nominalLengthMm"] = Math.Round(alignment.NominalLengthMm, 3),
+                    ["bodyLengthMm"] = Math.Round(alignment.BodyLengthMm, 3),
+                    ["differenceMm"] = Math.Round(alignment.DifferenceMm, 3),
+                    ["perEndMm"] = Math.Round(alignment.PerEndMm, 3),
+                    ["headZoneMm"] = Math.Round(alignment.HeadZoneMm, 3),
+                    ["tailZoneMm"] = Math.Round(alignment.TailZoneMm, 3),
+                    ["toleranceMm"] = Math.Round(alignment.ToleranceMm, 3),
+                }
+                : null,
             ["startDiameterMm"] = job.StartDiameterMm,
             ["stockMicrometer"] = job.StockMicrometer,
             ["targetDiameterMm"] = job.TargetDiameterMm,

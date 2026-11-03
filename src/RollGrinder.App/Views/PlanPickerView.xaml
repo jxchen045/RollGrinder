@@ -61,7 +61,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <plot:WpfPlot x:Name="Plot" Margin="6" Visibility="{Binding IsProfile, Converter={StaticResource BoolToVisibility}}" />
+                <plot:WpfPlot x:Name="Plot" Margin="6" Visibility="{Binding ShowsCurve, Converter={StaticResource BoolToVisibility}}" />
             </DockPanel>
         </Border>
     </Grid>

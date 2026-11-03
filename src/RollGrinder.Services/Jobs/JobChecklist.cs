@@ -59,6 +59,9 @@ public static class JobCheckItems
 /// <param name="StockMicrometer">本次磨削量（直径量 µm）。</param>
 /// <param name="Deviation">与台账计划的关系。</param>
 /// <param name="DeviationReason">仅本次的原因。</param>
+/// <param name="Alignment">
+/// 方案名义长度对到这一次辊身长度（有实测用实测）的结论；不给就按机床的下发容差、默认端部非工作区现算。
+/// </param>
 public sealed record JobCheckInput(
     RollRecord Roll,
     RollProfileDefinition Profile,
@@ -70,13 +73,14 @@ public sealed record JobCheckInput(
     string? DeviationReason,
     double? GrindStartZMm = null,
     bool GrindStartTaught = false,
-    bool GrindStartRequired = false);
+    bool GrindStartRequired = false,
+    LengthAlignment? Alignment = null);
 
 /// <summary>核对结果：清单 + 按规则套好的辊形与调整好的工序（全部通过时才下发）。</summary>
 /// <param name="Checks">逐项结论。</param>
-/// <param name="Fit">辊形套到辊身上的结果。</param>
+/// <param name="Alignment">方案辊形以中心为基准对到这一次辊身长度上的结果（截取 / 延伸，不伸缩）。</param>
 /// <param name="Stock">按本次磨削量调整后的工序。</param>
-public sealed record JobCheckResult(IReadOnlyList<JobCheck> Checks, BodyFitResult Fit, StockAdjustmentResult Stock)
+public sealed record JobCheckResult(IReadOnlyList<JobCheck> Checks, LengthAlignment Alignment, StockAdjustmentResult Stock)
 {
     /// <summary>没有拦住的项。</summary>
     public bool CanDownload => Checks.All(check => check.Status != JobCheckStatus.Block);
@@ -93,6 +97,11 @@ public static class JobChecklist
 {
     /// <summary>剩余可磨量少于几次标准余量时提醒（关系设计 5.6）。</summary>
     public const double LowLifeFactor = 2.0;
+
+    /// <summary>调用方没给对齐结论时现算用的采样点数。</summary>
+    private const int DefaultSampleCount = 401;
+
+    private static readonly RollProfileTypeRegistry DefaultRegistry = RollProfileTypeRegistry.CreateDefault();
 
     public static JobCheckResult Evaluate(JobCheckInput input, MachineDescription machine)
     {
@@ -141,14 +150,20 @@ public static class JobChecklist
             : Pass(JobCheckItems.StockSplit, "Check_StockSplit_Ok",
                 stock.RoughStockMicrometer / 1000.0, stock.FixedStockMicrometer / 1000.0));
 
-        // 辊形长度：2% 规则。
-        double tolerance = machine.Threshold(MachineDescription.LengthTolerancePercentKey) ?? BodyLengthFit.DefaultTolerancePercent;
-        BodyFitResult fit = BodyLengthFit.Fit(input.Profile.Profile, input.Profile.BodyLengthMm, roll.Geometry.BodyLengthMm, tolerance);
-        checks.Add(fit.Kind switch
+        // 辊形长度（设计说明 4.5）：以辊身中心为基准，实测更短两端截取、稍长两端切线延伸，只在端部非工作区里；不等比伸缩。
+        // 截 / 延只陈述、不拦人（操作工不用找工艺员）；超出下发容差或非工作区才拦。
+        LengthAlignment alignment = input.Alignment ?? GrindingPlanService.AlignForJob(
+            input.Profile, roll.GrindBodyLengthMm, null, machine, DefaultRegistry, DefaultSampleCount);
+        checks.Add(alignment.Kind switch
         {
-            BodyFitKind.Exact => Pass(JobCheckItems.Length, "Check_Length_Exact", fit.BodyLengthMm),
-            BodyFitKind.MiddleAdjusted => Pass(JobCheckItems.Length, "Check_Length_Adjusted", fit.DesignLengthMm, fit.BodyLengthMm, fit.DifferencePercent),
-            _ => Block(JobCheckItems.Length, "Check_Length_TooDifferent", fit.DesignLengthMm, fit.BodyLengthMm, fit.DifferencePercent, tolerance),
+            LengthAlignmentKind.Exact => Pass(JobCheckItems.Length, "Check_Length_Exact", alignment.BodyLengthMm),
+            LengthAlignmentKind.Trimmed => Notice(JobCheckItems.Length, "Check_Length_Trimmed",
+                -alignment.DifferenceMm, -alignment.PerEndMm, alignment.NominalLengthMm, alignment.BodyLengthMm),
+            LengthAlignmentKind.Extended => Notice(JobCheckItems.Length, "Check_Length_Extended",
+                alignment.DifferenceMm, alignment.PerEndMm, alignment.NominalLengthMm, alignment.BodyLengthMm),
+            _ => Block(JobCheckItems.Length, "Check_Length_OutOfTolerance",
+                alignment.NominalLengthMm, alignment.BodyLengthMm, alignment.DifferenceMm, alignment.ToleranceMm,
+                Math.Min(alignment.HeadZoneMm, alignment.TailZoneMm)),
         });
 
         // 程序适用类型（不符拦）/ 材质（不符提示）。
@@ -223,7 +238,7 @@ public static class JobChecklist
             checks.Add(Notice(JobCheckItems.RemainingLife, "Check_RemainingLife_NoScrap"));
         }
 
-        return new JobCheckResult(checks, fit, stock);
+        return new JobCheckResult(checks, alignment, stock);
     }
 
     /// <summary>参数校验（工序参数超机床能力等）并进清单：每一条违规一项"不通过"。</summary>

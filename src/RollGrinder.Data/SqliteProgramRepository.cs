@@ -32,6 +32,7 @@ public sealed class SqliteProgramRepository : IProgramRepository
                    (SELECT COUNT(*) FROM program_step s WHERE s.program_id = p.program_id),
                    p.version, p.disabled, p.applicable_roll_kind
             FROM program p
+            WHERE NOT EXISTS (SELECT 1 FROM grinding_plan g WHERE g.program_id = p.program_id)
             ORDER BY p.modified_at_utc DESC
             LIMIT $limit;
             """;
@@ -229,6 +230,7 @@ public sealed class SqliteProgramRepository : IProgramRepository
             SELECT program_id FROM program
             WHERE trim(name) = trim($name) COLLATE NOCASE
               AND ($except IS NULL OR program_id <> $except)
+              AND NOT EXISTS (SELECT 1 FROM grinding_plan g WHERE g.program_id = program.program_id)
             LIMIT 1;
             """;
         SqlMapping.AddParameter(command, "$name", name);

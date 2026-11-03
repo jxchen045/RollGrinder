@@ -36,7 +36,7 @@ public sealed record RollProfileSummary(
 /// </summary>
 public interface IRollProfileRepository
 {
-    /// <summary>按最后修改时间倒序列出辊形。</summary>
+    /// <summary>按最后修改时间倒序列出辊形（模板）。磨削方案自己的那一份不列。</summary>
     Task<IReadOnlyList<RollProfileSummary>> ListAsync(int limit, CancellationToken cancellationToken);
 
     /// <summary>取一条完整辊形；不存在返回 null。</summary>

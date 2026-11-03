@@ -133,7 +133,7 @@ public sealed class RollPlanningService : IRollPlanningService
     private readonly IProgramRepository programs;
     private readonly IChangeLogRepository changeLog;
     private readonly Records.IRollLedgerService ledger;
-    private readonly MachineDescription machine;
+    private readonly IGrindingPlanService plans;
     private readonly TimeProvider timeProvider;
 
     public RollPlanningService(
@@ -144,9 +144,10 @@ public sealed class RollPlanningService : IRollPlanningService
         IProgramRepository programs,
         IChangeLogRepository changeLog,
         Records.IRollLedgerService ledger,
-        MachineDescription machine,
+        IGrindingPlanService plans,
         TimeProvider timeProvider)
     {
+        this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         this.records = records ?? throw new ArgumentNullException(nameof(records));
@@ -154,7 +155,6 @@ public sealed class RollPlanningService : IRollPlanningService
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
         this.changeLog = changeLog ?? throw new ArgumentNullException(nameof(changeLog));
         this.ledger = ledger ?? throw new ArgumentNullException(nameof(ledger));
-        this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
         this.timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
     }
 
@@ -243,30 +243,12 @@ public sealed class RollPlanningService : IRollPlanningService
     {
         ArgumentNullException.ThrowIfNull(rollIds);
 
-        RollProfileDefinition? profile = profileId is null ? null : await this.profiles.GetAsync(profileId, cancellationToken).ConfigureAwait(false);
-        GrindingProgram? program = programId is null ? null : await this.programs.GetAsync(programId, cancellationToken).ConfigureAwait(false);
-        double tolerance = this.machine.Threshold(MachineDescription.LengthTolerancePercentKey) ?? BodyLengthFit.DefaultTolerancePercent;
-
         var outcomes = new List<PlanChangeOutcome>(rollIds.Count);
         foreach (string rollId in rollIds)
         {
-            RollRecord? roll = await this.rolls.GetAsync(rollId, cancellationToken).ConfigureAwait(false);
-            string? problem = roll switch
-            {
-                null => "PlanProblem_Missing",
-                { Retired: true } => "PlanProblem_Retired",
-                _ when profileId is not null && profile is null => "PlanProblem_Missing",
-                _ when programId is not null && program is null => "PlanProblem_Missing",
-                _ when profile is { Disabled: true } || program is { Disabled: true } => "PlanProblem_Disabled",
-                _ when profile is not null
-                    && BodyLengthFit.Fit(profile.Profile, profile.BodyLengthMm, roll.Geometry.BodyLengthMm, tolerance).Kind == BodyFitKind.TooDifferent
-                    => "PlanProblem_Length",
-                _ when program is not null && program.ApplicableRollKind != RollKind.Unspecified
-                    && roll.Kind != RollKind.Unspecified && program.ApplicableRollKind != roll.Kind => "PlanProblem_Kind",
-                _ => null,
-            };
-
-            if (problem is null && roll is not null && await HasOpenRegrindAsync(roll.RollId, cancellationToken).ConfigureAwait(false))
+            // 改计划 = 从模板复制出一个新方案并设为当前（设计说明 4.4）；长度按中心对齐，超出容差不改。
+            string? problem = await this.plans.CheckTemplatesAsync(rollId, profileId, programId, cancellationToken).ConfigureAwait(false);
+            if (problem is null && await HasOpenRegrindAsync(rollId, cancellationToken).ConfigureAwait(false))
             {
                 outcomes.Add(new PlanChangeOutcome(rollId, true, "PlanNotice_Regrind"));
                 continue;
@@ -282,27 +264,27 @@ public sealed class RollPlanningService : IRollPlanningService
         IReadOnlyList<string> rollIds, string? profileId, string? programId, string? reason, string changedBy, CancellationToken cancellationToken)
     {
         IReadOnlyList<PlanChangeOutcome> preview = await PreviewPlanChangeAsync(rollIds, profileId, programId, cancellationToken).ConfigureAwait(false);
-        DateTimeOffset now = this.timeProvider.GetUtcNow();
-        var entries = new List<ChangeLogEntry>();
-        foreach (PlanChangeOutcome outcome in preview.Where(o => o.Changed))
+        var outcomes = new List<PlanChangeOutcome>(preview.Count);
+        foreach (PlanChangeOutcome outcome in preview)
         {
-            RollRecord roll = (await this.rolls.GetAsync(outcome.RollId, cancellationToken).ConfigureAwait(false))!;
-            RollRecord changed = roll with
+            if (!outcome.Changed)
             {
-                TargetProfileId = profileId ?? roll.TargetProfileId,
-                ProgramId = programId ?? roll.ProgramId,
-                PlanInferred = false,
-            };
-            await this.rolls.UpsertAsync(changed, cancellationToken).ConfigureAwait(false);
-            entries.AddRange(await PlanLogAsync(roll, changed, reason, changedBy, now, cancellationToken).ConfigureAwait(false));
+                outcomes.Add(outcome);
+                continue;
+            }
+
+            PlanCreateOutcome created = await this.plans
+                .CreateFromTemplatesAsync(outcome.RollId, profileId, programId, setCurrent: false, changedBy, cancellationToken).ConfigureAwait(false);
+            if (created.Plan is { } plan)
+            {
+                // 设为当前时把原因记进改动记录。
+                await this.plans.SetCurrentAsync(plan.PlanId, reason, changedBy, cancellationToken).ConfigureAwait(false);
+            }
+
+            outcomes.Add(created.Plan is null ? outcome with { Changed = false, ProblemKey = created.ProblemKey } : outcome);
         }
 
-        if (entries.Count > 0)
-        {
-            await this.changeLog.AddAsync(entries, cancellationToken).ConfigureAwait(false);
-        }
-
-        return preview;
+        return outcomes;
     }
 
     public async Task AfterDownloadAsync(GrindingJob job, string changedBy, CancellationToken cancellationToken)
@@ -315,22 +297,14 @@ public sealed class RollPlanningService : IRollPlanningService
             return;
         }
 
-        if (job.Deviation == JobDeviation.PlanChanged)
+        if (job.Deviation == JobDeviation.PlanChanged && job.PlanId is { } planId && planId != roll.CurrentPlanId)
         {
-            RollRecord changed = roll with { TargetProfileId = job.ProfileId, ProgramId = job.ProgramId, PlanInferred = false };
-            await this.rolls.UpsertAsync(changed, cancellationToken).ConfigureAwait(false);
-            await this.changeLog.AddAsync(
-                await PlanLogAsync(roll, changed, job.JobId, changedBy, this.timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false),
-                cancellationToken).ConfigureAwait(false);
+            // 作业里"设为这支辊的当前方案"：下发成功才生效。
+            await this.plans.SetCurrentAsync(planId, job.JobId, changedBy, cancellationToken).ConfigureAwait(false);
         }
         else if (job.Deviation == JobDeviation.None && roll.PlanInferred)
         {
             await this.rolls.UpsertAsync(roll with { PlanInferred = false }, cancellationToken).ConfigureAwait(false);
-        }
-        else if (job.Deviation == JobDeviation.None && roll.TargetProfileId is null && roll.ProgramId is null)
-        {
-            // 旧辊没有计划：第一次作业用的就是它的计划。
-            await this.rolls.UpsertAsync(roll with { TargetProfileId = job.ProfileId, ProgramId = job.ProgramId }, cancellationToken).ConfigureAwait(false);
         }
 
         // 中断续磨、返磨用的草稿到此为止：下发出去的就是那一份作业本身（同一作业号），状态已是已下发。
@@ -472,7 +446,21 @@ public sealed class RollPlanningService : IRollPlanningService
         var entries = new List<ChangeLogEntry>();
         foreach (LedgerImportRow row in rows.Where(r => r.Kind != LedgerImportKind.Error && r.Roll is not null))
         {
-            await this.rolls.UpsertAsync(row.Roll!, cancellationToken).ConfigureAwait(false);
+            RollRecord? existing = await this.rolls.GetAsync(row.Roll!.RollId, cancellationToken).ConfigureAwait(false);
+            if (existing?.CurrentPlanId is not null)
+            {
+                // 已有方案的辊：台账的目标辊形 / 程序跟着当前方案走，不直接改成模板；
+                // 文件里的模板与当前方案的辊形 / 工艺不同名时，从模板复制出新方案并设为当前。
+                await this.rolls.UpsertAsync(
+                    row.Roll! with { TargetProfileId = existing.TargetProfileId, ProgramId = existing.ProgramId, CurrentPlanId = existing.CurrentPlanId },
+                    cancellationToken).ConfigureAwait(false);
+                await ImportPlanAsync(existing, row.Roll!, changedBy, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await this.rolls.UpsertAsync(row.Roll!, cancellationToken).ConfigureAwait(false);
+            }
+
             entries.Add(new ChangeLogEntry(Guid.NewGuid().ToString("N"), now, changedBy, ChangeLogAreas.RollLedger,
                 row.Roll!.RollId, row.Kind == LedgerImportKind.Update ? "import:update" : null, "import"));
             count++;
@@ -486,14 +474,43 @@ public sealed class RollPlanningService : IRollPlanningService
         return count;
     }
 
+    private async Task ImportPlanAsync(RollRecord existing, RollRecord imported, string changedBy, CancellationToken cancellationToken)
+    {
+        PlanContent? current = await this.plans.GetContentAsync(existing.CurrentPlanId!, cancellationToken).ConfigureAwait(false);
+        RollProfileDefinition? profileTemplate = imported.TargetProfileId is { } p && p != existing.TargetProfileId
+            ? await this.profiles.GetAsync(p, cancellationToken).ConfigureAwait(false)
+            : null;
+        GrindingProgram? programTemplate = imported.ProgramId is { } g && g != existing.ProgramId
+            ? await this.programs.GetAsync(g, cancellationToken).ConfigureAwait(false)
+            : null;
+        string? profileId = profileTemplate is not null && profileTemplate.Name != current?.Profile.Name ? profileTemplate.ProfileId : null;
+        string? programId = programTemplate is not null && programTemplate.Name != current?.Program.Name ? programTemplate.ProgramId : null;
+        if (profileId is null && programId is null)
+        {
+            return;
+        }
+
+        PlanCreateOutcome created = await this.plans
+            .CreateFromTemplatesAsync(existing.RollId, profileId, programId, setCurrent: false, changedBy, cancellationToken).ConfigureAwait(false);
+        if (created.Plan is { } plan)
+        {
+            await this.plans.SetCurrentAsync(plan.PlanId, "import", changedBy, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     public async Task<string> ExportCsvAsync(bool includeRetired, CancellationToken cancellationToken)
     {
-        var profileNames = (await this.profiles.ListAsync(int.MaxValue, cancellationToken).ConfigureAwait(false)).ToDictionary(p => p.ProfileId, p => p.Name);
-        var programNames = (await this.programs.ListAsync(int.MaxValue, cancellationToken).ConfigureAwait(false)).ToDictionary(p => p.ProgramId, p => p.Name);
         var lines = new List<IReadOnlyList<string>> { CsvColumns };
         foreach (RollRecord roll in (await this.rolls.ListAsync(int.MaxValue, cancellationToken).ConfigureAwait(false))
                      .Where(roll => includeRetired || !roll.Retired).OrderBy(roll => roll.RollId, StringComparer.Ordinal))
         {
+            // 当前方案的辊形 / 工艺名（与模板同名时导回来不会另建方案）。
+            string profileName = roll.TargetProfileId is { } p && await this.profiles.GetAsync(p, cancellationToken).ConfigureAwait(false) is { } profile
+                ? profile.Name
+                : string.Empty;
+            string programName = roll.ProgramId is { } g && await this.programs.GetAsync(g, cancellationToken).ConfigureAwait(false) is { } program
+                ? program.Name
+                : string.Empty;
             lines.Add(new[]
             {
                 roll.RollId,
@@ -504,8 +521,8 @@ public sealed class RollPlanningService : IRollPlanningService
                 Text(roll.ScrapDiameterMm),
                 roll.Material ?? string.Empty,
                 roll.Purpose ?? string.Empty,
-                roll.TargetProfileId is { } p && profileNames.TryGetValue(p, out string? pn) ? pn : string.Empty,
-                roll.ProgramId is { } g && programNames.TryGetValue(g, out string? gn) ? gn : string.Empty,
+                profileName,
+                programName,
                 Text(roll.Data.NetWeightKg),
             });
         }
@@ -523,35 +540,6 @@ public sealed class RollPlanningService : IRollPlanningService
     private async Task<bool> HasOpenRegrindAsync(string rollId, CancellationToken cancellationToken) =>
         (await this.jobs.ListByStateAsync(JobState.Draft, 200, cancellationToken).ConfigureAwait(false))
             .Any(job => job.RollId == rollId && job.RegrindOf is not null);
-
-    private async Task<IReadOnlyList<ChangeLogEntry>> PlanLogAsync(
-        RollRecord before, RollRecord after, string? reason, string changedBy, DateTimeOffset at, CancellationToken cancellationToken)
-    {
-        var entries = new List<ChangeLogEntry>();
-        if (before.TargetProfileId != after.TargetProfileId)
-        {
-            entries.Add(new ChangeLogEntry(Guid.NewGuid().ToString("N"), at, changedBy, ChangeLogAreas.RollPlan,
-                before.RollId + " · profile" + (reason is null ? string.Empty : " · " + reason),
-                await ProfileNameAsync(before.TargetProfileId, cancellationToken).ConfigureAwait(false),
-                await ProfileNameAsync(after.TargetProfileId, cancellationToken).ConfigureAwait(false)));
-        }
-
-        if (before.ProgramId != after.ProgramId)
-        {
-            entries.Add(new ChangeLogEntry(Guid.NewGuid().ToString("N"), at, changedBy, ChangeLogAreas.RollPlan,
-                before.RollId + " · program" + (reason is null ? string.Empty : " · " + reason),
-                await ProgramNameAsync(before.ProgramId, cancellationToken).ConfigureAwait(false),
-                await ProgramNameAsync(after.ProgramId, cancellationToken).ConfigureAwait(false)));
-        }
-
-        return entries;
-    }
-
-    private async Task<string?> ProfileNameAsync(string? id, CancellationToken cancellationToken) =>
-        id is null ? null : (await this.profiles.GetAsync(id, cancellationToken).ConfigureAwait(false)) is { } p ? $"{p.Name} v{p.Version}" : id;
-
-    private async Task<string?> ProgramNameAsync(string? id, CancellationToken cancellationToken) =>
-        id is null ? null : (await this.programs.GetAsync(id, cancellationToken).ConfigureAwait(false)) is { } p ? $"{p.Name} v{p.Version}" : id;
 
     private static double? Number(string text, List<string> problems, bool required)
     {

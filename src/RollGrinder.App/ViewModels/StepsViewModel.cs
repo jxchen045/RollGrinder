@@ -235,7 +235,16 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// <summary>回退期间不要把恢复动作本身算成修改。</summary>
     private readonly ILibraryService libraryService;
     private readonly IUserSession session;
+    private readonly IGrindingPlanService plans;
+    private readonly FunctionKeyViewModel listKey;
     private bool suppressDirty;
+
+    /// <summary>按方案编辑时：哪个方案（设计稿 v4 5.5.3）；按模板（库）编辑时为 null。</summary>
+    private PlanContent? planContent;
+
+    private int planUseCount;
+
+    private bool planIsCurrent;
 
     public StepsViewModel(
         GrindingStepTypeRegistry stepTypes,
@@ -244,6 +253,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         IRollRepository rolls,
         ILibraryService libraryService,
         IUserSession session,
+        IGrindingPlanService plans,
         ICalibrationService calibration,
         JobDraft jobDraft,
         GrindingJobValidator validator,
@@ -264,6 +274,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         this.session = session ?? throw new ArgumentNullException(nameof(session));
+        this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
         this.machine = machine ?? throw new ArgumentNullException(nameof(machine));
@@ -307,14 +318,26 @@ public sealed partial class StepsViewModel : PageViewModelBase
 
         // 横键（界面修订稿 v3 6.6）：程序库 · 保存 · 另存为… · 新建程序 · 适用类型 ▸ · 校验。
         // 程序与辊形不再互相关联：一支辊磨哪条辊形、用哪支程序是台账里的计划（关系设计第 3 节）。
+        // 按方案编辑时第 1 格是"方案列表"、第 4 格"辊形"（方案区横键）；按模板编辑时第 1 格回模板库。
+        this.listKey = FunctionKeyViewModel.ForAction("Fn_ProgramLibrary", localizer,
+            () => Navigator.GoTo(IsPlanMode ? PageKey.Plans : PageKey.ProgramLibrary));
         SetFunctionKeys(new FunctionKeyViewModel?[]
         {
-            FunctionKeyViewModel.ForAction("Fn_ProgramLibrary", localizer, () => Navigator.GoTo(PageKey.ProgramLibrary)),
+            this.listKey,
             new FunctionKeyViewModel("Fn_SaveProgram", new AsyncRelayCommand(
                 () => SaveAsync(CancellationToken.None)), localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Fn_SaveAs", SaveProgramAsCommand, localizer, requiresEditable: true),
-            null,
-            new FunctionKeyViewModel("Fn_NewProgram", NewProgramCommand, localizer, requiresEditable: true),
+            new FunctionKeyViewModel("Fn_SaveAs", SaveProgramAsCommand, localizer, requiresEditable: true)
+            {
+                PreconditionResourceKey = "Plan_SaveAsInPlanList",
+            },
+            new FunctionKeyViewModel("Fn_PlanProfile", new RelayCommand(OpenPlanProfile, () => IsPlanMode), localizer)
+            {
+                PreconditionResourceKey = "Plan_NotInPlan",
+            },
+            new FunctionKeyViewModel("Fn_NewProgram", NewProgramCommand, localizer, requiresEditable: true)
+            {
+                PreconditionResourceKey = "Plan_SaveAsInPlanList",
+            },
             new FunctionKeyViewModel("Fn_ApplicableKind", new RelayCommand(OpenApplicableKindMenu), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_Validate", ValidateCommand, localizer),
         });
@@ -817,7 +840,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     }
 
     /// <summary>新建一支程序：只有开始与结束，开关回到默认（先选关联辊形，见 <see cref="PickProfileAsync"/>）。</summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsTemplateMode))]
     private void NewProgram()
     {
         // 一支什么都没填的新程序没有可丢的东西：不算"未保存"，离开时不拦。
@@ -917,6 +940,11 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// </summary>
     public override async Task<bool> SaveAsync(CancellationToken cancellationToken)
     {
+        if (IsPlanMode)
+        {
+            return await StorePlanAsync(ProgramName, cancellationToken).ConfigureAwait(true);
+        }
+
         string name = ProgramName.Trim();
         string targetId = ProgramId ?? NewProgramId();
         if (name.Length > 0)
@@ -969,7 +997,7 @@ public sealed partial class StepsViewModel : PageViewModelBase
     /// 另存一支新程序，库里原来那支不动。先校验——有错就不必起名字了；
     /// 再起名字：预填"原名-副本"，名字在库里已经有了，由操作员选覆盖、改名或取消。
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsTemplateMode))]
     private void SaveProgramAs()
     {
         if (CheckProgram() is null)
@@ -1189,6 +1217,164 @@ public sealed partial class StepsViewModel : PageViewModelBase
         SelectDefaultStep();
     }
 
+    // ───────────── 按方案编辑（设计稿 v4 5.5.3、5.5.4） ─────────────
+
+    /// <summary>按方案编辑：保存走方案（用过即冻结，改了另存为新方案）。</summary>
+    public bool IsPlanMode => this.planContent is not null;
+
+    /// <summary>按模板（库）编辑：另存为、新建程序只在这里有。</summary>
+    public bool IsTemplateMode => !IsPlanMode;
+
+    /// <summary>方案信息条；按模板编辑时空。</summary>
+    [ObservableProperty]
+    private string planBanner = string.Empty;
+
+    /// <summary>方案已用（信息条橙色）。</summary>
+    [ObservableProperty]
+    private bool planFrozen;
+
+    private async Task OpenPlanAsync(string planId, CancellationToken cancellationToken)
+    {
+        PlanContent? content = await this.plans.GetContentAsync(planId, cancellationToken).ConfigureAwait(true);
+        if (content is null)
+        {
+            LeavePlanMode();
+            return;
+        }
+
+        this.planContent = content;
+        RollRecord? owner = await this.rolls.GetAsync(content.Plan.RollId, cancellationToken).ConfigureAwait(true);
+        this.planIsCurrent = owner?.CurrentPlanId == planId;
+        this.planUseCount = (await this.plans.UsageAsync(planId, cancellationToken).ConfigureAwait(true)).UseCount;
+        ApplyProgram(content.Program);
+
+        // 估算时长按这个方案所属的辊。
+        ReferenceRollText = content.Plan.RollId;
+        IsDirty = false;
+        RefreshPlanBanner();
+        NotifyPlanMode();
+    }
+
+    private void LeavePlanMode()
+    {
+        if (this.planContent is null)
+        {
+            return;
+        }
+
+        this.planContent = null;
+        PlanBanner = string.Empty;
+        PlanFrozen = false;
+        NotifyPlanMode();
+    }
+
+    private void NotifyPlanMode()
+    {
+        OnPropertyChanged(nameof(IsPlanMode));
+        OnPropertyChanged(nameof(IsTemplateMode));
+        this.listKey.LabelResourceKey = IsPlanMode ? "Fn_PlanList" : "Fn_ProgramLibrary";
+        SaveProgramAsCommand.NotifyCanExecuteChanged();
+        NewProgramCommand.NotifyCanExecuteChanged();
+    }
+
+    private void RefreshPlanBanner()
+    {
+        if (this.planContent is not { } content)
+        {
+            PlanBanner = string.Empty;
+            PlanFrozen = false;
+            return;
+        }
+
+        string head = Localizer.Format("Plan_BannerHeadFormat", content.Plan.PlanNo, content.Plan.Name)
+            + (this.planIsCurrent ? " · " + Localizer["Mark_CurrentPlan"] : string.Empty);
+        PlanFrozen = this.planUseCount > 0;
+        PlanBanner = head + " · " + (PlanFrozen
+            ? Localizer.Format("Plan_BannerFrozenFormat", this.planUseCount)
+            : Localizer["Plan_BannerEditable"]);
+    }
+
+    /// <summary>横键"辊形"：同一个方案的辊形页。</summary>
+    private void OpenPlanProfile()
+    {
+        if (this.planContent is { } content)
+        {
+            this.jobDraft.PlanToEdit = content.Plan.PlanId;
+            Navigator.GoTo(PageKey.Profile);
+        }
+    }
+
+    /// <summary>存方案的工艺：没用过的就地改；用过的先问一句，辊形与工艺一起另存为新方案（设计稿 v4 5.5.4）。</summary>
+    private async Task<bool> StorePlanAsync(string name, CancellationToken cancellationToken, bool usedConfirmed = false)
+    {
+        if (this.planContent is not { } content)
+        {
+            return false;
+        }
+
+        name = (name ?? string.Empty).Trim();
+        if (name.Length == 0)
+        {
+            Alarms.Raise(AlarmSeverity.Warning, "Program_NeedsName", code: AlarmCodes.DomainFailure);
+            return false;
+        }
+
+        List<GrindingJobStep>? steps = CheckProgram();
+        if (steps is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            this.planUseCount = (await this.plans.UsageAsync(content.Plan.PlanId, cancellationToken).ConfigureAwait(true)).UseCount;
+            if (this.planUseCount > 0 && !usedConfirmed)
+            {
+                Interaction.Choose(
+                    Localizer.Format(this.planIsCurrent ? "Plan_AskSaveUsedCurrentFormat" : "Plan_AskSaveUsedFormat", content.Plan.PlanNo, this.planUseCount),
+                    "Vk_SaveAsNewPlan",
+                    () => StorePlanAsync(name, CancellationToken.None, usedConfirmed: true));
+                return false;
+            }
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            GrindingProgram program = GrindingProgram.Create(content.Program.ProgramId, name, steps, content.Program.CreatedAtUtc) with
+            {
+                ModifiedAtUtc = now,
+                StandardStockMicrometer = TryParseDouble(TotalStockText, out double stock) && stock > 0.0 ? stock : null,
+                ApplicableRollKind = ApplicableRollKind,
+                ApplicableMaterial = string.IsNullOrWhiteSpace(ApplicableMaterial) ? null : ApplicableMaterial.Trim(),
+            };
+            PlanSaveOutcome outcome = await this.plans.SaveProgramAsync(
+                content.Plan.PlanId, program, setCurrentIfNew: this.planIsCurrent, this.session.CurrentUser?.UserName ?? string.Empty, cancellationToken)
+                .ConfigureAwait(true);
+
+            await OpenPlanAsync(outcome.Plan.PlanId, cancellationToken).ConfigureAwait(true);
+            StatusResourceKey = "Program_SavedStatus";
+            if (outcome.SavedAsNew)
+            {
+                Interaction.Say(Localizer.Format(
+                    outcome.IsCurrent ? "Plan_SavedAsNewCurrentFormat" : "Plan_SavedAsNewFormat", outcome.OriginalPlanNo, outcome.Plan.PlanNo));
+            }
+            else
+            {
+                Alarms.Raise(AlarmSeverity.Information, "Program_Saved", ProgramName, AlarmCodes.HandoverCompleted);
+            }
+
+            return true;
+        }
+        catch (DataStoreException ex)
+        {
+            Alarms.RaiseException(ex);
+            return false;
+        }
+        catch (DomainException ex)
+        {
+            Alarms.RaiseException(ex);
+            return false;
+        }
+    }
+
     /// <summary>新条目的标识。精确到毫秒：只到秒的话，一秒内另存两次会悄悄盖掉前一支。</summary>
     private static string NewProgramId() =>
         string.Create(CultureInfo.InvariantCulture, $"G{DateTimeOffset.Now:yyyyMMddHHmmssfff}");
@@ -1197,9 +1383,17 @@ public sealed partial class StepsViewModel : PageViewModelBase
     public override void OnActivated()
     {
         Capture();
+        if (this.jobDraft.PlanToEdit is { } planId)
+        {
+            this.jobDraft.PlanToEdit = null;
+            _ = RunGuardedAsync(token => OpenPlanAsync(planId, token), CancellationToken.None);
+            return;
+        }
+
         if (this.jobDraft.ProgramToOpen is { } id)
         {
             this.jobDraft.ProgramToOpen = null;
+            LeavePlanMode();
             if (id == JobDraft.NewEntry)
             {
                 NewProgram();

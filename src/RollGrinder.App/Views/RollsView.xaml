@@ -109,6 +109,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <TextBlock Text="{loc:Loc Ledger_Code}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
                         <TextBox Grid.Column="1" Text="{Binding FormRollId, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
@@ -118,32 +119,35 @@
                         <TextBlock Grid.Row="2" Text="{loc:Loc Ledger_BodyLength}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
                         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding FormBodyLengthText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
                                  ctl:TouchInput.IsNumeric="True" Margin="0,4" />
-                        <TextBlock Grid.Row="3" Text="{loc:Loc Ledger_NominalDiameter}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding FormNominalText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                        <TextBlock Grid.Row="3" Text="{loc:Loc Ledger_MeasuredBodyLength}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding FormMeasuredLengthText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
                                  ctl:TouchInput.IsNumeric="True" Margin="0,4" />
-                        <TextBlock Grid.Row="4" Text="{loc:Loc Ledger_CurrentDiameter}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding FormCurrentText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                        <TextBlock Grid.Row="4" Text="{loc:Loc Ledger_NominalDiameter}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding FormNominalText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
                                  ctl:TouchInput.IsNumeric="True" Margin="0,4" />
-                        <TextBlock Grid.Row="5" Text="{loc:Loc Ledger_ScrapDiameter}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding FormScrapText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                        <TextBlock Grid.Row="5" Text="{loc:Loc Ledger_CurrentDiameter}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding FormCurrentText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
                                  ctl:TouchInput.IsNumeric="True" Margin="0,4" />
-                        <TextBlock Grid.Row="6" Text="{loc:Loc Ledger_Material}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding FormMaterial, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" Margin="0,4" />
-                        <TextBlock Grid.Row="7" Text="{loc:Loc RollData_NetWeight}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding FormNetWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                        <TextBlock Grid.Row="6" Text="{loc:Loc Ledger_ScrapDiameter}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding FormScrapText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
                                  ctl:TouchInput.IsNumeric="True" Margin="0,4" />
-                        <TextBlock Grid.Row="8" Text="{loc:Loc Ledger_Purpose}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <Grid Grid.Row="8" Grid.Column="1">
+                        <TextBlock Grid.Row="7" Text="{loc:Loc Ledger_Material}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding FormMaterial, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" Margin="0,4" />
+                        <TextBlock Grid.Row="8" Text="{loc:Loc RollData_NetWeight}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding FormNetWeightText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                                 ctl:TouchInput.IsNumeric="True" Margin="0,4" />
+                        <TextBlock Grid.Row="9" Text="{loc:Loc Ledger_Purpose}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <Grid Grid.Row="9" Grid.Column="1">
                             <TextBlock Text="{Binding FormPurpose}" Style="{StaticResource Text.Body}" Margin="0,10"
                                        Visibility="{Binding FormPurposeEditable, Converter={StaticResource InverseBoolVisibility}}" />
                             <TextBox Text="{Binding FormPurpose, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" Margin="0,4"
                                      Visibility="{Binding FormPurposeEditable, Converter={StaticResource BoolToVisibility}}" />
                         </Grid>
-                        <TextBlock Grid.Row="9" Text="{loc:Loc Rolls_PlanProfile}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding FormProfileText}" Style="{StaticResource Text.Body}" FontWeight="SemiBold" Margin="0,10" />
-                        <TextBlock Grid.Row="10" Text="{loc:Loc Rolls_PlanProgram}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding FormProgramText}" Style="{StaticResource Text.Body}" FontWeight="SemiBold" Margin="0,10" />
-                        <TextBlock Grid.Row="11" Grid.ColumnSpan="2" Text="{loc:Loc Rolls_FormHint}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,12,0,0" />
+                        <TextBlock Grid.Row="10" Text="{loc:Loc Rolls_PlanProfile}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding FormProfileText}" Style="{StaticResource Text.Body}" FontWeight="SemiBold" Margin="0,10" />
+                        <TextBlock Grid.Row="11" Text="{loc:Loc Rolls_PlanProgram}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding FormProgramText}" Style="{StaticResource Text.Body}" FontWeight="SemiBold" Margin="0,10" />
+                        <TextBlock Grid.Row="12" Grid.ColumnSpan="2" Text="{loc:Loc Rolls_FormHint}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,12,0,0" />
                     </Grid>
                 </ScrollViewer>
             </DockPanel>

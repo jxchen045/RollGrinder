@@ -89,6 +89,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
     private readonly IRollRepository rolls;
     private readonly IRollLedgerService ledger;
     private readonly IRollPlanningService planning;
+    private readonly IGrindingPlanService plans;
     private readonly IRollProfileRepository profiles;
     private readonly IProgramRepository programs;
     private readonly IJobRepository jobs;
@@ -121,6 +122,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
         IRollRepository rolls,
         IRollLedgerService ledger,
         IRollPlanningService planning,
+        IGrindingPlanService plans,
         IRollProfileRepository profiles,
         IProgramRepository programs,
         IJobRepository jobs,
@@ -136,6 +138,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.ledger = ledger ?? throw new ArgumentNullException(nameof(ledger));
         this.planning = planning ?? throw new ArgumentNullException(nameof(planning));
+        this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
         this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
@@ -404,17 +407,18 @@ public sealed partial class RollsViewModel : PageViewModelBase
         var cardRows = new List<LabelValueViewModel>();
         var history = new List<RollHistoryRowViewModel>();
 
-        string profileText = "--";
-        if (roll.TargetProfileId is { } profileId && await this.profiles.GetAsync(profileId, cancellationToken).ConfigureAwait(true) is { } profile)
-        {
-            profileText = Localizer.Format("Lib_NameVersionFormat", profile.Name, profile.Version) + (profile.Disabled ? " " + Localizer["Mark_Disabled"] : string.Empty);
-        }
-
-        string programText = "--";
-        if (roll.ProgramId is { } programId && await this.programs.GetAsync(programId, cancellationToken).ConfigureAwait(true) is { } program)
-        {
-            programText = Localizer.Format("Lib_NameVersionFormat", program.Name, program.Version) + (program.Disabled ? " " + Localizer["Mark_Disabled"] : string.Empty);
-        }
+        // 磨削方案摘要（设计稿 v4 5.4.1）：当前 ★ + 最近用过的 2 个；方案的动作在方案区。
+        IReadOnlyList<PlanOverview> planList = await this.plans.ListAsync(roll.RollId, cancellationToken).ConfigureAwait(true);
+        PlanOverview? currentPlan = planList.FirstOrDefault(row => row.IsCurrent);
+        string currentPlanText = currentPlan is null
+            ? Localizer["Job_NoPlan"]
+            : Localizer.Format("Rolls_PlanSummaryFormat", currentPlan.Plan.PlanNo, currentPlan.Plan.Name, currentPlan.Usage.UseCount);
+        string recentPlansText = string.Join(
+            " · ",
+            planList.Where(row => !row.IsCurrent && row.IsUsed)
+                .OrderByDescending(row => row.Usage.LastUsedUtc)
+                .Take(2)
+                .Select(row => Localizer.Format("Job_QueuePlanFormat", row.Plan.PlanNo, row.Plan.Name)));
 
         IReadOnlyList<GrindingRecord> records = await this.ledger.HistoryAsync(roll.RollId, HistoryLimit, cancellationToken).ConfigureAwait(true);
         double removedTotal = 0.0;
@@ -430,7 +434,9 @@ public sealed partial class RollsViewModel : PageViewModelBase
 
             history.Add(new RollHistoryRowViewModel(
                 record.StartedAtUtc.ToLocalTime().ToString("MM-dd HH:mm", CultureInfo.CurrentCulture),
-                job is null ? "--" : (job.ProfileName ?? "--") + (job.ProfileVersion is int v ? " v" + v.ToString(CultureInfo.InvariantCulture) : string.Empty),
+                job is null ? "--"
+                    : job.PlanNo is int planNo ? Localizer.Format("Job_QueuePlanFormat", planNo, job.ProfileName ?? "--")
+                    : (job.ProfileName ?? "--") + (job.ProfileVersion is int v ? " v" + v.ToString(CultureInfo.InvariantCulture) : string.Empty),
                 removed is double mm ? mm.ToString("F3", CultureInfo.CurrentCulture) : "--",
                 ResultText(record),
                 MarkFor(job, record.State),
@@ -441,8 +447,14 @@ public sealed partial class RollsViewModel : PageViewModelBase
             roll.Geometry.BodyLengthMm.ToString("F0", CultureInfo.CurrentCulture), roll.Geometry.NominalDiameterMm.ToString("F1", CultureInfo.CurrentCulture)), Localizer));
         cardRows.Add(new LabelValueViewModel("Rolls_CurrentScrap", Localizer.Format("Rolls_PairFormat",
             roll.StartDiameterMm.ToString("F2", CultureInfo.CurrentCulture), roll.ScrapDiameterMm?.ToString("F1", CultureInfo.CurrentCulture) ?? "--"), Localizer));
-        cardRows.Add(new LabelValueViewModel("Rolls_PlanProfile", profileText, Localizer));
-        cardRows.Add(new LabelValueViewModel("Rolls_PlanProgram", programText, Localizer));
+        cardRows.Add(new LabelValueViewModel("Rolls_BodyMeasured", roll.MeasuredBodyLengthMm is double measured
+            ? measured.ToString("F1", CultureInfo.CurrentCulture)
+            : Localizer["Rolls_NotMeasured"], Localizer));
+        cardRows.Add(new LabelValueViewModel("Rolls_CurrentPlan", currentPlanText, Localizer));
+        if (recentPlansText.Length > 0)
+        {
+            cardRows.Add(new LabelValueViewModel("Rolls_RecentPlans", recentPlansText, Localizer));
+        }
         cardRows.Add(new LabelValueViewModel("Rolls_GrindCount", records.Count.ToString(CultureInfo.CurrentCulture), Localizer));
         cardRows.Add(new LabelValueViewModel("Rolls_RemovedTotal", removedTotal.ToString("F3", CultureInfo.CurrentCulture) + " mm", Localizer));
         cardRows.Add(new LabelValueViewModel("Ledger_Material", roll.Material ?? "--", Localizer));
@@ -634,9 +646,8 @@ public sealed partial class RollsViewModel : PageViewModelBase
                     {
                         PreconditionResourceKey = "Rolls_NothingSelected",
                     },
-                    new FunctionKeyViewModel("Vk_ChangePlan", new RelayCommand(OpenChangePlanForSelected, HasSelection), Localizer)
+                    new FunctionKeyViewModel("Vk_Plans", new RelayCommand(OpenPlansForSelected, HasSelection), Localizer)
                     {
-                        RequiredPermission = Permission.EditRollPlans,
                         PreconditionResourceKey = "Rolls_NothingSelected",
                     },
                     new FunctionKeyViewModel("Vk_RegisterRoll", new RelayCommand(() => OpenForm(null, null, null)), Localizer) { RequiredPermission = Permission.EditJobs },
@@ -658,6 +669,16 @@ public sealed partial class RollsViewModel : PageViewModelBase
                 this.showRetiredKey.IsActive = ShowRetired;
                 SetCommitPair(null, null);
                 break;
+        }
+    }
+
+    /// <summary>"方案 ▸"：方案区列这支辊的方案（新建、设为当前、打开辊形 / 工艺都在那里）。</summary>
+    private void OpenPlansForSelected()
+    {
+        if (SelectedRow is { } row)
+        {
+            this.draft.PlanRollId = row.RollId;
+            Navigator.StartTask(PageKey.Plans, PageKey.Rolls);
         }
     }
 
@@ -758,6 +779,10 @@ public sealed partial class RollsViewModel : PageViewModelBase
     [ObservableProperty]
     private string formNominalText = string.Empty;
 
+    /// <summary>实测辊身长度（mm，可选）：端面返修后填；下发时有实测用实测，与名义差的部分以中心为基准截取 / 延伸。</summary>
+    [ObservableProperty]
+    private string formMeasuredLengthText = string.Empty;
+
     [ObservableProperty]
     private string formCurrentText = string.Empty;
 
@@ -813,6 +838,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
         FormKind = source?.Kind is RollKind kind and not RollKind.Unspecified ? kind : RollKind.WorkRoll;
         FormBodyLengthText = Text(source?.Geometry.BodyLengthMm, "F0");
         FormNominalText = Text(source?.Geometry.NominalDiameterMm, "F1");
+        FormMeasuredLengthText = existing is null ? string.Empty : Text(existing.MeasuredBodyLengthMm, "F1");
         FormCurrentText = existing is null ? string.Empty : Text(existing.CurrentDiameterMm, "F2");
         FormScrapText = Text(source?.ScrapDiameterMm, "F1");
         FormMaterial = source?.Material ?? string.Empty;
@@ -872,7 +898,14 @@ public sealed partial class RollsViewModel : PageViewModelBase
                 if (!IsNewRoll && this.editing is not null
                     && (this.editing.TargetProfileId != roll.TargetProfileId || this.editing.ProgramId != roll.ProgramId))
                 {
-                    await this.planning.ChangePlanAsync(new[] { roll.RollId }, roll.TargetProfileId, roll.ProgramId, null, UserName, token).ConfigureAwait(true);
+                    // 只把改了的那一样当模板复制进新方案，另一样沿用当前方案的。
+                    await this.planning.ChangePlanAsync(
+                        new[] { roll.RollId },
+                        this.editing.TargetProfileId != roll.TargetProfileId ? roll.TargetProfileId : null,
+                        this.editing.ProgramId != roll.ProgramId ? roll.ProgramId : null,
+                        null,
+                        UserName,
+                        token).ConfigureAwait(true);
                 }
 
                 Say("Ledger_Saved");
@@ -898,7 +931,8 @@ public sealed partial class RollsViewModel : PageViewModelBase
     {
         if (!TryNumber(FormBodyLengthText, out double length) || !TryNumber(FormNominalText, out double nominal) || length <= 0.0 || nominal <= 0.0
             || !TryOptional(FormCurrentText, out double? current) || !TryOptional(FormScrapText, out double? scrap)
-            || !TryOptional(FormNetWeightText, out double? weight))
+            || !TryOptional(FormNetWeightText, out double? weight) || !TryOptional(FormMeasuredLengthText, out double? measuredLength)
+            || measuredLength is <= 0.0)
         {
             return null;
         }
@@ -908,6 +942,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
         return basis with
         {
             Geometry = RollGeometry.FromDiameter(length, nominal),
+            MeasuredBodyLengthMm = measuredLength,
             Kind = FormKind,
             CurrentDiameterMm = current,
             ScrapDiameterMm = scrap,
@@ -1006,16 +1041,6 @@ public sealed partial class RollsViewModel : PageViewModelBase
     private IReadOnlyList<RollRowViewModel> PlanTargets() =>
         Rows.Any(row => row.IsChecked) ? Rows.Where(row => row.IsChecked).ToArray()
         : SelectedRow is { } row ? new[] { row } : Array.Empty<RollRowViewModel>();
-
-    private void OpenChangePlanForSelected()
-    {
-        foreach (RollRowViewModel row in Rows)
-        {
-            row.IsChecked = ReferenceEquals(row, SelectedRow);
-        }
-
-        OpenChangePlan();
-    }
 
     private void OpenChangePlan()
     {

@@ -37,7 +37,19 @@ public sealed record RollRecord(
     /// <summary>报废直径（mm）：磨到比它小这支辊就不能用了。作业的目标直径不能小于它；没登记为 null。</summary>
     public double? ScrapDiameterMm { get; init; }
 
-    /// <summary>计划：这支辊正常按哪条辊形磨（辊形库标识）。登记新辊必填；旧库升级时按最近一次作业推断。</summary>
+    /// <summary>当前磨削方案（grinding_plan 标识）；还没有方案为 null（旧库的辊第一次用到时按计划建方案 1）。</summary>
+    public string? CurrentPlanId { get; init; }
+
+    /// <summary>实测辊身长度（mm，可选）：端面返修后会变短。下发时有实测用实测，否则用名义（<see cref="RollGeometry.BodyLengthMm"/>）。</summary>
+    public double? MeasuredBodyLengthMm { get; init; }
+
+    /// <summary>这一次要磨的辊身长度：有实测用实测，否则用名义。</summary>
+    public double GrindBodyLengthMm => MeasuredBodyLengthMm ?? Geometry.BodyLengthMm;
+
+    /// <summary>
+    /// 计划：当前方案的辊形（方案自己的那一份辊形的标识，随当前方案同步）。
+    /// 旧库升级时按最近一次作业推断，指的是库里的条目——第一次用到时据此建方案 1。
+    /// </summary>
     public string? TargetProfileId { get; init; }
 
     /// <summary>计划：这支辊正常用哪支磨削程序（程序库标识）。</summary>

@@ -32,6 +32,7 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
                     WHERE s.profile_id = p.profile_id ORDER BY s.segment_order LIMIT 1),
                    p.version, p.disabled, p.tolerance_um
             FROM roll_profile p
+            WHERE NOT EXISTS (SELECT 1 FROM grinding_plan g WHERE g.profile_id = p.profile_id)
             ORDER BY p.modified_at_utc DESC
             LIMIT $limit;
             """;
@@ -168,6 +169,7 @@ public sealed class SqliteRollProfileRepository : IRollProfileRepository
             SELECT profile_id FROM roll_profile
             WHERE trim(name) = trim($name) COLLATE NOCASE
               AND ($except IS NULL OR profile_id <> $except)
+              AND NOT EXISTS (SELECT 1 FROM grinding_plan g WHERE g.profile_id = roll_profile.profile_id)
             LIMIT 1;
             """;
         SqlMapping.AddParameter(command, "$name", name);

@@ -110,9 +110,14 @@ public partial class ProfileView : UserControl
             return;
         }
 
-        double[] composedX = this.viewModel.ComposedPoints.Select(point => point.BodyPositionMm).ToArray();
+        // 按方案编辑：横轴以辊身中心为 0（设计稿 v4 P1）；按模板编辑仍从 0 起。
+        double offset = this.viewModel.ZOffsetMm;
+        double[] composedX = this.viewModel.ComposedPoints.Select(point => point.BodyPositionMm - offset).ToArray();
         double[] composedY = this.viewModel.ComposedPoints.Select(point => point.DiameterMm * 1000.0).ToArray();
-        PlotTheme.AxisTitles(PreviewPlot, this.viewModel.Localizer["Chart_AxisZ"], this.viewModel.Localizer["Chart_AxisDiameterUm"]);
+        PlotTheme.AxisTitles(
+            PreviewPlot,
+            this.viewModel.Localizer[offset > 0.0 ? "Chart_AxisZCentered" : "Chart_AxisZ"],
+            this.viewModel.Localizer["Chart_AxisDiameterUm"]);
         var composed = PreviewPlot.Plot.Add.Scatter(composedX, composedY);
         composed.LineWidth = 3f;
         composed.MarkerSize = 0;
@@ -121,7 +126,7 @@ public partial class ProfileView : UserControl
         // 段界画虚线：顺接辊形一眼看出每段从哪到哪。
         foreach (double boundary in this.viewModel.BoundaryZs)
         {
-            var line = PreviewPlot.Plot.Add.VerticalLine(boundary);
+            var line = PreviewPlot.Plot.Add.VerticalLine(boundary - offset);
             line.LineWidth = 1f;
             line.LinePattern = LinePattern.Dashed;
             line.Color = Color.FromHex("#8D97A3");
@@ -131,7 +136,7 @@ public partial class ProfileView : UserControl
         if (this.viewModel.SelectedSegmentPoints.Count >= 2)
         {
             var selected = PreviewPlot.Plot.Add.Scatter(
-                this.viewModel.SelectedSegmentPoints.Select(point => point.BodyPositionMm).ToArray(),
+                this.viewModel.SelectedSegmentPoints.Select(point => point.BodyPositionMm - offset).ToArray(),
                 this.viewModel.SelectedSegmentPoints.Select(point => point.DiameterMm * 1000.0).ToArray());
             selected.LineWidth = 6f;
             selected.MarkerSize = 0;
@@ -142,7 +147,7 @@ public partial class ProfileView : UserControl
         if (this.viewModel.TablePoints.Count > 0)
         {
             var table = PreviewPlot.Plot.Add.Scatter(
-                this.viewModel.TablePoints.Select(point => point.BodyPositionMm).ToArray(),
+                this.viewModel.TablePoints.Select(point => point.BodyPositionMm - offset).ToArray(),
                 this.viewModel.TablePoints.Select(point => point.DiameterMm * 1000.0).ToArray());
             table.LineWidth = 0f;
             table.MarkerSize = 8f;
@@ -150,7 +155,7 @@ public partial class ProfileView : UserControl
         }
 
         // 导进来的对照线：虚线、另一个颜色，一眼看出哪条是设计、哪条是拿来比的。
-        double[] referenceX = this.viewModel.ReferencePoints.Select(point => point.BodyPositionMm).ToArray();
+        double[] referenceX = this.viewModel.ReferencePoints.Select(point => point.BodyPositionMm - offset).ToArray();
         double[] referenceY = this.viewModel.ReferencePoints.Select(point => point.DiameterMm * 1000.0).ToArray();
         if (referenceX.Length >= 2)
         {
@@ -162,7 +167,14 @@ public partial class ProfileView : UserControl
         }
 
         // 辊形图规范：直径量 µm，Y 由合成辊形定，绘图区 4 : 1（和库、作业、记录里同一条辊形一个样）。
-        PlotTheme.ShowProfile(PreviewPlot, composedX[^1], composedY);
+        if (offset > 0.0)
+        {
+            PlotTheme.ShowProfileCentered(PreviewPlot, offset * 2.0, composedY);
+        }
+        else
+        {
+            PlotTheme.ShowProfile(PreviewPlot, composedX[^1], composedY);
+        }
         PreviewPlot.Refresh();
     }
 }

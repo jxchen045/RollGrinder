@@ -274,8 +274,8 @@ public sealed class RollCentricTests : IDisposable
     public async Task Upgrading_infers_each_rolls_plan_from_its_latest_job_and_flags_it()
     {
         var database = new SqliteDatabase(Path.Combine(this.workspace.Root, "data", SqliteDatabase.FileName));
-        // 停在"以轧辊为中心"那条迁移之前（其后还有参数归属一条）。
-        await database.MigrateToAsync(SqliteDatabase.ExpectedSchemaVersion - 2, CancellationToken.None);
+        // 停在"以轧辊为中心"那条迁移之前（其后还有参数归属、磨削方案两条）。
+        await database.MigrateToAsync(SqliteDatabase.ExpectedSchemaVersion - 3, CancellationToken.None);
         await using (SqliteConnection connection = await database.OpenAsync(CancellationToken.None))
         {
             await using SqliteCommand command = connection.CreateCommand();
@@ -409,46 +409,71 @@ public sealed class RollCentricTests : IDisposable
     }
 
     [Fact]
-    public async Task Changing_the_plan_of_several_rolls_checks_each_one_and_logs_every_change()
+    public async Task Changing_the_plan_of_several_rolls_copies_the_template_into_a_new_current_plan_for_each()
     {
         await using ServiceProvider services = await BuildAsync();
         await SeedAsync(services, Roll("R-1"), Roll("R-2"), Roll("R-L", body: 1800.0) with { Retired = true });
+        var library = services.GetRequiredService<ILibraryService>();
+        await library.SaveProfileAsync(Profile("P-3"), "tester", CancellationToken.None);
         var planning = services.GetRequiredService<IRollPlanningService>();
+        var plans = services.GetRequiredService<IGrindingPlanService>();
 
         IReadOnlyList<PlanChangeOutcome> outcomes = await planning.ChangePlanAsync(
-            new[] { "R-1", "R-2", "R-L" }, "P-2", null, "轧制计划调整", "tester", CancellationToken.None);
+            new[] { "R-1", "R-2", "R-L" }, "P-3", null, "轧制计划调整", "tester", CancellationToken.None);
 
-        // P-2 设计长 2400，辊身 1800：一般辊形中段铺满，可以改；作废的不改。
+        // 改计划 = 从模板复制出新方案并设为当前；作废的不改。
         outcomes.Where(o => o.Changed).Select(o => o.RollId).Should().Equal("R-1", "R-2");
         outcomes.Single(o => o.RollId == "R-L").ProblemKey.Should().Be("PlanProblem_Retired");
-        var rolls = services.GetRequiredService<IRollRepository>();
-        (await rolls.GetAsync("R-1", CancellationToken.None))!.TargetProfileId.Should().Be("P-2");
+        foreach (string rollId in new[] { "R-1", "R-2" })
+        {
+            IReadOnlyList<PlanOverview> list = await plans.ListAsync(rollId, CancellationToken.None);
+            list.Should().HaveCount(2, "原计划建成方案 1，改计划另建方案 2");
+            PlanOverview current = list.Single(row => row.IsCurrent);
+            current.Plan.PlanNo.Should().Be(2);
+            current.Plan.SourceKind.Should().Be(PlanSourceKind.Template);
+            current.ProfileName.Should().Be("凸度300-P-3");
+            current.ProgramName.Should().Be("工作辊-标准-G-1", "只换了辊形，工艺沿用原方案的");
+            (await services.GetRequiredService<IRollRepository>().GetAsync(rollId, CancellationToken.None))!
+                .TargetProfileId.Should().Be(current.Plan.ProfileId, "台账的目标辊形跟着当前方案走");
+        }
+
         (await services.GetRequiredService<IChangeLogRepository>().ListAsync(50, CancellationToken.None))
-            .Count(e => e.Area == ChangeLogAreas.RollPlan).Should().Be(2);
+            .Count(e => e.Area == ChangeLogAreas.RollPlan && e.Item.Contains("轧制计划调整", StringComparison.Ordinal)).Should().Be(2);
+
+        // 模板 P-2 设计长 2400，辊身 1800：以中心截取会截进工作区，不建。
+        (await planning.ChangePlanAsync(new[] { "R-1" }, "P-2", null, null, "tester", CancellationToken.None))
+            .Single().ProblemKey.Should().Be("PlanProblem_Length");
     }
 
     [Fact]
-    public async Task Plan_changed_in_a_job_is_written_back_after_download_and_this_time_only_is_not()
+    public async Task Set_current_in_a_job_takes_effect_after_download_and_this_time_only_does_not()
     {
         await using ServiceProvider services = await BuildAsync();
         await SeedAsync(services, Roll("R-1") with { PlanInferred = true }, Roll("R-2"));
         var planning = services.GetRequiredService<IRollPlanningService>();
+        var plans = services.GetRequiredService<IGrindingPlanService>();
         var rolls = services.GetRequiredService<IRollRepository>();
-        GrindingJob Job(string roll, JobDeviation deviation) =>
-            GrindingJob.Create("J-" + roll, roll, RollGeometry.FromDiameter(1800.0, 600.0), CrownWithTapers(), Program().Steps) with
+        async Task<GrindingJob> JobAsync(string roll, JobDeviation deviation)
+        {
+            await plans.CurrentAsync(roll, CancellationToken.None);
+            GrindingPlanRecord other = (await plans.CreateFromTemplatesAsync(roll, "P-1", "G-1", setCurrent: false, "tester", CancellationToken.None)).Plan!;
+            return GrindingJob.Create("J-" + roll, roll, RollGeometry.FromDiameter(1800.0, 600.0), CrownWithTapers(), Program().Steps) with
             {
-                ProfileId = "P-2",
-                ProgramId = "G-1",
+                PlanId = other.PlanId,
+                PlanNo = other.PlanNo,
                 Deviation = deviation,
             };
+        }
 
-        await planning.AfterDownloadAsync(Job("R-1", JobDeviation.PlanChanged), "tester", CancellationToken.None);
-        await planning.AfterDownloadAsync(Job("R-2", JobDeviation.ThisTimeOnly), "tester", CancellationToken.None);
+        GrindingJob setCurrent = await JobAsync("R-1", JobDeviation.PlanChanged);
+        GrindingJob thisTime = await JobAsync("R-2", JobDeviation.ThisTimeOnly);
+        await planning.AfterDownloadAsync(setCurrent, "tester", CancellationToken.None);
+        await planning.AfterDownloadAsync(thisTime, "tester", CancellationToken.None);
 
         RollRecord changed = (await rolls.GetAsync("R-1", CancellationToken.None))!;
-        changed.TargetProfileId.Should().Be("P-2");
+        changed.CurrentPlanId.Should().Be(setCurrent.PlanId);
         changed.PlanInferred.Should().BeFalse();
-        (await rolls.GetAsync("R-2", CancellationToken.None))!.TargetProfileId.Should().Be("P-1", "仅本次不改台账");
+        (await rolls.GetAsync("R-2", CancellationToken.None))!.CurrentPlanId.Should().NotBe(thisTime.PlanId, "仅本次不改当前方案");
     }
 
     // ───────────── 台账导入 ─────────────

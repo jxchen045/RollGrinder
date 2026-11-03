@@ -32,7 +32,24 @@
                             参考轧辊 → 设计长度（参数归属：长度只有台账一个出处）。填辊号，长度从台账带入、只读；
                             辊形不收直径（形状是相对辊面的偏差，与直径无关）。
                         -->
-                        <DockPanel Margin="0,8,0,0">
+                        <!-- 按方案编辑（设计稿 v4 5.5.2）：信息条写方案号、是否当前、用了几次（已用 = 保存时另存为新方案）。 -->
+                        <Border Margin="0,8,0,0" Padding="10,6" CornerRadius="3" BorderThickness="1"
+                                Visibility="{Binding IsPlanMode, Converter={StaticResource BoolToVisibility}}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+                                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Divider}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding PlanFrozen}" Value="True">
+                                            <Setter Property="Background" Value="{StaticResource Brush.WarningFill}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="{Binding PlanBanner}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                        </Border>
+                        <DockPanel Margin="0,8,0,0"
+                                   Visibility="{Binding IsPlanMode, Converter={StaticResource InverseBoolVisibility}}">
                             <TextBlock Text="{loc:Loc Profile_ReferenceRoll}" Style="{StaticResource Text.Label}"
                                        VerticalAlignment="Center" Width="80" TextWrapping="Wrap" />
                             <TextBox Text="{Binding ReferenceRollText, UpdateSourceTrigger=PropertyChanged}"

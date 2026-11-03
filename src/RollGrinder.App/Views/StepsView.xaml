@@ -58,6 +58,23 @@
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
+                <!-- 按方案编辑（设计稿 v4 5.5.3）：信息条写方案号、是否当前、用了几次（已用 = 保存时另存为新方案）。 -->
+                <Border Margin="0,0,0,12" Padding="12,8" CornerRadius="3" BorderThickness="1"
+                        BorderBrush="{StaticResource Brush.Divider}"
+                        Visibility="{Binding IsPlanMode, Converter={StaticResource BoolToVisibility}}">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding PlanFrozen}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource Brush.WarningFill}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="{Binding PlanBanner}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                </Border>
+
                 <!-- 程序：名字，以及估算时长用的参考辊（不属于程序、不存）。辊号、尺寸、辊形在作业页选。 -->
                 <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                     <DockPanel>

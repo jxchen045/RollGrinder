@@ -31,12 +31,14 @@ public sealed class SqliteRollRepository : IRollRepository
                 roll_id, code, body_length_mm, nominal_radius_mm, material, created_at_utc,
                 net_weight_kg, head_box_weight_kg, tail_box_weight_kg,
                 roll_kind, current_diameter_mm, scrap_diameter_mm,
-                target_profile_id, program_id, purpose, retired, plan_inferred)
+                target_profile_id, program_id, purpose, retired, plan_inferred,
+                current_plan_id, measured_body_length_mm)
             VALUES (
                 $id, $code, $length, $radius, $material, $created,
                 $netWeight, $headBoxWeight, $tailBoxWeight,
                 $kind, $currentDiameter, $scrapDiameter,
-                $profileId, $programId, $purpose, $retired, $inferred)
+                $profileId, $programId, $purpose, $retired, $inferred,
+                $currentPlan, $measuredLength)
             ON CONFLICT(roll_id) DO UPDATE SET
                 code = excluded.code,
                 body_length_mm = excluded.body_length_mm,
@@ -52,7 +54,9 @@ public sealed class SqliteRollRepository : IRollRepository
                 program_id = excluded.program_id,
                 purpose = excluded.purpose,
                 retired = excluded.retired,
-                plan_inferred = excluded.plan_inferred;
+                plan_inferred = excluded.plan_inferred,
+                current_plan_id = excluded.current_plan_id,
+                measured_body_length_mm = excluded.measured_body_length_mm;
             """;
         SqlMapping.AddParameter(command, "$netWeight", roll.Data.NetWeightKg);
         SqlMapping.AddParameter(command, "$headBoxWeight", roll.Data.HeadBoxWeightKg);
@@ -65,6 +69,8 @@ public sealed class SqliteRollRepository : IRollRepository
         SqlMapping.AddParameter(command, "$purpose", roll.Purpose);
         SqlMapping.AddParameter(command, "$retired", roll.Retired ? 1 : 0);
         SqlMapping.AddParameter(command, "$inferred", roll.PlanInferred ? 1 : 0);
+        SqlMapping.AddParameter(command, "$currentPlan", roll.CurrentPlanId);
+        SqlMapping.AddParameter(command, "$measuredLength", roll.MeasuredBodyLengthMm);
         SqlMapping.AddParameter(command, "$id", roll.RollId);
         SqlMapping.AddParameter(command, "$code", roll.Code);
         SqlMapping.AddParameter(command, "$length", roll.Geometry.BodyLengthMm);
@@ -87,7 +93,8 @@ public sealed class SqliteRollRepository : IRollRepository
                    grind_start_position_mm, curve_length_mm, curve_tolerance_um,
                    net_weight_kg, head_box_weight_kg, tail_box_weight_kg,
                    roll_kind, current_diameter_mm, scrap_diameter_mm,
-                   target_profile_id, program_id, purpose, retired, plan_inferred
+                   target_profile_id, program_id, purpose, retired, plan_inferred,
+                   current_plan_id, measured_body_length_mm
             FROM roll WHERE roll_id = $id;
             """;
         SqlMapping.AddParameter(command, "$id", rollId);
@@ -106,7 +113,8 @@ public sealed class SqliteRollRepository : IRollRepository
                    grind_start_position_mm, curve_length_mm, curve_tolerance_um,
                    net_weight_kg, head_box_weight_kg, tail_box_weight_kg,
                    roll_kind, current_diameter_mm, scrap_diameter_mm,
-                   target_profile_id, program_id, purpose, retired, plan_inferred
+                   target_profile_id, program_id, purpose, retired, plan_inferred,
+                   current_plan_id, measured_body_length_mm
             FROM roll ORDER BY created_at_utc DESC LIMIT $limit;
             """;
         SqlMapping.AddParameter(command, "$limit", limit);
@@ -131,7 +139,8 @@ public sealed class SqliteRollRepository : IRollRepository
                    grind_start_position_mm, curve_length_mm, curve_tolerance_um,
                    net_weight_kg, head_box_weight_kg, tail_box_weight_kg,
                    roll_kind, current_diameter_mm, scrap_diameter_mm,
-                   target_profile_id, program_id, purpose, retired, plan_inferred
+                   target_profile_id, program_id, purpose, retired, plan_inferred,
+                   current_plan_id, measured_body_length_mm
             FROM roll
             WHERE retired = 0 AND (($profile IS NOT NULL AND target_profile_id = $profile)
                                 OR ($program IS NOT NULL AND program_id = $program))
@@ -171,6 +180,8 @@ public sealed class SqliteRollRepository : IRollRepository
         Purpose = reader.IsDBNull(17) ? null : reader.GetString(17),
         Retired = reader.GetInt32(18) != 0,
         PlanInferred = reader.GetInt32(19) != 0,
+        CurrentPlanId = reader.IsDBNull(20) ? null : reader.GetString(20),
+        MeasuredBodyLengthMm = Nullable(reader, 21),
     };
 
     /// <summary>没登记的那几项读回来仍然是"没登记"，不是 0。</summary>

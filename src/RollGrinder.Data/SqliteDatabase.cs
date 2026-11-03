@@ -415,6 +415,34 @@ public sealed class SqliteDatabase
         ALTER TABLE job ADD COLUMN grind_start_z_mm REAL NULL;
         ALTER TABLE roll_profile ADD COLUMN reference_roll_id TEXT NULL;
         """,
+
+        // 磨削方案（设计说明《轧辊与磨削方案》第 1 期）：方案归辊所有，= 一条辊形 + 一支工艺，各是辊形 / 程序表里
+        // 方案自己的一份（被 grinding_plan 引用的那些不进模板列表）。被作业用过（job.plan_id）即冻结。
+        // 台账加当前方案与实测辊身长度（body_length_mm 就是名义长度）；作业记方案号。
+        """
+        CREATE TABLE grinding_plan (
+            plan_id        TEXT    NOT NULL PRIMARY KEY,
+            roll_id        TEXT    NOT NULL,
+            plan_no        INTEGER NOT NULL,
+            name           TEXT    NOT NULL,
+            purpose        TEXT    NULL,
+            profile_id     TEXT    NOT NULL,
+            program_id     TEXT    NOT NULL,
+            source_kind    INTEGER NOT NULL DEFAULT 0,
+            source_ref     TEXT    NULL,
+            end_zone_mm    REAL    NULL,
+            created_at_utc TEXT    NOT NULL,
+            created_by     TEXT    NOT NULL DEFAULT '',
+            UNIQUE (roll_id, plan_no)
+        );
+        CREATE INDEX ix_grinding_plan_profile ON grinding_plan (profile_id);
+        CREATE INDEX ix_grinding_plan_program ON grinding_plan (program_id);
+        ALTER TABLE roll ADD COLUMN current_plan_id         TEXT NULL;
+        ALTER TABLE roll ADD COLUMN measured_body_length_mm REAL NULL;
+        ALTER TABLE job ADD COLUMN plan_id TEXT NULL;
+        ALTER TABLE job ADD COLUMN plan_no INTEGER NULL;
+        CREATE INDEX ix_job_plan ON job (plan_id);
+        """,
     };
 
     private readonly string connectionString;

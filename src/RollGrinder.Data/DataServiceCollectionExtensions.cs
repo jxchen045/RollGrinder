@@ -29,6 +29,7 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<ICompensationRepository, SqliteCompensationRepository>();
         services.AddSingleton<IAlarmRepository, SqliteAlarmRepository>();
         services.AddSingleton<ILibraryVersionRepository, SqliteLibraryVersionRepository>();
+        services.AddSingleton<IGrindingPlanRepository, SqliteGrindingPlanRepository>();
 
         return services;
     }

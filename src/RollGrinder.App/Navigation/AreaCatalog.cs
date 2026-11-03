@@ -43,8 +43,8 @@ public static class AreaCatalog
     public static AreaKey AreaOf(PageKey page) => page switch
     {
         PageKey.AutoGrinding or PageKey.ManualGrinding or PageKey.Manual or PageKey.Job => AreaKey.Machine,
-        PageKey.Profile or PageKey.ProfileLibrary => AreaKey.Profile,
-        PageKey.Steps or PageKey.ProgramLibrary => AreaKey.Steps,
+        PageKey.Plans or PageKey.Profile or PageKey.Steps => AreaKey.Profile,
+        PageKey.ProfileLibrary or PageKey.ProgramLibrary => AreaKey.Steps,
         PageKey.Rolls => AreaKey.Rolls,
         PageKey.Parameters => AreaKey.Parameters,
         PageKey.Records => AreaKey.Records,
@@ -64,8 +64,8 @@ public static class AreaCatalog
     public static PageKey EntryPage(AreaKey area, MachineMode mode) => area switch
     {
         AreaKey.Machine => mode == MachineMode.Auto ? PageKey.AutoGrinding : PageKey.ManualGrinding,
-        AreaKey.Profile => PageKey.Profile,
-        AreaKey.Steps => PageKey.Steps,
+        AreaKey.Profile => PageKey.Plans,
+        AreaKey.Steps => PageKey.ProfileLibrary,
         AreaKey.Rolls => PageKey.Rolls,
         AreaKey.Parameters => PageKey.Parameters,
         AreaKey.Records => PageKey.Records,

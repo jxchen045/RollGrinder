@@ -130,8 +130,14 @@ public sealed record MachineDescription(
     double? ManualStrokeMarginMm = null,
     IReadOnlyList<HeadstockSpeedLimit>? HeadstockRpmByWeight = null)
 {
-    /// <summary>作业核对：辊形设计长度与辊身长度允许差多少（%），阈值键。不写按 2。</summary>
+    /// <summary>
+    /// 下发容差：方案名义长度与这一次辊身长度（有实测用实测）允许差多少（%），阈值键。不写按 2。
+    /// 差在容差内、且每端的截 / 延量不超出端部非工作区时，以中心为基准截取或延伸；否则拦下。
+    /// </summary>
     public const string LengthTolerancePercentKey = "lengthTolerancePercent";
+
+    /// <summary>下发容差的绝对上限（mm），阈值键。不写只看百分比。与百分比同时写时取小的那个。</summary>
+    public const string LengthToleranceMmKey = "lengthToleranceMm";
 
     /// <summary>作业核对：工件线速度下限（m/min），阈值键。不写不查。</summary>
     public const string MinWorkpieceSurfaceSpeedKey = "minWorkpieceSurfaceSpeedMPerMin";

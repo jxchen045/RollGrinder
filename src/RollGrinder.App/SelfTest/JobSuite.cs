@@ -117,7 +117,7 @@ internal static class JobFlow
     private static string Format(double value) => value.ToString("0.###", CultureInfo.CurrentCulture);
 }
 
-/// <summary>作业页：待磨清单、尾号查找、当场登记（计划必填）、一页核对、改磨削量、换辊形仅本次（选原因）、回到计划、离线下发被拒。</summary>
+/// <summary>作业页：待磨清单、尾号查找、当场登记（计划必填）、一页核对、改磨削量、换方案仅本次（选原因）、回到当前方案、离线下发被拒。</summary>
 internal sealed class JobSuite : ISelfTestSuite
 {
     public string Name => "Job";
@@ -154,10 +154,10 @@ internal sealed class JobSuite : ISelfTestSuite
 
         await h.StepAsync("Review", "RegisterRollWithPlan", async ctx =>
         {
-            // 辊身比辊形设计长度短 1%：在 2% 以内，中间段伸缩、两端锥度不动。
+            // 辊身与辊形模板一样长：登记时从模板复制出方案 1（不伸缩；长度不同只在端部非工作区里截取 / 延伸）。
             RollProfileSummary? profile = (await h.Services.GetRequiredService<IRollProfileRepository>().ListAsync(200, default))
                 .FirstOrDefault(p => p.Name == SelfTestNames.ProfileA);
-            double body = profile is null ? 2000 : Math.Round(profile.BodyLengthMm * 0.99);
+            double body = profile?.BodyLengthMm ?? 2000;
             await JobFlow.RegisterAndOpenAsync(h, ctx, SelfTestNames.JobRollId, body, 600, 596, SelfTestNames.ProfileA, SelfTestNames.ProgramA);
             ctx.Note(job.ReviewTitle + " · " + job.CheckSummaryText);
         }, StepOptions.Shot);
@@ -170,10 +170,10 @@ internal sealed class JobSuite : ISelfTestSuite
             }
 
             ctx.Check(job.IsReview, "should be on the review");
-            ctx.Check(job.Checks.Any(c => c.ItemText == job.Localizer["CheckItem_Length"]), "the length check (2% rule) should be listed");
+            ctx.Check(job.Checks.Any(c => c.ItemText == job.Localizer["CheckItem_Length"]), "the length check (centre alignment) should be listed");
             ctx.Check(job.CanDownload, "the job should pass, first block: " + JobFlow.FirstBlock(job));
-            ctx.Check(job.BuildJob() is { } built && built.ProgramName == SelfTestNames.ProgramA && built.ProfileVersion is not null,
-                "the built job should carry the program and the profile version");
+            ctx.Check(job.BuildJob() is { } built && built.ProgramName == SelfTestNames.ProgramA && built.PlanNo is not null && built.Alignment is not null,
+                "the built job should carry the program, the plan number and the length alignment");
             ctx.Check(job.ReviewCurve.Count > 1, "the review should draw the target profile");
             return Task.CompletedTask;
         });
@@ -220,26 +220,34 @@ internal sealed class JobSuite : ISelfTestSuite
             ctx.Check(job.CanDownload, "restoring the stock passes again, first block: " + JobFlow.FirstBlock(job));
         });
 
-        await h.StepAsync("Review", "ChangeProfileThisTimeNeedsReason", async ctx =>
+        await h.StepAsync("Review", "ChangePlanThisTimeNeedsReason", async ctx =>
         {
             if (!job.IsReview)
             {
                 ctx.Skip("no review is open (the registration step before did not get there)");
             }
 
-            await h.PressVerticalKeyAsync(ctx, "Vk_ChangeProfile");
+            // 这支辊再有一个方案（复制当前方案），换方案时才有得选。
+            IGrindingPlanService plans = h.Services.GetRequiredService<IGrindingPlanService>();
+            if (await plans.CurrentAsync(SelfTestNames.JobRollId, default) is { } current
+                && (await plans.ListAsync(SelfTestNames.JobRollId, default)).Count < 2)
+            {
+                await plans.CopyAsync(current.PlanId, null, setCurrent: false, "selftest", default);
+            }
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_SwitchPlan");
             await h.WaitUntilAsync(() => job.IsPicking, TimeSpan.FromSeconds(10));
-            PlanPickItemViewModel? other = job.Picker.Items.FirstOrDefault(i => i.Name != SelfTestNames.ProfileA);
+            PlanPickItemViewModel? other = job.Picker.Items.FirstOrDefault(i => !i.VersionText.StartsWith("★", StringComparison.Ordinal));
             if (other is null)
             {
                 job.TryDismissPrompt();
-                ctx.Skip("no second profile fits this roll");
+                ctx.Skip("this roll has no second plan");
             }
 
             job.Picker.SelectedItem = other;
             await h.PressVerticalKeyAsync(ctx, "Vk_PickThis");
-            ctx.Check(h.HasPendingConfirmation, "a profile other than the plan should ask 'this time only / make plan'");
-            ctx.Check(h.IndexOfVerticalKey("Vk_MakePlan") >= 0, "'make plan' should sit on key 6");
+            ctx.Check(h.HasPendingConfirmation, "a plan other than the current one should ask 'this time only / set as current'");
+            ctx.Check(h.IndexOfVerticalKey("Vk_MakePlan") >= 0, "'set as current plan' should sit on key 6");
             h.TryScreenshot("job-deviation-choice");
             await h.ConfirmAsync(ctx);
             bool applied = await h.WaitUntilAsync(() => job.Deviation == JobDeviation.ThisTimeOnly, TimeSpan.FromSeconds(5));
@@ -265,9 +273,30 @@ internal sealed class JobSuite : ISelfTestSuite
 
             await h.PressVerticalKeyAsync(ctx, "Vk_RestorePlan");
             bool restored = await h.WaitUntilAsync(() => job.Deviation == JobDeviation.None, TimeSpan.FromSeconds(5));
-            ctx.Check(restored, "'restore plan' should go back to the ledger plan");
+            ctx.Check(restored, "'back to current plan' should go back to the roll's current plan");
             ctx.Check(job.CanDownload, "the plan passes again, first block: " + JobFlow.FirstBlock(job));
         });
+
+        await h.StepAsync("Review", "PlanListOfThisRoll", async ctx =>
+        {
+            if (!job.IsReview)
+            {
+                ctx.Skip("no review is open");
+            }
+
+            // 核对页"方案列表"：方案区列这支辊的方案（★ 当前在前），返回回到核对。
+            await h.PressVerticalKeyAsync(ctx, "Vk_PlanList");
+            PlansViewModel plans = h.Page<PlansViewModel>();
+            bool shown = await h.WaitUntilAsync(
+                () => h.Shell.CurrentPage.Key == PageKey.Plans && plans.Rows.Count >= 1, TimeSpan.FromSeconds(10));
+            ctx.Check(shown, "the plan list of this roll should open");
+            ctx.Check(plans.RollId == SelfTestNames.JobRollId, "the plan list should be for the roll on the review");
+            ctx.Check(plans.Rows.FirstOrDefault()?.IsCurrent == true, "the current plan should be listed first");
+            h.TryScreenshot("plans-list");
+            await h.BackAsync();
+            bool back = await h.WaitUntilAsync(() => h.Shell.CurrentPage.Key == PageKey.Job && job.IsReview, TimeSpan.FromSeconds(10));
+            ctx.Check(back, "back should return to the review");
+        }, StepOptions.Shot);
 
         if (offline)
         {

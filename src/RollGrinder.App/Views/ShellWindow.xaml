@@ -59,6 +59,9 @@
         <DataTemplate DataType="{x:Type vm:RollsViewModel}">
             <views:RollsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PlansViewModel}">
+            <views:PlansView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:CommissioningViewModel}">
             <views:CommissioningView />
         </DataTemplate>

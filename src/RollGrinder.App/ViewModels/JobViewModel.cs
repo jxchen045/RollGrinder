@@ -107,6 +107,7 @@ public sealed partial class JobViewModel : PageViewModelBase
     private const int QueueLimit = 500;
 
     private readonly IRollPlanningService planning;
+    private readonly IGrindingPlanService plans;
     private readonly IRollLedgerService ledger;
     private readonly IRollProfileRepository profiles;
     private readonly IProgramRepository programs;
@@ -130,12 +131,11 @@ public sealed partial class JobViewModel : PageViewModelBase
     private readonly AsyncRelayCommand downloadCommand;
 
     private RollRecord? roll;
+    private GrindingPlanRecord? plan;
     private RollProfileDefinition? profile;
     private GrindingProgram? program;
     private JobCheckResult? result;
-    private PlanPickKind pickKind;
-    private JobDeviation profileDeviation;
-    private JobDeviation programDeviation;
+    private JobDeviation planDeviation;
     private bool startMeasured;
     private bool grindStartTaught;
     private bool requireMeasure;
@@ -146,6 +146,7 @@ public sealed partial class JobViewModel : PageViewModelBase
 
     public JobViewModel(
         IRollPlanningService planning,
+        IGrindingPlanService plans,
         IRollLedgerService ledger,
         IRollProfileRepository profiles,
         IProgramRepository programs,
@@ -170,6 +171,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         : base(alarms, localizer, navigator, interaction)
     {
         this.planning = planning ?? throw new ArgumentNullException(nameof(planning));
+        this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.ledger = ledger ?? throw new ArgumentNullException(nameof(ledger));
         this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
@@ -314,16 +316,17 @@ public sealed partial class JobViewModel : PageViewModelBase
     {
         string? keep = SelectedQueueRow?.RollId;
         IReadOnlyList<QueueEntry> entries = await this.planning.LoadQueueAsync(QueueLimit, cancellationToken).ConfigureAwait(true);
-        Dictionary<string, RollProfileSummary> profileNames = (await this.profiles.ListAsync(int.MaxValue, cancellationToken).ConfigureAwait(true))
-            .ToDictionary(entry => entry.ProfileId, StringComparer.Ordinal);
 
         this.allRows.Clear();
         foreach (QueueEntry entry in entries)
         {
             RollRecord r = entry.Roll;
-            string plan = r.TargetProfileId is { } id && profileNames.TryGetValue(id, out RollProfileSummary? summary)
-                ? Localizer.Format("Lib_NameVersionFormat", summary.Name, summary.Version)
-                : Localizer["Job_NoPlan"];
+
+            // 这支辊的磨法：当前方案（旧库的辊第一次列出来时按原计划建方案 1）。
+            GrindingPlanRecord? current = await this.plans.CurrentAsync(r.RollId, cancellationToken).ConfigureAwait(true);
+            string plan = current is null
+                ? Localizer["Job_NoPlan"]
+                : Localizer.Format("Job_QueuePlanFormat", current.PlanNo, current.Name);
             this.allRows.Add(new QueueRowViewModel(
                 entry,
                 entry.Mark switch
@@ -459,10 +462,8 @@ public sealed partial class JobViewModel : PageViewModelBase
     [ObservableProperty]
     private string deviationReason = string.Empty;
 
-    public JobDeviation Deviation =>
-        this.profileDeviation == JobDeviation.ThisTimeOnly || this.programDeviation == JobDeviation.ThisTimeOnly ? JobDeviation.ThisTimeOnly
-        : this.profileDeviation == JobDeviation.PlanChanged || this.programDeviation == JobDeviation.PlanChanged ? JobDeviation.PlanChanged
-        : JobDeviation.None;
+    /// <summary>这一次与当前方案的关系：按当前方案、仅本次用别的方案（要原因）、设为这支辊的当前方案（下发后生效）。</summary>
+    public JobDeviation Deviation => this.planDeviation;
 
     public IAsyncRelayCommand DownloadCommand => this.downloadCommand;
 
@@ -559,29 +560,48 @@ public sealed partial class JobViewModel : PageViewModelBase
             return;
         }
 
-        string? profileId = this.roll.TargetProfileId;
-        string? programId = this.roll.ProgramId;
+        // 作业取这支辊的当前方案（设计说明第 5 节）。
+        GrindingPlanRecord? current = await this.plans.CurrentAsync(this.roll.RollId, cancellationToken).ConfigureAwait(true);
+        this.roll = await this.ledger.GetAsync(row.RollId, cancellationToken).ConfigureAwait(true) ?? this.roll;
+        string? planId = current?.PlanId;
         this.requireMeasure = false;
         this.regrindOf = null;
         JobId = NewJobId();
-        this.profileDeviation = JobDeviation.None;
-        this.programDeviation = JobDeviation.None;
+        this.planDeviation = JobDeviation.None;
         DeviationReason = string.Empty;
+        (string? ProfileId, string? ProgramId)? legacy = null;
 
         if (row.Entry.JobId is { } storedId && await this.jobs.GetAsync(storedId, cancellationToken).ConfigureAwait(true) is { } stored)
         {
+            // 中断续磨、返磨：接着那一份作业用的方案。
             JobId = storedId;
-            profileId = stored.Job.ProfileId ?? profileId;
-            programId = stored.Job.ProgramId ?? programId;
             this.regrindOf = stored.Job.RegrindOfJobId;
             this.requireMeasure = row.Entry.Mark == QueueMark.Interrupted;
-            this.profileDeviation = profileId == this.roll.TargetProfileId ? JobDeviation.None : stored.Job.Deviation;
-            this.programDeviation = programId == this.roll.ProgramId ? JobDeviation.None : stored.Job.Deviation;
             DeviationReason = stored.Job.DeviationReason ?? string.Empty;
+            if (stored.Job.PlanId is { } storedPlan)
+            {
+                planId = storedPlan;
+                this.planDeviation = storedPlan == this.roll.CurrentPlanId ? JobDeviation.None : stored.Job.Deviation;
+            }
+            else
+            {
+                // 方案以前的作业：按它当时的辊形与程序。
+                legacy = (stored.Job.ProfileId, stored.Job.ProgramId);
+                this.planDeviation = stored.Job.Deviation;
+            }
         }
 
-        this.profile = profileId is null ? null : await this.profiles.GetAsync(profileId, cancellationToken).ConfigureAwait(true);
-        this.program = programId is null ? null : await this.programs.GetAsync(programId, cancellationToken).ConfigureAwait(true);
+        if (legacy is { } old)
+        {
+            this.plan = null;
+            this.profile = old.ProfileId is null ? null : await this.profiles.GetAsync(old.ProfileId, cancellationToken).ConfigureAwait(true);
+            this.program = old.ProgramId is null ? null : await this.programs.GetAsync(old.ProgramId, cancellationToken).ConfigureAwait(true);
+        }
+        else
+        {
+            await LoadPlanAsync(planId, cancellationToken).ConfigureAwait(true);
+        }
+
         ResetOptions();
 
         this.suppressEvaluate = true;
@@ -604,7 +624,10 @@ public sealed partial class JobViewModel : PageViewModelBase
         }
     }
 
-    /// <summary>从辊形区 / 工艺区改完回来：重读这一次用的辊形与程序（版本可能 +1 了）。</summary>
+    /// <summary>
+    /// 从方案区改完回来：重读这一次用的方案。按当前方案的，改了用过的方案会另存为新方案并设为当前——跟着用新的；
+    /// 仅本次用别的方案的，还是那一个。
+    /// </summary>
     private async Task ReloadChoicesAsync(CancellationToken cancellationToken)
     {
         if (this.roll is null)
@@ -613,17 +636,22 @@ public sealed partial class JobViewModel : PageViewModelBase
         }
 
         this.roll = await this.ledger.GetAsync(this.roll.RollId, cancellationToken).ConfigureAwait(true) ?? this.roll;
-        if (this.profile is not null)
+        if (this.plan is not null)
         {
-            this.profile = await this.profiles.GetAsync(this.profile.ProfileId, cancellationToken).ConfigureAwait(true);
-        }
-
-        if (this.program is not null)
-        {
-            this.program = await this.programs.GetAsync(this.program.ProgramId, cancellationToken).ConfigureAwait(true);
+            string? planId = this.planDeviation == JobDeviation.None ? this.roll.CurrentPlanId ?? this.plan.PlanId : this.plan.PlanId;
+            await LoadPlanAsync(planId, cancellationToken).ConfigureAwait(true);
         }
 
         Evaluate();
+    }
+
+    /// <summary>取方案与它的辊形、工艺；缺任何一样时三样都空（核对页拦"没有方案"）。</summary>
+    private async Task LoadPlanAsync(string? planId, CancellationToken cancellationToken)
+    {
+        PlanContent? content = planId is null ? null : await this.plans.GetContentAsync(planId, cancellationToken).ConfigureAwait(true);
+        this.plan = content?.Plan;
+        this.profile = content?.Profile;
+        this.program = content?.Program;
     }
 
     private double DefaultStockMm()
@@ -712,10 +740,13 @@ public sealed partial class JobViewModel : PageViewModelBase
 
         TargetText = (start - stockMm).ToString("F3", CultureInfo.CurrentCulture);
         GrindingProgram normalized = this.program with { Steps = ProgramFrame.Normalize(this.program.Steps, this.stepTypes) };
+        // 长度：方案名义长度以中心为基准对到这一次辊身长度（有实测用实测）上，截取 / 延伸只在端部非工作区。
+        LengthAlignment alignment = GrindingPlanService.AlignForJob(
+            this.profile, this.roll.GrindBodyLengthMm, this.plan?.EndZoneMm, this.machine, this.profileTypes, this.settings.ProfileSampleCount);
         JobCheckResult checks = JobChecklist.Evaluate(
             new JobCheckInput(
                 this.roll, this.profile, normalized, start, this.startMeasured, stockMm * 1000.0, Deviation, NullIfBlank(DeviationReason),
-                GrindStartZ(), this.grindStartTaught, UsesGrindStart),
+                GrindStartZ(), this.grindStartTaught, UsesGrindStart, alignment),
             this.machine);
 
         GrindingJob? job = null;
@@ -804,8 +835,9 @@ public sealed partial class JobViewModel : PageViewModelBase
             return;
         }
 
-        PlanRows.Add(new LabelValueViewModel("Job_PlanProfile", this.profile is null ? "--" : NameVersion(this.profile.Name, this.profile.Version, this.profileDeviation), Localizer));
-        PlanRows.Add(new LabelValueViewModel("Job_PlanProgram", this.program is null ? "--" : NameVersion(this.program.Name, this.program.Version, this.programDeviation), Localizer));
+        PlanRows.Add(new LabelValueViewModel("Job_PlanRow", this.plan is null ? "--" : PlanText(this.plan), Localizer));
+        PlanRows.Add(new LabelValueViewModel("Job_PlanProfile", this.profile?.Name ?? "--", Localizer));
+        PlanRows.Add(new LabelValueViewModel("Job_PlanProgram", this.program?.Name ?? "--", Localizer));
         PlanRows.Add(new LabelValueViewModel("Job_Deviation", Deviation switch
         {
             JobDeviation.ThisTimeOnly => Localizer.Format("Job_DeviationThisTimeFormat", string.IsNullOrWhiteSpace(DeviationReason) ? Localizer["Job_ReasonMissing"] : ReasonText(DeviationReason)),
@@ -815,10 +847,12 @@ public sealed partial class JobViewModel : PageViewModelBase
         PlanRows.Add(new LabelValueViewModel("Job_JobIdLabel", JobId + (this.regrindOf is { } of ? " " + Localizer.Format("Job_RegrindOfFormat", of) : string.Empty), Localizer));
     }
 
-    private string NameVersion(string name, int version, JobDeviation deviation) =>
-        Localizer.Format("Lib_NameVersionFormat", name, version)
-        + (deviation == JobDeviation.ThisTimeOnly ? " · " + Localizer["Mark_ThisTime"]
-            : deviation == JobDeviation.PlanChanged ? " · " + Localizer["Mark_PlanChanged"]
+    /// <summary>"方案 3 · 凸度300 · 工作辊标准 · ★ 当前"（或"仅本次""设为当前"）。</summary>
+    private string PlanText(GrindingPlanRecord shown) =>
+        Localizer.Format("Job_QueuePlanFormat", shown.PlanNo, shown.Name)
+        + (this.planDeviation == JobDeviation.ThisTimeOnly ? " · " + Localizer["Mark_ThisTime"]
+            : this.planDeviation == JobDeviation.PlanChanged ? " · " + Localizer["Mark_PlanChanged"]
+            : shown.PlanId == this.roll?.CurrentPlanId ? " · " + Localizer["Mark_CurrentPlan"]
             : string.Empty);
 
     private string ReasonText(string reason) => reason.StartsWith("Reason_", StringComparison.Ordinal) ? Localizer[reason] : reason;
@@ -879,7 +913,7 @@ public sealed partial class JobViewModel : PageViewModelBase
     /// <summary>按核对结果拼出这份作业；辊形套不上（长度差太多）返回 null。</summary>
     private GrindingJob? BuildJob(JobCheckResult checks, GrindingProgram normalized, double startMm, double stockMicrometer)
     {
-        if (this.roll is null || this.profile is null || checks.Fit.Profile is not { } fitted)
+        if (this.roll is null || this.profile is null || checks.Alignment.Profile is not { } fitted)
         {
             return null;
         }
@@ -894,8 +928,12 @@ public sealed partial class JobViewModel : PageViewModelBase
             this.capability,
             this.stepTypes);
 
-        return GrindingJob.Create(JobId, this.roll.RollId, RollGeometry.FromDiameter(this.roll.Geometry.BodyLengthMm, startMm), fitted, steps, options) with
+        // 辊身长度：有实测用实测，否则用名义；辊形是按它对齐好的那一份。
+        return GrindingJob.Create(JobId, this.roll.RollId, RollGeometry.FromDiameter(checks.Alignment.BodyLengthMm, startMm), fitted, steps, options) with
         {
+            PlanId = this.plan?.PlanId,
+            PlanNo = this.plan?.PlanNo,
+            Alignment = checks.Alignment,
             ProfileId = this.profile.ProfileId,
             ProfileName = this.profile.Name,
             ProfileVersion = this.profile.Version,
@@ -926,29 +964,29 @@ public sealed partial class JobViewModel : PageViewModelBase
         return BuildJob(this.result, normalized, start, stockMm * 1000.0);
     }
 
-    // ───────────── 换辊形 / 换程序 ─────────────
+    // ───────────── 换方案 ─────────────
 
     private bool CanMakePlan => !this.settings.PlanChangeNeedsAdministrator || this.session.Can(Permission.EditRollPlans);
 
-    private async Task OpenPickerAsync(PlanPickKind kind)
+    /// <summary>换方案（设计稿 v4 5.2.3）：列这支辊的方案，右边与这一次原来用的叠图。</summary>
+    private async Task OpenPickerAsync()
     {
         if (this.roll is null)
         {
             return;
         }
 
-        this.pickKind = kind;
-        string? current = kind == PlanPickKind.Profile ? this.profile?.ProfileId : this.program?.ProgramId;
+        string rollId = this.roll.RollId;
         await RunGuardedAsync(
-            token => Picker.LoadAsync(kind, this.roll.Geometry.BodyLengthMm, this.roll.Kind, current, token),
+            token => Picker.LoadPlansAsync(rollId, this.plan?.PlanId ?? this.roll.CurrentPlanId, token),
             CancellationToken.None).ConfigureAwait(true);
         IsPicking = true;
         ApplyKeys();
     }
 
     /// <summary>
-    /// 选好了：与计划一样（或这支辊还没有计划）直接用；与计划不同问"仅本次 / 改为计划 / 取消"——
-    /// 仅本次在第 8 格（安全的一边），改为计划在第 6 格，不超时（关系设计 O1）。
+    /// 选好了：就是当前方案直接用；别的方案问"仅本次用（随后选原因）/ 设为这支辊的当前方案… / 取消"——
+    /// 仅本次在第 8 格（安全的一边），设为当前在第 6 格（要管理员），不超时（设计稿 v4 5.2.3、5.2.4）。
     /// </summary>
     private void ConfirmPick()
     {
@@ -958,11 +996,9 @@ public sealed partial class JobViewModel : PageViewModelBase
         }
 
         IsPicking = false;
-        PlanPickKind kind = this.pickKind;
-        string? planId = kind == PlanPickKind.Profile ? this.roll.TargetProfileId : this.roll.ProgramId;
-        if (planId is null || planId == item.Id)
+        if (this.roll.CurrentPlanId is null || this.roll.CurrentPlanId == item.Id)
         {
-            _ = RunRefreshAsync(token => ApplyPickAsync(kind, item.Id, JobDeviation.None, token), CancellationToken.None);
+            _ = RunRefreshAsync(token => ApplyPickAsync(item.Id, JobDeviation.None, token), CancellationToken.None);
             return;
         }
 
@@ -975,7 +1011,7 @@ public sealed partial class JobViewModel : PageViewModelBase
             () => RunGuardedAsync(
                 async token =>
                 {
-                    await ApplyPickAsync(kind, item.Id, JobDeviation.ThisTimeOnly, token).ConfigureAwait(true);
+                    await ApplyPickAsync(item.Id, JobDeviation.ThisTimeOnly, token).ConfigureAwait(true);
                     if (string.IsNullOrWhiteSpace(DeviationReason))
                     {
                         OpenReasonMenu();
@@ -988,14 +1024,14 @@ public sealed partial class JobViewModel : PageViewModelBase
                 if (this.makePlanChosen)
                 {
                     this.makePlanChosen = false;
-                    _ = RunRefreshAsync(token => ApplyPickAsync(kind, item.Id, JobDeviation.PlanChanged, token), CancellationToken.None);
+                    _ = RunRefreshAsync(token => ApplyPickAsync(item.Id, JobDeviation.PlanChanged, token), CancellationToken.None);
                 }
 
                 ApplyKeys();
             });
     }
 
-    /// <summary>第 6 格"改为计划"：收掉待答的问题，按改为计划处理（下发后写回台账）。</summary>
+    /// <summary>第 6 格"设为当前方案…"：收掉待答的问题，按设为当前处理（下发成功后生效）。</summary>
     private void ChooseMakePlan()
     {
         if (!this.choosing || !CanMakePlan)
@@ -1007,23 +1043,14 @@ public sealed partial class JobViewModel : PageViewModelBase
         Interaction.Confirmations.Cancel();
     }
 
-    private async Task ApplyPickAsync(PlanPickKind kind, string id, JobDeviation deviation, CancellationToken cancellationToken)
+    private async Task ApplyPickAsync(string planId, JobDeviation deviation, CancellationToken cancellationToken)
     {
-        if (kind == PlanPickKind.Profile)
-        {
-            this.profile = await this.profiles.GetAsync(id, cancellationToken).ConfigureAwait(true);
-            this.profileDeviation = deviation;
-        }
-        else
-        {
-            this.program = await this.programs.GetAsync(id, cancellationToken).ConfigureAwait(true);
-            this.programDeviation = deviation;
-            ResetOptions();
-            this.suppressEvaluate = true;
-            StockText = DefaultStockMm().ToString("F3", CultureInfo.CurrentCulture);
-            this.suppressEvaluate = false;
-        }
-
+        await LoadPlanAsync(planId, cancellationToken).ConfigureAwait(true);
+        this.planDeviation = deviation;
+        ResetOptions();
+        this.suppressEvaluate = true;
+        StockText = DefaultStockMm().ToString("F3", CultureInfo.CurrentCulture);
+        this.suppressEvaluate = false;
         if (Deviation != JobDeviation.ThisTimeOnly)
         {
             DeviationReason = string.Empty;
@@ -1032,7 +1059,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         Evaluate();
     }
 
-    /// <summary>回到计划：这一次照台账的辊形与程序。</summary>
+    /// <summary>回到当前方案：这一次照这支辊的当前方案磨。</summary>
     private void RestorePlan()
     {
         if (this.roll is null)
@@ -1043,10 +1070,8 @@ public sealed partial class JobViewModel : PageViewModelBase
         _ = RunGuardedAsync(
             async token =>
             {
-                this.profileDeviation = JobDeviation.None;
-                this.programDeviation = JobDeviation.None;
-                this.profile = this.roll.TargetProfileId is { } p ? await this.profiles.GetAsync(p, token).ConfigureAwait(true) : null;
-                this.program = this.roll.ProgramId is { } g ? await this.programs.GetAsync(g, token).ConfigureAwait(true) : null;
+                this.planDeviation = JobDeviation.None;
+                await LoadPlanAsync(this.roll.CurrentPlanId, token).ConfigureAwait(true);
                 ResetOptions();
                 this.suppressEvaluate = true;
                 StockText = DefaultStockMm().ToString("F3", CultureInfo.CurrentCulture);
@@ -1067,16 +1092,25 @@ public sealed partial class JobViewModel : PageViewModelBase
         MenuChoice("Reason_CustomerRequest", () => DeviationReason = "Reason_CustomerRequest", requiresEditable: false),
     });
 
+    /// <summary>到方案区改这一次用的方案（辊形页）；改了用过的方案保存时另存为新方案，回来自动重读。</summary>
     private void OpenProfile()
     {
-        this.draft.ProfileToOpen = this.profile?.ProfileId;
+        this.draft.PlanToEdit = this.plan?.PlanId;
         Navigator.StartTask(PageKey.Profile, PageKey.Job);
     }
 
+    /// <summary>同上，工艺页。</summary>
     private void OpenProgram()
     {
-        this.draft.ProgramToOpen = this.program?.ProgramId;
+        this.draft.PlanToEdit = this.plan?.PlanId;
         Navigator.StartTask(PageKey.Steps, PageKey.Job);
+    }
+
+    /// <summary>方案列表（这支辊）。</summary>
+    private void OpenPlans()
+    {
+        this.draft.PlanRollId = this.roll?.RollId;
+        Navigator.StartTask(PageKey.Plans, PageKey.Job);
     }
 
     // ───────────── 竖键 ─────────────
@@ -1085,11 +1119,7 @@ public sealed partial class JobViewModel : PageViewModelBase
     {
         if (IsPicking)
         {
-            SetVerticalKeys(new FunctionKeyViewModel?[]
-            {
-                FunctionKeyViewModel.ForAction(Picker.ShowAll ? "Vk_ShowFitting" : "Vk_ShowAll", Localizer,
-                    () => _ = RunGuardedAsync(Picker.ToggleShowAllAsync, CancellationToken.None)),
-            });
+            SetVerticalKeys(new FunctionKeyViewModel?[] { FunctionKeyViewModel.ForAction("Vk_ThisRollPlans", Localizer, () => { }) });
             SetCommitPair(new FunctionKeyViewModel("Vk_Cancel", new RelayCommand(() => TryDismissPrompt()), Localizer, FunctionKeyKind.Cancel), this.pickKey);
             return;
         }
@@ -1105,8 +1135,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         {
             SetVerticalKeys(new FunctionKeyViewModel?[]
             {
-                new FunctionKeyViewModel("Vk_ChangeProfile", new RelayCommand(() => _ = OpenPickerAsync(PlanPickKind.Profile)), Localizer, requiresEditable: true),
-                new FunctionKeyViewModel("Vk_ChangeProgram", new RelayCommand(() => _ = OpenPickerAsync(PlanPickKind.Program)), Localizer, requiresEditable: true),
+                new FunctionKeyViewModel("Vk_SwitchPlan", new RelayCommand(() => _ = OpenPickerAsync()), Localizer, requiresEditable: true),
                 new FunctionKeyViewModel("Vk_Reason", new RelayCommand(OpenReasonMenu, () => Deviation == JobDeviation.ThisTimeOnly), Localizer, requiresEditable: true)
                 {
                     PreconditionResourceKey = "Job_ReasonOnlyThisTime",
@@ -1115,14 +1144,15 @@ public sealed partial class JobViewModel : PageViewModelBase
                 {
                     PreconditionResourceKey = "Job_AlreadyPlan",
                 },
-                new FunctionKeyViewModel("Vk_OpenProfile", new RelayCommand(OpenProfile, () => this.profile is not null), Localizer)
+                new FunctionKeyViewModel("Vk_OpenProfile", new RelayCommand(OpenProfile, () => this.plan is not null), Localizer)
                 {
                     PreconditionResourceKey = "Job_NothingSelected",
                 },
-                new FunctionKeyViewModel("Vk_OpenProgram", new RelayCommand(OpenProgram, () => this.program is not null), Localizer)
+                new FunctionKeyViewModel("Vk_OpenProgram", new RelayCommand(OpenProgram, () => this.plan is not null), Localizer)
                 {
                     PreconditionResourceKey = "Job_NothingSelected",
                 },
+                FunctionKeyViewModel.ForAction("Vk_PlanList", Localizer, OpenPlans),
             });
             // 第 7 / 8 格一直是"✕ 返回清单 / ✓ 确认下发"：核对有拦的时 ✓ 灰着，按了在对话行说哪一项没过。
             SetCommitPair(this.cancelReviewKey, this.confirmDownloadKey);

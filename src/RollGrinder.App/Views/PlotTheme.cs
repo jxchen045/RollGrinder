@@ -177,14 +177,29 @@ internal static class PlotTheme
         SetHome(control, bodyLengthMm, low, high);
     }
 
-    private static void SetHome(WpfPlot control, double bodyLengthMm, double low, double high)
+    /// <summary>
+    /// 辊形图，横轴以辊身中心为 0（设计稿 v4：方案的辊形与误差图按中心 0 画；示教、位置仍用机床坐标）。
+    /// 曲线的横坐标由调用方换成"位置 − 辊身长度 / 2"。
+    /// </summary>
+    public static void ShowProfileCentered(WpfPlot control, double bodyLengthMm, IEnumerable<double> targetMicrometer)
+    {
+        (double low, double high) = ChartRanges.Profile(targetMicrometer);
+        Views.GetOrCreateValue(control).MaxAspect = ChartRanges.PlotAspect;
+        double half = Math.Max(bodyLengthMm, 1.0) / 2.0;
+        SetHome(control, -half, half, low, high);
+    }
+
+    private static void SetHome(WpfPlot control, double bodyLengthMm, double low, double high) =>
+        SetHome(control, 0.0, Math.Max(bodyLengthMm, 1.0), low, high);
+
+    private static void SetHome(WpfPlot control, double left, double right, double low, double high)
     {
         PlotState state = Views.GetOrCreateValue(control);
-        state.Home = new AxisLimits(0.0, Math.Max(bodyLengthMm, 1.0), low, high);
+        state.Home = new AxisLimits(left, right, low, high);
         state.FixedAspect = true;
         if (!state.UserAdjusted)
         {
-            control.Plot.Axes.SetLimits(0.0, Math.Max(bodyLengthMm, 1.0), low, high);
+            control.Plot.Axes.SetLimits(left, right, low, high);
         }
 
         ApplyAspect(control);

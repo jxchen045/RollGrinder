@@ -230,6 +230,7 @@ public static class Program
         builder.Services.AddSingleton<PageViewModelBase>(provider => ActivatorUtilities.CreateInstance<LibraryViewModel>(provider, LibraryKind.Profiles));
         builder.Services.AddSingleton<PageViewModelBase>(provider => ActivatorUtilities.CreateInstance<LibraryViewModel>(provider, LibraryKind.Programs));
         builder.Services.AddSingleton<PageViewModelBase, RollsViewModel>();
+        builder.Services.AddSingleton<PageViewModelBase, PlansViewModel>();
         builder.Services.AddSingleton<PageViewModelBase, CommissioningViewModel>();
         builder.Services.AddSingleton<JobDraft>();
 

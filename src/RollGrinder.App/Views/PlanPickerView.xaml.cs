@@ -40,7 +40,7 @@ public partial class PlanPickerView : UserControl
     private void Redraw()
     {
         Plot.Plot.Clear();
-        if (this.viewModel is { } vm && vm.IsProfile)
+        if (this.viewModel is { } vm && vm.ShowsCurve)
         {
             if (vm.ReferenceCurve.Count > 1)
             {

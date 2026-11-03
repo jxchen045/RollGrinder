@@ -47,15 +47,18 @@ public partial class JobView : UserControl
         ReviewPlot.Plot.Clear();
         if (this.viewModel is { ReviewCurve.Count: > 1 } vm)
         {
+            // 设计稿 v4：辊形图横轴以辊身中心为 0（示教、位置仍是机床坐标）。
+            double length = vm.ReviewCurve.Max(point => point.BodyPositionMm);
             ReviewPlot.Plot.Add.HorizontalLine(0.0, 1f, PlotTheme.Curve(ReviewPlot, "Color.CurveTolerance"), LinePattern.Dotted);
+            ReviewPlot.Plot.Add.VerticalLine(0.0, 1f, PlotTheme.Curve(ReviewPlot, "Color.CurveTolerance"), LinePattern.Dashed);
             var target = ReviewPlot.Plot.Add.Scatter(
-                vm.ReviewCurve.Select(point => point.BodyPositionMm).ToArray(),
+                vm.ReviewCurve.Select(point => point.BodyPositionMm - (length / 2.0)).ToArray(),
                 vm.ReviewCurve.Select(point => point.DiameterMicrometer).ToArray());
             target.LineWidth = 3f;
             target.MarkerSize = 0;
             target.Color = PlotTheme.Curve(ReviewPlot, "Color.CurveTarget");
-            PlotTheme.AxisTitles(ReviewPlot, vm.Localizer["Chart_AxisZ"], vm.Localizer["Chart_AxisDiameterUm"]);
-            PlotTheme.ShowProfile(ReviewPlot, vm.ReviewCurve.Max(point => point.BodyPositionMm), vm.ReviewCurve.Select(point => point.DiameterMicrometer));
+            PlotTheme.AxisTitles(ReviewPlot, vm.Localizer["Chart_AxisZCentered"], vm.Localizer["Chart_AxisDiameterUm"]);
+            PlotTheme.ShowProfileCentered(ReviewPlot, length, vm.ReviewCurve.Select(point => point.DiameterMicrometer));
         }
 
         ReviewPlot.Refresh();

@@ -74,6 +74,8 @@ public interface IRollLedgerService
 /// <inheritdoc cref="IRollLedgerService"/>
 public sealed class RollLedgerService : IRollLedgerService
 {
+    private static readonly RollProfileTypeRegistry Registry = RollProfileTypeRegistry.CreateDefault();
+
     private readonly IRollRepository rolls;
     private readonly IGrindingRecordRepository records;
     private readonly MachineDescription machine;
@@ -171,7 +173,7 @@ public sealed class RollLedgerService : IRollLedgerService
     /// <summary>
     /// 计划核对：计划可以后补——操作顺序是 轧辊 → 辊形（按一支已登记的辊画）→ 工艺 → 计划，
     /// 登记时还没有辊形很正常；没计划的辊下不了作业（作业核对拦）。选了的要对得上这支辊——
-    /// 辊形长度按 2% 规则、程序适用类型；停用的不能选。
+    /// 辊形长度按中心对齐（截取 / 延伸只在端部非工作区、不超下发容差）、程序适用类型；停用的不能选。
     /// </summary>
     private async Task CheckPlanAsync(RollRecord roll, List<RollLedgerProblem> problems, CancellationToken cancellationToken)
     {
@@ -183,9 +185,8 @@ public sealed class RollLedgerService : IRollLedgerService
                 problems.Add(RollLedgerProblem.PlanDisabled);
             }
 
-            double tolerance = this.machine.Threshold(MachineDescription.LengthTolerancePercentKey) ?? BodyLengthFit.DefaultTolerancePercent;
-            if (roll.Geometry.BodyLengthMm > 0.0
-                && BodyLengthFit.Fit(profile.Profile, profile.BodyLengthMm, roll.Geometry.BodyLengthMm, tolerance).Kind == BodyFitKind.TooDifferent)
+            if (roll.GrindBodyLengthMm > 0.0 && profile.BodyLengthMm > 0.0
+                && !Jobs.GrindingPlanService.AlignForJob(profile, roll.GrindBodyLengthMm, null, this.machine, Registry, 101).CanUse)
             {
                 problems.Add(RollLedgerProblem.ProfileLengthMismatch);
             }

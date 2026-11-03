@@ -70,6 +70,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<Audit.IChangeLog, Audit.ChangeLog>();
         services.AddSingleton<IRecordService, RecordService>();
         services.AddSingleton<IRollLedgerService, RollLedgerService>();
+        services.AddSingleton<Jobs.IGrindingPlanService, Jobs.GrindingPlanService>();
         services.AddSingleton<Jobs.IRollPlanningService, Jobs.RollPlanningService>();
         services.AddSingleton<Library.ILibraryService, Library.LibraryService>();
         services.AddSingleton<IReportService, ReportService>();

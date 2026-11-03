@@ -47,6 +47,15 @@ public sealed record GrindingJob(
     /// <summary>调出来时那支程序叫什么。同上，记录要记当时的名字。</summary>
     public string? ProgramName { get; init; }
 
+    /// <summary>这一次按这支辊的哪个磨削方案；旧作业为 null。方案被作业用过即冻结，记录指向的方案内容永远不变。</summary>
+    public string? PlanId { get; init; }
+
+    /// <summary>方案号（这支辊内的编号，"方案 3"）；旧作业为 null。</summary>
+    public int? PlanNo { get; init; }
+
+    /// <summary>方案名义长度对到这一次辊身长度的结论（截取 / 延伸 / 一样长），写进下发快照。</summary>
+    public LengthAlignment? Alignment { get; init; }
+
     /// <summary>用的是辊形库第几版（快照追溯）。</summary>
     public int? ProfileVersion { get; init; }
 

@@ -37,11 +37,13 @@ public sealed class SqliteJobRepository : IJobRepository
             INSERT INTO job (job_id, roll_id, profile_type_key, body_length_mm, nominal_radius_mm, state,
                              created_at_utc, profile_id, profile_name, program_id, program_name,
                              profile_version, program_version, start_diameter_mm, stock_um,
-                             deviation_kind, deviation_reason, regrind_of, scrap_diameter_mm, grind_start_z_mm)
+                             deviation_kind, deviation_reason, regrind_of, scrap_diameter_mm, grind_start_z_mm,
+                             plan_id, plan_no)
             VALUES ($job, $roll, $profile, $length, $radius, $state, $created,
                     $profileId, $profileName, $programId, $programName,
                     $profileVersion, $programVersion, $start, $stock,
-                    $deviation, $reason, $regrindOf, $scrap, $startZ)
+                    $deviation, $reason, $regrindOf, $scrap, $startZ,
+                    $planId, $planNo)
             ON CONFLICT(job_id) DO UPDATE SET
                 roll_id = excluded.roll_id,
                 profile_type_key = excluded.profile_type_key,
@@ -60,7 +62,9 @@ public sealed class SqliteJobRepository : IJobRepository
                 deviation_reason = excluded.deviation_reason,
                 regrind_of = excluded.regrind_of,
                 scrap_diameter_mm = excluded.scrap_diameter_mm,
-                grind_start_z_mm = excluded.grind_start_z_mm;
+                grind_start_z_mm = excluded.grind_start_z_mm,
+                plan_id = excluded.plan_id,
+                plan_no = excluded.plan_no;
             """,
             cancellationToken,
             command =>
@@ -87,6 +91,8 @@ public sealed class SqliteJobRepository : IJobRepository
                 SqlMapping.AddParameter(command, "$regrindOf", job.RegrindOfJobId);
                 SqlMapping.AddParameter(command, "$scrap", job.ScrapDiameterMm);
                 SqlMapping.AddParameter(command, "$startZ", job.GrindStartZMm);
+                SqlMapping.AddParameter(command, "$planId", job.PlanId);
+                SqlMapping.AddParameter(command, "$planNo", job.PlanNo);
             }).ConfigureAwait(false);
 
         await ExecuteAsync(connection, transaction, "DELETE FROM job_step WHERE job_id = $job;", cancellationToken,
@@ -146,7 +152,8 @@ public sealed class SqliteJobRepository : IJobRepository
                 SELECT roll_id, profile_type_key, body_length_mm, nominal_radius_mm, state,
                        profile_id, profile_name, program_id, program_name,
                        profile_version, program_version, start_diameter_mm, stock_um,
-                       deviation_kind, deviation_reason, regrind_of, scrap_diameter_mm, grind_start_z_mm
+                       deviation_kind, deviation_reason, regrind_of, scrap_diameter_mm, grind_start_z_mm,
+                       plan_id, plan_no
                 FROM job WHERE job_id = $job;
                 """;
             SqlMapping.AddParameter(command, "$job", jobId);
@@ -174,7 +181,11 @@ public sealed class SqliteJobRepository : IJobRepository
                 reader.IsDBNull(14) ? null : reader.GetString(14),
                 reader.IsDBNull(15) ? null : reader.GetString(15),
                 reader.IsDBNull(16) ? null : reader.GetDouble(16),
-                reader.IsDBNull(17) ? null : reader.GetDouble(17));
+                reader.IsDBNull(17) ? null : reader.GetDouble(17))
+            {
+                PlanId = reader.IsDBNull(18) ? null : reader.GetString(18),
+                PlanNo = reader.IsDBNull(19) ? null : reader.GetInt32(19),
+            };
         }
 
         CompositeRollProfile? storedProfile = await ProfileSegmentMapping
@@ -229,6 +240,8 @@ public sealed class SqliteJobRepository : IJobRepository
             RegrindOfJobId = extras.RegrindOf,
             ScrapDiameterMm = extras.ScrapDiameterMm,
             GrindStartZMm = extras.GrindStartZMm,
+            PlanId = extras.PlanId,
+            PlanNo = extras.PlanNo,
         };
         return (job, state);
     }
@@ -304,7 +317,12 @@ public sealed class SqliteJobRepository : IJobRepository
         string? DeviationReason,
         string? RegrindOf,
         double? ScrapDiameterMm,
-        double? GrindStartZMm);
+        double? GrindStartZMm)
+    {
+        public string? PlanId { get; init; }
+
+        public int? PlanNo { get; init; }
+    }
 
     private static async Task ExecuteAsync(
         SqliteConnection connection,
