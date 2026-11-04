@@ -116,6 +116,7 @@ public sealed class StepParameterUpdateService : IStepParameterUpdateService
     private readonly IJobRepository jobs;
     private readonly IAlarmSink alarms;
     private readonly TimeProvider timeProvider;
+    private readonly IJobAdjustmentService? adjustments;
 
     public StepParameterUpdateService(
         IMachineGateway gateway,
@@ -125,8 +126,10 @@ public sealed class StepParameterUpdateService : IStepParameterUpdateService
         MachineCapability capability,
         IJobRepository jobs,
         IAlarmSink alarms,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IJobAdjustmentService? adjustments = null)
     {
+        this.adjustments = adjustments;
         this.gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
         this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
         this.translator = translator ?? throw new ArgumentNullException(nameof(translator));
@@ -156,6 +159,7 @@ public sealed class StepParameterUpdateService : IStepParameterUpdateService
 
         var changedOrders = new List<int>();
         var blockedKeys = new List<string>();
+        var changedValues = new List<(int Order, string Key)>();
 
         for (int i = 0; i < edited.Steps.Count; i++)
         {
@@ -181,6 +185,7 @@ public sealed class StepParameterUpdateService : IStepParameterUpdateService
             }
 
             changedOrders.Add(order);
+            changedValues.AddRange(changedKeys.Select(key => (order, key)));
         }
 
         if (blockedKeys.Count > 0)
@@ -201,6 +206,31 @@ public sealed class StepParameterUpdateService : IStepParameterUpdateService
         }
 
         DateTimeOffset now = this.timeProvider.GetUtcNow();
+
+        // 按方案磨的：运行中改也在方案范围以内，并记成本次调整（设计说明 5.4：运行中改的也算）。
+        if (this.adjustments is not null && edited.PlanId is { } planId)
+        {
+            IReadOnlyList<AdjustableParameter> rows = await this.adjustments.DescribeAsync(planId, cancellationToken).ConfigureAwait(false);
+            var added = new List<JobAdjustment>();
+            foreach ((int order, string key) in changedValues)
+            {
+                AdjustableParameter? row = rows.FirstOrDefault(item => item.StepOrder == order && item.ParameterKey == key);
+                GrindingJobStep step = edited.Steps.First(item => item.Order == order);
+                double value = step.Parameters.TryGet(key, out ParameterValue? raw) && raw is { Kind: ParameterValueKind.Number }
+                    ? raw.Number
+                    : double.NaN;
+                added.Add(new JobAdjustment(order, key, row?.PlanValue ?? double.NaN, value, true, changedBy ?? string.Empty, now));
+            }
+
+            IReadOnlyList<AdjustProblem> problems = JobAdjustmentService.Validate(rows, added);
+            if (problems.Count > 0)
+            {
+                return StepUpdateResult.Refused(StepUpdateRefusal.Invalid, JobAdjustmentService.ToViolations(problems));
+            }
+
+            edited = edited with { Adjustments = original.Adjustments.Concat(added).ToArray() };
+        }
+
         var writes = new List<TagWrite>();
         int? editSequence = null;
         if (this.translator.SupportsStagedEdits)

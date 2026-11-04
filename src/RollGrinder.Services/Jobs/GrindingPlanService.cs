@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RollGrinder.Contracts.Dtos;
 using RollGrinder.Core;
+using RollGrinder.Core.Parameters;
 using RollGrinder.Core.Profiles;
 using RollGrinder.Core.Steps;
 using RollGrinder.Data;
@@ -51,9 +52,17 @@ public sealed record PlanSaveOutcome(GrindingPlanRecord Plan, bool SavedAsNew, i
 /// <param name="EndZoneMm">新的端部非工作区宽度（mm）；null 取默认（端部圆柱段长度）。</param>
 public sealed record PlanEdit(RollProfileDefinition? Profile, GrindingProgram? Program, bool EndZoneChanged = false, double? EndZoneMm = null)
 {
+    /// <summary>改过的可调范围（整份，设计稿 v4 5.5.3）；没改为 null。</summary>
+    public IReadOnlyList<PlanParamRange>? Ranges { get; init; }
+
     /// <summary>什么都没改。</summary>
-    public bool IsEmpty => Profile is null && Program is null && !EndZoneChanged;
+    public bool IsEmpty => Profile is null && Program is null && !EndZoneChanged && Ranges is null;
 }
+
+/// <summary>"存为新方案"（设计稿 v4 5.8.4）的结果。</summary>
+/// <param name="Plan">建出来的方案；没建为 null。</param>
+/// <param name="ProblemKey">建不了的原因（资源键）：作业不在、作业没有方案、名字重复。</param>
+public sealed record PlanFromJobOutcome(GrindingPlanRecord? Plan, string? ProblemKey);
 
 /// <summary>按模板建方案 / 复制方案的结果。</summary>
 /// <param name="Plan">建出来的方案；建不了为 null。</param>
@@ -168,6 +177,16 @@ public interface IGrindingPlanService
 
     /// <summary>这支辊里名字被别的方案占了。</summary>
     Task<bool> NameTakenAsync(string rollId, string name, string? exceptPlanId, CancellationToken cancellationToken);
+
+    /// <summary>方案改过的可调范围（没改的按默认范围表）。</summary>
+    Task<IReadOnlyList<PlanParamRange>> GetRangesAsync(string planId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 存为新方案（设计说明 5.4 / 设计稿 v4 5.8.4）：作业所用方案 + 勾上的调整（方案值换成本次值），来源记为该作业；
+    /// 范围照原方案。名字在这支辊里重复不建。
+    /// </summary>
+    Task<PlanFromJobOutcome> CreateFromJobAsync(
+        string jobId, IReadOnlyList<JobAdjustment> adopt, string name, bool setCurrent, string user, CancellationToken cancellationToken);
 }
 
 /// <inheritdoc cref="IGrindingPlanService"/>
@@ -178,6 +197,7 @@ public sealed class GrindingPlanService : IGrindingPlanService
     private readonly IRollProfileRepository profiles;
     private readonly IProgramRepository programs;
     private readonly IChangeLogRepository changeLog;
+    private readonly IJobRepository jobs;
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly MachineDescription machine;
     private readonly HmiSettings settings;
@@ -193,8 +213,10 @@ public sealed class GrindingPlanService : IGrindingPlanService
         RollProfileTypeRegistry profileTypes,
         MachineDescription machine,
         HmiSettings settings,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IJobRepository jobs)
     {
+        this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
@@ -343,10 +365,17 @@ public sealed class GrindingPlanService : IGrindingPlanService
             return new PlanCreateOutcome(null, "PlanProblem_NeedsConfirm", resolved.Preview.Alignment);
         }
 
+        // 范围跟着工艺走：工艺从哪个方案来，范围就照哪个方案的（工艺模板没有范围，取默认表）。
+        string? rangePlanId = source.PlanId is not null
+            ? (scope == CopyScope.ProfileOnly ? roll.CurrentPlanId : source.PlanId)
+            : (source.ProgramTemplateId is null ? roll.CurrentPlanId : null);
+        IReadOnlyList<PlanParamRange>? ranges = rangePlanId is null
+            ? null
+            : await this.plans.GetRangesAsync(rangePlanId, cancellationToken).ConfigureAwait(false);
         GrindingPlanRecord plan = await CreateAsync(
             roll, resolved.Profile!, resolved.Program!, resolved.Name, resolved.Purpose ?? roll.Purpose,
-            resolved.SourceKind, resolved.SourceRef, resolved.EndZoneMm, setCurrent, user, cancellationToken, lineage: resolved.Lineage)
-            .ConfigureAwait(false);
+            resolved.SourceKind, resolved.SourceRef, resolved.EndZoneMm, setCurrent, user, cancellationToken, lineage: resolved.Lineage,
+            ranges: ranges).ConfigureAwait(false);
         return new PlanCreateOutcome(plan, null, resolved.Preview.Alignment);
     }
 
@@ -546,7 +575,8 @@ public sealed class GrindingPlanService : IGrindingPlanService
         return await CreateAsync(
             roll, content.Profile, content.Program, string.IsNullOrWhiteSpace(name) ? content.Plan.Name : name.Trim(), content.Plan.Purpose,
             PlanSourceKind.ThisRollPlan, content.Plan.PlanNo.ToString(CultureInfo.InvariantCulture), content.Plan.EndZoneMm,
-            setCurrent, user, cancellationToken, lineage: Lineage.Of(content.Plan)).ConfigureAwait(false);
+            setCurrent, user, cancellationToken, lineage: Lineage.Of(content.Plan),
+            ranges: await this.plans.GetRangesAsync(planId, cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
     }
 
     public async Task<PlanSaveOutcome> SaveProfileAsync(
@@ -624,6 +654,72 @@ public sealed class GrindingPlanService : IGrindingPlanService
             .Any(plan => plan.PlanId != exceptPlanId && string.Equals(plan.Name.Trim(), wanted, StringComparison.CurrentCultureIgnoreCase));
     }
 
+    public Task<IReadOnlyList<PlanParamRange>> GetRangesAsync(string planId, CancellationToken cancellationToken) =>
+        this.plans.GetRangesAsync(planId, cancellationToken);
+
+    public async Task<PlanFromJobOutcome> CreateFromJobAsync(
+        string jobId, IReadOnlyList<JobAdjustment> adopt, string name, bool setCurrent, string user, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(jobId);
+        ArgumentNullException.ThrowIfNull(adopt);
+        string trimmed = (name ?? string.Empty).Trim();
+        if (trimmed.Length == 0)
+        {
+            return new PlanFromJobOutcome(null, "PlanProblem_NameEmpty");
+        }
+
+        (GrindingJob Job, JobState State)? stored = await this.jobs.GetAsync(jobId, cancellationToken).ConfigureAwait(false);
+        if (stored is not { } found)
+        {
+            return new PlanFromJobOutcome(null, "PlanProblem_Missing");
+        }
+
+        GrindingJob job = found.Job;
+        PlanContent? content = job.PlanId is { } planId ? await GetContentAsync(planId, cancellationToken).ConfigureAwait(false) : null;
+        RollRecord? roll = await this.rolls.GetAsync(job.RollId, cancellationToken).ConfigureAwait(false);
+        if (content is null || roll is null)
+        {
+            return new PlanFromJobOutcome(null, "PlanProblem_NoPlan");
+        }
+
+        if (await NameTakenAsync(roll.RollId, trimmed, null, cancellationToken).ConfigureAwait(false))
+        {
+            return new PlanFromJobOutcome(null, "PlanProblem_NameTaken");
+        }
+
+        // 方案值换成本次值：同一参数改了几次取最后一次。
+        GrindingProgram program = content.Program;
+        GrindingJobStep[] steps = program.Steps.ToArray();
+        foreach (JobAdjustment adjustment in adopt
+            .GroupBy(item => (item.StepOrder, item.ParameterKey))
+            .Select(group => group.Last()))
+        {
+            int index = Array.FindIndex(steps, step => step.Order == adjustment.StepOrder);
+            if (index >= 0 && double.IsFinite(adjustment.JobValue))
+            {
+                steps[index] = steps[index] with
+                {
+                    Parameters = steps[index].Parameters.With(adjustment.ParameterKey, ParameterValue.FromNumber(adjustment.JobValue)),
+                };
+            }
+        }
+
+        await this.gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            GrindingPlanRecord plan = await CreateAsync(
+                roll, content.Profile, program with { Steps = steps }, trimmed, content.Plan.Purpose, PlanSourceKind.Job, jobId,
+                content.Plan.EndZoneMm, setCurrent, user, cancellationToken, uniqueName: false,
+                lineage: Lineage.Of(content.Plan) with { ProgramDiverged = content.Plan.ProgramDiverged || adopt.Count > 0 },
+                ranges: await this.plans.GetRangesAsync(content.Plan.PlanId, cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
+            return new PlanFromJobOutcome(plan, null);
+        }
+        finally
+        {
+            this.gate.Release();
+        }
+    }
+
     // ───────────── 内部 ─────────────
 
     public async Task<PlanSaveOutcome> SavePlanAsync(
@@ -682,9 +778,18 @@ public sealed class GrindingPlanService : IGrindingPlanService
                     await this.plans.SaveAsync(kept, cancellationToken).ConfigureAwait(false);
                 }
 
+                if (edit.Ranges is not null)
+                {
+                    await this.plans.SaveRangesAsync(planId, edit.Ranges, cancellationToken).ConfigureAwait(false);
+                }
+
                 string what = string.Join(
                     "+",
-                    new[] { profile is not null ? "profile" : null, program is not null ? "program" : null, edit.EndZoneChanged ? "endZone" : null }
+                    new[]
+                    {
+                        profile is not null ? "profile" : null, program is not null ? "program" : null, edit.EndZoneChanged ? "endZone" : null,
+                        edit.Ranges is not null ? "ranges" : null,
+                    }
                         .Where(part => part is not null));
                 await LogAsync(roll.RollId, Label(content.Plan), null, what, user, cancellationToken).ConfigureAwait(false);
                 return new PlanSaveOutcome(kept, false, content.Plan.PlanNo, isCurrent);
@@ -708,7 +813,8 @@ public sealed class GrindingPlanService : IGrindingPlanService
                 {
                     ProfileDiverged = content.Plan.ProfileDiverged || profile is not null || edit.EndZoneChanged,
                     ProgramDiverged = content.Plan.ProgramDiverged || program is not null,
-                }).ConfigureAwait(false);
+                },
+                ranges: edit.Ranges ?? await this.plans.GetRangesAsync(planId, cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
             return new PlanSaveOutcome(created, true, content.Plan.PlanNo, setCurrentIfNew);
         }
         finally
@@ -731,7 +837,8 @@ public sealed class GrindingPlanService : IGrindingPlanService
         string user,
         CancellationToken cancellationToken,
         bool uniqueName = true,
-        Lineage? lineage = null)
+        Lineage? lineage = null,
+        IReadOnlyList<PlanParamRange>? ranges = null)
     {
         DateTimeOffset now = this.timeProvider.GetUtcNow();
         int planNo = await this.plans.NextPlanNoAsync(roll.RollId, cancellationToken).ConfigureAwait(false);
@@ -763,6 +870,11 @@ public sealed class GrindingPlanService : IGrindingPlanService
         await this.plans.SaveAsync(plan, cancellationToken).ConfigureAwait(false);
         await this.profiles.SaveAsync(ownProfile, cancellationToken).ConfigureAwait(false);
         await this.programs.SaveAsync(ownProgram, cancellationToken).ConfigureAwait(false);
+        if (ranges is { Count: > 0 })
+        {
+            await this.plans.SaveRangesAsync(plan.PlanId, ranges, cancellationToken).ConfigureAwait(false);
+        }
+
         await LogAsync(roll.RollId, Label(plan), null, plan.Name, user ?? string.Empty, cancellationToken).ConfigureAwait(false);
 
         if (setCurrent)

@@ -5407,4 +5407,25 @@
   <data name="CfgField_copyThresholdMm" xml:space="preserve">
     <value>Copy threshold (mm)</value>
   </data>
+  <data name="Violation_OutsideAdjustRange" xml:space="preserve">
+    <value>Outside the plan's adjustable range</value>
+  </data>
+  <data name="Violation_OutsideAdjustRange_WithLimit" xml:space="preserve">
+    <value>Outside the plan's adjustable range (limit {0})</value>
+  </data>
+  <data name="Violation_AdjustLocked" xml:space="preserve">
+    <value>Not adjustable; change the plan instead</value>
+  </data>
+  <data name="Violation_AdjustLocked_WithLimit" xml:space="preserve">
+    <value>Not adjustable; change the plan instead</value>
+  </data>
+  <data name="PlanProblem_NameEmpty" xml:space="preserve">
+    <value>Enter a plan name</value>
+  </data>
+  <data name="PlanProblem_NoPlan" xml:space="preserve">
+    <value>This job has no plan to save from</value>
+  </data>
+  <data name="PlanProblem_NameTaken" xml:space="preserve">
+    <value>This roll already has a plan with that name</value>
+  </data>
 </root>

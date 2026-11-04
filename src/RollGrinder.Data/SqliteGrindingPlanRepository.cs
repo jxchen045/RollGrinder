@@ -145,9 +145,58 @@ public sealed class SqliteGrindingPlanRepository : IGrindingPlanRepository
 
         await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using SqliteCommand command = connection.CreateCommand();
-        command.CommandText = "DELETE FROM grinding_plan WHERE plan_id = $id;";
+        command.CommandText = "DELETE FROM plan_param_range WHERE plan_id = $id; DELETE FROM grinding_plan WHERE plan_id = $id;";
         SqlMapping.AddParameter(command, "$id", planId);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<PlanParamRange>> GetRangesAsync(string planId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(planId);
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT step_order, parameter_key, rule FROM plan_param_range WHERE plan_id = $id ORDER BY step_order, parameter_key;";
+        SqlMapping.AddParameter(command, "$id", planId);
+        var list = new List<PlanParamRange>();
+        await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            list.Add(new PlanParamRange(reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
+        }
+
+        return list;
+    }
+
+    public async Task SaveRangesAsync(string planId, IReadOnlyList<PlanParamRange> ranges, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(planId);
+        ArgumentNullException.ThrowIfNull(ranges);
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteTransaction transaction = (SqliteTransaction)await connection
+            .BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken).ConfigureAwait(false);
+        await using (SqliteCommand command = connection.CreateCommand())
+        {
+            command.Transaction = transaction;
+            command.CommandText = "DELETE FROM plan_param_range WHERE plan_id = $id;";
+            SqlMapping.AddParameter(command, "$id", planId);
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        foreach (PlanParamRange range in ranges)
+        {
+            await using SqliteCommand command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "INSERT OR REPLACE INTO plan_param_range (plan_id, step_order, parameter_key, rule) VALUES ($id, $step, $key, $rule);";
+            SqlMapping.AddParameter(command, "$id", planId);
+            SqlMapping.AddParameter(command, "$step", range.StepOrder);
+            SqlMapping.AddParameter(command, "$key", range.ParameterKey);
+            SqlMapping.AddParameter(command, "$rule", range.Rule);
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyDictionary<string, PlanUsage>> UsageAsync(string rollId, CancellationToken cancellationToken)

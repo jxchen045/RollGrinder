@@ -5407,4 +5407,25 @@
   <data name="CfgField_copyThresholdMm" xml:space="preserve">
     <value>复制门槛 (mm)</value>
   </data>
+  <data name="Violation_OutsideAdjustRange" xml:space="preserve">
+    <value>超出方案的可调范围</value>
+  </data>
+  <data name="Violation_OutsideAdjustRange_WithLimit" xml:space="preserve">
+    <value>超出方案的可调范围（限 {0}）</value>
+  </data>
+  <data name="Violation_AdjustLocked" xml:space="preserve">
+    <value>不可调，要改请改方案</value>
+  </data>
+  <data name="Violation_AdjustLocked_WithLimit" xml:space="preserve">
+    <value>不可调，要改请改方案</value>
+  </data>
+  <data name="PlanProblem_NameEmpty" xml:space="preserve">
+    <value>请填方案名</value>
+  </data>
+  <data name="PlanProblem_NoPlan" xml:space="preserve">
+    <value>这次作业没有方案，不能另存</value>
+  </data>
+  <data name="PlanProblem_NameTaken" xml:space="preserve">
+    <value>这支辊已有同名方案</value>
+  </data>
 </root>

@@ -104,6 +104,35 @@ public sealed class SqliteJobRepository : IJobRepository
             connection, transaction, ProfileSegmentTables.JobSnapshot, job.JobId, job.Profile, cancellationToken)
             .ConfigureAwait(false);
 
+        // 本次调整（设计说明 5.4）：整份替换，顺序就是改的先后。
+        await ExecuteAsync(connection, transaction, "DELETE FROM job_adjustment WHERE job_id = $job;", cancellationToken,
+            command => SqlMapping.AddParameter(command, "$job", job.JobId)).ConfigureAwait(false);
+        int seq = 0;
+        foreach (JobAdjustment adjustment in job.Adjustments)
+        {
+            int at = ++seq;
+            await ExecuteAsync(
+                connection,
+                transaction,
+                """
+                INSERT INTO job_adjustment (job_id, seq, step_order, parameter_key, plan_value, job_value, running, changed_by, changed_at_utc)
+                VALUES ($job, $seq, $step, $key, $plan, $value, $running, $by, $at);
+                """,
+                cancellationToken,
+                command =>
+                {
+                    SqlMapping.AddParameter(command, "$job", job.JobId);
+                    SqlMapping.AddParameter(command, "$seq", at);
+                    SqlMapping.AddParameter(command, "$step", adjustment.StepOrder);
+                    SqlMapping.AddParameter(command, "$key", adjustment.ParameterKey);
+                    SqlMapping.AddParameter(command, "$plan", adjustment.PlanValue);
+                    SqlMapping.AddParameter(command, "$value", adjustment.JobValue);
+                    SqlMapping.AddParameter(command, "$running", adjustment.Running ? 1 : 0);
+                    SqlMapping.AddParameter(command, "$by", adjustment.ChangedBy);
+                    SqlMapping.AddParameter(command, "$at", SqlMapping.ToText(adjustment.ChangedAtUtc));
+                }).ConfigureAwait(false);
+        }
+
         await SqlMapping.WriteParametersAsync(
             connection, transaction, job.JobId, SqlMapping.ProgramOptionStepOrder, job.ProgramOptions, cancellationToken)
             .ConfigureAwait(false);
@@ -242,6 +271,7 @@ public sealed class SqliteJobRepository : IJobRepository
             GrindStartZMm = extras.GrindStartZMm,
             PlanId = extras.PlanId,
             PlanNo = extras.PlanNo,
+            Adjustments = await ReadAdjustmentsAsync(connection, jobId, cancellationToken).ConfigureAwait(false),
         };
         return (job, state);
     }
@@ -306,6 +336,28 @@ public sealed class SqliteJobRepository : IJobRepository
         }
 
         return jobs;
+    }
+
+    private static async Task<IReadOnlyList<JobAdjustment>> ReadAdjustmentsAsync(
+        SqliteConnection connection, string jobId, CancellationToken cancellationToken)
+    {
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT step_order, parameter_key, plan_value, job_value, running, changed_by, changed_at_utc
+            FROM job_adjustment WHERE job_id = $job ORDER BY seq;
+            """;
+        SqlMapping.AddParameter(command, "$job", jobId);
+        var list = new List<JobAdjustment>();
+        await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            list.Add(new JobAdjustment(
+                reader.GetInt32(0), reader.GetString(1), reader.GetDouble(2), reader.GetDouble(3), reader.GetInt32(4) != 0,
+                reader.GetString(5), SqlMapping.ToTimestamp(reader.GetString(6))));
+        }
+
+        return list;
     }
 
     private sealed record JobExtras(

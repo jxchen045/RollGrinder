@@ -47,6 +47,12 @@ public enum ParameterViolationKind
 
     /// <summary>点表没有从段起点排到段终点（限值是段长 mm）。</summary>
     PointsDoNotCoverSegment = 12,
+
+    /// <summary>作业里改了方案范围外的值（设计说明 5.2：超范围不收；限值是越过的那一端）。</summary>
+    OutsideAdjustRange = 13,
+
+    /// <summary>作业里改了不可调的参数（🔒：要改就改方案）。</summary>
+    AdjustLocked = 14,
 }
 
 /// <summary>一条参数校验失败记录。</summary>

@@ -72,6 +72,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<IRollLedgerService, RollLedgerService>();
         services.AddSingleton<Jobs.IGrindingPlanService, Jobs.GrindingPlanService>();
         services.AddSingleton<Jobs.IRollPlanningService, Jobs.RollPlanningService>();
+        services.AddSingleton<Jobs.IJobAdjustmentService, Jobs.JobAdjustmentService>();
         services.AddSingleton<Library.ILibraryService, Library.LibraryService>();
         services.AddSingleton<Library.ITemplateService, Library.TemplateService>();
         services.AddSingleton<IReportService, ReportService>();

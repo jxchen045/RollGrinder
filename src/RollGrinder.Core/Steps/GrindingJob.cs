@@ -56,6 +56,12 @@ public sealed record GrindingJob(
     /// <summary>方案名义长度对到这一次辊身长度的结论（截取 / 延伸 / 一样长），写进下发快照。</summary>
     public LengthAlignment? Alignment { get; init; }
 
+    /// <summary>
+    /// 本次调整（设计说明 5.4）：在方案范围内改了的参数，方案值 → 本次值。<see cref="Steps"/> 里已经是本次值；
+    /// 这里记"改了什么、谁、何时"，核对时与运行中都算。下次磨默认回到方案值。
+    /// </summary>
+    public IReadOnlyList<JobAdjustment> Adjustments { get; init; } = Array.Empty<JobAdjustment>();
+
     /// <summary>用的是辊形库第几版（快照追溯）。</summary>
     public int? ProfileVersion { get; init; }
 

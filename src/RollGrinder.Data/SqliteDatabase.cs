@@ -473,6 +473,30 @@ public sealed class SqliteDatabase
         );
         CREATE INDEX ix_mandate_roll ON template_mandate_roll (roll_id);
         """,
+
+        // 第 3 期：两层参数。方案里每个参数在作业里的可调范围（覆盖机床默认范围表，随方案冻结）；
+        // 作业里的每一项调整（核对时与运行中都算）：参数、方案值、本次值、人、时间。
+        """
+        CREATE TABLE plan_param_range (
+            plan_id       TEXT    NOT NULL,
+            step_order    INTEGER NOT NULL,
+            parameter_key TEXT    NOT NULL,
+            rule          TEXT    NOT NULL,
+            PRIMARY KEY (plan_id, step_order, parameter_key)
+        );
+        CREATE TABLE job_adjustment (
+            job_id         TEXT    NOT NULL,
+            seq            INTEGER NOT NULL,
+            step_order     INTEGER NOT NULL,
+            parameter_key  TEXT    NOT NULL,
+            plan_value     REAL    NOT NULL,
+            job_value      REAL    NOT NULL,
+            running        INTEGER NOT NULL DEFAULT 0,
+            changed_by     TEXT    NOT NULL DEFAULT '',
+            changed_at_utc TEXT    NOT NULL,
+            PRIMARY KEY (job_id, seq)
+        );
+        """,
     };
 
     private readonly string connectionString;

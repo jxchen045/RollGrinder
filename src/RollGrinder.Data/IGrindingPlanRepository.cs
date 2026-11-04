@@ -80,6 +80,9 @@ public sealed record GrindingPlanRecord(
     public bool ProgramDiverged { get; init; }
 }
 
+/// <summary>方案里一个参数在作业里的可调范围（覆盖机床默认范围表）。规则文本见 <c>AdjustRule</c>。</summary>
+public sealed record PlanParamRange(int StepOrder, string ParameterKey, string Rule);
+
 /// <summary>方案被作业用了几次、最近一次。</summary>
 /// <param name="UseCount">用过几次（0 = 没用过，可以改、可以删）。</param>
 /// <param name="LastUsedUtc">最近一次。</param>
@@ -105,6 +108,12 @@ public interface IGrindingPlanRepository
 
     /// <summary>所有辊的方案里，辊形（<paramref name="kind"/> = 辊形）或工艺复制自这条模板的。</summary>
     Task<IReadOnlyList<GrindingPlanRecord>> ListByTemplateAsync(TemplateKind kind, string templateId, CancellationToken cancellationToken);
+
+    /// <summary>方案改过的可调范围（没改的不在里面，按机床默认范围表）。</summary>
+    Task<IReadOnlyList<PlanParamRange>> GetRangesAsync(string planId, CancellationToken cancellationToken);
+
+    /// <summary>整份替换方案的可调范围。</summary>
+    Task SaveRangesAsync(string planId, IReadOnlyList<PlanParamRange> ranges, CancellationToken cancellationToken);
 
     /// <summary>一支辊各方案被作业用了几次（作业表 plan_id）。没用过的不在字典里。</summary>
     Task<IReadOnlyDictionary<string, PlanUsage>> UsageAsync(string rollId, CancellationToken cancellationToken);

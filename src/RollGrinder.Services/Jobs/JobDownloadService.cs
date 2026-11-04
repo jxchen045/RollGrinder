@@ -77,6 +77,7 @@ public sealed class JobDownloadService : IJobDownloadService
     private readonly IAlarmSink alarms;
     private readonly TimeProvider timeProvider;
     private readonly Records.CyclePlausibilityMonitor plausibility;
+    private readonly IJobAdjustmentService? adjustments;
 
     public JobDownloadService(
         IMachineGateway gateway,
@@ -92,7 +93,8 @@ public sealed class JobDownloadService : IJobDownloadService
         IReportPrintQueue printQueue,
         IAlarmSink alarms,
         TimeProvider timeProvider,
-        Records.CyclePlausibilityMonitor plausibility)
+        Records.CyclePlausibilityMonitor plausibility,
+        IJobAdjustmentService? adjustments = null)
     {
         this.gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
         this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
@@ -108,6 +110,7 @@ public sealed class JobDownloadService : IJobDownloadService
         this.alarms = alarms ?? throw new ArgumentNullException(nameof(alarms));
         this.timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         this.plausibility = plausibility ?? throw new ArgumentNullException(nameof(plausibility));
+        this.adjustments = adjustments;
     }
 
     public Task<JobDownloadResult> DownloadAsync(GrindingJob job, CancellationToken cancellationToken) =>
@@ -123,6 +126,16 @@ public sealed class JobDownloadService : IJobDownloadService
         if (!validation.IsValid)
         {
             return new JobDownloadResult(false, validation.Violations, Array.Empty<string>(), null, 0);
+        }
+
+        // 本次调整超出方案范围的不收（设计说明 5.2）：界面挡过一道，这里是最后一道。
+        if (this.adjustments is not null)
+        {
+            IReadOnlyList<AdjustProblem> problems = await this.adjustments.ValidateAsync(job, cancellationToken).ConfigureAwait(false);
+            if (problems.Count > 0)
+            {
+                return new JobDownloadResult(false, JobAdjustmentService.ToViolations(problems), Array.Empty<string>(), null, 0);
+            }
         }
 
         IReadOnlyList<string> missingTags = this.translator.FindMissingRequiredTags();

@@ -40,6 +40,9 @@ internal sealed class MachineJson
 
     /// <summary>按辊重限头架转速（关系设计 V1）。</summary>
     public List<HeadstockSpeedLimitJson>? HeadstockRpmByWeight { get; set; }
+
+    /// <summary>默认可调范围表（设计稿 v4 5.10.2）：参数键 → 规则文本。</summary>
+    public Dictionary<string, string>? AdjustRanges { get; set; }
 }
 
 internal sealed class HeadstockSpeedLimitJson

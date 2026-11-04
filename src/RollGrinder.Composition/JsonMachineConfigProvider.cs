@@ -155,7 +155,10 @@ public sealed class JsonMachineConfigProvider : IMachineConfigProvider
             json.PanelActions,
             json.ManualStrokeMarginMm,
             json.HeadstockRpmByWeight?.Select(row => new HeadstockSpeedLimit(row.MaxWeightKg, row.MaxRpm))
-                .OrderBy(row => row.MaxWeightKg).ToArray());
+                .OrderBy(row => row.MaxWeightKg).ToArray())
+        {
+            AdjustRanges = json.AdjustRanges,
+        };
     }
 
     internal static ITagMap MapTagMap(TagMapJson json, string path)

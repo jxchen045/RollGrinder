@@ -144,6 +144,16 @@ public static class LibrarySnapshotJson
             ["grindStartZMm"] = job.GrindStartZMm,
             ["deviation"] = job.Deviation.ToString(),
             ["deviationReason"] = job.DeviationReason,
+            ["adjustments"] = new JsonArray(job.Adjustments.Select(adjustment => (JsonNode)new JsonObject
+            {
+                ["stepOrder"] = adjustment.StepOrder,
+                ["parameter"] = adjustment.ParameterKey,
+                ["planValue"] = adjustment.PlanValue,
+                ["jobValue"] = adjustment.JobValue,
+                ["running"] = adjustment.Running,
+                ["by"] = adjustment.ChangedBy,
+                ["atUtc"] = adjustment.ChangedAtUtc.ToString("O", CultureInfo.InvariantCulture),
+            }).ToArray()),
             ["options"] = WriteParameters(job.ProgramOptions),
             ["steps"] = WriteSteps(job.Steps),
             ["points"] = new JsonArray(points.Select(p => (JsonNode)new JsonArray(Math.Round(p.ZMm, 3), Math.Round(p.DiameterMicrometer, 3))).ToArray()),

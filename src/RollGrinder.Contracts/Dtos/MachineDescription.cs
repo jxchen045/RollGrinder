@@ -139,6 +139,12 @@ public sealed record MachineDescription(
     /// <summary>下发容差的绝对上限（mm），阈值键。不写只看百分比。与百分比同时写时取小的那个。</summary>
     public const string LengthToleranceMmKey = "lengthToleranceMm";
 
+    /// <summary>
+    /// 默认可调范围表（设计稿 v4 5.10.2）：参数键 → 规则文本（"±10%" / "decrease" / "increase" / "locked" / "4..8"）。
+    /// 方案没单独设范围时用它；不写取内置初稿（设计说明 5.3）。
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? AdjustRanges { get; init; }
+
     /// <summary>复制门槛（mm），阈值键：跨辊复制、套模板时名义长度差这么多以内视为相同、不提示。不写按 1。</summary>
     public const string CopyThresholdMmKey = "copyThresholdMm";
 
