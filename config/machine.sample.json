@@ -109,6 +109,7 @@
     "positionX1HomeMm": 0.0,
     "positionXSafeMm": 300.0,
     "lengthTolerancePercent": 2.0,
+    "copyThresholdMm": 1.0,
     "minWorkpieceSurfaceSpeedMPerMin": 30.0,
     "maxWorkpieceSurfaceSpeedMPerMin": 120.0
   },

@@ -22,6 +22,7 @@ using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Jobs;
+using RollGrinder.Services.Library;
 using RollGrinder.Services.Manual;
 using RollGrinder.Services.Monitoring;
 using RollGrinder.Services.Records;
@@ -108,6 +109,8 @@ public sealed partial class JobViewModel : PageViewModelBase
 
     private readonly IRollPlanningService planning;
     private readonly IGrindingPlanService plans;
+    private readonly ITemplateService templates;
+    private IReadOnlyList<TemplateUpdateNotice> templateNotices = Array.Empty<TemplateUpdateNotice>();
     private readonly IRollLedgerService ledger;
     private readonly IRollProfileRepository profiles;
     private readonly IProgramRepository programs;
@@ -147,6 +150,7 @@ public sealed partial class JobViewModel : PageViewModelBase
     public JobViewModel(
         IRollPlanningService planning,
         IGrindingPlanService plans,
+        ITemplateService templates,
         IRollLedgerService ledger,
         IRollProfileRepository profiles,
         IProgramRepository programs,
@@ -172,6 +176,7 @@ public sealed partial class JobViewModel : PageViewModelBase
     {
         this.planning = planning ?? throw new ArgumentNullException(nameof(planning));
         this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
+        this.templates = templates ?? throw new ArgumentNullException(nameof(templates));
         this.ledger = ledger ?? throw new ArgumentNullException(nameof(ledger));
         this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
@@ -560,6 +565,12 @@ public sealed partial class JobViewModel : PageViewModelBase
             return;
         }
 
+        // 标准模板"必须采用"（设计说明 4.6）：要强制的先从新模板复制出新方案设为当前（原方案留作历史），要提示的列出来。
+        // 中断续磨、返磨接着那一份作业，不换方案。
+        this.templateNotices = row.Entry.JobId is null
+            ? await this.templates.ApplyForJobAsync(this.roll.RollId, this.session.CurrentUser?.UserName ?? string.Empty, cancellationToken).ConfigureAwait(true)
+            : Array.Empty<TemplateUpdateNotice>();
+
         // 作业取这支辊的当前方案（设计说明第 5 节）。
         GrindingPlanRecord? current = await this.plans.CurrentAsync(this.roll.RollId, cancellationToken).ConfigureAwait(true);
         this.roll = await this.ledger.GetAsync(row.RollId, cancellationToken).ConfigureAwait(true) ?? this.roll;
@@ -782,6 +793,7 @@ public sealed partial class JobViewModel : PageViewModelBase
             .Where(check => check.Item != JobCheckItems.Parameters)
             .Select(check => new CheckRowViewModel(Localizer["CheckItem_" + check.Item], FormatCheck(check), check.Status))
             .Concat(violations.Select(ViolationCheck))
+            .Concat(this.templateNotices.Select(TemplateNoticeRow))
             .OrderByDescending(row => row.Status);
         foreach (CheckRowViewModel row in rows)
         {
@@ -808,6 +820,19 @@ public sealed partial class JobViewModel : PageViewModelBase
         ReviewCurveChanged?.Invoke(this, EventArgs.Empty);
         ApplyKeys();
     }
+
+    /// <summary>
+    /// 本次注意：标准模板已强制更新（原方案 n 转为历史，本次用新方案 m）/ 标准已更新（只提示）/ 要换但换不了（请工艺员处理）。都不拦人。
+    /// </summary>
+    private CheckRowViewModel TemplateNoticeRow(TemplateUpdateNotice notice) => new(
+        Localizer["CheckItem_Template"],
+        notice switch
+        {
+            { Forced: true, NewPlanNo: int created } => Localizer.Format("Check_Template_ForcedFormat", notice.TemplateName, notice.OldPlanNo, created),
+            { Forced: true } => Localizer.Format("Check_Template_ForceFailedFormat", notice.TemplateName, Localizer[notice.ProblemKey ?? "PlanProblem_Missing"]),
+            _ => Localizer.Format("Check_Template_UpdatedFormat", notice.TemplateName),
+        },
+        JobCheckStatus.Notice);
 
     private CheckRowViewModel ViolationCheck(ParameterViolation violation)
     {

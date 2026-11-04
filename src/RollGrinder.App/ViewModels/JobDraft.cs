@@ -30,6 +30,12 @@ public sealed class JobDraft
     /// <summary>要在辊形 / 工艺页按方案打开来改的那个方案（方案列表"打开"、作业核对"打开辊形 / 工艺"）。</summary>
     public string? PlanToEdit { get; set; }
 
+    /// <summary>模板编辑页"保存并必须采用…"：存好后模板库直接打开这条辊形模板的逐支决定（设计稿 v4 5.6.2）。</summary>
+    public string? MandateProfileTemplateId { get; set; }
+
+    /// <summary>同上，工艺模板。</summary>
+    public string? MandateProgramTemplateId { get; set; }
+
     /// <summary><see cref="ProfileToOpen"/> / <see cref="ProgramToOpen"/> 取这个值表示"开一张新的"（库的"新建"）。</summary>
     public const string NewEntry = "*new*";
 }

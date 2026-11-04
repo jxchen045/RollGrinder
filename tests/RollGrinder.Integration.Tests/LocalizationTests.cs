@@ -122,7 +122,7 @@ public sealed class LocalizationTests
         "ChannelState_", "ConnectionState_", "WheelChange_Hint_", "Curve_", "Action_", "ParamHelp_", "WheelEvent_", "WheelSource_", "Status_", "MeasurementStage_", "ChangeArea_", "ManualPage_", "CfgField_", "CfgGroup_",
         "Area_", "Mode_", "Help_", "Language_", "Keypad_Error_", "Pendant_Axis",
         "CheckItem_", "Check_Stock_", "Chart_AxisX_", "Chart_AxisY_", "StatusGroup_", "Verdict_", "ImportKind_", "Ledger_Problem_", "RollKindFilter_", "RollKind_", "Cfg_ClosedLoop_", "ParamGroup_",
-        "PlanSource_",
+        "PlanSource_", "CopyRange_", "Mandate_Force", "Mandate_Notice", "Mandate_None",
     };
 
     [Fact]
@@ -139,7 +139,9 @@ public sealed class LocalizationTests
             .Concat(new[] { "Stock_ActualInvalid", "Stock_BelowFinishing", "Stock_NoRoughStep" }.Select(key => "Check_" + key))
             .Concat(Enum.GetNames<RollGrinder.Contracts.Dtos.AxisClosedLoopKind>().Select(name => "Cfg_ClosedLoop_" + name))
             .Concat(Enum.GetNames<RollGrinder.Core.Steps.StepParameterGroup>().Select(name => "ParamGroup_" + name))
-            .Concat(Enum.GetNames<RollGrinder.Data.PlanSourceKind>().Select(name => "PlanSource_" + name));
+            .Concat(Enum.GetNames<RollGrinder.Data.PlanSourceKind>().Select(name => "PlanSource_" + name))
+            .Concat(Enum.GetNames<RollGrinder.Data.MandateDecision>().Select(name => "Mandate_" + name))
+            .Concat(new[] { "ThisRoll", "OtherRolls", "Templates" }.Select(name => "CopyRange_" + name));
 
         foreach (string key in keys)
         {

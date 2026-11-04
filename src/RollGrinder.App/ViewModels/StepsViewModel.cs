@@ -237,6 +237,7 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
     private readonly IUserSession session;
     private readonly IGrindingPlanService plans;
     private readonly PlanEditSession planSession;
+    private readonly ITemplateService templates;
     private readonly IReadOnlyList<FunctionKeyViewModel?> stepKeys;
     private readonly FunctionKeyViewModel listKey;
     private bool suppressDirty;
@@ -256,6 +257,7 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
         ILibraryService libraryService,
         IUserSession session,
         PlanEditSession planSession,
+        ITemplateService templates,
         ICalibrationService calibration,
         JobDraft jobDraft,
         GrindingJobValidator validator,
@@ -277,6 +279,7 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
         this.libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         this.session = session ?? throw new ArgumentNullException(nameof(session));
         this.planSession = planSession ?? throw new ArgumentNullException(nameof(planSession));
+        this.templates = templates ?? throw new ArgumentNullException(nameof(templates));
         this.plans = planSession.Plans;
         planSession.Register(this);
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
@@ -1124,8 +1127,32 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
             GrindingProgram? existing = await this.programs.GetAsync(programId, cancellationToken).ConfigureAwait(true);
 
             // 改在用的程序：先说清楚影响几支辊（关系设计 5.3）——更新后它们下次按新版磨；只给新辊用请改用"另存为…"。
+            // 有辊的当前方案复制自这条模板（设计稿 v4 5.6.2 页内决定）：第 8 格保存（复制自它的辊照旧），
+            // 第 6 格保存并必须采用…（存好后到模板库逐支决定）。模板改了不批量改任何辊。
             if (existing is not null && !inUseConfirmed)
             {
+                TemplateUsage copies = await this.templates.UsageAsync(TemplateKind.Program, programId, cancellationToken).ConfigureAwait(true);
+                if (copies.Total > 0)
+                {
+                    string templateId = programId;
+                    string templateName = name;
+                    ChooseWithAlternative(
+                        Localizer.Format("Lib_AskSaveCopiedFormat", templateName, copies.Total, copies.Consistent, copies.Diverged, existing.Version + 1),
+                        "Vk_SaveTemplate",
+                        () => StoreProgramAsync(programId, name, CancellationToken.None, inUseConfirmed: true),
+                        "Vk_SaveAndMandate",
+                        async () =>
+                        {
+                            if (await StoreProgramAsync(programId, name, CancellationToken.None, inUseConfirmed: true).ConfigureAwait(true))
+                            {
+                                this.jobDraft.MandateProgramTemplateId = templateId;
+                                Navigator.GoTo(PageKey.ProgramLibrary);
+                            }
+                        },
+                        () => SetVerticalKeys(this.stepKeys));
+                    return false;
+                }
+
                 int users = (await this.libraryService.ProgramUsersAsync(programId, cancellationToken).ConfigureAwait(true)).Count;
                 if (users > 0)
                 {

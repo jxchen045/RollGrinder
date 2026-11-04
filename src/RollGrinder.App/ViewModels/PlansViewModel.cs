@@ -35,6 +35,9 @@ public sealed record PlanRowViewModel(
     string LastText,
     string CreatedText)
 {
+    /// <summary>与来源（模板）：＝ 一致 / ≠ 已改动；不是从模板来的为"—"。</summary>
+    public string ConsistencyText { get; init; } = "—";
+
     public string PlanId => Overview.Plan.PlanId;
 
     public bool IsCurrent => Overview.IsCurrent;
@@ -52,21 +55,28 @@ public sealed partial class PlansViewModel : PageViewModelBase
 {
     private readonly IGrindingPlanService plans;
     private readonly IRollRepository rolls;
+    private readonly IRollProfileRepository profileTemplates;
+    private readonly IProgramRepository programTemplates;
     private readonly IUserSession session;
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly HmiSettings settings;
     private readonly JobDraft draft;
     private readonly FunctionKeyViewModel listKey;
     private readonly List<FunctionKeyViewModel> selectionKeys = new();
+    private readonly FunctionKeyViewModel?[] rootKeys;
+    private readonly FunctionKeyViewModel copyKey;
     private int loadVersion;
 
     public PlansViewModel(
         IGrindingPlanService plans,
         IRollRepository rolls,
+        IRollProfileRepository profileTemplates,
+        IProgramRepository programTemplates,
         IUserSession session,
         RollProfileTypeRegistry profileTypes,
         HmiSettings settings,
         JobDraft draft,
+        PlanPickerViewModel picker,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator,
@@ -75,10 +85,26 @@ public sealed partial class PlansViewModel : PageViewModelBase
     {
         this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
+        this.profileTemplates = profileTemplates ?? throw new ArgumentNullException(nameof(profileTemplates));
+        this.programTemplates = programTemplates ?? throw new ArgumentNullException(nameof(programTemplates));
         this.session = session ?? throw new ArgumentNullException(nameof(session));
         this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
+        Picker = picker ?? throw new ArgumentNullException(nameof(picker));
+        Picker.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PlanPickerViewModel.CanCopy) && IsPicking)
+            {
+                (this.copyKey?.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+                Interaction.Hint(CopyHint());
+            }
+        };
+        this.copyKey = new FunctionKeyViewModel("Vk_CopyToRoll", new AsyncRelayCommand(CopySelectedSourceAsync, () => Picker.CanCopy), localizer,
+            FunctionKeyKind.Confirm, requiresEditable: true)
+        {
+            PreconditionResourceKey = "Copy_CannotCopy",
+        };
         NamePrompt = new NamePromptViewModel(localizer);
         AttachPrompt(NamePrompt);
 
@@ -114,6 +140,11 @@ public sealed partial class PlansViewModel : PageViewModelBase
             {
                 PreconditionResourceKey = "Plan_NothingSelected",
             },
+            new FunctionKeyViewModel("Vk_CopyFrom", new RelayCommand(() => _ = OpenCopyAsync(CopyRange.OtherRolls), () => RollId is not null), localizer,
+                requiresEditable: true)
+            {
+                PreconditionResourceKey = "Plan_PickRollHint",
+            },
             new FunctionKeyViewModel("Vk_RenamePlan", new RelayCommand(AskRename, HasSelection), localizer, requiresEditable: true)
             {
                 PreconditionResourceKey = "Plan_NothingSelected",
@@ -128,6 +159,7 @@ public sealed partial class PlansViewModel : PageViewModelBase
                 PreconditionResourceKey = "Plan_DeleteOnlyUnused",
             },
         };
+        this.rootKeys = vertical;
         SetVerticalKeys(vertical);
         this.selectionKeys.AddRange(vertical.Skip(1).Concat(horizontal.Skip(1)).OfType<FunctionKeyViewModel>());
     }
@@ -145,10 +177,16 @@ public sealed partial class PlansViewModel : PageViewModelBase
     /// <summary>新方案名、改名的命名框（3 种弹出框之一）。</summary>
     public NamePromptViewModel NamePrompt { get; }
 
-    public override bool HasModalPrompt => NamePrompt.IsOpen;
+    public override bool HasModalPrompt => NamePrompt.IsOpen || IsPicking;
 
     public override bool TryDismissPrompt()
     {
+        if (IsPicking)
+        {
+            CloseCopy();
+            return true;
+        }
+
         if (!NamePrompt.IsOpen)
         {
             return false;
@@ -156,6 +194,100 @@ public sealed partial class PlansViewModel : PageViewModelBase
 
         NamePrompt.CancelCommand.Execute(null);
         return true;
+    }
+
+    /// <summary>复制来源子视图（设计稿 v4 5.5.5，与作业换方案同一个选方案子视图）。</summary>
+    public PlanPickerViewModel Picker { get; }
+
+    /// <summary>复制来源子视图开着。</summary>
+    [ObservableProperty]
+    private bool isPicking;
+
+    // ───────────── 复制来（设计稿 v4 5.5.5） ─────────────
+
+    /// <summary>打开复制来源：本辊 / 其他辊 / 模板，按这支辊的名义长度预览对齐。</summary>
+    private async Task OpenCopyAsync(CopyRange range)
+    {
+        if (RollId is not { } id || await this.rolls.GetAsync(id, CancellationToken.None).ConfigureAwait(true) is not { } roll)
+        {
+            return;
+        }
+
+        CopyScope scope = IsPicking ? Picker.Scope : CopyScope.All;
+        await RunGuardedAsync(
+            token => Picker.LoadCopySourcesAsync(id, roll.Geometry.BodyLengthMm, roll.MeasuredBodyLengthMm, roll.Kind, range, scope, token),
+            CancellationToken.None).ConfigureAwait(true);
+        IsPicking = true;
+        ApplyCopyKeys();
+    }
+
+    private void ApplyCopyKeys()
+    {
+        FunctionKeyViewModel Range(string key, CopyRange range) =>
+            new(key, new RelayCommand(() => _ = OpenCopyAsync(range)), Localizer) { IsActive = Picker.Range == range };
+        SetVerticalKeys(new FunctionKeyViewModel?[]
+        {
+            Range("Vk_CopyRangeThisRoll", CopyRange.ThisRoll),
+            Range("Vk_CopyRangeOtherRolls", CopyRange.OtherRolls),
+            Range("Vk_CopyRangeTemplates", CopyRange.Templates),
+            null,
+            FunctionKeyViewModel.ForAction("Vk_CopyScope", Localizer, OpenScopeMenu),
+        });
+        SetCommitPair(new FunctionKeyViewModel("Vk_Cancel", new RelayCommand(CloseCopy), Localizer, FunctionKeyKind.Cancel), this.copyKey);
+        (this.copyKey.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+        Interaction.Hint(CopyHint());
+    }
+
+    /// <summary>复制范围 ▸（P10）：全部 / 只辊形 / 只工艺。</summary>
+    private void OpenScopeMenu() => OpenVerticalMenu("Vk_CopyScope", new FunctionKeyViewModel?[]
+    {
+        MenuChoice("CopyScope_All", () => _ = Picker.SetScopeAsync(CopyScope.All, CancellationToken.None), requiresEditable: false),
+        MenuChoice("CopyScope_ProfileOnly", () => _ = Picker.SetScopeAsync(CopyScope.ProfileOnly, CancellationToken.None), requiresEditable: false),
+        MenuChoice("CopyScope_ProgramOnly", () => _ = Picker.SetScopeAsync(CopyScope.ProgramOnly, CancellationToken.None), requiresEditable: false),
+    });
+
+    private string CopyHint() => Picker.CopyResult switch
+    {
+        null => Localizer["Copy_HintPick"],
+        { ProblemKey: { } problem } => Localizer.Format("Copy_HintRefusedFormat", Localizer[problem]),
+        { NeedsConfirm: true } => Localizer["Copy_HintConfirm"],
+        _ => Localizer["Copy_HintOk"],
+    };
+
+    private void CloseCopy()
+    {
+        IsPicking = false;
+        SetCommitPair(null, null);
+        SetVerticalKeys(this.rootKeys);
+        RefreshKeyStates();
+        Interaction.Hint(Localizer["Plan_FrozenHint"]);
+    }
+
+    /// <summary>✓ 复制到本辊：看过叠图就是确认；复制出的方案不设为当前（I17）。</summary>
+    private async Task CopySelectedSourceAsync()
+    {
+        if (RollId is not { } id || Picker.SelectedCopySource is not { } source || !Picker.CanCopy)
+        {
+            return;
+        }
+
+        CopyScope scope = Picker.Scope;
+        await RunGuardedAsync(
+            async token =>
+            {
+                PlanCreateOutcome outcome = await this.plans
+                    .CopyToRollAsync(id, source, scope, confirmed: true, setCurrent: false, UserName, token).ConfigureAwait(true);
+                if (outcome.Plan is not { } created)
+                {
+                    Interaction.Refuse(Localizer[outcome.ProblemKey ?? "PlanProblem_Missing"]);
+                    return;
+                }
+
+                CloseCopy();
+                await ReloadAsync(created.PlanId, token).ConfigureAwait(true);
+                Say("Copy_DoneFormat", created.PlanNo, Picker.CopyResult?.SourceText ?? "--");
+            },
+            CancellationToken.None).ConfigureAwait(true);
     }
 
     /// <summary>列的是哪支辊；还没选为 null。</summary>
@@ -235,7 +367,7 @@ public sealed partial class PlansViewModel : PageViewModelBase
 
         foreach (PlanOverview overview in list)
         {
-            Rows.Add(Row(overview));
+            Rows.Add(await RowAsync(overview, cancellationToken).ConfigureAwait(true));
         }
 
         PlanOverview? current = list.FirstOrDefault(row => row.IsCurrent);
@@ -253,19 +385,30 @@ public sealed partial class PlansViewModel : PageViewModelBase
         }
     }
 
-    private PlanRowViewModel Row(PlanOverview overview)
+    /// <summary>一行：模板来源的方案标"＝ 一致 / ≠ 已改动"，模板出了新版的辊形 · 工艺后附"↑ 模板已更新"。</summary>
+    private async Task<PlanRowViewModel> RowAsync(PlanOverview overview, CancellationToken cancellationToken)
     {
         GrindingPlanRecord plan = overview.Plan;
+        bool fromTemplate = plan.TemplateProfileId is not null || plan.TemplateProgramId is not null;
+        bool diverged = plan.ProfileDiverged || plan.ProgramDiverged;
+        bool updated =
+            (plan.TemplateProfileId is { } p && await this.profileTemplates.GetAsync(p, cancellationToken).ConfigureAwait(true) is { } profile
+                && profile.Version > (plan.TemplateProfileVersion ?? profile.Version))
+            || (plan.TemplateProgramId is { } g && await this.programTemplates.GetAsync(g, cancellationToken).ConfigureAwait(true) is { } program
+                && program.Version > (plan.TemplateProgramVersion ?? program.Version));
         return new PlanRowViewModel(
             overview,
             (overview.IsCurrent ? "★ " : string.Empty) + plan.PlanNo.ToString(CultureInfo.CurrentCulture),
-            overview.ProfileName + " · " + overview.ProgramName,
+            overview.ProfileName + " · " + overview.ProgramName + (updated ? "  " + Localizer["Plan_TemplateUpdated"] : string.Empty),
             plan.Purpose ?? "--",
             SourceText(plan),
             overview.NominalLengthMm.ToString("F0", CultureInfo.CurrentCulture),
             overview.Usage.UseCount.ToString(CultureInfo.CurrentCulture),
             overview.Usage.LastUsedUtc?.ToLocalTime().ToString("MM-dd", CultureInfo.CurrentCulture) ?? "--",
-            plan.CreatedAtUtc.ToLocalTime().ToString("MM-dd", CultureInfo.CurrentCulture) + " " + plan.CreatedBy);
+            plan.CreatedAtUtc.ToLocalTime().ToString("MM-dd", CultureInfo.CurrentCulture) + " " + plan.CreatedBy)
+        {
+            ConsistencyText = !fromTemplate ? "—" : Localizer[diverged ? "Plan_Diverged" : "Plan_Consistent"],
+        };
     }
 
     /// <summary>来源一句话：空白新建、复制自本辊方案 n、模板、作业 J 的调整、旧计划。</summary>

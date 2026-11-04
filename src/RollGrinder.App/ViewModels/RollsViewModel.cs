@@ -114,6 +114,7 @@ public sealed partial class RollsViewModel : PageViewModelBase
     {
         FormProfile,
         FormProgram,
+        FormCopyPlan,
         PlanProfile,
         PlanProgram,
     }
@@ -591,6 +592,8 @@ public sealed partial class RollsViewModel : PageViewModelBase
                     FunctionKeyViewModel.ForAction("Vk_PickPurpose", Localizer, () => _ = OpenPurposeMenuAsync(forFilter: false)),
                     FunctionKeyViewModel.ForAction("Vk_PickProfile", Localizer, () => _ = OpenPickerAsync(PickTarget.FormProfile)),
                     FunctionKeyViewModel.ForAction("Vk_PickProgram", Localizer, () => _ = OpenPickerAsync(PickTarget.FormProgram)),
+                    FunctionKeyViewModel.ForAction("Vk_CopyFromRoll", Localizer, () => _ = OpenPickerAsync(PickTarget.FormCopyPlan)),
+                    FunctionKeyViewModel.ForAction("Vk_PlanLater", Localizer, SetPlanLater),
                 });
                 SetCommitPair(this.cancelKey, this.saveKey);
                 break;
@@ -814,6 +817,18 @@ public sealed partial class RollsViewModel : PageViewModelBase
     [ObservableProperty]
     private string formProgramText = "--";
 
+    /// <summary>第一个方案从其他辊的方案复制（设计稿 v4 5.4.4）；从模板或稍后再建为 null。</summary>
+    [ObservableProperty]
+    private string? formCopyPlanId;
+
+    /// <summary>第一个方案的来源一句话：从模板 / 从其他辊复制 / 稍后再建。</summary>
+    [ObservableProperty]
+    private string formPlanSourceText = "--";
+
+    /// <summary>复制或套模板时的长度对齐一行（按表里的名义长度；有实测时加下发时预告）。</summary>
+    [ObservableProperty]
+    private string formAlignmentText = string.Empty;
+
     public string FormKindText => Localizer["RollKind_" + FormKind];
 
     public string FormTitle => Localizer[IsNewRoll ? "Rolls_FormTitleNew" : "Rolls_FormTitleEdit"];
@@ -823,7 +838,24 @@ public sealed partial class RollsViewModel : PageViewModelBase
 
     partial void OnIsNewRollChanged(bool value) => OnPropertyChanged(nameof(FormTitle));
 
-    partial void OnFormKindChanged(RollKind value) => OnPropertyChanged(nameof(FormKindText));
+    partial void OnFormKindChanged(RollKind value)
+    {
+        OnPropertyChanged(nameof(FormKindText));
+        RefreshFormAlignment();
+    }
+
+    partial void OnFormBodyLengthTextChanged(string value) => RefreshFormAlignment();
+
+    partial void OnFormMeasuredLengthTextChanged(string value) => RefreshFormAlignment();
+
+    /// <summary>表里的长度、类型改了：长度对齐一行跟着重算。</summary>
+    private void RefreshFormAlignment()
+    {
+        if (IsForm)
+        {
+            _ = RunRefreshAsync(RefreshFormPlanTextAsync, CancellationToken.None);
+        }
+    }
 
     /// <summary>上一次"保存"没存进去的原因，逐条。</summary>
     public ObservableCollection<string> FormProblems { get; } = new();
@@ -845,14 +877,58 @@ public sealed partial class RollsViewModel : PageViewModelBase
         FormNetWeightText = Text(source?.Data.NetWeightKg, "F0");
         FormPurpose = source?.Purpose ?? string.Empty;
         FormPurposeEditable = false;
-        FormProfileId = source?.TargetProfileId;
-        FormProgramId = source?.ProgramId;
+        // 照此复制登记：第一个方案复制原辊的当前方案（来源记为原辊）；编辑已有的辊：方案在方案区改，这里只看。
+        bool copying = existing is null && copyFrom?.CurrentPlanId is not null;
+        FormCopyPlanId = copying ? copyFrom!.CurrentPlanId : null;
+        FormProfileId = copying ? null : source?.TargetProfileId;
+        FormProgramId = copying ? null : source?.ProgramId;
         FormProblems.Clear();
         _ = RunRefreshAsync(RefreshFormPlanTextAsync, CancellationToken.None);
         Navigator.OpenSubView(FormSubView);
     }
 
+    /// <summary>"稍后再建"：先只登记辊（作业前必须有当前方案）。</summary>
+    private void SetPlanLater()
+    {
+        FormCopyPlanId = null;
+        FormProfileId = null;
+        FormProgramId = null;
+        _ = RunRefreshAsync(RefreshFormPlanTextAsync, CancellationToken.None);
+    }
+
     private async Task RefreshFormPlanTextAsync(CancellationToken cancellationToken)
+    {
+        await RefreshFormTemplateTextAsync(cancellationToken).ConfigureAwait(true);
+        bool fromTemplate = FormProfileId is not null || FormProgramId is not null;
+        FormPlanSourceText = FormCopyPlanId is not null ? Localizer["Rolls_PlanSourceCopy"]
+            : fromTemplate ? Localizer["Rolls_PlanSourceTemplate"]
+            : Localizer["Rolls_PlanSourceLater"];
+
+        // 新登记、或给已有的辊换模板：长度对齐一行（编辑已有辊、模板没动时不算）。
+        bool changedTemplate = this.editing is null
+            || this.editing.TargetProfileId != FormProfileId || this.editing.ProgramId != FormProgramId || FormCopyPlanId is not null;
+        CopySource? source = FormCopyPlanId is { } planId ? CopySource.FromPlan(planId)
+            : fromTemplate && changedTemplate ? CopySource.FromTemplates(FormProfileId, FormProgramId)
+            : null;
+        if (source is null || !TryNumber(FormBodyLengthText, out double length) || length <= 0.0)
+        {
+            FormAlignmentText = string.Empty;
+            return;
+        }
+
+        double? measured = TryOptional(FormMeasuredLengthText, out double? value) ? value : null;
+        CopyPreview preview = this.editing is null
+            ? await this.plans.PreviewCopyForNewRollAsync(length, measured, FormKind, source, cancellationToken).ConfigureAwait(true)
+            : await this.plans.PreviewCopyAsync(this.editing.RollId, source, CopyScope.All, cancellationToken).ConfigureAwait(true);
+        FormAlignmentText = preview.SourceText + " · " + PlanPickerViewModel.ShortCopyText(preview, Localizer);
+        if (FormCopyPlanId is not null)
+        {
+            FormProfileText = preview.ProfileName;
+            FormProgramText = preview.ProgramName;
+        }
+    }
+
+    private async Task RefreshFormTemplateTextAsync(CancellationToken cancellationToken)
     {
         FormProfileText = FormProfileId is { } p && await this.profiles.GetAsync(p, cancellationToken).ConfigureAwait(true) is { } profile
             ? Localizer.Format("Lib_NameVersionFormat", profile.Name, profile.Version)
@@ -906,6 +982,17 @@ public sealed partial class RollsViewModel : PageViewModelBase
                         null,
                         UserName,
                         token).ConfigureAwait(true);
+                }
+
+                // 第一个方案从其他辊复制（新登记表里已经看过长度对齐，算确认过）：设为当前。
+                if (FormCopyPlanId is { } copyPlanId)
+                {
+                    PlanCreateOutcome copied = await this.plans.CopyToRollAsync(
+                        roll.RollId, CopySource.FromPlan(copyPlanId), CopyScope.All, confirmed: true, setCurrent: true, UserName, token).ConfigureAwait(true);
+                    if (copied.Plan is null)
+                    {
+                        Interaction.Fail(Localizer[copied.ProblemKey ?? "PlanProblem_Missing"]);
+                    }
                 }
 
                 Say("Ledger_Saved");
@@ -964,6 +1051,20 @@ public sealed partial class RollsViewModel : PageViewModelBase
         double body;
         RollKind kind;
         string? current;
+        if (target == PickTarget.FormCopyPlan)
+        {
+            double length = TryNumber(FormBodyLengthText, out double typed) && typed > 0.0 ? typed : 1.0;
+            double? measured = TryOptional(FormMeasuredLengthText, out double? value) ? value : null;
+            string? rollId = this.editing?.RollId;
+            RollKind formKind = FormKind;
+            await RunGuardedAsync(
+                token => Picker.LoadCopySourcesAsync(rollId, length, measured, formKind, CopyRange.OtherRolls, CopyScope.All, token),
+                CancellationToken.None).ConfigureAwait(true);
+            IsPicking = true;
+            ApplyKeys();
+            return;
+        }
+
         if (target is PickTarget.FormProfile or PickTarget.FormProgram)
         {
             body = TryNumber(FormBodyLengthText, out double length) && length > 0.0 ? length : 1.0;
@@ -996,9 +1097,21 @@ public sealed partial class RollsViewModel : PageViewModelBase
         {
             case PickTarget.FormProfile:
                 FormProfileId = item.Id;
+                FormCopyPlanId = null;
                 break;
             case PickTarget.FormProgram:
                 FormProgramId = item.Id;
+                FormCopyPlanId = null;
+                break;
+            case PickTarget.FormCopyPlan:
+                if (Picker.SelectedCopySource?.PlanId is not { } planId)
+                {
+                    return;
+                }
+
+                FormCopyPlanId = planId;
+                FormProfileId = this.editing?.TargetProfileId;
+                FormProgramId = this.editing?.ProgramId;
                 break;
             case PickTarget.PlanProfile:
                 PlanProfileId = item.Id;
@@ -1064,11 +1177,12 @@ public sealed partial class RollsViewModel : PageViewModelBase
         foreach (PlanChangeOutcome outcome in outcomes)
         {
             RollRowViewModel? row = targets.FirstOrDefault(r => r.RollId == outcome.RollId);
-            PlanChecks.Add(new PlanCheckRowViewModel(
-                outcome.RollId,
-                row?.PurposeText ?? "--",
-                outcome.ProblemKey is null ? Localizer["PlanCheck_Ok"] : Localizer[outcome.ProblemKey],
-                outcome.Changed));
+            // 逐支：复制对齐（按名义）与下发时（按实测）预告（设计稿 v4 5.4.3 I18）；建不了的写排除原因。
+            string result = outcome.Preview is { } preview && outcome.ProblemKey is null or "PlanNotice_Regrind"
+                ? PlanPickerViewModel.ShortCopyText(preview, Localizer)
+                    + (outcome.ProblemKey is { } notice ? " · " + Localizer[notice] : string.Empty)
+                : outcome.ProblemKey is { } problem ? Localizer[problem] : Localizer["PlanCheck_Ok"];
+            PlanChecks.Add(new PlanCheckRowViewModel(outcome.RollId, row?.PurposeText ?? "--", result, outcome.Changed));
         }
 
         string? profileName = PlanProfileId is { } p ? (await this.profiles.GetAsync(p, cancellationToken).ConfigureAwait(true))?.Name : null;
@@ -1086,28 +1200,38 @@ public sealed partial class RollsViewModel : PageViewModelBase
         MenuChoice("Reason_Quality", () => PlanReason = Localizer["Reason_Quality"], requiresEditable: false),
     });
 
+    /// <summary>
+    /// 从模板建方案（多支，设计稿 v4 5.4.3）：第 8 格"建立并设为当前"，第 6 格"只建立…"（建好留在方案列表里，不改当前方案）。
+    /// 逐支的对齐结果就在表里，按下去就算看过、确认过。
+    /// </summary>
     private async Task ApplyPlanAsync()
     {
         int count = PlanChecks.Count(row => row.Changes);
-        Interaction.Choose(
+        ChooseWithAlternative(
             Localizer.Format("Rolls_AskApplyPlanFormat", count, PlanTitle),
             "Vk_ApplyPlanFormatShort",
-            async () => await RunGuardedAsync(
-                async token =>
-                {
-                    IReadOnlyList<PlanChangeOutcome> done = await this.planning.ChangePlanAsync(
-                        PlanTargets().Select(row => row.RollId).ToArray(),
-                        PlanProfileId,
-                        PlanProgramId,
-                        string.IsNullOrWhiteSpace(PlanReason) ? null : PlanReason,
-                        UserName,
-                        token).ConfigureAwait(true);
-                    Say("Rolls_PlanChangedFormat", done.Count(o => o.Changed));
-                    Navigator.CloseSubView();
-                },
-                CancellationToken.None).ConfigureAwait(true));
+            () => BuildPlansAsync(setCurrent: true),
+            "Vk_BuildPlansOnly",
+            () => BuildPlansAsync(setCurrent: false),
+            ApplyKeys);
         await Task.CompletedTask.ConfigureAwait(true);
     }
+
+    private Task BuildPlansAsync(bool setCurrent) => RunGuardedAsync(
+        async token =>
+        {
+            IReadOnlyList<PlanChangeOutcome> done = await this.planning.ChangePlanAsync(
+                PlanTargets().Select(row => row.RollId).ToArray(),
+                PlanProfileId,
+                PlanProgramId,
+                string.IsNullOrWhiteSpace(PlanReason) ? null : PlanReason,
+                UserName,
+                token,
+                setCurrent).ConfigureAwait(true);
+            Say(setCurrent ? "Rolls_PlanChangedFormat" : "Rolls_PlansBuiltFormat", done.Count(o => o.Changed));
+            Navigator.CloseSubView();
+        },
+        CancellationToken.None);
 
     // ───────────── 作废 ─────────────
 

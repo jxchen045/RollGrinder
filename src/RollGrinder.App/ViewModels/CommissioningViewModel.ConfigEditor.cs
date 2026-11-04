@@ -180,6 +180,8 @@ public sealed partial class CommissioningViewModel
     private static readonly string[] JobCheckThresholdKeys =
     {
         MachineDescription.LengthTolerancePercentKey,
+        MachineDescription.LengthToleranceMmKey,
+        MachineDescription.CopyThresholdMmKey,
         MachineDescription.MinWorkpieceSurfaceSpeedKey,
         MachineDescription.MaxWorkpieceSurfaceSpeedKey,
     };

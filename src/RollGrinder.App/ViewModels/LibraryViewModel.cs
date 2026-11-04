@@ -44,8 +44,45 @@ public enum LibraryKind
 public sealed record LibraryEntryViewModel(
     string Id, string Name, string VersionText, string Detail, string UsersText, string ModifiedText, bool IsDisabled);
 
-/// <summary>在用清单的一行。</summary>
+/// <summary>复制关系的一行（设计稿 v4 5.6.1）：辊、当前方案、与模板一致 / 已改动、必须采用的决定与进度。</summary>
 public sealed record LibraryUserRowViewModel(string RollId, string Purpose, string CurrentText);
+
+/// <summary>"必须采用"逐支决定的一行（设计稿 v4 5.6.2 P7 + I13）。</summary>
+public sealed partial class MandateRowViewModel : ObservableObject
+{
+    private readonly IStringLocalizer localizer;
+
+    public MandateRowViewModel(string rollId, string purpose, string planText, bool diverged, string alignmentText, MandateDecision decision, IStringLocalizer localizer)
+    {
+        this.localizer = localizer;
+        RollId = rollId;
+        Purpose = purpose;
+        PlanText = planText;
+        Diverged = diverged;
+        AlignmentText = alignmentText;
+        this.decision = decision;
+    }
+
+    public string RollId { get; }
+
+    public string Purpose { get; }
+
+    public string PlanText { get; }
+
+    /// <summary>复制以后改过（通常是特批）。</summary>
+    public bool Diverged { get; }
+
+    public string ConsistencyText => this.localizer[Diverged ? "Plan_Diverged" : "Plan_Consistent"];
+
+    /// <summary>按新模板复制过来的长度对齐（复制按名义、下发时按实测）。</summary>
+    public string AlignmentText { get; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DecisionText))]
+    private MandateDecision decision;
+
+    public string DecisionText => this.localizer["Mandate_" + Decision];
+}
 
 /// <summary>留档的一版。</summary>
 public sealed record LibraryVersionRowViewModel(int Version, string VersionText, string SavedText, string SavedBy, string Payload);
@@ -69,7 +106,10 @@ public sealed partial class LibraryViewModel : PageViewModelBase
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly HmiSettings settings;
     private readonly JobDraft jobDraft;
+    private readonly ITemplateService templates;
     private readonly FunctionKeyViewModel libraryKey;
+    private readonly FunctionKeyViewModel mandateConfirmKey;
+    private int legacyUsers;
     private readonly FunctionKeyViewModel disableKey;
     private readonly FunctionKeyViewModel versionsKey;
     private readonly FunctionKeyViewModel saveAsFromVersionKey;
@@ -86,6 +126,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         RollProfileTypeRegistry profileTypes,
         HmiSettings settings,
         JobDraft jobDraft,
+        ITemplateService templates,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator,
@@ -101,6 +142,13 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         this.profileTypes = profileTypes ?? throw new ArgumentNullException(nameof(profileTypes));
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
+        this.templates = templates ?? throw new ArgumentNullException(nameof(templates));
+        this.mandateConfirmKey = new FunctionKeyViewModel(
+            "Vk_MandateConfirm", new AsyncRelayCommand(ConfirmMandateAsync, () => MandateRows.Any(row => row.Decision == MandateDecision.Force)),
+            localizer, FunctionKeyKind.Confirm, requiresEditable: true)
+        {
+            PreconditionResourceKey = "Mandate_NothingForced",
+        };
         NamePrompt = new NamePromptViewModel(localizer);
         AttachPrompt(NamePrompt);
 
@@ -142,6 +190,14 @@ public sealed partial class LibraryViewModel : PageViewModelBase
             this.disableKey,
             this.versionsKey,
             new FunctionKeyViewModel("Vk_Delete", new RelayCommand(AskDelete, HasSelection), localizer, requiresEditable: true) { PreconditionResourceKey = "Lib_NothingSelected" },
+            new FunctionKeyViewModel("Vk_Mandate", new RelayCommand(() => _ = OpenMandateAsync(), HasSelection), localizer, requiresEditable: true)
+            {
+                PreconditionResourceKey = "Lib_NothingSelected",
+            },
+            new FunctionKeyViewModel("Vk_RevokeMandate", new RelayCommand(AskRevokeMandate, () => this.activeMandate is not null), localizer, requiresEditable: true)
+            {
+                PreconditionResourceKey = "Mandate_NoneActive",
+            },
         };
         this.versionKeys = new FunctionKeyViewModel?[] { this.saveAsFromVersionKey, null, null, null, null, this.versionsKey };
         SetVerticalKeys(this.entryKeys);
@@ -196,18 +252,170 @@ public sealed partial class LibraryViewModel : PageViewModelBase
     /// <summary>右下角的标题：在用清单（12 支）/ 版本记录（3 版）。</summary>
     public string LowerTitle => ShowingVersions
         ? Localizer.Format("Lib_VersionsTitleFormat", Versions.Count)
-        : Localizer.Format("Lib_UsersTitleFormat", Users.Count);
+        : Localizer.Format("Lib_CopiesTitleFormat", Users.Count);
+
+    // ───────────── 复制关系与必须采用（设计稿 v4 5.6.1、5.6.2） ─────────────
+
+    private TemplateMandate? activeMandate;
+
+    private string UsageText(TemplateUsage usage) =>
+        usage.Total == 0 && usage.Mandate is null
+            ? "0"
+            : Localizer.Format("Lib_UsageFormat", usage.Consistent, usage.Diverged)
+              + (usage.Mandate is null ? string.Empty : " · " + Localizer.Format("Lib_MandateProgressFormat", usage.MandateApplied, usage.MandateTotal));
+
+    /// <summary>"必须采用"逐支决定（5.6.2）开着。</summary>
+    [ObservableProperty]
+    private bool isMandating;
+
+    public ObservableCollection<MandateRowViewModel> MandateRows { get; } = new();
+
+    [ObservableProperty]
+    private MandateRowViewModel? selectedMandateRow;
+
+    [ObservableProperty]
+    private string mandateTitle = string.Empty;
+
+    /// <summary>
+    /// 必须采用…：逐支列出复制自这条模板（还是旧版）的辊，默认与模板一致的"同样强制"、已改动的"改为普通提示"；
+    /// 竖键 1 一致的全部强制，2–4 改选中的这支，8 确认。
+    /// </summary>
+    private async Task OpenMandateAsync()
+    {
+        if (SelectedEntry is not { } entry)
+        {
+            return;
+        }
+
+        TemplateKind kind = IsProfiles ? TemplateKind.Profile : TemplateKind.Program;
+        int version = IsProfiles
+            ? (await this.profiles.GetAsync(entry.Id, CancellationToken.None).ConfigureAwait(true))?.Version ?? 0
+            : (await this.programs.GetAsync(entry.Id, CancellationToken.None).ConfigureAwait(true))?.Version ?? 0;
+        MandateRows.Clear();
+        foreach (TemplateCopyRow row in await this.templates.CopiedRollsAsync(kind, entry.Id, CancellationToken.None).ConfigureAwait(true))
+        {
+            if (row.CopiedVersion >= version)
+            {
+                continue;
+            }
+
+            MandateRows.Add(new MandateRowViewModel(
+                row.Roll.RollId,
+                row.Roll.Purpose ?? "--",
+                Localizer.Format("Job_QueuePlanFormat", row.Plan.PlanNo, row.Plan.Name),
+                row.Diverged,
+                PlanPickerViewModel.ShortCopyText(row.Preview, Localizer),
+                row.Diverged ? MandateDecision.Notice : MandateDecision.Force,
+                Localizer));
+        }
+
+        if (MandateRows.Count == 0)
+        {
+            Interaction.Refuse(Localizer.Format("Mandate_NoRollsFormat", entry.Name));
+            return;
+        }
+
+        foreach (MandateRowViewModel row in MandateRows)
+        {
+            row.PropertyChanged += (_, _) => (this.mandateConfirmKey.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+        }
+
+        MandateTitle = Localizer.Format("Mandate_TitleFormat", entry.Name, version, MandateRows.Count, MandateRows.Count(row => row.Diverged));
+        SelectedMandateRow = MandateRows.FirstOrDefault();
+        IsMandating = true;
+        SetVerticalKeys(new FunctionKeyViewModel?[]
+        {
+            FunctionKeyViewModel.ForAction("Vk_MandateAllConsistent", Localizer, () =>
+            {
+                foreach (MandateRowViewModel row in MandateRows.Where(row => !row.Diverged))
+                {
+                    row.Decision = MandateDecision.Force;
+                }
+            }),
+            FunctionKeyViewModel.ForAction("Vk_MandateForce", Localizer, () => SetDecision(MandateDecision.Force)),
+            FunctionKeyViewModel.ForAction("Vk_MandateNotice", Localizer, () => SetDecision(MandateDecision.Notice)),
+            FunctionKeyViewModel.ForAction("Vk_MandateNone", Localizer, () => SetDecision(MandateDecision.None)),
+        });
+        SetCommitPair(new FunctionKeyViewModel("Vk_Cancel", new RelayCommand(CloseMandate), Localizer, FunctionKeyKind.Cancel), this.mandateConfirmKey);
+        (this.mandateConfirmKey.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+        Interaction.Hint(Localizer["Mandate_Hint"]);
+    }
+
+    private void SetDecision(MandateDecision decision)
+    {
+        if (SelectedMandateRow is { } row)
+        {
+            row.Decision = decision;
+        }
+    }
+
+    private void CloseMandate()
+    {
+        IsMandating = false;
+        MandateRows.Clear();
+        SetCommitPair(null, null);
+        SetVerticalKeys(ShowingVersions ? this.versionKeys : this.entryKeys);
+        Interaction.Hint(null);
+    }
+
+    private async Task ConfirmMandateAsync()
+    {
+        if (SelectedEntry is not { } entry)
+        {
+            return;
+        }
+
+        TemplateKind kind = IsProfiles ? TemplateKind.Profile : TemplateKind.Program;
+        var decisions = MandateRows.ToDictionary(row => row.RollId, row => row.Decision, StringComparer.Ordinal);
+        await RunGuardedAsync(
+            async token =>
+            {
+                TemplateMandate mandate = await this.templates.CreateMandateAsync(kind, entry.Id, decisions, UserName, token).ConfigureAwait(true);
+                CloseMandate();
+                Say("Mandate_CreatedFormat", entry.Name, mandate.TemplateVersion, decisions.Count(pair => pair.Value == MandateDecision.Force));
+                await ReloadAsync(token).ConfigureAwait(true);
+            },
+            CancellationToken.None).ConfigureAwait(true);
+    }
+
+    /// <summary>撤回必须采用…：只对还没来磨的辊有效，已换上的不动。</summary>
+    private void AskRevokeMandate()
+    {
+        if (this.activeMandate is not { } mandate)
+        {
+            return;
+        }
+
+        Ask(
+            "Mandate_AskRevokeFormat",
+            async () => await RunGuardedAsync(
+                async token =>
+                {
+                    await this.templates.RevokeMandateAsync(mandate.MandateId, token).ConfigureAwait(true);
+                    this.activeMandate = null;
+                    await ReloadAsync(token).ConfigureAwait(true);
+                },
+                CancellationToken.None).ConfigureAwait(true),
+            mandate.TemplateName,
+            mandate.TemplateVersion);
+    }
 
     /// <summary>复制、重命名、另存为新的用的命名框。</summary>
     public NamePromptViewModel NamePrompt { get; }
 
-    public override bool HasModalPrompt => NamePrompt.IsOpen;
+    public override bool HasModalPrompt => NamePrompt.IsOpen || IsMandating;
 
     /// <summary>最近一次刷新列表的任务。自检等它读完。</summary>
     public Task Loading { get; private set; } = Task.CompletedTask;
 
     public override bool TryDismissPrompt()
     {
+        if (IsMandating)
+        {
+            CloseMandate();
+            return true;
+        }
+
         if (!NamePrompt.IsOpen)
         {
             return false;
@@ -217,7 +425,24 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         return true;
     }
 
-    public override void OnActivated() => Loading = RunGuardedAsync(ReloadAsync, CancellationToken.None);
+    public override void OnActivated()
+    {
+        // 模板编辑页"保存并必须采用…"派过来的：存好后直接进逐支决定。
+        string? mandateFor = IsProfiles ? this.jobDraft.MandateProfileTemplateId : this.jobDraft.MandateProgramTemplateId;
+        this.jobDraft.MandateProfileTemplateId = IsProfiles ? null : this.jobDraft.MandateProfileTemplateId;
+        this.jobDraft.MandateProgramTemplateId = IsProfiles ? this.jobDraft.MandateProgramTemplateId : null;
+        Loading = RunGuardedAsync(
+            async token =>
+            {
+                await ReloadAsync(token).ConfigureAwait(true);
+                if (mandateFor is not null && Entries.FirstOrDefault(entry => entry.Id == mandateFor) is { } entry)
+                {
+                    SelectedEntry = entry;
+                    await OpenMandateAsync().ConfigureAwait(true);
+                }
+            },
+            CancellationToken.None);
+    }
 
     /// <summary>长按一行 = 打开。</summary>
     [RelayCommand]
@@ -260,12 +485,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
     {
         string? keep = SelectedEntry?.Id;
         Entries.Clear();
-        Dictionary<string, int> usage = (await this.rolls.ListAsync(int.MaxValue, cancellationToken).ConfigureAwait(true))
-            .Where(roll => !roll.Retired)
-            .Select(roll => IsProfiles ? roll.TargetProfileId : roll.ProgramId)
-            .Where(id => id is not null)
-            .GroupBy(id => id!)
-            .ToDictionary(group => group.Key, group => group.Count());
+        TemplateKind kind = IsProfiles ? TemplateKind.Profile : TemplateKind.Program;
 
         if (IsProfiles)
         {
@@ -277,7 +497,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
                     entry.Name,
                     Localizer.Format("Lib_VersionFormat", entry.Version),
                     Localizer.Format("Lib_ProfileDetailFormat", entry.SegmentCount, entry.BodyLengthMm.ToString("F0", CultureInfo.InvariantCulture)),
-                    usage.TryGetValue(entry.ProfileId, out int used) ? used.ToString(CultureInfo.InvariantCulture) : "0",
+                    UsageText(await this.templates.UsageAsync(kind, entry.ProfileId, cancellationToken).ConfigureAwait(true)),
                     Time(entry.ModifiedAtUtc),
                     entry.Disabled));
             }
@@ -292,7 +512,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
                     entry.Name,
                     Localizer.Format("Lib_VersionFormat", entry.Version),
                     Localizer.Format("Lib_ProgramDetailFormat", entry.StepCount, Localizer["RollKindFilter_" + entry.ApplicableRollKind]),
-                    usage.TryGetValue(entry.ProgramId, out int used) ? used.ToString(CultureInfo.InvariantCulture) : "0",
+                    UsageText(await this.templates.UsageAsync(kind, entry.ProgramId, cancellationToken).ConfigureAwait(true)),
                     Time(entry.ModifiedAtUtc),
                     entry.Disabled));
             }
@@ -336,12 +556,24 @@ public sealed partial class LibraryViewModel : PageViewModelBase
                     string.Join(" · ", program.Steps.Select(step => Localizer["StepType_" + step.StepTypeKey])), Localizer));
             }
 
-            IReadOnlyList<RollRecord> users = IsProfiles
+            // 旧台账计划还直接指着它的辊（第一次用到时才建方案）：删 / 停用前要提醒。
+            this.legacyUsers = (IsProfiles
                 ? await this.library.ProfileUsersAsync(entry.Id, cancellationToken).ConfigureAwait(true)
-                : await this.library.ProgramUsersAsync(entry.Id, cancellationToken).ConfigureAwait(true);
-            foreach (RollRecord roll in users)
+                : await this.library.ProgramUsersAsync(entry.Id, cancellationToken).ConfigureAwait(true)).Count;
+
+            // 复制关系（设计稿 v4 5.6.1）：当前方案复制自它的辊，一致 / 已改动，必须采用的决定与进度。
+            TemplateKind kind = IsProfiles ? TemplateKind.Profile : TemplateKind.Program;
+            this.activeMandate = (await this.templates.UsageAsync(kind, entry.Id, cancellationToken).ConfigureAwait(true)).Mandate;
+            foreach (TemplateCopyRow row in await this.templates.CopiedRollsAsync(kind, entry.Id, cancellationToken).ConfigureAwait(true))
             {
-                Users.Add(new LibraryUserRowViewModel(roll.RollId, roll.Purpose ?? "--", roll.StartDiameterMm.ToString("F2", CultureInfo.CurrentCulture)));
+                string state = Localizer.Format(
+                    "Lib_CopyStateFormat", row.Plan.PlanNo, Localizer[row.Diverged ? "Plan_Diverged" : "Plan_Consistent"], row.CopiedVersion ?? 0);
+                if (row.Decision is { } decision)
+                {
+                    state += " · " + (row.Applied ? Localizer["Mandate_Applied"] : Localizer["Mandate_" + decision]);
+                }
+
+                Users.Add(new LibraryUserRowViewModel(row.Roll.RollId, row.Roll.Purpose ?? "--", state));
             }
 
             foreach (LibraryVersionEntry version in await this.library
@@ -502,7 +734,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
 
         bool disable = !entry.IsDisabled;
         Ask(
-            disable ? (Users.Count > 0 ? "Lib_AskDisableInUse" : "Lib_AskDisable") : "Lib_AskEnable",
+            disable ? (this.legacyUsers > 0 ? "Lib_AskDisableInUse" : "Lib_AskDisable") : "Lib_AskEnable",
             async () => await RunGuardedAsync(
                 async token =>
                 {
@@ -520,7 +752,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
                 },
                 CancellationToken.None).ConfigureAwait(true),
             entry.Name,
-            Users.Count);
+            this.legacyUsers);
     }
 
     /// <summary>删除…：被计划引用的不能删，只能停用；作业存的是快照，删了不影响已磨过的记录。</summary>
@@ -531,9 +763,9 @@ public sealed partial class LibraryViewModel : PageViewModelBase
             return;
         }
 
-        if (Users.Count > 0)
+        if (this.legacyUsers > 0)
         {
-            Interaction.Refuse(Localizer.Format("Lib_DeleteRefusedInUse", entry.Name, Users.Count));
+            Interaction.Refuse(Localizer.Format("Lib_DeleteRefusedInUse", entry.Name, this.legacyUsers));
             return;
         }
 
@@ -551,7 +783,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
                     }
                     else
                     {
-                        Interaction.Refuse(Localizer.Format("Lib_DeleteRefusedInUse", entry.Name, Users.Count));
+                        Interaction.Refuse(Localizer.Format("Lib_DeleteRefusedInUse", entry.Name, this.legacyUsers));
                     }
 
                     await ReloadAsync(token).ConfigureAwait(true);

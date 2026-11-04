@@ -3950,7 +3950,7 @@
     <value>By</value>
   </data>
   <data name="Lib_ColUsers" xml:space="preserve">
-    <value>In use</value>
+    <value>Copied by</value>
   </data>
   <data name="Lib_ColVersion" xml:space="preserve">
     <value>Version</value>
@@ -3984,9 +3984,6 @@
   </data>
   <data name="Lib_SaveVersionAsNewTitle" xml:space="preserve">
     <value>Save this old version as a new entry</value>
-  </data>
-  <data name="Lib_UsersTitleFormat" xml:space="preserve">
-    <value>In use · {0} rolls</value>
   </data>
   <data name="Lib_VersionFormat" xml:space="preserve">
     <value>v{0}</value>
@@ -4124,7 +4121,7 @@
     <value>{0} · {1} · {2}</value>
   </data>
   <data name="Rolls_ColCheck" xml:space="preserve">
-    <value>Check</value>
+    <value>Alignment / reason excluded</value>
   </data>
   <data name="Rolls_ColDate" xml:space="preserve">
     <value>Date</value>
@@ -4265,7 +4262,7 @@
     <value>✕ Back to queue</value>
   </data>
   <data name="Vk_ChangePlan" xml:space="preserve">
-    <value>Change plan…</value>
+    <value>Build plans from template…</value>
   </data>
   <data name="Vk_CheckAll" xml:space="preserve">
     <value>Check all</value>
@@ -4391,7 +4388,7 @@
     <value>Job checks</value>
   </data>
   <data name="CfgField_lengthTolerancePercent" xml:space="preserve">
-    <value>Body length tolerance (%)</value>
+    <value>Download length tolerance (%)</value>
   </data>
   <data name="CfgField_minWorkpieceSurfaceSpeedMPerMin" xml:space="preserve">
     <value>Min. workpiece surface speed (m/min)</value>
@@ -5118,5 +5115,296 @@
   </data>
   <data name="Plan_EndZoneInvalid" xml:space="preserve">
     <value>The end zone must be between 0 and half the nominal length, or empty</value>
+  </data>
+  <data name="Copy_ListTitleFormat" xml:space="preserve">
+    <value>{0} · copy to {1} ({2})</value>
+  </data>
+  <data name="CopyRange_ThisRoll" xml:space="preserve">
+    <value>This roll's plans</value>
+  </data>
+  <data name="CopyRange_OtherRolls" xml:space="preserve">
+    <value>Other rolls</value>
+  </data>
+  <data name="CopyRange_Templates" xml:space="preserve">
+    <value>Templates</value>
+  </data>
+  <data name="Copy_NewRollFormat" xml:space="preserve">
+    <value>New roll (nominal {0:F0})</value>
+  </data>
+  <data name="Copy_ProfileTemplateFormat" xml:space="preserve">
+    <value>Profile template · {0}</value>
+  </data>
+  <data name="Copy_ProgramTemplateFormat" xml:space="preserve">
+    <value>Process template · {0}</value>
+  </data>
+  <data name="Copy_OtherPlanFormat" xml:space="preserve">
+    <value>{0} / plan {1} · {2}</value>
+  </data>
+  <data name="Copy_Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Copy_Result" xml:space="preserve">
+    <value>After copying</value>
+  </data>
+  <data name="Copy_ResultFormat" xml:space="preserve">
+    <value>Profile {0} · process {1}</value>
+  </data>
+  <data name="Copy_Lengths" xml:space="preserve">
+    <value>Nominal source → this roll</value>
+  </data>
+  <data name="Copy_LengthsFormat" xml:space="preserve">
+    <value>{0:F1} → {1:F1} (diff {2:+0.0;-0.0;0})</value>
+  </data>
+  <data name="Copy_Method" xml:space="preserve">
+    <value>Method</value>
+  </data>
+  <data name="Copy_Segments" xml:space="preserve">
+    <value>Segments</value>
+  </data>
+  <data name="Copy_SegmentsFormat" xml:space="preserve">
+    <value>{0} → {1}</value>
+  </data>
+  <data name="Copy_Verdict" xml:space="preserve">
+    <value>Verdict</value>
+  </data>
+  <data name="Copy_Download" xml:space="preserve">
+    <value>At download (measured)</value>
+  </data>
+  <data name="Copy_DownloadExact" xml:space="preserve">
+    <value>Measured equals nominal</value>
+  </data>
+  <data name="Copy_DownloadTrimFormat" xml:space="preserve">
+    <value>Measured {0:F1}: {1:F1} trimmed at each end</value>
+  </data>
+  <data name="Copy_DownloadExtendFormat" xml:space="preserve">
+    <value>Measured {0:F1}: {1:F1} extended at each end</value>
+  </data>
+  <data name="Copy_DownloadBlockFormat" xml:space="preserve">
+    <value>▲ Measured {0:F1} is beyond the download tolerance: the review will block it</value>
+  </data>
+  <data name="Copy_NoProfile" xml:space="preserve">
+    <value>Profile unchanged (process only)</value>
+  </data>
+  <data name="Copy_NeedsConfirmShort" xml:space="preserve">
+    <value>▲ confirm</value>
+  </data>
+  <data name="Copy_DownloadShortFormat" xml:space="preserve">
+    <value>at download {0:+0.0;-0.0} per end</value>
+  </data>
+  <data name="Copy_DownloadBlockShort" xml:space="preserve">
+    <value>▲ beyond download tolerance</value>
+  </data>
+  <data name="Copy_MethodSame" xml:space="preserve">
+    <value>Same length: copied as is</value>
+  </data>
+  <data name="Copy_MethodMiddle" xml:space="preserve">
+    <value>End segments kept, middle filled to the new length, shape unchanged</value>
+  </data>
+  <data name="Copy_MethodTrimFormat" xml:space="preserve">
+    <value>Trimmed {0:F1} at each end about the centre</value>
+  </data>
+  <data name="Copy_MethodExtendFormat" xml:space="preserve">
+    <value>Tangent extension {0:F1} at each end</value>
+  </data>
+  <data name="Copy_MethodRefused" xml:space="preserve">
+    <value>Longer than the tolerance: not applied (the polynomial would diverge)</value>
+  </data>
+  <data name="Copy_VerdictRefusedFormat" xml:space="preserve">
+    <value>✕ Cannot copy: {0}</value>
+  </data>
+  <data name="Copy_VerdictConfirm" xml:space="preserve">
+    <value>▲ Confirm: check the overlay, then ✓ copy to this roll</value>
+  </data>
+  <data name="Copy_VerdictOk" xml:space="preserve">
+    <value>✓ Can be copied directly</value>
+  </data>
+  <data name="Vk_CopyToRoll" xml:space="preserve">
+    <value>✓ Copy to this roll</value>
+  </data>
+  <data name="Copy_CannotCopy" xml:space="preserve">
+    <value>Select a source that can be copied</value>
+  </data>
+  <data name="Vk_CopyFrom" xml:space="preserve">
+    <value>Copy from ▸</value>
+  </data>
+  <data name="Vk_CopyRangeThisRoll" xml:space="preserve">
+    <value>This roll</value>
+  </data>
+  <data name="Vk_CopyRangeOtherRolls" xml:space="preserve">
+    <value>Other rolls</value>
+  </data>
+  <data name="Vk_CopyRangeTemplates" xml:space="preserve">
+    <value>Templates</value>
+  </data>
+  <data name="Vk_CopyScope" xml:space="preserve">
+    <value>Copy scope ▸</value>
+  </data>
+  <data name="CopyScope_All" xml:space="preserve">
+    <value>Profile + process</value>
+  </data>
+  <data name="CopyScope_ProfileOnly" xml:space="preserve">
+    <value>Profile only</value>
+  </data>
+  <data name="CopyScope_ProgramOnly" xml:space="preserve">
+    <value>Process only</value>
+  </data>
+  <data name="Copy_HintPick" xml:space="preserve">
+    <value>Pick a source: length alignment and overlay on the right</value>
+  </data>
+  <data name="Copy_HintRefusedFormat" xml:space="preserve">
+    <value>Cannot copy: {0}</value>
+  </data>
+  <data name="Copy_HintConfirm" xml:space="preserve">
+    <value>Lengths differ: check the overlay, then ✓ copy to this roll (the new plan is not made current)</value>
+  </data>
+  <data name="Copy_HintOk" xml:space="preserve">
+    <value>✓ Copy to this roll: the new plan is not current; set it current in the plan list</value>
+  </data>
+  <data name="Copy_DoneFormat" xml:space="preserve">
+    <value>Copied as plan {0} (from {1}); not made current</value>
+  </data>
+  <data name="Plan_TemplateUpdated" xml:space="preserve">
+    <value>↑ template updated</value>
+  </data>
+  <data name="Plan_Consistent" xml:space="preserve">
+    <value>= same</value>
+  </data>
+  <data name="Plan_Diverged" xml:space="preserve">
+    <value>≠ changed</value>
+  </data>
+  <data name="Plan_ColConsistency" xml:space="preserve">
+    <value>vs source</value>
+  </data>
+  <data name="Vk_BuildPlansOnly" xml:space="preserve">
+    <value>Build only…</value>
+  </data>
+  <data name="Rolls_PlansBuiltFormat" xml:space="preserve">
+    <value>Built a new plan for {0} rolls (not made current)</value>
+  </data>
+  <data name="Vk_CopyFromRoll" xml:space="preserve">
+    <value>Copy from another roll…</value>
+  </data>
+  <data name="Vk_PlanLater" xml:space="preserve">
+    <value>Plan later</value>
+  </data>
+  <data name="Rolls_PlanSourceCopy" xml:space="preserve">
+    <value>Copied from another roll (made current)</value>
+  </data>
+  <data name="Rolls_PlanSourceTemplate" xml:space="preserve">
+    <value>From templates</value>
+  </data>
+  <data name="Rolls_PlanSourceLater" xml:space="preserve">
+    <value>Later (a current plan is needed before a job)</value>
+  </data>
+  <data name="Rolls_PlanSource" xml:space="preserve">
+    <value>First plan</value>
+  </data>
+  <data name="Rolls_PlanAlignment" xml:space="preserve">
+    <value>Length alignment</value>
+  </data>
+  <data name="Mandate_Force" xml:space="preserve">
+    <value>Force too</value>
+  </data>
+  <data name="Mandate_Notice" xml:space="preserve">
+    <value>Notice only</value>
+  </data>
+  <data name="Mandate_None" xml:space="preserve">
+    <value>No notice</value>
+  </data>
+  <data name="Mandate_Applied" xml:space="preserve">
+    <value>Applied</value>
+  </data>
+  <data name="Mandate_NothingForced" xml:space="preserve">
+    <value>No roll is forced</value>
+  </data>
+  <data name="Mandate_NoneActive" xml:space="preserve">
+    <value>This template has no active must-adopt</value>
+  </data>
+  <data name="Vk_Mandate" xml:space="preserve">
+    <value>Must adopt…</value>
+  </data>
+  <data name="Vk_RevokeMandate" xml:space="preserve">
+    <value>Revoke must-adopt…</value>
+  </data>
+  <data name="Vk_MandateConfirm" xml:space="preserve">
+    <value>✓ Must adopt</value>
+  </data>
+  <data name="Vk_MandateAllConsistent" xml:space="preserve">
+    <value>Force all unchanged</value>
+  </data>
+  <data name="Vk_MandateForce" xml:space="preserve">
+    <value>This roll: force</value>
+  </data>
+  <data name="Vk_MandateNotice" xml:space="preserve">
+    <value>This roll: notice only</value>
+  </data>
+  <data name="Vk_MandateNone" xml:space="preserve">
+    <value>This roll: no notice</value>
+  </data>
+  <data name="Lib_CopyStateFormat" xml:space="preserve">
+    <value>Plan {0} · {1} · copied from v{2}</value>
+  </data>
+  <data name="Lib_UsageFormat" xml:space="preserve">
+    <value>same {0} · changed {1}</value>
+  </data>
+  <data name="Lib_MandateProgressFormat" xml:space="preserve">
+    <value>must {0}/{1}</value>
+  </data>
+  <data name="Lib_CopiesTitleFormat" xml:space="preserve">
+    <value>Rolls copied from it ({0})</value>
+  </data>
+  <data name="Lib_ColCopyState" xml:space="preserve">
+    <value>Current plan · vs template · must-adopt</value>
+  </data>
+  <data name="Mandate_NoRollsFormat" xml:space="preserve">
+    <value>No roll's current plan was copied from an older "{0}": nothing to adopt</value>
+  </data>
+  <data name="Mandate_TitleFormat" xml:space="preserve">
+    <value>Must adopt: {0} v{1} · {2} rolls ({3} changed)</value>
+  </data>
+  <data name="Mandate_Hint" xml:space="preserve">
+    <value>Changed rolls default to "notice only"; change each with keys 2–4; key 1 only affects unchanged rolls; after ✓ the review swaps in a plan copied from the new template next time each roll is ground</value>
+  </data>
+  <data name="Mandate_CreatedFormat" xml:space="preserve">
+    <value>"{0}" v{1} must be adopted: {2} rolls switch next time they are ground</value>
+  </data>
+  <data name="Mandate_AskRevokeFormat" xml:space="preserve">
+    <value>Revoke must-adopt of "{0}" v{1}? Rolls not ground yet are no longer forced; applied ones stay</value>
+  </data>
+  <data name="Mandate_ColDecision" xml:space="preserve">
+    <value>Decision</value>
+  </data>
+  <data name="Mandate_Footer" xml:space="preserve">
+    <value>Must-adopt deletes no plan: it copies a new plan from the new template and makes it current; the old one stays as history and can be set back</value>
+  </data>
+  <data name="Lib_AskSaveCopiedFormat" xml:space="preserve">
+    <value>{1} rolls' current plans were copied from template "{0}" ({2} same · {3} changed). ✓ saves v{4} (no roll changes); key 6 saves and makes it a must-adopt… (no timeout)</value>
+  </data>
+  <data name="Vk_SaveTemplate" xml:space="preserve">
+    <value>✓ Save</value>
+  </data>
+  <data name="Vk_SaveAndMandate" xml:space="preserve">
+    <value>Save and must adopt…</value>
+  </data>
+  <data name="CheckItem_Template" xml:space="preserve">
+    <value>Standard template</value>
+  </data>
+  <data name="Check_Template_ForcedFormat" xml:space="preserve">
+    <value>Standard template "{0}" was updated and must be adopted: plan {1} is now history, this job uses new plan {2}</value>
+  </data>
+  <data name="Check_Template_ForceFailedFormat" xml:space="preserve">
+    <value>Standard template "{0}" must be adopted, but {1}: ask the process engineer (this job keeps the old plan)</value>
+  </data>
+  <data name="Check_Template_UpdatedFormat" xml:space="preserve">
+    <value>Copied from "{0}", which was updated: copy it in the Plans area to use it (this job keeps the plan)</value>
+  </data>
+  <data name="PlanProblem_NeedsConfirm" xml:space="preserve">
+    <value>Lengths differ: confirm after checking the overlay</value>
+  </data>
+  <data name="CfgField_lengthToleranceMm" xml:space="preserve">
+    <value>Download tolerance cap (mm, smaller of mm and %)</value>
+  </data>
+  <data name="CfgField_copyThresholdMm" xml:space="preserve">
+    <value>Copy threshold (mm)</value>
   </data>
 </root>

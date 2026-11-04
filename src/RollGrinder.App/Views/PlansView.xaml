@@ -28,6 +28,7 @@
                         <DataGridTextColumn Header="{loc:Loc Plan_ColName}" Binding="{Binding NameText}" Width="2.4*" />
                         <DataGridTextColumn Header="{loc:Loc Plan_ColPurpose}" Binding="{Binding PurposeText}" Width="0.7*" />
                         <DataGridTextColumn Header="{loc:Loc Plan_ColSource}" Binding="{Binding SourceText}" Width="2*" />
+                        <DataGridTextColumn Header="{loc:Loc Plan_ColConsistency}" Binding="{Binding ConsistencyText}" Width="0.9*" />
                         <DataGridTextColumn Header="{loc:Loc Plan_ColNominal}" Binding="{Binding NominalText}" Width="0.7*" />
                         <DataGridTextColumn Header="{loc:Loc Plan_ColUsed}" Binding="{Binding UsedText}" Width="0.5*" />
                         <DataGridTextColumn Header="{loc:Loc Plan_ColLast}" Binding="{Binding LastText}" Width="0.7*" />
@@ -69,6 +70,10 @@
                 </DockPanel>
             </Border>
         </Grid>
+
+        <!-- 复制来（设计稿 v4 5.5.5）：与作业换方案同一个选方案子视图，盖住整页。 -->
+        <views:PlanPickerView Grid.RowSpan="3" DataContext="{Binding Picker}"
+                              Visibility="{Binding DataContext.IsPicking, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}" />
 
         <!-- 新方案名、改名（3 种弹出框之一）。 -->
         <views:NamePromptOverlay Grid.RowSpan="3" DataContext="{Binding NamePrompt}" />

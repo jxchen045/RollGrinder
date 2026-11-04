@@ -118,7 +118,7 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="{loc:Loc Ledger_Code}" Binding="{Binding RollId}" Width="1.4*" />
                                 <DataGridTextColumn Header="{loc:Loc Ledger_Purpose}" Binding="{Binding Purpose}" Width="*" />
-                                <DataGridTextColumn Header="{loc:Loc Ledger_CurrentDiameter}" Binding="{Binding CurrentText}" Width="*" />
+                                <DataGridTextColumn Header="{loc:Loc Lib_ColCopyState}" Binding="{Binding CurrentText}" Width="2.4*" />
                             </DataGrid.Columns>
                         </DataGrid>
                         <DataGrid ItemsSource="{Binding Versions}" SelectedItem="{Binding SelectedVersion}" AutoGenerateColumns="False" IsReadOnly="True"
@@ -134,6 +134,28 @@
                 </DockPanel>
             </Border>
         </Grid>
+
+        <!-- 保存模板 · 必须采用（设计稿 v4 5.6.2，页内决定）：逐支列出复制自它的辊，竖键 1–4 改决定，8 确认。 -->
+        <Border Grid.ColumnSpan="2" Style="{StaticResource Card}"
+                Visibility="{Binding IsMandating, Converter={StaticResource BoolToVisibility}}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                    <TextBlock Text="{Binding MandateTitle}" Style="{StaticResource Text.CardTitle}" TextTrimming="CharacterEllipsis" />
+                </Border>
+                <TextBlock DockPanel.Dock="Bottom" Text="{loc:Loc Mandate_Footer}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="14,8" />
+                <DataGrid ItemsSource="{Binding MandateRows}" SelectedItem="{Binding SelectedMandateRow}" AutoGenerateColumns="False" IsReadOnly="True"
+                          Style="{StaticResource DataTable}" HeadersVisibility="Column">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="{loc:Loc Ledger_Code}" Binding="{Binding RollId}" Width="1.2*" />
+                        <DataGridTextColumn Header="{loc:Loc Ledger_Purpose}" Binding="{Binding Purpose}" Width="0.8*" />
+                        <DataGridTextColumn Header="{loc:Loc Rolls_CurrentPlan}" Binding="{Binding PlanText}" Width="2*" />
+                        <DataGridTextColumn Header="{loc:Loc Plan_ColConsistency}" Binding="{Binding ConsistencyText}" Width="0.9*" />
+                        <DataGridTextColumn Header="{loc:Loc Rolls_PlanAlignment}" Binding="{Binding AlignmentText}" Width="2.4*" />
+                        <DataGridTextColumn Header="{loc:Loc Mandate_ColDecision}" Binding="{Binding DecisionText}" Width="1.1*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
 
         <!-- 复制、重命名、另存为新的命名框（3 种弹出框之一）。 -->
         <views:NamePromptOverlay Grid.ColumnSpan="2" DataContext="{Binding NamePrompt}" />

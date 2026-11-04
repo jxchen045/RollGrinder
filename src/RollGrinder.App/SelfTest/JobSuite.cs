@@ -379,5 +379,80 @@ internal sealed class JobSuite : ISelfTestSuite
                 await plans.DeleteAsync(copy.PlanId, "selftest", default);
             }
         }, StepOptions.Shot);
+
+        await h.StepAsync("Plan", "CopyFromAnotherRoll", async ctx =>
+        {
+            // 设计稿 v4 5.5.5：方案列表"复制来 ▸"，选其他辊的方案，右边长度对齐与叠图，✓ 复制到本辊（不设为当前）。
+            IGrindingPlanService plans = h.Services.GetRequiredService<IGrindingPlanService>();
+            if (await plans.CurrentAsync(SelfTestNames.JobRollId, default) is null)
+            {
+                ctx.Skip("the self-test roll has no plan");
+                return;
+            }
+
+            int before = (await plans.ListAsync(SelfTestNames.JobRollId, default)).Count;
+            h.Services.GetRequiredService<JobDraft>().PlanRollId = SelfTestNames.JobRollId;
+            await h.GoToAsync(PageKey.Plans, ctx);
+            PlansViewModel page = h.Page<PlansViewModel>();
+            await page.Loading;
+            await h.PressVerticalKeyAsync(ctx, "Vk_CopyFrom");
+            bool opened = await h.WaitUntilAsync(() => page.IsPicking, TimeSpan.FromSeconds(10));
+            ctx.Check(opened, "'copy from' should open the source picker");
+            if (page.Picker.Items.Count == 0)
+            {
+                page.TryDismissPrompt();
+                ctx.Skip("no other roll has a plan");
+                return;
+            }
+
+            await h.WaitUntilAsync(() => page.Picker.CopyResult is not null, TimeSpan.FromSeconds(10));
+            ctx.Check(page.Picker.ProgramRows.Count >= 3, "the preview should list the length alignment");
+            h.TryScreenshot("plans-copy-preview");
+            if (!page.Picker.CanCopy)
+            {
+                page.TryDismissPrompt();
+                ctx.Skip("the first source cannot be copied to this roll: " + page.Picker.CopyResult?.ProblemKey);
+                return;
+            }
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_CopyToRoll");
+            bool copied = await h.WaitUntilAsync(() => !page.IsPicking && page.Rows.Count == before + 1, TimeSpan.FromSeconds(10));
+            ctx.Check(copied, "the copy should add one plan to this roll");
+            PlanRowViewModel? added = page.Rows.FirstOrDefault(row => !row.IsCurrent && row.Overview.Plan.SourceKind == PlanSourceKind.OtherRollPlan);
+            ctx.Check(added is not null, "the new plan remembers it came from another roll and is not current");
+            if (added is not null)
+            {
+                await plans.DeleteAsync(added.PlanId, "selftest", default);
+            }
+
+            await h.GoToAsync(PageKey.Job, ctx);
+        }, StepOptions.Shot);
+
+        await h.StepAsync("Template", "MandateViewOpensAndCancels", async ctx =>
+        {
+            // 设计稿 v4 5.6.2：模板库"必须采用…"——有复制自旧版的辊就列逐支决定，没有就在对话行说；取消不留东西。
+            await h.GoToAsync(PageKey.ProfileLibrary, ctx);
+            LibraryViewModel library = h.Services.GetServices<PageViewModelBase>().OfType<LibraryViewModel>().First(page => page.IsProfiles);
+            await library.Loading;
+            if (library.SelectedEntry is null)
+            {
+                ctx.Skip("the profile template library is empty");
+                return;
+            }
+
+            await h.PressVerticalKeyAsync(ctx, "Vk_Mandate");
+            await h.SettleAsync(500);
+            if (library.IsMandating)
+            {
+                ctx.Check(library.MandateRows.Count > 0, "the decision list should list the rolls");
+                h.TryScreenshot("template-mandate");
+                await h.PressVerticalKeyAsync(ctx, "Vk_Cancel");
+                ctx.Check(await h.WaitUntilAsync(() => !library.IsMandating, TimeSpan.FromSeconds(5)), "cancel closes the decision list");
+            }
+            else
+            {
+                ctx.Note("no roll copied from an older version: nothing to adopt");
+            }
+        });
     }
 }
