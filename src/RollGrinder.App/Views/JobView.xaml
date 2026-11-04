@@ -273,6 +273,135 @@
             </Grid>
         </Grid>
 
+        <!--
+            本次调整（设计稿 v4 5.2.5）：左边能调的参数（工序、参数、设定值、本次值、允许、上次），不能调的 🔒 列在下面；
+            右边是选中那一项的大 −/+ 与范围条。超范围的行标红，"✓ 用于本次"不收。竖键 1 载入上次、2 恢复这一项、6 全部恢复设定值…
+        -->
+        <Grid Background="{StaticResource Brush.Background}"
+              Visibility="{Binding IsAdjusting, Converter={StaticResource BoolToVisibility}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="{ctl:Px 420}" />
+            </Grid.ColumnDefinitions>
+            <Border Style="{StaticResource Card}" Margin="0,0,6,0">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                        <TextBlock Text="{Binding AdjustTitle}" Style="{StaticResource Text.CardTitle}" TextTrimming="CharacterEllipsis" />
+                    </Border>
+                    <Grid DockPanel.Dock="Top" Margin="12,6,12,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.3*" />
+                            <ColumnDefinition Width="1.5*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="1.3*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{loc:Loc Adjust_ColStep}" Style="{StaticResource Text.Label}" />
+                        <TextBlock Grid.Column="1" Text="{loc:Loc Adjust_ColParameter}" Style="{StaticResource Text.Label}" />
+                        <TextBlock Grid.Column="2" Text="{loc:Loc Adjust_ColPlan}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="3" Text="{loc:Loc Adjust_ColJob}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="4" Text="{loc:Loc Adjust_ColAllowed}" Style="{StaticResource Text.Label}" Margin="16,0,0,0" />
+                        <TextBlock Grid.Column="5" Text="{loc:Loc Adjust_ColLast}" Style="{StaticResource Text.Label}" />
+                    </Grid>
+                    <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding LockedRows}" Margin="12,6,12,8">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Style="{StaticResource Text.Label}" Margin="0,0,18,2" Foreground="{StaticResource Brush.DisabledText}">
+                                    <Run Text="&#x1F512;" />
+                                    <Run Text="{Binding StepText, Mode=OneWay}" />
+                                    <Run Text="{Binding ParameterText, Mode=OneWay}" />
+                                    <Run Text="{Binding ValueText, Mode=OneWay}" FontFamily="{StaticResource Font.Mono}" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock DockPanel.Dock="Bottom" Text="{loc:Loc Adjust_LockedHeader}" Style="{StaticResource Text.Label}" Margin="12,6,12,0" />
+                    <ListBox ItemsSource="{Binding AdjustRows}" SelectedItem="{Binding SelectedAdjustRow}" BorderThickness="0"
+                             Background="Transparent" HorizontalContentAlignment="Stretch" ScrollViewer.PanningMode="VerticalOnly">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="Row" Height="52" Padding="12,0" BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="0,0,0,1" Background="Transparent">
+                                    <Grid VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="1.3*" />
+                                            <ColumnDefinition Width="1.5*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="1.3*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding StepText}" Style="{StaticResource Text.Body}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1" Style="{StaticResource Text.Body}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                            <Run Text="{Binding ParameterText, Mode=OneWay}" />
+                                            <Run Text="{Binding UnitText, Mode=OneWay}" Foreground="{StaticResource Brush.DisabledText}" />
+                                        </TextBlock>
+                                        <TextBlock Grid.Column="2" Text="{Binding PlanText}" FontFamily="{StaticResource Font.Mono}" Style="{StaticResource Text.Body}"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        <TextBox x:Name="ValueBox" Grid.Column="3" Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                                                 ctl:TouchInput.IsNumeric="True" HorizontalContentAlignment="Right" Margin="6,4,0,4" />
+                                        <TextBlock Grid.Column="4" Style="{StaticResource Text.Label}" Margin="16,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                            <Run Text="{Binding AllowedText, Mode=OneWay}" FontFamily="{StaticResource Font.Mono}" />
+                                            <Run Text="{Binding ModeText, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <TextBlock Grid.Column="5" Text="{Binding LastText}" Style="{StaticResource Text.Label}" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource Brush.PendingValue}" />
+                                    </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsChanged}" Value="True">
+                                        <Setter TargetName="ValueBox" Property="FontWeight" Value="Bold" />
+                                        <Setter TargetName="ValueBox" Property="Foreground" Value="{StaticResource Brush.PendingValue}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsRefused}" Value="True">
+                                        <Setter TargetName="Row" Property="Background" Value="{StaticResource Brush.WarningRowFill}" />
+                                        <Setter TargetName="ValueBox" Property="Foreground" Value="{StaticResource Brush.Alarm}" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+            <Border Grid.Column="1" Style="{StaticResource Card}" DataContext="{Binding SelectedAdjustRow}">
+                <StackPanel Margin="16,12">
+                    <TextBlock Text="{Binding StepText}" Style="{StaticResource Text.Label}" />
+                    <TextBlock Text="{Binding ParameterText}" Style="{StaticResource Text.CardTitle}" Margin="0,2,0,10" />
+                    <DockPanel Margin="0,0,0,6">
+                        <TextBlock Text="{loc:Loc Adjust_ColPlan}" Style="{StaticResource Text.Label}" Width="{ctl:Px 120}" />
+                        <TextBlock Text="{Binding PlanText}" FontFamily="{StaticResource Font.Mono}" Style="{StaticResource Text.Body}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,10">
+                        <TextBlock Text="{loc:Loc Adjust_ColAllowed}" Style="{StaticResource Text.Label}" Width="{ctl:Px 120}" />
+                        <TextBlock Text="{Binding AllowedText}" FontFamily="{StaticResource Font.Mono}" Style="{StaticResource Text.Body}" />
+                    </DockPanel>
+                    <Grid Margin="0,4,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="{ctl:Px 96}" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="{ctl:Px 96}" />
+                        </Grid.ColumnDefinitions>
+                        <Button Content="&#x2212;" FontSize="36" Height="{ctl:Px 84}" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding DataContext.AdjustDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                        <TextBox Grid.Column="1" Text="{Binding ValueText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}"
+                                 ctl:TouchInput.IsNumeric="True" FontSize="32" HorizontalContentAlignment="Center" Margin="8,0" />
+                        <Button Grid.Column="2" Content="+" FontSize="36" Height="{ctl:Px 84}" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding DataContext.AdjustUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                    </Grid>
+                    <Slider Minimum="{Binding SliderMinimum}" Maximum="{Binding SliderMaximum}" Value="{Binding SliderValue}" Margin="0,4"
+                            Visibility="{Binding HasSlider, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock Text="{Binding DeltaText}" Style="{StaticResource Text.Body}" Foreground="{StaticResource Brush.PendingValue}" FontWeight="Bold" Margin="0,6,0,0" />
+                    <TextBlock Text="{Binding RefusalText}" Style="{StaticResource Text.Body}" Foreground="{StaticResource Brush.Alarm}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding LastText}" Style="{StaticResource Text.Label}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <views:PlanPickerView DataContext="{Binding Picker}"
                               Visibility="{Binding DataContext.IsPicking, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}" />
     </Grid>

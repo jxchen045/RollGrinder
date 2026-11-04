@@ -259,6 +259,20 @@
                         <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                             <TextBlock Text="{Binding SnapshotTitle}" Style="{StaticResource Text.CardTitle}" />
                         </Border>
+                        <!-- 本次调整（设计说明 5.4）：参数、方案值 → 本次值、谁、何时；核对时与运行中都列。 -->
+                        <StackPanel DockPanel.Dock="Bottom" Margin="14,4,14,10">
+                            <TextBlock Text="{Binding SnapshotAdjustTitle}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,4" />
+                            <ItemsControl ItemsSource="{Binding SnapshotAdjustments}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                         <ItemsControl ItemsSource="{Binding SnapshotRows}" Margin="14,8">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -305,6 +319,49 @@
                         </ItemsControl>
                     </DockPanel>
                 </Border>
+        </Grid>
+
+        <!--
+            存为新方案（设计稿 v4 5.8.4）：勾这一次的调整（核对时的默认勾，运行中的默认不勾），起名；
+            作业所用方案已不是当前方案时橙色提示；名字重复时第 8 / 6 格灰。来源记为这一次作业。
+        -->
+        <Grid Grid.ColumnSpan="3" Background="{StaticResource Brush.Background}"
+              Visibility="{Binding IsSaveAsPlanOpen, Converter={StaticResource BoolToVisibility}}">
+            <Border Style="{StaticResource Card}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                        <TextBlock Text="{loc:Loc Records_SavePlanTitle}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <StackPanel DockPanel.Dock="Top" Margin="14,10">
+                        <TextBlock Text="{Binding SavePlanSource}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                        <Border Background="{StaticResource Brush.WarningRowFill}" Padding="10,6" Margin="0,8,0,0"
+                                Visibility="{Binding SavePlanWarning, Converter={StaticResource TextToVisibility}}">
+                            <TextBlock Text="{Binding SavePlanWarning}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                        </Border>
+                        <DockPanel Margin="0,10,0,0">
+                            <TextBlock Text="{loc:Loc Records_SavePlanName}" Style="{StaticResource Text.Label}" VerticalAlignment="Center"
+                                       Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" />
+                            <TextBlock DockPanel.Dock="Right" Text="{loc:Loc PlanProblem_NameTaken}" Style="{StaticResource Text.Body}"
+                                       Foreground="{StaticResource Brush.Alarm}" VerticalAlignment="Center" Margin="12,0,0,0"
+                                       Visibility="{Binding SavePlanNameTaken, Converter={StaticResource BoolToVisibility}}" />
+                            <TextBox Text="{Binding SavePlanName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" />
+                        </DockPanel>
+                        <TextBlock Text="{loc:Loc Records_SavePlanTick}" Style="{StaticResource Text.Label}" Margin="0,12,0,4" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding SaveAdjustRows}" Margin="14,0,14,10">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsTicked}" Margin="0,4" VerticalContentAlignment="Center">
+                                    <StackPanel Margin="8,0,0,0">
+                                        <TextBlock Text="{Binding Text}" Style="{StaticResource Text.Body}" />
+                                        <TextBlock Text="{Binding Note}" Style="{StaticResource Text.Label}" />
+                                    </StackPanel>
+                                </CheckBox>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
         </Grid>
     </Grid>
 </UserControl>

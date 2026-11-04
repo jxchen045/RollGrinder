@@ -175,6 +175,25 @@ public sealed partial class CommissioningViewModel
         {
             AddObjectGroup(name, document[name] as JsonObject);
         }
+
+        // 默认可调范围表（设计稿 v4 5.10.2）：方案没单独设时用它。文件里没写的先按内置初稿列出来（不算改动，改了才写进去）。
+        if (document["adjustRanges"] is not JsonObject ranges)
+        {
+            ranges = new JsonObject();
+            foreach ((string key, Core.Steps.AdjustRule rule) in Core.Steps.AdjustRanges.Defaults)
+            {
+                ranges[key] = rule.ToText();
+            }
+
+            document["adjustRanges"] = ranges;
+            if (this.machineLoaded is not null && this.machineLoaded["adjustRanges"] is null)
+            {
+                this.machineLoaded["adjustRanges"] = ranges.DeepClone();
+            }
+        }
+
+        AddGroup("CfgGroup_adjustRanges", "adjustRanges.", ranges, ranges.Select(pair => pair.Key).ToArray(), Array.Empty<string>(),
+            label: key => AdjustText.Parameter(Localizer, key));
     }
 
     private static readonly string[] JobCheckThresholdKeys =
@@ -200,7 +219,8 @@ public sealed partial class CommissioningViewModel
         JsonObject owner,
         IReadOnlyList<string> properties,
         IReadOnlyList<string> readOnly,
-        bool titleIsText = false)
+        bool titleIsText = false,
+        Func<string, string>? label = null)
     {
         var fields = new List<ConfigFieldViewModel>();
         foreach (string property in properties)
@@ -227,8 +247,8 @@ public sealed partial class CommissioningViewModel
                 owner,
                 property,
                 kind,
-                FieldLabel(property),
-                UnitOf(property),
+                label is null ? FieldLabel(property) : label(property),
+                label is null ? UnitOf(property) : string.Empty,
                 choices,
                 readOnly.Contains(property),
                 OnMachineFieldChanged,

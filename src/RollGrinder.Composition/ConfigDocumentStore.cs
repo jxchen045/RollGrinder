@@ -223,6 +223,19 @@ public sealed class ConfigDocumentStore
 
     private static IEnumerable<ConfigIssue> MachineRules(JsonObject document)
     {
+        // 默认可调范围表（设计稿 v4 5.10.2）：每一项都得读得懂（±10% / decrease / increase / locked / 4..8）。
+        if (document["adjustRanges"] is JsonObject ranges)
+        {
+            foreach ((string name, JsonNode? value) in ranges)
+            {
+                string? text = value is JsonValue leaf && leaf.TryGetValue(out string? raw) ? raw : null;
+                if (Core.Steps.AdjustRule.Parse(text) is null)
+                {
+                    yield return new ConfigIssue("adjustRanges." + name, "Cfg_Issue_AdjustRule", text);
+                }
+            }
+        }
+
         if (document["workpiece"] is JsonObject workpiece)
         {
             foreach ((string min, string max) in new[] { ("minBodyLengthMm", "maxBodyLengthMm"), ("minDiameterMm", "maxDiameterMm") })

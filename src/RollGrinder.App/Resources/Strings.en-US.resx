@@ -5428,4 +5428,220 @@
   <data name="PlanProblem_NameTaken" xml:space="preserve">
     <value>This roll already has a plan with that name</value>
   </data>
+  <data name="Adjust_None" xml:space="preserve">
+    <value>Within range</value>
+  </data>
+  <data name="Adjust_Locked" xml:space="preserve">
+    <value>Not adjustable; change the plan instead</value>
+  </data>
+  <data name="Adjust_BelowRange" xml:space="preserve">
+    <value>Below the allowed range</value>
+  </data>
+  <data name="Adjust_AboveRange" xml:space="preserve">
+    <value>Above the allowed range</value>
+  </data>
+  <data name="Adjust_AllPlanValues" xml:space="preserve">
+    <value>All values back to the plan</value>
+  </data>
+  <data name="Adjust_Applied" xml:space="preserve">
+    <value>Adjustments recorded; checks re-run</value>
+  </data>
+  <data name="Adjust_AskRestoreAllFormat" xml:space="preserve">
+    <value>Restore all {0} items to the plan values?</value>
+  </data>
+  <data name="Adjust_AtLeastFormat" xml:space="preserve">
+    <value>≥ {0}</value>
+  </data>
+  <data name="Adjust_AtMostFormat" xml:space="preserve">
+    <value>≤ {0}</value>
+  </data>
+  <data name="Adjust_BetweenFormat" xml:space="preserve">
+    <value>{0} – {1}</value>
+  </data>
+  <data name="Adjust_ChangeFormat" xml:space="preserve">
+    <value>Step {0} {1} {2} {3} → {4}</value>
+  </data>
+  <data name="Adjust_ColAllowed" xml:space="preserve">
+    <value>Allowed</value>
+  </data>
+  <data name="Adjust_ColJob" xml:space="preserve">
+    <value>This job</value>
+  </data>
+  <data name="Adjust_ColLast" xml:space="preserve">
+    <value>Last time</value>
+  </data>
+  <data name="Adjust_ColParameter" xml:space="preserve">
+    <value>Parameter</value>
+  </data>
+  <data name="Adjust_ColPlan" xml:space="preserve">
+    <value>Plan value</value>
+  </data>
+  <data name="Adjust_ColStep" xml:space="preserve">
+    <value>Step</value>
+  </data>
+  <data name="Adjust_DeltaFormat" xml:space="preserve">
+    <value>Δ {0}</value>
+  </data>
+  <data name="Adjust_HasRefused" xml:space="preserve">
+    <value>Some values are out of range; bring them back first</value>
+  </data>
+  <data name="Adjust_LastFormat" xml:space="preserve">
+    <value>Last {0}</value>
+  </data>
+  <data name="Adjust_ListSeparator" xml:space="preserve">
+    <value>; </value>
+  </data>
+  <data name="Adjust_LockedHeader" xml:space="preserve">
+    <value>Not adjustable (🔒, change the plan)</value>
+  </data>
+  <data name="Adjust_MenuDefault" xml:space="preserve">
+    <value>Default ({0})</value>
+  </data>
+  <data name="Adjust_MenuLocked" xml:space="preserve">
+    <value>🔒 Locked</value>
+  </data>
+  <data name="Adjust_MenuPercentFormat" xml:space="preserve">
+    <value>±{0}%</value>
+  </data>
+  <data name="Adjust_ModeAbsoluteFormat" xml:space="preserve">
+    <value>{0} – {1}</value>
+  </data>
+  <data name="Adjust_ModeDecrease" xml:space="preserve">
+    <value>Decrease only</value>
+  </data>
+  <data name="Adjust_ModeIncrease" xml:space="preserve">
+    <value>Increase only</value>
+  </data>
+  <data name="Adjust_ModeLocked" xml:space="preserve">
+    <value>🔒</value>
+  </data>
+  <data name="Adjust_ModePercentFormat" xml:space="preserve">
+    <value>±{0}%</value>
+  </data>
+  <data name="Adjust_NoLast" xml:space="preserve">
+    <value>No adjustments last time</value>
+  </data>
+  <data name="Adjust_NotChanged" xml:space="preserve">
+    <value>Nothing changed</value>
+  </data>
+  <data name="Adjust_RefusedFormat" xml:space="preserve">
+    <value>{0}: {1}; not accepted</value>
+  </data>
+  <data name="Adjust_SourceDefault" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Adjust_SourcePlan" xml:space="preserve">
+    <value>This plan</value>
+  </data>
+  <data name="Adjust_StepFormat" xml:space="preserve">
+    <value>{0} {1}</value>
+  </data>
+  <data name="Adjust_TitleFormat" xml:space="preserve">
+    <value>Adjust for this job · {0} · {1} changed</value>
+  </data>
+  <data name="Auto_AdjustedBadgeFormat" xml:space="preserve">
+    <value>Δ {0}→</value>
+  </data>
+  <data name="Auto_RangeHintFormat" xml:space="preserve">
+    <value>Plan value {0}, allowed {1}</value>
+  </data>
+  <data name="CfgGroup_adjustRanges" xml:space="preserve">
+    <value>Default adjustable ranges (when a plan sets none)</value>
+  </data>
+  <data name="Cfg_Issue_AdjustRule" xml:space="preserve">
+    <value>Unreadable range (use ±10% / decrease / increase / locked / 4..8)</value>
+  </data>
+  <data name="CheckItem_Adjust" xml:space="preserve">
+    <value>Adjustments</value>
+  </data>
+  <data name="Check_Adjust_CountFormat" xml:space="preserve">
+    <value>{0} adjusted: {1}</value>
+  </data>
+  <data name="Check_Adjust_LastFormat" xml:space="preserve">
+    <value>Last time {0} were adjusted ({1}); to reuse, press "Adjust…" → "Load last"</value>
+  </data>
+  <data name="Check_Adjust_RefusedFormat" xml:space="preserve">
+    <value>Step {0} {1}: {2}</value>
+  </data>
+  <data name="Job_AdjustCountFormat" xml:space="preserve">
+    <value>{0} items</value>
+  </data>
+  <data name="Job_AdjustNone" xml:space="preserve">
+    <value>None (all plan values)</value>
+  </data>
+  <data name="Job_AdjustRow" xml:space="preserve">
+    <value>Adjusted</value>
+  </data>
+  <data name="Records_AdjustReviewFormat" xml:space="preserve">
+    <value>At review · {0} {1}</value>
+  </data>
+  <data name="Records_AdjustRunningFormat" xml:space="preserve">
+    <value>While running · {0} {1}</value>
+  </data>
+  <data name="Records_AdjustTitleFormat" xml:space="preserve">
+    <value>{0} adjustments</value>
+  </data>
+  <data name="Records_AskSaveAndSetCurrent" xml:space="preserve">
+    <value>Save as a new plan and make it this roll's current plan?</value>
+  </data>
+  <data name="Records_NoPlanToSave" xml:space="preserve">
+    <value>This job has no plan to save from</value>
+  </data>
+  <data name="Records_SavePlanName" xml:space="preserve">
+    <value>New plan name</value>
+  </data>
+  <data name="Records_SavePlanNameFormat" xml:space="preserve">
+    <value>{0} ({1} adjusted)</value>
+  </data>
+  <data name="Records_SavePlanNotCurrentFormat" xml:space="preserve">
+    <value>This job used plan {0}; the roll's current plan is now plan {1} · {2}. The new plan is based on plan {0}</value>
+  </data>
+  <data name="Records_SavePlanSourceFormat" xml:space="preserve">
+    <value>Source: plan {0} · {1}, job {2}</value>
+  </data>
+  <data name="Records_SavePlanTick" xml:space="preserve">
+    <value>Adjustments to take into the new plan (review ones ticked, running ones not)</value>
+  </data>
+  <data name="Records_SavePlanTitle" xml:space="preserve">
+    <value>Save as new plan</value>
+  </data>
+  <data name="Records_SavedPlanCurrentFormat" xml:space="preserve">
+    <value>Saved as plan {0} · {1} and made current</value>
+  </data>
+  <data name="Records_SavedPlanFormat" xml:space="preserve">
+    <value>Saved as plan {0} · {1} (not current)</value>
+  </data>
+  <data name="Vk_AdjustThisTime" xml:space="preserve">
+    <value>Adjust…</value>
+  </data>
+  <data name="Vk_AdjustThisTimeChanged" xml:space="preserve">
+    <value>Adjust… Δ</value>
+  </data>
+  <data name="Vk_ChangeRange" xml:space="preserve">
+    <value>Change range</value>
+  </data>
+  <data name="Vk_EditPlan" xml:space="preserve">
+    <value>Edit plan…</value>
+  </data>
+  <data name="Vk_LoadLastAdjust" xml:space="preserve">
+    <value>Load last</value>
+  </data>
+  <data name="Vk_RestoreAll" xml:space="preserve">
+    <value>Restore all…</value>
+  </data>
+  <data name="Vk_RestoreOne" xml:space="preserve">
+    <value>Restore this</value>
+  </data>
+  <data name="Vk_SaveAndSetCurrent" xml:space="preserve">
+    <value>Save and make current…</value>
+  </data>
+  <data name="Vk_SaveJobAsPlan" xml:space="preserve">
+    <value>Save as new plan…</value>
+  </data>
+  <data name="Vk_SaveNotCurrent" xml:space="preserve">
+    <value>Save (not current)</value>
+  </data>
+  <data name="Vk_UseThisTime" xml:space="preserve">
+    <value>✓ Use this time</value>
+  </data>
 </root>

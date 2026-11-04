@@ -5428,4 +5428,220 @@
   <data name="PlanProblem_NameTaken" xml:space="preserve">
     <value>这支辊已有同名方案</value>
   </data>
+  <data name="Adjust_None" xml:space="preserve">
+    <value>在范围内</value>
+  </data>
+  <data name="Adjust_Locked" xml:space="preserve">
+    <value>不可调，要改请改方案</value>
+  </data>
+  <data name="Adjust_BelowRange" xml:space="preserve">
+    <value>低于允许范围</value>
+  </data>
+  <data name="Adjust_AboveRange" xml:space="preserve">
+    <value>高于允许范围</value>
+  </data>
+  <data name="Adjust_AllPlanValues" xml:space="preserve">
+    <value>本次全部按设定值</value>
+  </data>
+  <data name="Adjust_Applied" xml:space="preserve">
+    <value>本次调整已记下，核对页已重算</value>
+  </data>
+  <data name="Adjust_AskRestoreAllFormat" xml:space="preserve">
+    <value>把 {0} 项都恢复成设定值？</value>
+  </data>
+  <data name="Adjust_AtLeastFormat" xml:space="preserve">
+    <value>≥ {0}</value>
+  </data>
+  <data name="Adjust_AtMostFormat" xml:space="preserve">
+    <value>≤ {0}</value>
+  </data>
+  <data name="Adjust_BetweenFormat" xml:space="preserve">
+    <value>{0} – {1}</value>
+  </data>
+  <data name="Adjust_ChangeFormat" xml:space="preserve">
+    <value>第 {0} 道 {1} {2} {3} → {4}</value>
+  </data>
+  <data name="Adjust_ColAllowed" xml:space="preserve">
+    <value>允许</value>
+  </data>
+  <data name="Adjust_ColJob" xml:space="preserve">
+    <value>本次值</value>
+  </data>
+  <data name="Adjust_ColLast" xml:space="preserve">
+    <value>上次</value>
+  </data>
+  <data name="Adjust_ColParameter" xml:space="preserve">
+    <value>参数</value>
+  </data>
+  <data name="Adjust_ColPlan" xml:space="preserve">
+    <value>设定值</value>
+  </data>
+  <data name="Adjust_ColStep" xml:space="preserve">
+    <value>工序</value>
+  </data>
+  <data name="Adjust_DeltaFormat" xml:space="preserve">
+    <value>Δ {0}</value>
+  </data>
+  <data name="Adjust_HasRefused" xml:space="preserve">
+    <value>有超范围的项，改回范围内才能用于本次</value>
+  </data>
+  <data name="Adjust_LastFormat" xml:space="preserve">
+    <value>上次 {0}</value>
+  </data>
+  <data name="Adjust_ListSeparator" xml:space="preserve">
+    <value>；</value>
+  </data>
+  <data name="Adjust_LockedHeader" xml:space="preserve">
+    <value>不可调（🔒，要改请改方案）</value>
+  </data>
+  <data name="Adjust_MenuDefault" xml:space="preserve">
+    <value>按默认（{0}）</value>
+  </data>
+  <data name="Adjust_MenuLocked" xml:space="preserve">
+    <value>🔒 不可调</value>
+  </data>
+  <data name="Adjust_MenuPercentFormat" xml:space="preserve">
+    <value>±{0}%</value>
+  </data>
+  <data name="Adjust_ModeAbsoluteFormat" xml:space="preserve">
+    <value>{0} – {1}</value>
+  </data>
+  <data name="Adjust_ModeDecrease" xml:space="preserve">
+    <value>只减</value>
+  </data>
+  <data name="Adjust_ModeIncrease" xml:space="preserve">
+    <value>只加</value>
+  </data>
+  <data name="Adjust_ModeLocked" xml:space="preserve">
+    <value>🔒</value>
+  </data>
+  <data name="Adjust_ModePercentFormat" xml:space="preserve">
+    <value>±{0}%</value>
+  </data>
+  <data name="Adjust_NoLast" xml:space="preserve">
+    <value>上次没有调整</value>
+  </data>
+  <data name="Adjust_NotChanged" xml:space="preserve">
+    <value>没有改动</value>
+  </data>
+  <data name="Adjust_RefusedFormat" xml:space="preserve">
+    <value>{0}：{1}，不收</value>
+  </data>
+  <data name="Adjust_SourceDefault" xml:space="preserve">
+    <value>默认</value>
+  </data>
+  <data name="Adjust_SourcePlan" xml:space="preserve">
+    <value>本方案</value>
+  </data>
+  <data name="Adjust_StepFormat" xml:space="preserve">
+    <value>{0} {1}</value>
+  </data>
+  <data name="Adjust_TitleFormat" xml:space="preserve">
+    <value>本次调整 · {0} · 改了 {1} 项</value>
+  </data>
+  <data name="Auto_AdjustedBadgeFormat" xml:space="preserve">
+    <value>Δ {0}→</value>
+  </data>
+  <data name="Auto_RangeHintFormat" xml:space="preserve">
+    <value>设定值 {0}，允许 {1}</value>
+  </data>
+  <data name="CfgGroup_adjustRanges" xml:space="preserve">
+    <value>默认可调范围（方案没单独设时用）</value>
+  </data>
+  <data name="Cfg_Issue_AdjustRule" xml:space="preserve">
+    <value>读不懂的范围（写 ±10% / decrease / increase / locked / 4..8）</value>
+  </data>
+  <data name="CheckItem_Adjust" xml:space="preserve">
+    <value>本次调整</value>
+  </data>
+  <data name="Check_Adjust_CountFormat" xml:space="preserve">
+    <value>本次调整 {0} 项：{1}</value>
+  </data>
+  <data name="Check_Adjust_LastFormat" xml:space="preserve">
+    <value>上次调整过 {0} 项（{1}），要沿用请按"本次调整…"→"载入上次"</value>
+  </data>
+  <data name="Check_Adjust_RefusedFormat" xml:space="preserve">
+    <value>第 {0} 道 {1}：{2}</value>
+  </data>
+  <data name="Job_AdjustCountFormat" xml:space="preserve">
+    <value>{0} 项</value>
+  </data>
+  <data name="Job_AdjustNone" xml:space="preserve">
+    <value>无（全按设定值）</value>
+  </data>
+  <data name="Job_AdjustRow" xml:space="preserve">
+    <value>本次调整</value>
+  </data>
+  <data name="Records_AdjustReviewFormat" xml:space="preserve">
+    <value>核对时 · {0} {1}</value>
+  </data>
+  <data name="Records_AdjustRunningFormat" xml:space="preserve">
+    <value>运行中 · {0} {1}</value>
+  </data>
+  <data name="Records_AdjustTitleFormat" xml:space="preserve">
+    <value>本次调整 {0} 项</value>
+  </data>
+  <data name="Records_AskSaveAndSetCurrent" xml:space="preserve">
+    <value>另存为新方案并设为这支辊的当前方案？</value>
+  </data>
+  <data name="Records_NoPlanToSave" xml:space="preserve">
+    <value>这次作业没有方案，不能另存</value>
+  </data>
+  <data name="Records_SavePlanName" xml:space="preserve">
+    <value>新方案名</value>
+  </data>
+  <data name="Records_SavePlanNameFormat" xml:space="preserve">
+    <value>{0}（{1} 调整）</value>
+  </data>
+  <data name="Records_SavePlanNotCurrentFormat" xml:space="preserve">
+    <value>这次用的是方案 {0}，这支辊现在的当前方案是方案 {1} · {2}：新方案按方案 {0} 另存</value>
+  </data>
+  <data name="Records_SavePlanSourceFormat" xml:space="preserve">
+    <value>来源：方案 {0} · {1}，作业 {2}</value>
+  </data>
+  <data name="Records_SavePlanTick" xml:space="preserve">
+    <value>带进新方案的调整（核对时的默认勾上，运行中的默认不勾）</value>
+  </data>
+  <data name="Records_SavePlanTitle" xml:space="preserve">
+    <value>存为新方案</value>
+  </data>
+  <data name="Records_SavedPlanCurrentFormat" xml:space="preserve">
+    <value>已存为方案 {0} · {1}，并设为当前</value>
+  </data>
+  <data name="Records_SavedPlanFormat" xml:space="preserve">
+    <value>已存为方案 {0} · {1}（没设当前）</value>
+  </data>
+  <data name="Vk_AdjustThisTime" xml:space="preserve">
+    <value>本次调整…</value>
+  </data>
+  <data name="Vk_AdjustThisTimeChanged" xml:space="preserve">
+    <value>本次调整… Δ</value>
+  </data>
+  <data name="Vk_ChangeRange" xml:space="preserve">
+    <value>改范围</value>
+  </data>
+  <data name="Vk_EditPlan" xml:space="preserve">
+    <value>改方案…</value>
+  </data>
+  <data name="Vk_LoadLastAdjust" xml:space="preserve">
+    <value>载入上次</value>
+  </data>
+  <data name="Vk_RestoreAll" xml:space="preserve">
+    <value>全部恢复设定值…</value>
+  </data>
+  <data name="Vk_RestoreOne" xml:space="preserve">
+    <value>恢复这一项</value>
+  </data>
+  <data name="Vk_SaveAndSetCurrent" xml:space="preserve">
+    <value>另存并设为当前…</value>
+  </data>
+  <data name="Vk_SaveJobAsPlan" xml:space="preserve">
+    <value>存为新方案…</value>
+  </data>
+  <data name="Vk_SaveNotCurrent" xml:space="preserve">
+    <value>另存（不设当前）</value>
+  </data>
+  <data name="Vk_UseThisTime" xml:space="preserve">
+    <value>✓ 用于本次</value>
+  </data>
 </root>

@@ -16,6 +16,8 @@ using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Records;
 using RollGrinder.Data;
 using RollGrinder.Services.Jobs;
+using RollGrinder.Services.Session;
+using RollGrinder.Core.Steps;
 
 namespace RollGrinder.App.ViewModels;
 
@@ -84,6 +86,28 @@ public sealed class RecordRowViewModel
         : View.WorstDeviationDiameterMicrometer.Value.ToString("F2", CultureInfo.CurrentCulture);
 }
 
+/// <summary>存为新方案（设计稿 v4 5.8.4）里的一项调整：核对时调的默认勾上，运行中调的默认不勾并注明。</summary>
+public sealed partial class SaveAdjustRowViewModel : ObservableObject
+{
+    public SaveAdjustRowViewModel(JobAdjustment adjustment, string text, string note)
+    {
+        Adjustment = adjustment;
+        Text = text;
+        Note = note;
+        this.isTicked = !adjustment.Running;
+    }
+
+    public JobAdjustment Adjustment { get; }
+
+    public string Text { get; }
+
+    /// <summary>"核对时 · 张三 08:12" / "运行中 · 李四 09:40"。</summary>
+    public string Note { get; }
+
+    [ObservableProperty]
+    private bool isTicked;
+}
+
 /// <summary>磨削记录的查询、收尾与导出。</summary>
 public sealed partial class RecordsViewModel : PageViewModelBase
 {
@@ -91,6 +115,10 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     private readonly IReportService reportService;
     private readonly JobDraft jobDraft;
     private readonly IRollPlanningService planning;
+    private readonly IJobRepository jobs;
+    private readonly IGrindingPlanService plans;
+    private readonly IUserSession session;
+    private GrindingJob? snapshotJob;
     private readonly FunctionKeyViewModel overviewKey;
     private readonly Dictionary<RecordCurveKind, FunctionKeyViewModel> curveKeys = new();
     private readonly FunctionKeyViewModel recordsKey;
@@ -101,6 +129,9 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         IRecordService recordService,
         IReportService reportService,
         IRollPlanningService planning,
+        IJobRepository jobs,
+        IGrindingPlanService plans,
+        IUserSession session,
         JobDraft jobDraft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
@@ -112,6 +143,9 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         this.reportService = reportService ?? throw new ArgumentNullException(nameof(reportService));
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
         this.planning = planning ?? throw new ArgumentNullException(nameof(planning));
+        this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
+        this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
+        this.session = session ?? throw new ArgumentNullException(nameof(session));
 
         this.toDate = DateTime.Today;
         this.fromDate = DateTime.Today.AddDays(-7);
@@ -165,6 +199,120 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
     public bool IsSnapshotOpen => ActiveSubViewKey == SnapshotSubView;
 
+    /// <summary>存为新方案（设计稿 v4 5.8.4）。</summary>
+    public const string SaveAsPlanSubView = "SubView_SaveJobAsPlan";
+
+    public bool IsSaveAsPlanOpen => ActiveSubViewKey == SaveAsPlanSubView;
+
+    /// <summary>这一次的调整（核对时 + 运行中），方案值 → 本次值、谁、何时。</summary>
+    public ObservableCollection<LabelValueViewModel> SnapshotAdjustments { get; } = new();
+
+    public ObservableCollection<SaveAdjustRowViewModel> SaveAdjustRows { get; } = new();
+
+    [ObservableProperty]
+    private string snapshotAdjustTitle = string.Empty;
+
+    [ObservableProperty]
+    private string savePlanName = string.Empty;
+
+    /// <summary>作业用的方案已不是这支辊的当前方案（橙色提示）；是为空。</summary>
+    [ObservableProperty]
+    private string savePlanWarning = string.Empty;
+
+    /// <summary>名字在这支辊里重复（第 8 格灰）。</summary>
+    [ObservableProperty]
+    private bool savePlanNameTaken;
+
+    [ObservableProperty]
+    private string savePlanSource = string.Empty;
+
+    partial void OnSavePlanNameChanged(string value) => _ = CheckSavePlanNameAsync(value);
+
+    private async Task CheckSavePlanNameAsync(string name)
+    {
+        if (this.snapshotJob is not { } job)
+        {
+            return;
+        }
+
+        bool taken = !string.IsNullOrWhiteSpace(name)
+            && await this.plans.NameTakenAsync(job.RollId, name.Trim(), null, CancellationToken.None).ConfigureAwait(true);
+        if (name == SavePlanName)
+        {
+            SavePlanNameTaken = taken;
+            ApplyVerticalKeys();
+        }
+    }
+
+    private string AdjustNote(JobAdjustment item) => Localizer.Format(
+        item.Running ? "Records_AdjustRunningFormat" : "Records_AdjustReviewFormat",
+        string.IsNullOrEmpty(item.ChangedBy) ? "--" : item.ChangedBy,
+        item.ChangedAtUtc.ToLocalTime().ToString("MM-dd HH:mm", CultureInfo.CurrentCulture));
+
+    private string AdjustLine(GrindingJob job, JobAdjustment item) =>
+        AdjustText.Change(Localizer, item, job.Steps.FirstOrDefault(step => step.Order == item.StepOrder)?.StepTypeKey);
+
+    /// <summary>存为新方案…：勾要带进新方案的调整（核对时的默认勾、运行中的默认不勾），起名，另存（不设当前）或另存并设为当前。</summary>
+    private async Task OpenSaveAsPlanAsync()
+    {
+        if (this.snapshotJob is not { PlanId: { } planId } job)
+        {
+            Interaction.Refuse(Localizer["Records_NoPlanToSave"]);
+            return;
+        }
+
+        await RunGuardedAsync(
+            async token =>
+            {
+                PlanContent? content = await this.plans.GetContentAsync(planId, token).ConfigureAwait(true);
+                GrindingPlanRecord? current = await this.plans.CurrentAsync(job.RollId, token).ConfigureAwait(true);
+                if (content is null)
+                {
+                    Interaction.Refuse(Localizer["Records_NoPlanToSave"]);
+                    return;
+                }
+
+                SaveAdjustRows.Clear();
+                foreach (JobAdjustment item in AdjustmentLists.Latest(job.Adjustments))
+                {
+                    SaveAdjustRows.Add(new SaveAdjustRowViewModel(item, AdjustLine(job, item), AdjustNote(item)));
+                }
+
+                SavePlanSource = Localizer.Format("Records_SavePlanSourceFormat", content.Plan.PlanNo, content.Plan.Name, job.JobId);
+                SavePlanWarning = current is not null && current.PlanId != planId
+                    ? Localizer.Format("Records_SavePlanNotCurrentFormat", content.Plan.PlanNo, current.PlanNo, current.Name)
+                    : string.Empty;
+                SavePlanName = Localizer.Format("Records_SavePlanNameFormat", content.Plan.Name, job.JobId);
+                Navigator.OpenSubView(SaveAsPlanSubView);
+            },
+            CancellationToken.None).ConfigureAwait(true);
+    }
+
+    private Task SaveJobAsPlanAsync(bool setCurrent) => RunGuardedAsync(
+        async token =>
+        {
+            if (this.snapshotJob is not { } job)
+            {
+                return;
+            }
+
+            PlanFromJobOutcome outcome = await this.plans.CreateFromJobAsync(
+                job.JobId,
+                SaveAdjustRows.Where(row => row.IsTicked).Select(row => row.Adjustment).ToArray(),
+                SavePlanName,
+                setCurrent,
+                this.session.CurrentUser?.UserName ?? string.Empty,
+                token).ConfigureAwait(true);
+            if (outcome.Plan is not { } created)
+            {
+                Interaction.Fail(Localizer[outcome.ProblemKey ?? "PlanProblem_Missing"]);
+                return;
+            }
+
+            Navigator.CloseSubView();
+            Say(setCurrent ? "Records_SavedPlanCurrentFormat" : "Records_SavedPlanFormat", created.PlanNo, created.Name);
+        },
+        CancellationToken.None);
     public ObservableCollection<LabelValueViewModel> NearScrapRows { get; } = new();
 
     public ObservableCollection<LabelValueViewModel> PlanChangeRows { get; } = new();
@@ -264,6 +412,19 @@ public sealed partial class RecordsViewModel : PageViewModelBase
                         Localizer));
                 }
 
+                // 本次调整（设计说明 5.4）：核对时与运行中都算；以库里的作业为准（运行中改的在下发以后）。
+                this.snapshotJob = (await this.jobs.GetAsync(row.View.JobId, token).ConfigureAwait(true))?.Job;
+                SnapshotAdjustments.Clear();
+                if (this.snapshotJob is { } job)
+                {
+                    foreach (JobAdjustment item in job.Adjustments)
+                    {
+                        SnapshotAdjustments.Add(LabelValueViewModel.Raw(AdjustNote(item), AdjustLine(job, item)));
+                    }
+                }
+
+                SnapshotAdjustTitle = Localizer.Format("Records_AdjustTitleFormat", SnapshotAdjustments.Count);
+
                 SnapshotChecks.Clear();
                 foreach ((string item, string status, string messageKey) in snapshot.Checks)
                 {
@@ -293,9 +454,54 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         OnPropertyChanged(nameof(IsQueryOpen));
         OnPropertyChanged(nameof(IsOverviewOpen));
         OnPropertyChanged(nameof(IsSnapshotOpen));
+        OnPropertyChanged(nameof(IsSaveAsPlanOpen));
         this.overviewKey.IsActive = IsOverviewOpen;
         this.recordsKey.IsActive = !IsOverviewOpen;
-        if (IsOverviewOpen || IsSnapshotOpen)
+        if (IsSaveAsPlanOpen)
+        {
+            // 第 8 格稳妥的一边：另存（不设当前）；第 6 格另存并设为当前…（问一句）；第 7 格取消。名字重复第 8 / 6 格灰。
+            bool nameOk = !SavePlanNameTaken && !string.IsNullOrWhiteSpace(SavePlanName);
+            SetVerticalKeys(new FunctionKeyViewModel?[]
+            {
+                null, null, null, null, null,
+                new FunctionKeyViewModel(
+                    "Vk_SaveAndSetCurrent",
+                    new RelayCommand(() => Ask("Records_AskSaveAndSetCurrent", () => SaveJobAsPlanAsync(true)), () => nameOk),
+                    Localizer,
+                    requiresEditable: true)
+                {
+                    RequiredPermission = Permission.EditRollPlans,
+                    PreconditionResourceKey = "PlanProblem_NameTaken",
+                },
+            });
+            SetCommitPair(
+                new FunctionKeyViewModel("Vk_Cancel", new RelayCommand(Navigator.CloseSubView), Localizer, FunctionKeyKind.Cancel),
+                new FunctionKeyViewModel("Vk_SaveNotCurrent", new AsyncRelayCommand(() => SaveJobAsPlanAsync(false), () => nameOk), Localizer, FunctionKeyKind.Confirm, requiresEditable: true)
+                {
+                    RequiredPermission = Permission.EditRollPlans,
+                    PreconditionResourceKey = "PlanProblem_NameTaken",
+                });
+            return;
+        }
+
+        if (IsSnapshotOpen)
+        {
+            SetCommitPair(null, null);
+            SetVerticalKeys(new FunctionKeyViewModel?[]
+            {
+                null, null, null, null, null,
+                new FunctionKeyViewModel("Vk_SaveJobAsPlan", new AsyncRelayCommand(OpenSaveAsPlanAsync, () => this.snapshotJob?.PlanId is not null), Localizer)
+                {
+                    RequiredPermission = Permission.EditRollPlans,
+                    PreconditionResourceKey = "Records_NoPlanToSave",
+                },
+                null,
+                new FunctionKeyViewModel("Vk_Back", new RelayCommand(Navigator.CloseSubView), Localizer, FunctionKeyKind.Navigation),
+            });
+            return;
+        }
+
+        if (IsOverviewOpen)
         {
             SetCommitPair(null, null);
             SetVerticalKeys(new FunctionKeyViewModel?[]

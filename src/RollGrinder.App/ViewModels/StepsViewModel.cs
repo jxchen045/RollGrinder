@@ -249,6 +249,11 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
 
     private bool planIsCurrent;
 
+    /// <summary>方案存着的可调范围（按工序序号）；按模板编辑时空。</summary>
+    private IReadOnlyList<PlanParamRange> planRanges = Array.Empty<PlanParamRange>();
+
+    private readonly IJobAdjustmentService adjust;
+
     public StepsViewModel(
         GrindingStepTypeRegistry stepTypes,
         IProgramRepository programs,
@@ -258,6 +263,7 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
         IUserSession session,
         PlanEditSession planSession,
         ITemplateService templates,
+        IJobAdjustmentService adjust,
         ICalibrationService calibration,
         JobDraft jobDraft,
         GrindingJobValidator validator,
@@ -280,6 +286,7 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
         this.session = session ?? throw new ArgumentNullException(nameof(session));
         this.planSession = planSession ?? throw new ArgumentNullException(nameof(planSession));
         this.templates = templates ?? throw new ArgumentNullException(nameof(templates));
+        this.adjust = adjust ?? throw new ArgumentNullException(nameof(adjust));
         this.plans = planSession.Plans;
         planSession.Register(this);
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
@@ -1293,6 +1300,12 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
             return;
         }
 
+        // 可调范围跟着工序走（序号按存进去的这一份）：整份交上去。
+        builder.Ranges = Steps
+            .SelectMany(step => step.Parameters
+                .Where(row => row.RangeOverride is not null)
+                .Select(row => new PlanParamRange(step.Order, row.Key, row.RangeOverride!.ToText())))
+            .ToArray();
         builder.Program = GrindingProgram.Create(content.Program.ProgramId, ProgramName.Trim(), steps, content.Program.CreatedAtUtc) with
         {
             ModifiedAtUtc = DateTimeOffset.UtcNow,
@@ -1332,6 +1345,7 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
         }
 
         this.planContent = content;
+        this.planRanges = await this.plans.GetRangesAsync(planId, cancellationToken).ConfigureAwait(true);
         RollRecord? owner = await this.rolls.GetAsync(content.Plan.RollId, cancellationToken).ConfigureAwait(true);
         this.planIsCurrent = owner?.CurrentPlanId == planId;
         this.planUseCount = (await this.plans.UsageAsync(planId, cancellationToken).ConfigureAwait(true)).UseCount;
@@ -1352,6 +1366,12 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
         }
 
         this.planContent = null;
+        this.planRanges = Array.Empty<PlanParamRange>();
+        foreach (StepRowViewModel step in Steps)
+        {
+            ApplyRanges(step);
+        }
+
         PlanBanner = string.Empty;
         PlanFrozen = false;
         NotifyPlanMode();
@@ -1510,7 +1530,60 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
             Track(parameter);
         }
 
+        ApplyRanges(row);
         return row;
+    }
+
+    /// <summary>
+    /// 按方案编辑时每个数值参数一栏可调范围（设计稿 v4 5.5.3）：可调方式、上下限（绝对值）、来源（本方案 / 默认）。
+    /// 方案存着的按工序序号对上；按模板编辑时不显示。
+    /// </summary>
+    private void ApplyRanges(StepRowViewModel step)
+    {
+        foreach (ParameterRowViewModel row in step.Parameters)
+        {
+            if (!IsPlanMode || !row.IsNumber)
+            {
+                row.RangeDefault = null;
+                row.RangeOverride = null;
+                row.RangeRequested = null;
+                continue;
+            }
+
+            row.RangeDefault = AdjustRanges.RuleFor(row.Key, null, this.adjust.MachineDefaults);
+            row.RangeOverride = this.planRanges
+                .Where(range => range.StepOrder == step.Order && range.ParameterKey == row.Key)
+                .Select(range => AdjustRule.Parse(range.Rule))
+                .LastOrDefault();
+            row.RangeRequested = OpenRangeMenu;
+        }
+    }
+
+    /// <summary>改范围…：默认 / ±5% / ±10% / ±20% / 只减 / 只加 / 不可调。改了算方案改动（用过的另存为新方案）。</summary>
+    private void OpenRangeMenu(ParameterRowViewModel row)
+    {
+        if (IsReadOnly || !IsPlanMode)
+        {
+            return;
+        }
+
+        FocusedParameter = row;
+        void Set(AdjustRule? rule)
+        {
+            row.RangeOverride = rule;
+            MarkEdited();
+        }
+
+        OpenVerticalMenu("Vk_ChangeRange", new FunctionKeyViewModel?[]
+        {
+            MenuChoice("Adjust_MenuDefault", () => Set(null), labelArgument: row.RangeDefault is { } fallback ? AdjustText.Mode(Localizer, fallback) : null),
+            MenuChoice("Adjust_MenuPercentFormat", () => Set(AdjustRule.PlusMinus(5.0)), labelArgument: "5"),
+            MenuChoice("Adjust_MenuPercentFormat", () => Set(AdjustRule.PlusMinus(10.0)), labelArgument: "10"),
+            MenuChoice("Adjust_MenuPercentFormat", () => Set(AdjustRule.PlusMinus(20.0)), labelArgument: "20"),
+            MenuChoice("Adjust_ModeDecrease", () => Set(AdjustRule.DecreaseOnly)),
+            MenuChoice("Adjust_ModeIncrease", () => Set(AdjustRule.IncreaseOnly)),
+            MenuChoice("Adjust_MenuLocked", () => Set(AdjustRule.Locked)),
+        });
     }
 
     /// <summary>程序被改动：打脏标记，并把"已下发"状态清掉——界面与机床已经不一致了。</summary>

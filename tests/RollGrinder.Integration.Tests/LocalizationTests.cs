@@ -123,6 +123,7 @@ public sealed class LocalizationTests
         "Area_", "Mode_", "Help_", "Language_", "Keypad_Error_", "Pendant_Axis",
         "CheckItem_", "Check_Stock_", "Chart_AxisX_", "Chart_AxisY_", "StatusGroup_", "Verdict_", "ImportKind_", "Ledger_Problem_", "RollKindFilter_", "RollKind_", "Cfg_ClosedLoop_", "ParamGroup_",
         "PlanSource_", "CopyRange_", "Mandate_Force", "Mandate_Notice", "Mandate_None",
+        "Adjust_None", "Adjust_Locked", "Adjust_BelowRange", "Adjust_AboveRange",
     };
 
     [Fact]
@@ -141,7 +142,8 @@ public sealed class LocalizationTests
             .Concat(Enum.GetNames<RollGrinder.Core.Steps.StepParameterGroup>().Select(name => "ParamGroup_" + name))
             .Concat(Enum.GetNames<RollGrinder.Data.PlanSourceKind>().Select(name => "PlanSource_" + name))
             .Concat(Enum.GetNames<RollGrinder.Data.MandateDecision>().Select(name => "Mandate_" + name))
-            .Concat(new[] { "ThisRoll", "OtherRolls", "Templates" }.Select(name => "CopyRange_" + name));
+            .Concat(new[] { "ThisRoll", "OtherRolls", "Templates" }.Select(name => "CopyRange_" + name))
+            .Concat(Enum.GetNames<RollGrinder.Core.Steps.AdjustRefusal>().Select(name => "Adjust_" + name));
 
         foreach (string key in keys)
         {

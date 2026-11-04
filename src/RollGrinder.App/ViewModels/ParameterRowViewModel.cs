@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 using RollGrinder.App.Localization;
 using RollGrinder.Core;
 using RollGrinder.Core.Parameters;
+using RollGrinder.Core.Steps;
 using RollGrinder.Core.Units;
 
 namespace RollGrinder.App.ViewModels;
@@ -128,7 +129,46 @@ public sealed partial class ParameterRowViewModel : ObservableObject
         set => Text = value ? "true" : "false";
     }
 
-    partial void OnTextChanged(string value) => RefreshChoiceSelection();
+    partial void OnTextChanged(string value)
+    {
+        RefreshChoiceSelection();
+        OnPropertyChanged(nameof(RangeBoundsText));
+    }
+
+    // ───────────── 可调范围（按方案编辑时，设计稿 v4 5.5.3） ─────────────
+
+    /// <summary>默认范围表里的规则；不是按方案编辑（或不是数值参数）为 null，范围一栏不显示。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsRange), nameof(RangeModeText), nameof(RangeBoundsText), nameof(RangeSourceText))]
+    private AdjustRule? rangeDefault;
+
+    /// <summary>本方案单独设的规则；没设为 null（按默认表）。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RangeModeText), nameof(RangeBoundsText), nameof(RangeSourceText))]
+    private AdjustRule? rangeOverride;
+
+    /// <summary>按"改范围…"时找本页打开规则菜单。</summary>
+    public Action<ParameterRowViewModel>? RangeRequested { get; set; }
+
+    public bool ShowsRange => RangeDefault is not null && IsNumber;
+
+    public AdjustRule EffectiveRule => RangeOverride ?? RangeDefault ?? AdjustRule.Locked;
+
+    /// <summary>可调方式（±% / 只减 / 只加 / 🔒）。</summary>
+    public string RangeModeText => ShowsRange ? AdjustText.Mode(this.localizer, EffectiveRule) : string.Empty;
+
+    /// <summary>按设定值换算的绝对上下限（已与机床限取交集）。</summary>
+    public string RangeBoundsText =>
+        ShowsRange && ToParameterValue() is { Kind: ParameterValueKind.Number } value
+            ? AdjustText.Bounds(this.localizer, AdjustRanges.Resolve(EffectiveRule, value.Number, this.descriptor))
+            : string.Empty;
+
+    /// <summary>来源：本方案 / 默认。</summary>
+    public string RangeSourceText => !ShowsRange ? string.Empty
+        : RangeOverride is null ? this.localizer["Adjust_SourceDefault"] : this.localizer["Adjust_SourcePlan"];
+
+    [RelayCommand]
+    private void ChangeRange() => RangeRequested?.Invoke(this);
 
     private static IEnumerable<ParameterChoiceViewModel> BuildChoices(
         ParameterDescriptor descriptor,

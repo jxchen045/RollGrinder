@@ -198,6 +198,7 @@ public sealed class GrindingPlanService : IGrindingPlanService
     private readonly IProgramRepository programs;
     private readonly IChangeLogRepository changeLog;
     private readonly IJobRepository jobs;
+    private readonly GrindingStepTypeRegistry stepTypes;
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly MachineDescription machine;
     private readonly HmiSettings settings;
@@ -214,9 +215,11 @@ public sealed class GrindingPlanService : IGrindingPlanService
         MachineDescription machine,
         HmiSettings settings,
         TimeProvider timeProvider,
-        IJobRepository jobs)
+        IJobRepository jobs,
+        GrindingStepTypeRegistry stepTypes)
     {
         this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
+        this.stepTypes = stepTypes ?? throw new ArgumentNullException(nameof(stepTypes));
         this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.rolls = rolls ?? throw new ArgumentNullException(nameof(rolls));
         this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
@@ -688,8 +691,9 @@ public sealed class GrindingPlanService : IGrindingPlanService
         }
 
         // 方案值换成本次值：同一参数改了几次取最后一次。
+        // 序号按作业里的（整理成"开始 … 结束"以后）。
         GrindingProgram program = content.Program;
-        GrindingJobStep[] steps = program.Steps.ToArray();
+        GrindingJobStep[] steps = ProgramFrame.Normalize(program.Steps, this.stepTypes).ToArray();
         foreach (JobAdjustment adjustment in adopt
             .GroupBy(item => (item.StepOrder, item.ParameterKey))
             .Select(group => group.Last()))

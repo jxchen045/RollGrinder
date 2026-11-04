@@ -9,7 +9,10 @@
     <UserControl.Resources>
         <!-- 对照表的一格：改不动的只读文字；改得动的就地改，改过标蓝加粗（待下发）。同一个格子对象也在总表里。 -->
         <DataTemplate x:Key="CompareValueTemplate" DataType="{x:Type vm:MatrixCellViewModel}">
-            <Grid>
+            <Grid ToolTip="{Binding RangeHint}">
+                <TextBlock Text="{Binding BadgeText}" Margin="3,1,0,0" FontSize="{StaticResource Size.Label}"
+                           HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False"
+                           Foreground="{StaticResource Brush.PendingValue}" />
                 <TextBlock Text="{Binding Text}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.DataRow}"
                            VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" TextTrimming="CharacterEllipsis"
                            Visibility="{Binding CanEdit, Converter={StaticResource InverseBoolVisibility}}" />
@@ -359,7 +362,11 @@
                                                                     BorderBrush="{StaticResource Brush.Divider}"
                                                                     BorderThickness="0,0,1,1"
                                                                     Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
-                                                                <Grid>
+                                                                <Grid ToolTip="{Binding RangeHint}">
+                                                                    <!-- 按方案磨的：Δ 方案值→（本次调整）/ 🔒 不可调（设计稿 v4 5.3.1） -->
+                                                                    <TextBlock Text="{Binding BadgeText}" Margin="3,1,0,0" FontSize="{StaticResource Size.Label}"
+                                                                               HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False"
+                                                                               Foreground="{StaticResource Brush.PendingValue}" />
                                                                     <!-- 改不动的格子：只读文本 -->
                                                                     <TextBlock Text="{Binding Text}" Margin="8,0"
                                                                                FontFamily="{StaticResource Font.Mono}"

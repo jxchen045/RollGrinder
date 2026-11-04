@@ -110,6 +110,10 @@ public sealed partial class JobViewModel : PageViewModelBase
     private readonly IRollPlanningService planning;
     private readonly IGrindingPlanService plans;
     private readonly ITemplateService templates;
+    private readonly IJobAdjustmentService adjust;
+    private IReadOnlyList<AdjustableParameter> adjustable = Array.Empty<AdjustableParameter>();
+    private IReadOnlyList<JobAdjustment> lastAdjustments = Array.Empty<JobAdjustment>();
+    private readonly List<JobAdjustment> adjustments = new();
     private IReadOnlyList<TemplateUpdateNotice> templateNotices = Array.Empty<TemplateUpdateNotice>();
     private readonly IRollLedgerService ledger;
     private readonly IRollProfileRepository profiles;
@@ -151,6 +155,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         IRollPlanningService planning,
         IGrindingPlanService plans,
         ITemplateService templates,
+        IJobAdjustmentService adjust,
         IRollLedgerService ledger,
         IRollProfileRepository profiles,
         IProgramRepository programs,
@@ -177,6 +182,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         this.planning = planning ?? throw new ArgumentNullException(nameof(planning));
         this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.templates = templates ?? throw new ArgumentNullException(nameof(templates));
+        this.adjust = adjust ?? throw new ArgumentNullException(nameof(adjust));
         this.ledger = ledger ?? throw new ArgumentNullException(nameof(ledger));
         this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
         this.programs = programs ?? throw new ArgumentNullException(nameof(programs));
@@ -256,16 +262,17 @@ public sealed partial class JobViewModel : PageViewModelBase
     [ObservableProperty]
     private bool isPicking;
 
-    public override bool HasModalPrompt => IsPicking;
+    public override bool HasModalPrompt => IsPicking || IsAdjusting;
 
     public override bool TryDismissPrompt()
     {
-        if (!IsPicking)
+        if (!IsPicking && !IsAdjusting)
         {
             return false;
         }
 
         IsPicking = false;
+        IsAdjusting = false;
         ApplyKeys();
         return true;
     }
@@ -581,6 +588,7 @@ public sealed partial class JobViewModel : PageViewModelBase
         this.planDeviation = JobDeviation.None;
         DeviationReason = string.Empty;
         (string? ProfileId, string? ProgramId)? legacy = null;
+        IReadOnlyList<JobAdjustment> resumed = Array.Empty<JobAdjustment>();
 
         if (row.Entry.JobId is { } storedId && await this.jobs.GetAsync(storedId, cancellationToken).ConfigureAwait(true) is { } stored)
         {
@@ -589,6 +597,7 @@ public sealed partial class JobViewModel : PageViewModelBase
             this.regrindOf = stored.Job.RegrindOfJobId;
             this.requireMeasure = row.Entry.Mark == QueueMark.Interrupted;
             DeviationReason = stored.Job.DeviationReason ?? string.Empty;
+            resumed = stored.Job.Adjustments;
             if (stored.Job.PlanId is { } storedPlan)
             {
                 planId = storedPlan;
@@ -610,8 +619,13 @@ public sealed partial class JobViewModel : PageViewModelBase
         }
         else
         {
+            this.plan = null;
             await LoadPlanAsync(planId, cancellationToken).ConfigureAwait(true);
         }
+
+        // 中断续磨、返磨：接着那一份作业的调整（含运行中改的）。
+        this.adjustments.Clear();
+        this.adjustments.AddRange(AdjustmentLists.Latest(resumed));
 
         ResetOptions();
 
@@ -659,10 +673,31 @@ public sealed partial class JobViewModel : PageViewModelBase
     /// <summary>取方案与它的辊形、工艺；缺任何一样时三样都空（核对页拦"没有方案"）。</summary>
     private async Task LoadPlanAsync(string? planId, CancellationToken cancellationToken)
     {
+        string? before = this.plan?.PlanId;
         PlanContent? content = planId is null ? null : await this.plans.GetContentAsync(planId, cancellationToken).ConfigureAwait(true);
         this.plan = content?.Plan;
         this.profile = content?.Profile;
         this.program = content?.Program;
+
+        // 两层参数（设计说明第 5 节）：方案的可调范围；换了方案，本次调整归零（下次默认回到方案值）。
+        if (content is null)
+        {
+            this.adjustable = Array.Empty<AdjustableParameter>();
+            this.lastAdjustments = Array.Empty<JobAdjustment>();
+        }
+        else
+        {
+            this.adjustable = this.adjust.Describe(
+                content.Program, await this.plans.GetRangesAsync(content.Plan.PlanId, cancellationToken).ConfigureAwait(true));
+            this.lastAdjustments = this.roll is null
+                ? Array.Empty<JobAdjustment>()
+                : AdjustmentLists.Latest(await this.adjust.LastAdjustmentsAsync(this.roll.RollId, content.Plan.PlanId, JobId, cancellationToken).ConfigureAwait(true));
+        }
+
+        if (before != this.plan?.PlanId)
+        {
+            this.adjustments.Clear();
+        }
     }
 
     private double DefaultStockMm()
@@ -793,6 +828,7 @@ public sealed partial class JobViewModel : PageViewModelBase
             .Where(check => check.Item != JobCheckItems.Parameters)
             .Select(check => new CheckRowViewModel(Localizer["CheckItem_" + check.Item], FormatCheck(check), check.Status))
             .Concat(violations.Select(ViolationCheck))
+            .Concat(AdjustmentChecks())
             .Concat(this.templateNotices.Select(TemplateNoticeRow))
             .OrderByDescending(row => row.Status);
         foreach (CheckRowViewModel row in rows)
@@ -834,6 +870,42 @@ public sealed partial class JobViewModel : PageViewModelBase
         },
         JobCheckStatus.Notice);
 
+    /// <summary>
+    /// 本次调整（设计说明 5.2 / 5.4）：超范围不收（拦）；有调整列出来（提示）；上一次调整过、这次还没调的问一句要不要沿用。
+    /// </summary>
+    private IEnumerable<CheckRowViewModel> AdjustmentChecks()
+    {
+        foreach (AdjustProblem problem in JobAdjustmentService.Validate(this.adjustable, this.adjustments))
+        {
+            yield return new CheckRowViewModel(
+                Localizer["CheckItem_Adjust"],
+                Localizer.Format(
+                    "Check_Adjust_RefusedFormat", problem.StepOrder, AdjustText.Parameter(Localizer, problem.ParameterKey),
+                    AdjustText.Refusal(Localizer, problem.Refusal)),
+                JobCheckStatus.Block);
+        }
+
+        if (this.adjustments.Count > 0)
+        {
+            yield return new CheckRowViewModel(
+                Localizer["CheckItem_Adjust"],
+                Localizer.Format("Check_Adjust_CountFormat", this.adjustments.Count, AdjustSummary(this.adjustments)),
+                JobCheckStatus.Notice);
+        }
+        else if (this.lastAdjustments.Count > 0)
+        {
+            yield return new CheckRowViewModel(
+                Localizer["CheckItem_Adjust"],
+                Localizer.Format("Check_Adjust_LastFormat", this.lastAdjustments.Count, AdjustSummary(this.lastAdjustments)),
+                JobCheckStatus.Notice);
+        }
+    }
+
+    private string AdjustSummary(IEnumerable<JobAdjustment> list) => string.Join(
+        Localizer["Adjust_ListSeparator"],
+        list.Select(item => AdjustText.Change(
+            Localizer, item, this.adjustable.FirstOrDefault(row => row.StepOrder == item.StepOrder)?.StepTypeKey)));
+
     private CheckRowViewModel ViolationCheck(ParameterViolation violation)
     {
         var text = new ViolationRowViewModel(violation, Localizer);
@@ -869,6 +941,10 @@ public sealed partial class JobViewModel : PageViewModelBase
             JobDeviation.PlanChanged => Localizer["Job_DeviationPlanChanged"],
             _ => Localizer["Job_DeviationNone"],
         }, Localizer));
+        PlanRows.Add(new LabelValueViewModel(
+            "Job_AdjustRow",
+            this.adjustments.Count == 0 ? Localizer["Job_AdjustNone"] : Localizer.Format("Job_AdjustCountFormat", this.adjustments.Count),
+            Localizer));
         PlanRows.Add(new LabelValueViewModel("Job_JobIdLabel", JobId + (this.regrindOf is { } of ? " " + Localizer.Format("Job_RegrindOfFormat", of) : string.Empty), Localizer));
     }
 
@@ -943,7 +1019,8 @@ public sealed partial class JobViewModel : PageViewModelBase
             return null;
         }
 
-        IReadOnlyList<GrindingJobStep> steps = checks.Stock.ProblemResourceKey is null ? checks.Stock.Steps : normalized.Steps;
+        IReadOnlyList<GrindingJobStep> steps = ApplyAdjustments(
+            checks.Stock.ProblemResourceKey is null ? checks.Stock.Steps : normalized.Steps);
 
         // 十个开关都下发：没列出来的（用不上）一律关，NC 不会收到开着却没有对应工序或装置的开关。
         ParameterSet options = ProgramOptionPlanner.Normalize(
@@ -972,7 +1049,162 @@ public sealed partial class JobViewModel : PageViewModelBase
             RegrindOfJobId = this.regrindOf,
             ScrapDiameterMm = this.roll.ScrapDiameterMm,
             GrindStartZMm = UsesGrindStart ? GrindStartZ() : null,
+            Adjustments = this.adjustments.ToArray(),
         };
+    }
+
+    /// <summary>方案值换成本次值（工序里已经是本次值，记录另记"改了什么"）。</summary>
+    private IReadOnlyList<GrindingJobStep> ApplyAdjustments(IReadOnlyList<GrindingJobStep> steps)
+    {
+        if (this.adjustments.Count == 0)
+        {
+            return steps;
+        }
+
+        GrindingJobStep[] adjusted = steps.ToArray();
+        foreach (JobAdjustment item in this.adjustments)
+        {
+            int index = Array.FindIndex(adjusted, step => step.Order == item.StepOrder);
+            if (index >= 0)
+            {
+                adjusted[index] = adjusted[index] with
+                {
+                    Parameters = adjusted[index].Parameters.With(item.ParameterKey, ParameterValue.FromNumber(item.JobValue)),
+                };
+            }
+        }
+
+        return adjusted;
+    }
+
+    // ───────────── 本次调整（设计稿 v4 5.2.5） ─────────────
+
+    /// <summary>可调的参数（工序、参数、设定值、本次值、允许、上次）。</summary>
+    public ObservableCollection<AdjustRowViewModel> AdjustRows { get; } = new();
+
+    /// <summary>不可调的（🔒）：要改就改方案。</summary>
+    public ObservableCollection<LockedParameterRowViewModel> LockedRows { get; } = new();
+
+    [ObservableProperty]
+    private AdjustRowViewModel? selectedAdjustRow;
+
+    [ObservableProperty]
+    private bool isAdjusting;
+
+    [ObservableProperty]
+    private string adjustTitle = string.Empty;
+
+    partial void OnSelectedAdjustRowChanged(AdjustRowViewModel? value) => ApplyKeys();
+
+    /// <summary>打开本次调整：各项从已定的本次值（没调的是方案值）开始。</summary>
+    private void OpenAdjust()
+    {
+        if (this.plan is null || this.adjustable.Count == 0)
+        {
+            return;
+        }
+
+        AdjustRows.Clear();
+        LockedRows.Clear();
+        foreach (AdjustableParameter row in this.adjustable)
+        {
+            if (!row.Adjustable)
+            {
+                if (!ProgramFrame.IsFixed(row.StepTypeKey))
+                {
+                    LockedRows.Add(new LockedParameterRowViewModel(
+                        Localizer.Format("Adjust_StepFormat", row.StepOrder, Localizer["StepType_" + row.StepTypeKey]),
+                        AdjustText.Parameter(Localizer, row.ParameterKey),
+                        AdjustText.Number(row.PlanValue)));
+                }
+
+                continue;
+            }
+
+            double value = this.adjustments.LastOrDefault(item => item.StepOrder == row.StepOrder && item.ParameterKey == row.ParameterKey)
+                ?.JobValue ?? row.PlanValue;
+            double? last = this.lastAdjustments.FirstOrDefault(item => item.StepOrder == row.StepOrder && item.ParameterKey == row.ParameterKey)?.JobValue;
+            var vm = new AdjustRowViewModel(row, value, last, Localizer);
+            vm.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(AdjustRowViewModel.IsRefused) or nameof(AdjustRowViewModel.IsChanged))
+                {
+                    RefreshAdjustTitle();
+                }
+            };
+            AdjustRows.Add(vm);
+        }
+
+        SelectedAdjustRow = AdjustRows.FirstOrDefault(row => row.IsChanged) ?? AdjustRows.FirstOrDefault();
+        RefreshAdjustTitle();
+        IsAdjusting = true;
+        ApplyKeys();
+    }
+
+    private void RefreshAdjustTitle()
+    {
+        AdjustTitle = Localizer.Format(
+            "Adjust_TitleFormat", this.plan is null ? "--" : Localizer.Format("Job_QueuePlanFormat", this.plan.PlanNo, this.plan.Name),
+            AdjustRows.Count(row => row.IsChanged));
+        ApplyKeys();
+    }
+
+    [RelayCommand]
+    private void AdjustDown() => SelectedAdjustRow?.Nudge(-1);
+
+    [RelayCommand]
+    private void AdjustUp() => SelectedAdjustRow?.Nudge(1);
+
+    /// <summary>第 1 格"载入上次"：上一次作业调过的值都带进来（仍按范围核）。</summary>
+    private void LoadLastAdjustments()
+    {
+        foreach (AdjustRowViewModel row in AdjustRows)
+        {
+            if (row.LastValue is double last)
+            {
+                row.ValueText = AdjustText.Number(last);
+            }
+        }
+    }
+
+    /// <summary>"✓ 用于本次"：超范围的不收；收了记下谁、何时（同一项没再改的保留原来的时间）。</summary>
+    private void CommitAdjust()
+    {
+        if (AdjustRows.FirstOrDefault(row => row.IsRefused) is { } refused)
+        {
+            SelectedAdjustRow = refused;
+            Interaction.Fail(Localizer.Format("Adjust_RefusedFormat", refused.ParameterText, refused.RefusalText));
+            return;
+        }
+
+        string user = this.session.CurrentUser?.UserName ?? string.Empty;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var next = new List<JobAdjustment>();
+        foreach (AdjustRowViewModel row in AdjustRows.Where(row => row.IsChanged && row.Value is double))
+        {
+            double value = row.Value!.Value;
+            JobAdjustment? kept = this.adjustments.LastOrDefault(
+                item => item.StepOrder == row.Parameter.StepOrder && item.ParameterKey == row.Parameter.ParameterKey);
+            next.Add(kept is not null && Math.Abs(kept.JobValue - value) <= 1e-9
+                ? kept
+                : new JobAdjustment(row.Parameter.StepOrder, row.Parameter.ParameterKey, row.Parameter.PlanValue, value, false, user, now));
+        }
+
+        // 中断续磨带过来的运行中调整：这里没动的照留。
+        next.AddRange(this.adjustments.Where(item => item.Running
+            && !next.Any(n => n.StepOrder == item.StepOrder && n.ParameterKey == item.ParameterKey)
+            && !AdjustRows.Any(row => row.Parameter.StepOrder == item.StepOrder && row.Parameter.ParameterKey == item.ParameterKey && !row.IsChanged)));
+        this.adjustments.Clear();
+        this.adjustments.AddRange(next);
+        IsAdjusting = false;
+        Evaluate();
+        Say(this.adjustments.Count == 0 ? "Adjust_AllPlanValues" : "Adjust_Applied");
+    }
+
+    private void CloseAdjust()
+    {
+        IsAdjusting = false;
+        ApplyKeys();
     }
 
     private double? GrindStartZ() => TryNumber(GrindStartZText, out double z) ? z : null;
@@ -1131,6 +1363,25 @@ public sealed partial class JobViewModel : PageViewModelBase
         Navigator.StartTask(PageKey.Steps, PageKey.Job);
     }
 
+    /// <summary>改方案…：辊形或工艺（方案区，用过的保存时另存为新方案）。</summary>
+    private void OpenEditPlanMenu() => OpenVerticalMenu("Vk_EditPlan", new FunctionKeyViewModel?[]
+    {
+        MenuChoice("Vk_OpenProfile", OpenProfile, requiresEditable: false),
+        MenuChoice("Vk_OpenProgram", OpenProgram, requiresEditable: false),
+    });
+
+    /// <summary>第 6 格"全部恢复设定值…"：问一句（不超时）。</summary>
+    private void AskRestoreAll() => Ask(
+        "Adjust_AskRestoreAllFormat",
+        () =>
+        {
+            foreach (AdjustRowViewModel row in AdjustRows)
+            {
+                row.Restore();
+            }
+        },
+        AdjustRows.Count(row => row.IsChanged));
+
     /// <summary>方案列表（这支辊）。</summary>
     private void OpenPlans()
     {
@@ -1146,6 +1397,35 @@ public sealed partial class JobViewModel : PageViewModelBase
         {
             SetVerticalKeys(new FunctionKeyViewModel?[] { FunctionKeyViewModel.ForAction("Vk_ThisRollPlans", Localizer, () => { }) });
             SetCommitPair(new FunctionKeyViewModel("Vk_Cancel", new RelayCommand(() => TryDismissPrompt()), Localizer, FunctionKeyKind.Cancel), this.pickKey);
+            return;
+        }
+
+        if (IsAdjusting)
+        {
+            SetVerticalKeys(new FunctionKeyViewModel?[]
+            {
+                new FunctionKeyViewModel("Vk_LoadLastAdjust", new RelayCommand(LoadLastAdjustments, () => AdjustRows.Any(row => row.HasLast)), Localizer, requiresEditable: true)
+                {
+                    PreconditionResourceKey = "Adjust_NoLast",
+                },
+                new FunctionKeyViewModel("Vk_RestoreOne", new RelayCommand(() => SelectedAdjustRow?.Restore(), () => SelectedAdjustRow is { IsChanged: true }), Localizer, requiresEditable: true)
+                {
+                    PreconditionResourceKey = "Adjust_NotChanged",
+                },
+                null,
+                null,
+                null,
+                new FunctionKeyViewModel("Vk_RestoreAll", new RelayCommand(() => AskRestoreAll(), () => AdjustRows.Any(row => row.IsChanged)), Localizer, requiresEditable: true)
+                {
+                    PreconditionResourceKey = "Adjust_NotChanged",
+                },
+            });
+            SetCommitPair(
+                new FunctionKeyViewModel("Vk_Cancel", new RelayCommand(CloseAdjust), Localizer, FunctionKeyKind.Cancel),
+                new FunctionKeyViewModel("Vk_UseThisTime", new RelayCommand(CommitAdjust, () => !AdjustRows.Any(row => row.IsRefused)), Localizer, FunctionKeyKind.Confirm, requiresEditable: true)
+                {
+                    PreconditionResourceKey = "Adjust_HasRefused",
+                });
             return;
         }
 
@@ -1169,11 +1449,12 @@ public sealed partial class JobViewModel : PageViewModelBase
                 {
                     PreconditionResourceKey = "Job_AlreadyPlan",
                 },
-                new FunctionKeyViewModel("Vk_OpenProfile", new RelayCommand(OpenProfile, () => this.plan is not null), Localizer)
+                new FunctionKeyViewModel("Vk_AdjustThisTime", new RelayCommand(OpenAdjust, () => this.plan is not null && this.adjustable.Any(row => row.Adjustable)), Localizer, requiresEditable: true)
                 {
                     PreconditionResourceKey = "Job_NothingSelected",
+                    LabelResourceKey = this.adjustments.Count > 0 ? "Vk_AdjustThisTimeChanged" : "Vk_AdjustThisTime",
                 },
-                new FunctionKeyViewModel("Vk_OpenProgram", new RelayCommand(OpenProgram, () => this.plan is not null), Localizer)
+                new FunctionKeyViewModel("Vk_EditPlan", new RelayCommand(OpenEditPlanMenu, () => this.plan is not null), Localizer)
                 {
                     PreconditionResourceKey = "Job_NothingSelected",
                 },

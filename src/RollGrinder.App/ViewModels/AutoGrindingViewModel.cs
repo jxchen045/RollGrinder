@@ -103,6 +103,18 @@ public sealed partial class MatrixCellViewModel : ObservableObject
     /// <summary>这个参数能不能在**正在跑的那道工序**上改。</summary>
     public bool IsLiveEditable { get; }
 
+    /// <summary>按方案磨的作业里这一项不可调（🔒，设计稿 v4 5.3.1）：要改就改方案。</summary>
+    public bool IsRangeLocked { get; init; }
+
+    /// <summary>本次值与方案值不同（Δ）。</summary>
+    public bool IsAdjusted { get; init; }
+
+    /// <summary>格子角上的小字："Δ 800→" / "🔒"；都不是为空。</summary>
+    public string BadgeText { get; init; } = string.Empty;
+
+    /// <summary>允许的范围与方案值（提示用）。</summary>
+    public string RangeHint { get; init; } = string.Empty;
+
     /// <summary>这一格所属的工序是不是正在跑的那一道。</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanEdit))]
@@ -114,7 +126,7 @@ public sealed partial class MatrixCellViewModel : ObservableObject
     /// 已经磨完的工序不给改（改了也没用，还会让记录对不上实际磨的东西）；
     /// 正在跑的那一道只给改标了可在线调整的参数；还没轮到的工序随便改。
     /// </summary>
-    public bool CanEdit => IsApplicable && State switch
+    public bool CanEdit => IsApplicable && !IsRangeLocked && State switch
     {
         StepRowState.Done => false,
         StepRowState.Current => IsLiveEditable,
@@ -253,6 +265,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly RollProfileTypeRegistry profileTypes;
     private readonly ICalibrationService calibration;
     private readonly IStepParameterUpdateService stepUpdates;
+    private readonly IJobAdjustmentService adjust;
+    private IReadOnlyList<AdjustableParameter> rangeRows = Array.Empty<AdjustableParameter>();
     private readonly IStepFlowControlService stepFlow;
     private readonly ISurfaceTraceService traces;
     private readonly IManualCommandService manualCommands;
@@ -305,6 +319,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         RollProfileTypeRegistry profileTypes,
         ICalibrationService calibration,
         IStepParameterUpdateService stepUpdates,
+        IJobAdjustmentService adjust,
         IStepFlowControlService stepFlow,
         ISurfaceTraceService traces,
         IManualCommandService manualCommands,
@@ -328,6 +343,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         this.seenMeasurementVersion = measurementNotifications.Version;
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.stepUpdates = stepUpdates ?? throw new ArgumentNullException(nameof(stepUpdates));
+        this.adjust = adjust ?? throw new ArgumentNullException(nameof(adjust));
         this.stepFlow = stepFlow ?? throw new ArgumentNullException(nameof(stepFlow));
         this.traces = traces ?? throw new ArgumentNullException(nameof(traces));
         this.manualCommands = manualCommands ?? throw new ArgumentNullException(nameof(manualCommands));
@@ -770,6 +786,8 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 return;
             }
 
+            // 库里那一份带着这次记下的运行中调整（设计说明 5.4）；读不回来就用改后的。
+            edited = (await this.jobs.GetAsync(edited.JobId, cancellationToken).ConfigureAwait(true))?.Job ?? edited;
             this.activeJob = edited;
             this.activePlans = edited.Steps
                 .Select(step => this.stepTypes.Get(step.StepTypeKey).CreatePlan(edited.Geometry, step.Parameters))
@@ -1450,6 +1468,9 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         }
 
         this.activeJob = stored.Value.Job;
+        this.rangeRows = this.activeJob.PlanId is { } planId
+            ? await this.adjust.DescribeAsync(planId, cancellationToken).ConfigureAwait(true)
+            : Array.Empty<AdjustableParameter>();
         this.activePlans = this.activeJob.Steps
             .Select(step => this.stepTypes.Get(step.StepTypeKey).CreatePlan(this.activeJob.Geometry, step.Parameters))
             .ToArray();
@@ -1497,12 +1518,28 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 row.Cells
                     .Select(cell =>
                     {
+                        AdjustableParameter? range = this.rangeRows.FirstOrDefault(
+                            item => item.StepOrder == cell.StepOrder && item.ParameterKey == row.Descriptor.Key);
+                        bool adjusted = range is not null && cell.Value is { Kind: Core.Parameters.ParameterValueKind.Number } number
+                            && Math.Abs(number.Number - range.PlanValue) > 1e-9;
                         var vm = new MatrixCellViewModel(
                             cell.StepOrder,
                             row.Descriptor.Key,
                             Format(row.Descriptor, cell.Value),
                             cell.IsApplicable,
-                            row.Descriptor.IsLiveEditable);
+                            row.Descriptor.IsLiveEditable)
+                        {
+                            // 按方案磨的才分 🔒 / Δ；旧作业（没有方案）照旧。
+                            IsRangeLocked = cell.IsApplicable && this.rangeRows.Count > 0 && range is not { Adjustable: true },
+                            IsAdjusted = adjusted,
+                            BadgeText = !cell.IsApplicable || this.rangeRows.Count == 0 ? string.Empty
+                                : range is not { Adjustable: true } ? Localizer["Adjust_ModeLocked"]
+                                : adjusted ? Localizer.Format("Auto_AdjustedBadgeFormat", AdjustText.Number(range.PlanValue))
+                                : string.Empty,
+                            RangeHint = range is { Adjustable: true }
+                                ? Localizer.Format("Auto_RangeHintFormat", AdjustText.Number(range.PlanValue), AdjustText.Bounds(Localizer, range.Bounds))
+                                : string.Empty,
+                        };
                         vm.PropertyChanged += (_, e) =>
                         {
                             if (e.PropertyName == nameof(MatrixCellViewModel.IsModified))

@@ -113,6 +113,14 @@
     "minWorkpieceSurfaceSpeedMPerMin": 30.0,
     "maxWorkpieceSurfaceSpeedMPerMin": 120.0
   },
+  "adjustRanges": {
+    "feedMmPerMin": "±10%",
+    "workpieceSpeedRpm": "±10%",
+    "infeedPerPassDiameterMicrometer": "decrease",
+    "continuousInfeedDiameterMicrometerPerMin": "decrease",
+    "sparkOutPassCount": "increase",
+    "reversalDwellSeconds": "±50%"
+  },
   "workpiece": {
     "minBodyLengthMm": 300.0,
     "maxBodyLengthMm": 5200.0,

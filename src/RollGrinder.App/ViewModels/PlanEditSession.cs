@@ -1,4 +1,5 @@
 using System;
+using RollGrinder.Data;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -20,7 +21,10 @@ public sealed class PlanEditBuilder
 
     public double? EndZoneMm { get; set; }
 
-    public PlanEdit Build() => new(Profile, Program, EndZoneChanged, EndZoneMm);
+    /// <summary>改过的可调范围（整份）；没改为 null。</summary>
+    public IReadOnlyList<PlanParamRange>? Ranges { get; set; }
+
+    public PlanEdit Build() => new(Profile, Program, EndZoneChanged, EndZoneMm) { Ranges = Ranges };
 }
 
 /// <summary>按方案编辑的一页（辊形页、工艺页）在共用草稿里的那一份。</summary>

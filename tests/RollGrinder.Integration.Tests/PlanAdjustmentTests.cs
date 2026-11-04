@@ -94,16 +94,21 @@ public sealed class PlanAdjustmentTests : IDisposable
         PlanContent content = (await plans.GetContentAsync(plan.PlanId, CancellationToken.None))!;
         LengthAlignment alignment = GrindingPlanService.AlignForJob(
             content.Profile, roll.GrindBodyLengthMm, plan.EndZoneMm, machine, services.GetRequiredService<RollProfileTypeRegistry>(), settings.ProfileSampleCount);
+        GrindingProgram normalized = content.Program with
+        {
+            Steps = ProgramFrame.Normalize(content.Program.Steps, services.GetRequiredService<GrindingStepTypeRegistry>()),
+        };
         JobCheckResult checks = JobChecklist.Evaluate(
-            new JobCheckInput(roll, content.Profile, content.Program, 600.35, true, 350.0, JobDeviation.None, null, Alignment: alignment),
+            new JobCheckInput(roll, content.Profile, normalized, 600.35, true, 350.0, JobDeviation.None, null, Alignment: alignment),
             machine);
+        var rows = await services.GetRequiredService<IJobAdjustmentService>().DescribeAsync(plan.PlanId, CancellationToken.None);
 
         GrindingJobStep[] steps = checks.Stock.Steps.ToArray();
         var adjustments = new System.Collections.Generic.List<JobAdjustment>();
         foreach ((int step, string key, double value, bool running) in changes)
         {
             int index = Array.FindIndex(steps, item => item.Order == step);
-            double planValue = content.Program.Steps.Single(item => item.Order == step).Parameters.GetNumber(key);
+            double planValue = rows.Single(row => row.StepOrder == step && row.ParameterKey == key).PlanValue;
             steps[index] = steps[index] with { Parameters = steps[index].Parameters.With(key, ParameterValue.FromNumber(value)) };
             adjustments.Add(new JobAdjustment(step, key, planValue, value, running, "操作工", DateTimeOffset.UnixEpoch.AddHours(step)));
         }
@@ -127,8 +132,8 @@ public sealed class PlanAdjustmentTests : IDisposable
     {
         var plans = services.GetRequiredService<IGrindingPlanService>();
         GrindingPlanRecord plan = (await plans.CurrentAsync("R-300", CancellationToken.None))!;
-        PlanContent content = (await plans.GetContentAsync(plan.PlanId, CancellationToken.None))!;
-        return content.Program.Steps.Single(item => item.Order == step).Parameters.GetNumber(StepParameterKeys.FeedMmPerMin);
+        return (await services.GetRequiredService<IJobAdjustmentService>().DescribeAsync(plan.PlanId, CancellationToken.None))
+            .Single(row => row.StepOrder == step && row.ParameterKey == StepParameterKeys.FeedMmPerMin).PlanValue;
     }
 
     [Fact]
@@ -140,22 +145,22 @@ public sealed class PlanAdjustmentTests : IDisposable
         GrindingPlanRecord plan = (await plans.CurrentAsync("R-300", CancellationToken.None))!;
 
         var rows = await adjust.DescribeAsync(plan.PlanId, CancellationToken.None);
-        AdjustableParameter feed = rows.Single(row => row.StepOrder == 1 && row.ParameterKey == StepParameterKeys.FeedMmPerMin);
+        AdjustableParameter feed = rows.Single(row => row.StepOrder == 2 && row.ParameterKey == StepParameterKeys.FeedMmPerMin);
         feed.Rule.Should().Be(AdjustRule.PlusMinus(10.0));
         feed.Source.Should().Be(RangeSource.Default);
         feed.Bounds.Lower.Should().BeApproximately(feed.PlanValue * 0.9, 1e-6);
         feed.Bounds.Upper.Should().BeApproximately(feed.PlanValue * 1.1, 1e-6);
-        rows.Single(row => row.StepOrder == 2 && row.ParameterKey == StepParameterKeys.SparkOutPassCount).Rule.Mode
+        rows.Single(row => row.StepOrder == 3 && row.ParameterKey == StepParameterKeys.SparkOutPassCount).Rule.Mode
             .Should().Be(AdjustMode.IncreaseOnly);
         rows.Should().Contain(row => !row.Adjustable, "有不可调（🔒）的参数");
 
         // 工艺员在方案里把粗磨拖板速度放到 ±20%。
         PlanSaveOutcome saved = await plans.SavePlanAsync(
-            plan.PlanId, new PlanEdit(null, null) { Ranges = new[] { new PlanParamRange(1, StepParameterKeys.FeedMmPerMin, "±20%") } },
+            plan.PlanId, new PlanEdit(null, null) { Ranges = new[] { new PlanParamRange(2, StepParameterKeys.FeedMmPerMin, "±20%") } },
             false, "工艺员", CancellationToken.None);
         saved.SavedAsNew.Should().BeFalse("没用过的方案就地改");
         AdjustableParameter widened = (await adjust.DescribeAsync(plan.PlanId, CancellationToken.None))
-            .Single(row => row.StepOrder == 1 && row.ParameterKey == StepParameterKeys.FeedMmPerMin);
+            .Single(row => row.StepOrder == 2 && row.ParameterKey == StepParameterKeys.FeedMmPerMin);
         widened.Source.Should().Be(RangeSource.Plan);
         widened.Check(widened.PlanValue * 1.15).Should().Be(AdjustRefusal.None);
         widened.Check(widened.PlanValue * 1.25).Should().Be(AdjustRefusal.AboveRange);
@@ -170,10 +175,10 @@ public sealed class PlanAdjustmentTests : IDisposable
     public async Task Out_of_range_is_refused_and_the_record_lists_the_adjustments()
     {
         await using ServiceProvider services = await BuildAsync();
-        double feed = await PlanFeedAsync(services, 1);
+        double feed = await PlanFeedAsync(services, 2);
 
         // 超范围（+20%，默认 ±10%）不收：什么都不下发。
-        (_, JobDownloadResult refused) = await GrindAsync(services, "J-OVER", (1, StepParameterKeys.FeedMmPerMin, feed * 1.2, false));
+        (_, JobDownloadResult refused) = await GrindAsync(services, "J-OVER", (2, StepParameterKeys.FeedMmPerMin, feed * 1.2, false));
         refused.Succeeded.Should().BeFalse();
         refused.Violations.Should().ContainSingle().Which.Kind.Should().Be(ParameterViolationKind.OutsideAdjustRange);
         refused.Violations[0].Limit.Should().BeApproximately(feed * 1.1, 1e-6);
@@ -181,15 +186,15 @@ public sealed class PlanAdjustmentTests : IDisposable
         // 周期进给只能调小：调大不收。
         double infeed = (await services.GetRequiredService<IJobAdjustmentService>().DescribeAsync(
             (await services.GetRequiredService<IGrindingPlanService>().CurrentAsync("R-300", CancellationToken.None))!.PlanId, CancellationToken.None))
-            .Single(row => row.StepOrder == 1 && row.ParameterKey == StepParameterKeys.InfeedPerPassDiameterMicrometer).PlanValue;
-        (_, JobDownloadResult deeper) = await GrindAsync(services, "J-DEEP", (1, StepParameterKeys.InfeedPerPassDiameterMicrometer, infeed + 5.0, false));
+            .Single(row => row.StepOrder == 2 && row.ParameterKey == StepParameterKeys.InfeedPerPassDiameterMicrometer).PlanValue;
+        (_, JobDownloadResult deeper) = await GrindAsync(services, "J-DEEP", (2, StepParameterKeys.InfeedPerPassDiameterMicrometer, infeed + 5.0, false));
         deeper.Succeeded.Should().BeFalse();
 
         // 范围内收；记录列出调整（参数、方案值、本次值、人、时间）。
         (GrindingJob job, JobDownloadResult ok) = await GrindAsync(
             services, "J-1",
-            (1, StepParameterKeys.FeedMmPerMin, feed * 1.05, false),
-            (2, StepParameterKeys.SparkOutPassCount, 4.0, false));
+            (2, StepParameterKeys.FeedMmPerMin, feed * 1.05, false),
+            (3, StepParameterKeys.SparkOutPassCount, 4.0, false));
         ok.Succeeded.Should().BeTrue();
         GrindingJob stored = (await services.GetRequiredService<IJobRepository>().GetAsync("J-1", CancellationToken.None))!.Value.Job;
         stored.Adjustments.Should().HaveCount(2);
@@ -211,15 +216,15 @@ public sealed class PlanAdjustmentTests : IDisposable
     {
         await using ServiceProvider services = await BuildAsync();
         var plans = services.GetRequiredService<IGrindingPlanService>();
-        double feed = await PlanFeedAsync(services, 1);
+        double feed = await PlanFeedAsync(services, 2);
         GrindingPlanRecord original = (await plans.CurrentAsync("R-300", CancellationToken.None))!;
         await plans.SavePlanAsync(
-            original.PlanId, new PlanEdit(null, null) { Ranges = new[] { new PlanParamRange(2, StepParameterKeys.FeedMmPerMin, "±5%") } },
+            original.PlanId, new PlanEdit(null, null) { Ranges = new[] { new PlanParamRange(3, StepParameterKeys.FeedMmPerMin, "±5%") } },
             false, "工艺员", CancellationToken.None);
         (GrindingJob job, JobDownloadResult ok) = await GrindAsync(
             services, "J-7",
-            (1, StepParameterKeys.FeedMmPerMin, feed * 0.95, false),
-            (2, StepParameterKeys.SparkOutPassCount, 5.0, true));
+            (2, StepParameterKeys.FeedMmPerMin, feed * 0.95, false),
+            (3, StepParameterKeys.SparkOutPassCount, 5.0, true));
         ok.Succeeded.Should().BeTrue();
 
         // 只勾核对时那一项。
@@ -233,8 +238,8 @@ public sealed class PlanAdjustmentTests : IDisposable
         created.TemplateProgramId.Should().Be(original.TemplateProgramId);
         created.ProgramDiverged.Should().BeTrue();
         PlanContent content = (await plans.GetContentAsync(created.PlanId, CancellationToken.None))!;
-        content.Program.Steps[0].Parameters.GetNumber(StepParameterKeys.FeedMmPerMin).Should().BeApproximately(feed * 0.95, 1e-9);
-        content.Program.Steps[1].Parameters.GetNumber(StepParameterKeys.SparkOutPassCount)
+        content.Program.Steps[1].Parameters.GetNumber(StepParameterKeys.FeedMmPerMin).Should().BeApproximately(feed * 0.95, 1e-9);
+        content.Program.Steps[2].Parameters.GetNumber(StepParameterKeys.SparkOutPassCount)
             .Should().Be((await plans.GetContentAsync(original.PlanId, CancellationToken.None))!.Program.Steps[1].Parameters.GetNumber(StepParameterKeys.SparkOutPassCount),
                 "运行中那一项没勾");
         (await plans.GetRangesAsync(created.PlanId, CancellationToken.None)).Should().ContainSingle().Which.Rule.Should().Be("±5%");
@@ -249,7 +254,7 @@ public sealed class PlanAdjustmentTests : IDisposable
     public async Task A_running_edit_must_stay_in_range_and_is_recorded_as_running()
     {
         await using ServiceProvider services = await BuildAsync();
-        double feed = await PlanFeedAsync(services, 2);
+        double feed = await PlanFeedAsync(services, 3);
         (_, JobDownloadResult ok) = await GrindAsync(services, "J-RUN");
         ok.Succeeded.Should().BeTrue();
         GrindingJob original = (await services.GetRequiredService<IJobRepository>().GetAsync("J-RUN", CancellationToken.None))!.Value.Job;
@@ -257,7 +262,7 @@ public sealed class PlanAdjustmentTests : IDisposable
         GrindingJob With(double value)
         {
             GrindingJobStep[] steps = original.Steps.ToArray();
-            steps[1] = steps[1] with { Parameters = steps[1].Parameters.With(StepParameterKeys.FeedMmPerMin, ParameterValue.FromNumber(value)) };
+            steps[2] = steps[2] with { Parameters = steps[2].Parameters.With(StepParameterKeys.FeedMmPerMin, ParameterValue.FromNumber(value)) };
             return original with { Steps = steps };
         }
 
@@ -272,7 +277,7 @@ public sealed class PlanAdjustmentTests : IDisposable
         JobAdjustment recorded = (await services.GetRequiredService<IJobRepository>().GetAsync("J-RUN", CancellationToken.None))!.Value.Job
             .Adjustments.Should().ContainSingle().Subject;
         recorded.Running.Should().BeTrue();
-        recorded.StepOrder.Should().Be(2);
+        recorded.StepOrder.Should().Be(3);
         recorded.PlanValue.Should().Be(feed);
         recorded.JobValue.Should().BeApproximately(feed * 1.08, 1e-9);
         recorded.ChangedBy.Should().Be("班长");

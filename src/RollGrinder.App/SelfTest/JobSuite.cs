@@ -277,6 +277,57 @@ internal sealed class JobSuite : ISelfTestSuite
             ctx.Check(job.CanDownload, "the plan passes again, first block: " + JobFlow.FirstBlock(job));
         });
 
+        await h.StepAsync("Review", "AdjustThisTimeInsideRange", async ctx =>
+        {
+            if (!job.IsReview)
+            {
+                ctx.Skip("no review is open");
+            }
+
+            // 两层参数（设计稿 v4 5.2.5）：超范围的不收，范围内的记成本次调整，核对页列出来；全部恢复回到方案值。
+            await h.PressVerticalKeyAsync(ctx, "Vk_AdjustThisTime");
+            bool open = await h.WaitUntilAsync(() => job.IsAdjusting && job.AdjustRows.Count > 0, TimeSpan.FromSeconds(5));
+            ctx.Check(open, "the adjust subview should open with adjustable parameters");
+            AdjustRowViewModel? row = job.AdjustRows.FirstOrDefault(r => r.Parameter.Rule.Mode == AdjustMode.Percent) ?? job.AdjustRows.FirstOrDefault();
+            if (row is null)
+            {
+                job.TryDismissPrompt();
+                ctx.Skip("nothing is adjustable in this plan");
+            }
+
+            job.SelectedAdjustRow = row;
+            row!.ValueText = (row.Parameter.PlanValue * 10.0 + 1000.0).ToString(CultureInfo.CurrentCulture);
+            await h.SettleAsync();
+            int use = h.IndexOfVerticalKey("Vk_UseThisTime");
+            ctx.Check(row.IsRefused && use >= 0 && !h.IsVerticalKeyUsable(use), "an out-of-range value is refused and '✓ use this time' is greyed");
+            h.TryScreenshot("job-adjust-refused");
+
+            row.Restore();
+            row.Nudge(row.Parameter.Rule.Mode == AdjustMode.DecreaseOnly ? -1 : 1);
+            await h.SettleAsync();
+            ctx.Check(!row.IsRefused && row.IsChanged, "one step inside the range is accepted: " + row.ValueText + " allowed " + row.AllowedText);
+            await h.PressVerticalKeyAsync(ctx, "Vk_UseThisTime");
+            bool applied = await h.WaitUntilAsync(() => !job.IsAdjusting, TimeSpan.FromSeconds(5));
+            ctx.Check(applied, "'✓ use this time' should close the subview");
+            ctx.Check(job.BuildJob() is { Adjustments.Count: 1 }, "the built job should carry one adjustment");
+            ctx.Check(job.Checks.Any(c => c.ItemText == job.Localizer["CheckItem_Adjust"]), "the review should list the adjustment");
+            ctx.Check(job.CanDownload, "an in-range adjustment does not block, first block: " + JobFlow.FirstBlock(job));
+            h.TryScreenshot("job-adjusted");
+
+            // 调过以后竖键标 Δ。
+            await h.PressVerticalKeyAsync(ctx, "Vk_AdjustThisTimeChanged");
+            await h.WaitUntilAsync(() => job.IsAdjusting, TimeSpan.FromSeconds(5));
+            foreach (AdjustRowViewModel each in job.AdjustRows)
+            {
+                each.Restore();
+            }
+
+            await h.SettleAsync();
+            await h.PressVerticalKeyAsync(ctx, "Vk_UseThisTime");
+            await h.WaitUntilAsync(() => !job.IsAdjusting, TimeSpan.FromSeconds(5));
+            ctx.Check(job.BuildJob() is { Adjustments.Count: 0 }, "restoring every value leaves no adjustment");
+        }, StepOptions.Shot);
+
         await h.StepAsync("Review", "PlanListOfThisRoll", async ctx =>
         {
             if (!job.IsReview)

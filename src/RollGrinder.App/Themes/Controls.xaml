@@ -416,6 +416,17 @@
                  ctl:TouchInput.Hint="{Binding HintText, Mode=OneWay}"
                  Visibility="{Binding IsEditableText, Converter={StaticResource BoolToVisibility}}" />
 
+        <!-- 按方案编辑时：作业里可调的范围（设计稿 v4 5.5.3：可调方式 · 上下限 · 来源），按一下"改范围…"。 -->
+        <Button Command="{Binding ChangeRangeCommand}" Style="{StaticResource SecondaryButton}" Height="36" Margin="0,4,0,0"
+                Padding="6,0" HorizontalContentAlignment="Left"
+                Visibility="{Binding ShowsRange, Converter={StaticResource BoolToVisibility}}">
+          <TextBlock FontSize="{StaticResource Size.Caption}" TextTrimming="CharacterEllipsis">
+            <Run Text="{Binding RangeModeText, Mode=OneWay}" FontWeight="SemiBold" />
+            <Run Text="{Binding RangeBoundsText, Mode=OneWay}" FontFamily="{StaticResource Font.Mono}" />
+            <Run Text="{Binding RangeSourceText, Mode=OneWay}" Foreground="{StaticResource Brush.TextSecondary}" />
+          </TextBlock>
+        </Button>
+
         <ItemsControl ItemsSource="{Binding Choices}"
                       Margin="0,6,0,0"
                       Visibility="{Binding HasChoices, Converter={StaticResource BoolToVisibility}}">

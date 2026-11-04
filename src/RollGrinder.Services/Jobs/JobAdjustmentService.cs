@@ -56,7 +56,7 @@ public interface IJobAdjustmentService
     /// <summary>机床配置的默认范围表（读不懂的项忽略，取内置初稿）。</summary>
     IReadOnlyDictionary<string, AdjustRule> MachineDefaults { get; }
 
-    /// <summary>一个程序在给定方案覆盖下每道工序每个数值参数的范围。</summary>
+    /// <summary>一个程序在给定方案覆盖下每道工序每个数值参数的范围。工序序号按整理成"开始 … 结束"以后的（与作业一致）。</summary>
     IReadOnlyList<AdjustableParameter> Describe(GrindingProgram program, IReadOnlyList<PlanParamRange> overrides);
 
     /// <summary>方案的范围（取方案的工艺与覆盖）；方案不在为空。</summary>
@@ -122,7 +122,9 @@ public sealed class JobAdjustmentService : IJobAdjustmentService
             .GroupBy(range => (range.StepOrder, range.ParameterKey))
             .ToDictionary(group => group.Key, group => AdjustRule.Parse(group.Last().Rule));
         var list = new List<AdjustableParameter>();
-        foreach (GrindingJobStep step in program.Steps)
+
+        // 序号按作业里的（整理成"开始 … 结束"以后）：作业、记录、范围说的"第 n 道"是同一道。
+        foreach (GrindingJobStep step in ProgramFrame.Normalize(program.Steps, this.stepTypes))
         {
             if (!this.stepTypes.TryGet(step.StepTypeKey, out IGrindingStepType? type) || type is null)
             {
