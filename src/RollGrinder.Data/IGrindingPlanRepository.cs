@@ -5,6 +5,13 @@ using System.Threading.Tasks;
 
 namespace RollGrinder.Data;
 
+/// <summary>模板是辊形模板还是工艺模板。</summary>
+public enum TemplateKind
+{
+    Profile = 0,
+    Program = 1,
+}
+
 /// <summary>方案从哪里来（设计说明 4.4）。</summary>
 public enum PlanSourceKind
 {
@@ -52,7 +59,26 @@ public sealed record GrindingPlanRecord(
     string? SourceRef,
     double? EndZoneMm,
     DateTimeOffset CreatedAtUtc,
-    string CreatedBy);
+    string CreatedBy)
+{
+    /// <summary>辊形复制自哪条辊形模板（一路另存下来也记着）；不是从模板来的为 null。</summary>
+    public string? TemplateProfileId { get; init; }
+
+    /// <summary>复制时那条辊形模板是第几版。</summary>
+    public int? TemplateProfileVersion { get; init; }
+
+    /// <summary>工艺复制自哪条工艺模板。</summary>
+    public string? TemplateProgramId { get; init; }
+
+    /// <summary>复制时那条工艺模板是第几版。</summary>
+    public int? TemplateProgramVersion { get; init; }
+
+    /// <summary>辊形复制以后改过（与模板"已改动"，通常是特批）。</summary>
+    public bool ProfileDiverged { get; init; }
+
+    /// <summary>工艺复制以后改过。</summary>
+    public bool ProgramDiverged { get; init; }
+}
 
 /// <summary>方案被作业用了几次、最近一次。</summary>
 /// <param name="UseCount">用过几次（0 = 没用过，可以改、可以删）。</param>
@@ -76,6 +102,9 @@ public interface IGrindingPlanRepository
 
     /// <summary>删掉一个方案（只删方案行；方案自己的辊形 / 工艺由调用方删）。</summary>
     Task DeleteAsync(string planId, CancellationToken cancellationToken);
+
+    /// <summary>所有辊的方案里，辊形（<paramref name="kind"/> = 辊形）或工艺复制自这条模板的。</summary>
+    Task<IReadOnlyList<GrindingPlanRecord>> ListByTemplateAsync(TemplateKind kind, string templateId, CancellationToken cancellationToken);
 
     /// <summary>一支辊各方案被作业用了几次（作业表 plan_id）。没用过的不在字典里。</summary>
     Task<IReadOnlyDictionary<string, PlanUsage>> UsageAsync(string rollId, CancellationToken cancellationToken);

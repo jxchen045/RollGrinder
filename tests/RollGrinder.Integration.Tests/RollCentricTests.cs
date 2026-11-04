@@ -274,8 +274,8 @@ public sealed class RollCentricTests : IDisposable
     public async Task Upgrading_infers_each_rolls_plan_from_its_latest_job_and_flags_it()
     {
         var database = new SqliteDatabase(Path.Combine(this.workspace.Root, "data", SqliteDatabase.FileName));
-        // 停在"以轧辊为中心"那条迁移之前（其后还有参数归属、磨削方案两条）。
-        await database.MigrateToAsync(SqliteDatabase.ExpectedSchemaVersion - 3, CancellationToken.None);
+        // 停在"以轧辊为中心"那条迁移之前（其后还有参数归属、磨削方案、方案来源与必须采用三条）。
+        await database.MigrateToAsync(SqliteDatabase.ExpectedSchemaVersion - 4, CancellationToken.None);
         await using (SqliteConnection connection = await database.OpenAsync(CancellationToken.None))
         {
             await using SqliteCommand command = connection.CreateCommand();
@@ -440,8 +440,16 @@ public sealed class RollCentricTests : IDisposable
         (await services.GetRequiredService<IChangeLogRepository>().ListAsync(50, CancellationToken.None))
             .Count(e => e.Area == ChangeLogAreas.RollPlan && e.Item.Contains("轧制计划调整", StringComparison.Ordinal)).Should().Be(2);
 
-        // 模板 P-2 设计长 2400，辊身 1800：以中心截取会截进工作区，不建。
-        (await planning.ChangePlanAsync(new[] { "R-1" }, "P-2", null, null, "tester", CancellationToken.None))
+        // 模板 P-2 设计长 2400、凸度带锥度（解析段）：两端段不动、中间段铺满到 1800，页内看过逐支结果即建。
+        PlanChangeOutcome analytic = (await planning.PreviewPlanChangeAsync(new[] { "R-1" }, "P-2", null, CancellationToken.None)).Single();
+        analytic.Changed.Should().BeTrue();
+        analytic.Preview!.Alignment!.Kind.Should().Be(CopyAlignmentKind.MiddleFilled);
+        analytic.Preview.NeedsConfirm.Should().BeTrue();
+
+        // CVC 模板设计长 1700，辊身 1800：长出 100 超过容差，多项式外推会发散，不建。
+        await library.SaveProfileAsync(
+            RollProfileDefinition.Create("P-CVC", "CVC-1700", 1700.0, Cvc(1700.0), DateTimeOffset.UnixEpoch), "tester", CancellationToken.None);
+        (await planning.ChangePlanAsync(new[] { "R-1" }, "P-CVC", null, null, "tester", CancellationToken.None))
             .Single().ProblemKey.Should().Be("PlanProblem_Length");
     }
 

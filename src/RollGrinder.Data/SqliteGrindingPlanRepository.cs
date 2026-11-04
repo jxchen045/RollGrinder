@@ -10,7 +10,8 @@ namespace RollGrinder.Data;
 public sealed class SqliteGrindingPlanRepository : IGrindingPlanRepository
 {
     private const string Columns =
-        "plan_id, roll_id, plan_no, name, purpose, profile_id, program_id, source_kind, source_ref, end_zone_mm, created_at_utc, created_by";
+        "plan_id, roll_id, plan_no, name, purpose, profile_id, program_id, source_kind, source_ref, end_zone_mm, created_at_utc, created_by, "
+        + "tpl_profile_id, tpl_profile_version, tpl_program_id, tpl_program_version, profile_diverged, program_diverged";
 
     private readonly SqliteDatabase database;
 
@@ -51,6 +52,26 @@ public sealed class SqliteGrindingPlanRepository : IGrindingPlanRepository
         return await reader.ReadAsync(cancellationToken).ConfigureAwait(false) ? Map(reader) : null;
     }
 
+    public async Task<IReadOnlyList<GrindingPlanRecord>> ListByTemplateAsync(TemplateKind kind, string templateId, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(templateId);
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        string column = kind == TemplateKind.Profile ? "tpl_profile_id" : "tpl_program_id";
+        command.CommandText = $"SELECT {Columns} FROM grinding_plan WHERE {column} = $template ORDER BY roll_id, plan_no;";
+        SqlMapping.AddParameter(command, "$template", templateId);
+
+        var plans = new List<GrindingPlanRecord>();
+        await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            plans.Add(Map(reader));
+        }
+
+        return plans;
+    }
+
     public async Task<int> NextPlanNoAsync(string rollId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rollId);
@@ -80,8 +101,15 @@ public sealed class SqliteGrindingPlanRepository : IGrindingPlanRepository
         command.CommandText =
             $"""
             INSERT INTO grinding_plan ({Columns})
-            VALUES ($id, $roll, $no, $name, $purpose, $profile, $program, $sourceKind, $sourceRef, $endZone, $created, $createdBy)
+            VALUES ($id, $roll, $no, $name, $purpose, $profile, $program, $sourceKind, $sourceRef, $endZone, $created, $createdBy,
+                    $tplProfile, $tplProfileVersion, $tplProgram, $tplProgramVersion, $profileDiverged, $programDiverged)
             ON CONFLICT(plan_id) DO UPDATE SET
+                tpl_profile_id = excluded.tpl_profile_id,
+                tpl_profile_version = excluded.tpl_profile_version,
+                tpl_program_id = excluded.tpl_program_id,
+                tpl_program_version = excluded.tpl_program_version,
+                profile_diverged = excluded.profile_diverged,
+                program_diverged = excluded.program_diverged,
                 name = excluded.name,
                 purpose = excluded.purpose,
                 profile_id = excluded.profile_id,
@@ -102,6 +130,12 @@ public sealed class SqliteGrindingPlanRepository : IGrindingPlanRepository
         SqlMapping.AddParameter(command, "$endZone", plan.EndZoneMm);
         SqlMapping.AddParameter(command, "$created", SqlMapping.ToText(plan.CreatedAtUtc));
         SqlMapping.AddParameter(command, "$createdBy", plan.CreatedBy);
+        SqlMapping.AddParameter(command, "$tplProfile", plan.TemplateProfileId);
+        SqlMapping.AddParameter(command, "$tplProfileVersion", plan.TemplateProfileVersion);
+        SqlMapping.AddParameter(command, "$tplProgram", plan.TemplateProgramId);
+        SqlMapping.AddParameter(command, "$tplProgramVersion", plan.TemplateProgramVersion);
+        SqlMapping.AddParameter(command, "$profileDiverged", plan.ProfileDiverged ? 1 : 0);
+        SqlMapping.AddParameter(command, "$programDiverged", plan.ProgramDiverged ? 1 : 0);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -154,5 +188,13 @@ public sealed class SqliteGrindingPlanRepository : IGrindingPlanRepository
         reader.IsDBNull(8) ? null : reader.GetString(8),
         reader.IsDBNull(9) ? null : reader.GetDouble(9),
         SqlMapping.ToTimestamp(reader.GetString(10)),
-        reader.GetString(11));
+        reader.GetString(11))
+    {
+        TemplateProfileId = reader.IsDBNull(12) ? null : reader.GetString(12),
+        TemplateProfileVersion = reader.IsDBNull(13) ? null : reader.GetInt32(13),
+        TemplateProgramId = reader.IsDBNull(14) ? null : reader.GetString(14),
+        TemplateProgramVersion = reader.IsDBNull(15) ? null : reader.GetInt32(15),
+        ProfileDiverged = reader.GetInt32(16) != 0,
+        ProgramDiverged = reader.GetInt32(17) != 0,
+    };
 }

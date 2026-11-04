@@ -139,6 +139,9 @@ public sealed record MachineDescription(
     /// <summary>下发容差的绝对上限（mm），阈值键。不写只看百分比。与百分比同时写时取小的那个。</summary>
     public const string LengthToleranceMmKey = "lengthToleranceMm";
 
+    /// <summary>复制门槛（mm），阈值键：跨辊复制、套模板时名义长度差这么多以内视为相同、不提示。不写按 1。</summary>
+    public const string CopyThresholdMmKey = "copyThresholdMm";
+
     /// <summary>作业核对：工件线速度下限（m/min），阈值键。不写不查。</summary>
     public const string MinWorkpieceSurfaceSpeedKey = "minWorkpieceSurfaceSpeedMPerMin";
 

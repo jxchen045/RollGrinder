@@ -55,11 +55,45 @@ public sealed record PlanEdit(RollProfileDefinition? Profile, GrindingProgram? P
     public bool IsEmpty => Profile is null && Program is null && !EndZoneChanged;
 }
 
-/// <summary>按模板建方案的结果。</summary>
+/// <summary>按模板建方案 / 复制方案的结果。</summary>
 /// <param name="Plan">建出来的方案；建不了为 null。</param>
 /// <param name="ProblemKey">建不了的原因（资源键）。</param>
-/// <param name="Alignment">模板名义长度对到本辊名义长度的结论。</param>
-public sealed record PlanCreateOutcome(GrindingPlanRecord? Plan, string? ProblemKey, LengthAlignment? Alignment);
+/// <param name="Alignment">来源名义长度对到本辊名义长度的结论（复制对齐）。</param>
+public sealed record PlanCreateOutcome(GrindingPlanRecord? Plan, string? ProblemKey, CopyAlignment? Alignment);
+
+/// <summary>复制范围（设计稿 v4 5.5.5 P10）：辊形 + 工艺、只辊形、只工艺（没复制的那样取本辊当前方案的）。</summary>
+public enum CopyScope
+{
+    All = 0,
+    ProfileOnly = 1,
+    ProgramOnly = 2,
+}
+
+/// <summary>复制从哪来：某支辊的某个方案，或者辊形模板 / 工艺模板（给哪样复制哪样，另一样取当前方案的）。</summary>
+public sealed record CopySource(string? PlanId = null, string? ProfileTemplateId = null, string? ProgramTemplateId = null)
+{
+    public static CopySource FromPlan(string planId) => new(PlanId: planId);
+
+    public static CopySource FromTemplates(string? profileTemplateId, string? programTemplateId) => new(null, profileTemplateId, programTemplateId);
+}
+
+/// <summary>复制预览（设计稿 v4 5.5.5 / 5.4.3 / 5.4.4 的长度对齐一行）。</summary>
+/// <param name="Alignment">复制对齐（按名义长度）；没复制辊形时为 null。</param>
+/// <param name="ProblemKey">复制不了的原因；能复制为 null（须确认看 <see cref="CopyAlignment.NeedsConfirm"/>）。</param>
+/// <param name="SourceText">来源一句话（辊号 / 方案号或模板名）。</param>
+/// <param name="ProfileName">复制后的辊形名。</param>
+/// <param name="ProgramName">复制后的工艺名。</param>
+/// <param name="Download">按本辊实测长度预告以后每次下发的截取 / 延伸；没有实测为 null。</param>
+public sealed record CopyPreview(
+    CopyAlignment? Alignment,
+    string? ProblemKey,
+    string SourceText,
+    string ProfileName,
+    string ProgramName,
+    LengthAlignment? Download)
+{
+    public bool NeedsConfirm => Alignment is { NeedsConfirm: true };
+}
 
 /// <summary>
 /// 磨削方案（设计说明《轧辊与磨削方案》第 4 节）：方案归辊所有 = 辊形 + 工艺；一支辊一个当前方案；
@@ -85,10 +119,25 @@ public interface IGrindingPlanService
     /// 对不上（超出容差）不建。只给一样模板时，另一样取当前方案的（没有当前方案就建不了）。
     /// </summary>
     Task<PlanCreateOutcome> CreateFromTemplatesAsync(
-        string rollId, string? profileTemplateId, string? programTemplateId, bool setCurrent, string user, CancellationToken cancellationToken);
+        string rollId, string? profileTemplateId, string? programTemplateId, bool setCurrent, string user, CancellationToken cancellationToken,
+        bool confirmed = true);
 
     /// <summary>只看能不能按模板建（不落库）：返回原因资源键，能建为 null。</summary>
     Task<string?> CheckTemplatesAsync(string rollId, string? profileTemplateId, string? programTemplateId, CancellationToken cancellationToken);
+
+    /// <summary>复制预览：长度对齐（复制门槛、解析段中间铺满、CVC / 点表截取 / 延伸 / 拒绝）、来源、下发时预告。</summary>
+    Task<CopyPreview> PreviewCopyAsync(string rollId, CopySource source, CopyScope scope, CancellationToken cancellationToken);
+
+    /// <summary>同上，给还没登记的辊（新登记表）：按表里的名义 / 实测长度与类型算。</summary>
+    Task<CopyPreview> PreviewCopyForNewRollAsync(
+        double nominalLengthMm, double? measuredLengthMm, RollKind kind, CopySource source, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 复制成本辊的新方案（来源记好）。须确认的（凸度类中间铺满、截 / 延超出端部非工作区）要 <paramref name="confirmed"/>；
+    /// 超出容差的不复制。复制出的方案默认不设为当前（设计稿 v4 I17）。
+    /// </summary>
+    Task<PlanCreateOutcome> CopyToRollAsync(
+        string rollId, CopySource source, CopyScope scope, bool confirmed, bool setCurrent, string user, CancellationToken cancellationToken);
 
     /// <summary>复制本辊的一个方案为新方案（新编号，来源记为原方案）。</summary>
     Task<GrindingPlanRecord> CopyAsync(string planId, string? name, bool setCurrent, string user, CancellationToken cancellationToken);
@@ -231,89 +280,261 @@ public sealed class GrindingPlanService : IGrindingPlanService
         return usage.TryGetValue(planId, out PlanUsage? used) ? used : new PlanUsage(0, null);
     }
 
-    public async Task<PlanCreateOutcome> CreateFromTemplatesAsync(
-        string rollId, string? profileTemplateId, string? programTemplateId, bool setCurrent, string user, CancellationToken cancellationToken)
+    /// <summary>复制门槛（mm）：配置里的，不写按 1。</summary>
+    public static double CopyThresholdMm(MachineDescription machine)
     {
-        (RollRecord? roll, RollProfileDefinition? profile, GrindingProgram? program, string? sourceRef, string? problem, LengthAlignment? alignment) =
-            await ResolveTemplatesAsync(rollId, profileTemplateId, programTemplateId, cancellationToken).ConfigureAwait(false);
-        if (problem is not null || roll is null || profile is null || program is null)
-        {
-            return new PlanCreateOutcome(null, problem ?? "PlanProblem_Missing", alignment);
-        }
-
-        GrindingPlanRecord plan = await CreateAsync(
-            roll, profile, program, PlanName(profile.Name, program.Name), roll.Purpose,
-            PlanSourceKind.Template, sourceRef, null, setCurrent, user, cancellationToken).ConfigureAwait(false);
-        return new PlanCreateOutcome(plan, null, alignment);
+        ArgumentNullException.ThrowIfNull(machine);
+        return machine.Threshold(MachineDescription.CopyThresholdMmKey) ?? ProfileCopyAlignment.DefaultThresholdMm;
     }
+
+    public Task<PlanCreateOutcome> CreateFromTemplatesAsync(
+        string rollId, string? profileTemplateId, string? programTemplateId, bool setCurrent, string user, CancellationToken cancellationToken,
+        bool confirmed = true) =>
+        CopyToRollAsync(rollId, CopySource.FromTemplates(profileTemplateId, programTemplateId), CopyScope.All, confirmed, setCurrent, user, cancellationToken);
 
     public async Task<string?> CheckTemplatesAsync(
         string rollId, string? profileTemplateId, string? programTemplateId, CancellationToken cancellationToken) =>
-        (await ResolveTemplatesAsync(rollId, profileTemplateId, programTemplateId, cancellationToken).ConfigureAwait(false)).Problem;
+        (await PreviewCopyAsync(rollId, CopySource.FromTemplates(profileTemplateId, programTemplateId), CopyScope.All, cancellationToken)
+            .ConfigureAwait(false)).ProblemKey;
 
-    private async Task<(RollRecord? Roll, RollProfileDefinition? Profile, GrindingProgram? Program, string? SourceRef, string? Problem, LengthAlignment? Alignment)>
-        ResolveTemplatesAsync(string rollId, string? profileTemplateId, string? programTemplateId, CancellationToken cancellationToken)
+    public async Task<CopyPreview> PreviewCopyAsync(string rollId, CopySource source, CopyScope scope, CancellationToken cancellationToken)
     {
         RollRecord? roll = await EnsurePlansAsync(rollId, cancellationToken).ConfigureAwait(false);
         if (roll is null)
         {
-            return (null, null, null, null, "PlanProblem_Missing", null);
+            return new CopyPreview(null, "PlanProblem_Missing", "--", "--", "--", null);
         }
 
-        if (roll.Retired)
+        return (await ResolveCopyAsync(roll, roll.Geometry.BodyLengthMm, roll.MeasuredBodyLengthMm, roll.Kind, source, scope, cancellationToken)
+            .ConfigureAwait(false)).Preview;
+    }
+
+    public async Task<CopyPreview> PreviewCopyForNewRollAsync(
+        double nominalLengthMm, double? measuredLengthMm, RollKind kind, CopySource source, CancellationToken cancellationToken)
+    {
+        if (nominalLengthMm <= 0.0)
         {
-            return (roll, null, null, null, "PlanProblem_Retired", null);
+            return new CopyPreview(null, "PlanProblem_Missing", "--", "--", "--", null);
         }
 
-        PlanContent? current = roll.CurrentPlanId is { } currentId
+        return (await ResolveCopyAsync(null, nominalLengthMm, measuredLengthMm, kind, source, CopyScope.All, cancellationToken)
+            .ConfigureAwait(false)).Preview;
+    }
+
+    public async Task<PlanCreateOutcome> CopyToRollAsync(
+        string rollId, CopySource source, CopyScope scope, bool confirmed, bool setCurrent, string user, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        RollRecord? roll = await EnsurePlansAsync(rollId, cancellationToken).ConfigureAwait(false);
+        if (roll is null)
+        {
+            return new PlanCreateOutcome(null, "PlanProblem_Missing", null);
+        }
+
+        CopyResolution resolved = await ResolveCopyAsync(
+            roll, roll.Geometry.BodyLengthMm, roll.MeasuredBodyLengthMm, roll.Kind, source, scope, cancellationToken).ConfigureAwait(false);
+        if (resolved.Preview.ProblemKey is { } problem)
+        {
+            return new PlanCreateOutcome(null, problem, resolved.Preview.Alignment);
+        }
+
+        if (resolved.Preview.NeedsConfirm && !confirmed)
+        {
+            return new PlanCreateOutcome(null, "PlanProblem_NeedsConfirm", resolved.Preview.Alignment);
+        }
+
+        GrindingPlanRecord plan = await CreateAsync(
+            roll, resolved.Profile!, resolved.Program!, resolved.Name, resolved.Purpose ?? roll.Purpose,
+            resolved.SourceKind, resolved.SourceRef, resolved.EndZoneMm, setCurrent, user, cancellationToken, lineage: resolved.Lineage)
+            .ConfigureAwait(false);
+        return new PlanCreateOutcome(plan, null, resolved.Preview.Alignment);
+    }
+
+    /// <summary>方案的模板来源：辊形 / 工艺各复制自哪条模板第几版、之后改没改过。</summary>
+    private sealed record Lineage(
+        string? ProfileTemplateId, int? ProfileTemplateVersion, bool ProfileDiverged,
+        string? ProgramTemplateId, int? ProgramTemplateVersion, bool ProgramDiverged)
+    {
+        public static Lineage None { get; } = new(null, null, false, null, null, false);
+
+        public static Lineage Of(GrindingPlanRecord plan) => new(
+            plan.TemplateProfileId, plan.TemplateProfileVersion, plan.ProfileDiverged,
+            plan.TemplateProgramId, plan.TemplateProgramVersion, plan.ProgramDiverged);
+
+        public GrindingPlanRecord ApplyTo(GrindingPlanRecord plan) => plan with
+        {
+            TemplateProfileId = ProfileTemplateId,
+            TemplateProfileVersion = ProfileTemplateVersion,
+            ProfileDiverged = ProfileDiverged,
+            TemplateProgramId = ProgramTemplateId,
+            TemplateProgramVersion = ProgramTemplateVersion,
+            ProgramDiverged = ProgramDiverged,
+        };
+    }
+
+    private sealed record CopyResolution(
+        CopyPreview Preview,
+        RollProfileDefinition? Profile,
+        GrindingProgram? Program,
+        string Name,
+        string? Purpose,
+        PlanSourceKind SourceKind,
+        string? SourceRef,
+        double? EndZoneMm,
+        Lineage Lineage);
+
+    /// <summary>
+    /// 复制的全部判断：来源取哪样、没复制的那样取本辊当前方案的；辊形按复制规则对到本辊名义长度（设计说明 4.5）；
+    /// 作废的辊、停用的模板、类型不符拦下。<paramref name="roll"/> 为 null 是还没登记的辊。
+    /// </summary>
+    private async Task<CopyResolution> ResolveCopyAsync(
+        RollRecord? roll, double targetNominalMm, double? measuredMm, RollKind rollKind, CopySource source, CopyScope scope,
+        CancellationToken cancellationToken)
+    {
+        CopyResolution Fail(string key, CopyAlignment? alignment = null) =>
+            new(new CopyPreview(alignment, key, "--", "--", "--", null), null, null, string.Empty, null, PlanSourceKind.Blank, null, null, Lineage.None);
+
+        if (roll is { Retired: true })
+        {
+            return Fail("PlanProblem_Retired");
+        }
+
+        PlanContent? current = roll?.CurrentPlanId is { } currentId
             ? await GetContentAsync(currentId, cancellationToken).ConfigureAwait(false)
             : null;
-        RollProfileDefinition? template = profileTemplateId is null
-            ? null
-            : await this.profiles.GetAsync(profileTemplateId, cancellationToken).ConfigureAwait(false);
-        GrindingProgram? programTemplate = programTemplateId is null
-            ? null
-            : await this.programs.GetAsync(programTemplateId, cancellationToken).ConfigureAwait(false);
-        if ((profileTemplateId is not null && template is null) || (programTemplateId is not null && programTemplate is null))
-        {
-            return (roll, null, null, null, "PlanProblem_Missing", null);
-        }
 
-        if (template is { Disabled: true } || programTemplate is { Disabled: true })
-        {
-            return (roll, null, null, null, "PlanProblem_Disabled", null);
-        }
+        RollProfileDefinition? sourceProfile = null;
+        GrindingProgram? program = null;
+        string? profileTemplateId = null;
+        int? profileTemplateVersion = null;
+        bool profileDiverged = false;
+        string? programTemplateId = null;
+        int? programTemplateVersion = null;
+        bool programDiverged = false;
+        double? endZone = current?.Plan.EndZoneMm;
+        string name;
+        string? purpose = null;
+        PlanSourceKind kind;
+        string sourceText;
 
-        GrindingProgram? program = programTemplate ?? current?.Program;
-        if (program is not null && program.ApplicableRollKind != RollKind.Unspecified
-            && roll.Kind != RollKind.Unspecified && program.ApplicableRollKind != roll.Kind)
+        if (source.PlanId is { } planId)
         {
-            return (roll, null, null, null, "PlanProblem_Kind", null);
-        }
-
-        RollProfileDefinition? profile = current?.Profile;
-        LengthAlignment? alignment = null;
-        if (template is not null)
-        {
-            // 模板按名义长度画；本辊名义长度不同时以中心为基准截取 / 延伸（与下发同一条规则），超出容差不建。
-            alignment = ProfileLengthAlignment.Align(
-                template.Profile, template.BodyLengthMm, roll.Geometry.BodyLengthMm,
-                DownloadToleranceMm(this.machine, template.BodyLengthMm), null, this.profileTypes, this.settings.ProfileSampleCount);
-            if (alignment.Profile is not { } aligned)
+            PlanContent? from = await GetContentAsync(planId, cancellationToken).ConfigureAwait(false);
+            if (from is null)
             {
-                return (roll, null, null, null, "PlanProblem_Length", alignment);
+                return Fail("PlanProblem_Missing");
             }
 
-            profile = template with { BodyLengthMm = roll.Geometry.BodyLengthMm, Profile = aligned };
+            bool sameRoll = roll is not null && from.Plan.RollId == roll.RollId;
+            kind = sameRoll ? PlanSourceKind.ThisRollPlan : PlanSourceKind.OtherRollPlan;
+            sourceText = sameRoll
+                ? from.Plan.PlanNo.ToString(CultureInfo.InvariantCulture)
+                : string.Create(CultureInfo.InvariantCulture, $"{from.Plan.RollId} / {from.Plan.PlanNo}");
+            name = from.Plan.Name;
+            purpose = from.Plan.Purpose;
+            if (scope != CopyScope.ProgramOnly)
+            {
+                sourceProfile = from.Profile;
+                (profileTemplateId, profileTemplateVersion, profileDiverged) =
+                    (from.Plan.TemplateProfileId, from.Plan.TemplateProfileVersion, from.Plan.ProfileDiverged);
+                endZone = from.Plan.EndZoneMm;
+            }
+
+            if (scope != CopyScope.ProfileOnly)
+            {
+                program = from.Program;
+                (programTemplateId, programTemplateVersion, programDiverged) =
+                    (from.Plan.TemplateProgramId, from.Plan.TemplateProgramVersion, from.Plan.ProgramDiverged);
+            }
+        }
+        else
+        {
+            RollProfileDefinition? profileTemplate = source.ProfileTemplateId is null || scope == CopyScope.ProgramOnly
+                ? null
+                : await this.profiles.GetAsync(source.ProfileTemplateId, cancellationToken).ConfigureAwait(false);
+            GrindingProgram? programTemplate = source.ProgramTemplateId is null || scope == CopyScope.ProfileOnly
+                ? null
+                : await this.programs.GetAsync(source.ProgramTemplateId, cancellationToken).ConfigureAwait(false);
+            if ((source.ProfileTemplateId is not null && scope != CopyScope.ProgramOnly && profileTemplate is null)
+                || (source.ProgramTemplateId is not null && scope != CopyScope.ProfileOnly && programTemplate is null))
+            {
+                return Fail("PlanProblem_Missing");
+            }
+
+            if (profileTemplate is { Disabled: true } || programTemplate is { Disabled: true })
+            {
+                return Fail("PlanProblem_Disabled");
+            }
+
+            kind = PlanSourceKind.Template;
+            if (profileTemplate is not null)
+            {
+                sourceProfile = profileTemplate;
+                (profileTemplateId, profileTemplateVersion, profileDiverged) = (profileTemplate.ProfileId, profileTemplate.Version, false);
+                endZone = null;
+            }
+
+            if (programTemplate is not null)
+            {
+                program = programTemplate;
+                (programTemplateId, programTemplateVersion, programDiverged) = (programTemplate.ProgramId, programTemplate.Version, false);
+            }
+
+            sourceText = string.Join(" · ", new[] { profileTemplate?.Name, programTemplate?.Name }.Where(text => text is not null));
+            name = string.Empty;
+        }
+
+        // 没复制的那样：沿用本辊当前方案的（连同它的模板来源）。
+        RollProfileDefinition? profile = null;
+        CopyAlignment? alignment = null;
+        if (sourceProfile is not null)
+        {
+            alignment = ProfileCopyAlignment.Align(
+                sourceProfile.Profile, sourceProfile.BodyLengthMm, targetNominalMm, CopyThresholdMm(this.machine),
+                DownloadToleranceMm(this.machine, sourceProfile.BodyLengthMm), this.profileTypes, this.settings.ProfileSampleCount);
+            if (alignment.Profile is not { } aligned)
+            {
+                return Fail("PlanProblem_Length", alignment);
+            }
+
+            profile = sourceProfile with { BodyLengthMm = targetNominalMm, Profile = aligned };
+        }
+        else if (current is not null)
+        {
+            profile = current.Profile;
+            (profileTemplateId, profileTemplateVersion, profileDiverged) =
+                (current.Plan.TemplateProfileId, current.Plan.TemplateProfileVersion, current.Plan.ProfileDiverged);
+        }
+
+        if (program is null && current is not null)
+        {
+            program = current.Program;
+            (programTemplateId, programTemplateVersion, programDiverged) =
+                (current.Plan.TemplateProgramId, current.Plan.TemplateProgramVersion, current.Plan.ProgramDiverged);
         }
 
         if (profile is null || program is null)
         {
-            return (roll, null, null, null, "PlanProblem_Missing", alignment);
+            return Fail("PlanProblem_Missing", alignment);
         }
 
-        string sourceRef = (template?.Name ?? current!.Plan.Name) + " · " + (programTemplate?.Name ?? current!.Plan.Name);
-        return (roll, profile, program, sourceRef, null, alignment);
+        if (program.ApplicableRollKind != RollKind.Unspecified && rollKind != RollKind.Unspecified && program.ApplicableRollKind != rollKind)
+        {
+            return Fail("PlanProblem_Kind", alignment);
+        }
+
+        LengthAlignment? download = measuredMm is double measured
+            ? AlignForJob(profile, measured, endZone, this.machine, this.profileTypes, this.settings.ProfileSampleCount)
+            : null;
+        if (name.Length == 0)
+        {
+            name = PlanName(profile.Name, program.Name);
+        }
+
+        var preview = new CopyPreview(alignment, null, sourceText, profile.Name, program.Name, download);
+        return new CopyResolution(
+            preview, profile, program, name, purpose, kind, sourceText, endZone,
+            new Lineage(profileTemplateId, profileTemplateVersion, profileDiverged, programTemplateId, programTemplateVersion, programDiverged));
     }
 
     public async Task<GrindingPlanRecord> CopyAsync(string planId, string? name, bool setCurrent, string user, CancellationToken cancellationToken)
@@ -325,7 +546,7 @@ public sealed class GrindingPlanService : IGrindingPlanService
         return await CreateAsync(
             roll, content.Profile, content.Program, string.IsNullOrWhiteSpace(name) ? content.Plan.Name : name.Trim(), content.Plan.Purpose,
             PlanSourceKind.ThisRollPlan, content.Plan.PlanNo.ToString(CultureInfo.InvariantCulture), content.Plan.EndZoneMm,
-            setCurrent, user, cancellationToken).ConfigureAwait(false);
+            setCurrent, user, cancellationToken, lineage: Lineage.Of(content.Plan)).ConfigureAwait(false);
     }
 
     public async Task<PlanSaveOutcome> SaveProfileAsync(
@@ -449,10 +670,15 @@ public sealed class GrindingPlanService : IGrindingPlanService
                         cancellationToken).ConfigureAwait(false);
                 }
 
-                GrindingPlanRecord kept = content.Plan;
-                if (edit.EndZoneChanged && endZone != content.Plan.EndZoneMm)
+                // 复制以后改过：与模板"已改动"（必须采用时按它分，默认改为普通提示）。
+                GrindingPlanRecord kept = content.Plan with
                 {
-                    kept = content.Plan with { EndZoneMm = endZone };
+                    EndZoneMm = endZone,
+                    ProfileDiverged = content.Plan.ProfileDiverged || profile is not null || edit.EndZoneChanged,
+                    ProgramDiverged = content.Plan.ProgramDiverged || program is not null,
+                };
+                if (kept != content.Plan)
+                {
                     await this.plans.SaveAsync(kept, cancellationToken).ConfigureAwait(false);
                 }
 
@@ -477,7 +703,12 @@ public sealed class GrindingPlanService : IGrindingPlanService
                 setCurrentIfNew,
                 user,
                 cancellationToken,
-                uniqueName: true).ConfigureAwait(false);
+                uniqueName: true,
+                lineage: Lineage.Of(content.Plan) with
+                {
+                    ProfileDiverged = content.Plan.ProfileDiverged || profile is not null || edit.EndZoneChanged,
+                    ProgramDiverged = content.Plan.ProgramDiverged || program is not null,
+                }).ConfigureAwait(false);
             return new PlanSaveOutcome(created, true, content.Plan.PlanNo, setCurrentIfNew);
         }
         finally
@@ -499,7 +730,8 @@ public sealed class GrindingPlanService : IGrindingPlanService
         bool setCurrent,
         string user,
         CancellationToken cancellationToken,
-        bool uniqueName = true)
+        bool uniqueName = true,
+        Lineage? lineage = null)
     {
         DateTimeOffset now = this.timeProvider.GetUtcNow();
         int planNo = await this.plans.NextPlanNoAsync(roll.RollId, cancellationToken).ConfigureAwait(false);
@@ -523,9 +755,9 @@ public sealed class GrindingPlanService : IGrindingPlanService
             Version = 1,
             Disabled = false,
         };
-        var plan = new GrindingPlanRecord(
+        GrindingPlanRecord plan = (lineage ?? Lineage.None).ApplyTo(new GrindingPlanRecord(
             "PL-" + stem, roll.RollId, planNo, planName, purpose, ownProfile.ProfileId, ownProgram.ProgramId,
-            sourceKind, sourceRef, endZoneMm, now, user ?? string.Empty);
+            sourceKind, sourceRef, endZoneMm, now, user ?? string.Empty));
 
         // 先写方案行：辊形 / 工艺一落库就被它认领，不会在模板列表里闪一下。
         await this.plans.SaveAsync(plan, cancellationToken).ConfigureAwait(false);
@@ -597,20 +829,20 @@ public sealed class GrindingPlanService : IGrindingPlanService
                 return roll;
             }
 
-            // 名义长度能对上就按本辊名义长度存（截取 / 延伸，不伸缩）；对不上原样存，留给作业核对去拦。
-            LengthAlignment alignment = ProfileLengthAlignment.Align(
-                profile.Profile, profile.BodyLengthMm, roll.Geometry.BodyLengthMm,
-                DownloadToleranceMm(this.machine, profile.BodyLengthMm), null, this.profileTypes, this.settings.ProfileSampleCount);
-            RollProfileDefinition own = alignment.Profile is { } aligned
-                ? profile with { BodyLengthMm = roll.Geometry.BodyLengthMm, Profile = aligned }
-                : profile;
+            // 登记、导入时选的模板按复制规则对到本辊名义长度（这一步在登记表里已经看过、确认过）；
+            // 对不上（超出容差）原样存，留给作业核对去拦。
+            CopyResolution resolved = await ResolveCopyAsync(
+                roll, roll.Geometry.BodyLengthMm, roll.MeasuredBodyLengthMm, roll.Kind,
+                CopySource.FromTemplates(profile.ProfileId, program.ProgramId), CopyScope.All, cancellationToken).ConfigureAwait(false);
+            RollProfileDefinition own = resolved.Profile ?? profile;
+            var lineage = new Lineage(profile.ProfileId, profile.Version, false, program.ProgramId, program.Version, false);
 
             // 推断来的（旧库升级）记"旧计划"；登记、导入时选的模板记"模板"。
             bool inferred = roll.PlanInferred;
-            GrindingPlanRecord plan = await CreateAsync(
+            await CreateAsync(
                 roll, own, program, PlanName(profile.Name, program.Name), roll.Purpose,
                 inferred ? PlanSourceKind.Legacy : PlanSourceKind.Template,
-                profile.Name + " · " + program.Name, null, setCurrent: true, "system", cancellationToken).ConfigureAwait(false);
+                profile.Name + " · " + program.Name, null, setCurrent: true, "system", cancellationToken, lineage: lineage).ConfigureAwait(false);
             RollRecord migrated = (await this.rolls.GetAsync(rollId, cancellationToken).ConfigureAwait(false))!;
             if (inferred)
             {
@@ -618,7 +850,6 @@ public sealed class GrindingPlanService : IGrindingPlanService
                 await this.rolls.UpsertAsync(migrated, cancellationToken).ConfigureAwait(false);
             }
 
-            _ = plan;
             return migrated;
         }
         finally

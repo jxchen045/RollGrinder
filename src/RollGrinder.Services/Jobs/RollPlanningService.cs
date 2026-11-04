@@ -52,7 +52,11 @@ public sealed record RollOverview(
 /// <param name="RollId">辊号。</param>
 /// <param name="Changed">改了。</param>
 /// <param name="ProblemKey">没改的原因（资源键）；改了为 null。可以改但要提醒时是提示键（以 "PlanNotice_" 开头）。</param>
-public sealed record PlanChangeOutcome(string RollId, bool Changed, string? ProblemKey);
+public sealed record PlanChangeOutcome(string RollId, bool Changed, string? ProblemKey)
+{
+    /// <summary>逐支的长度对齐（复制按名义）与下发时（按实测）预告（设计稿 v4 5.4.3）。</summary>
+    public CopyPreview? Preview { get; init; }
+}
 
 /// <summary>导入预览里的一行。</summary>
 /// <param name="LineNumber">文件里第几行（从 1 起，含表头）。</param>
@@ -90,7 +94,8 @@ public interface IRollPlanningService
 
     /// <summary>改计划（逐支 = 只给一支）：核对通过的才改，每支各记一条改动记录。</summary>
     Task<IReadOnlyList<PlanChangeOutcome>> ChangePlanAsync(
-        IReadOnlyList<string> rollIds, string? profileId, string? programId, string? reason, string changedBy, CancellationToken cancellationToken);
+        IReadOnlyList<string> rollIds, string? profileId, string? programId, string? reason, string changedBy, CancellationToken cancellationToken,
+        bool setCurrent = true);
 
     /// <summary>
     /// 下发成功之后：选了"变更这支辊的工艺"的把计划写回台账并记改动；按计划下发的把"由历史推断"标记去掉（人已经确认过了）。
@@ -246,22 +251,25 @@ public sealed class RollPlanningService : IRollPlanningService
         var outcomes = new List<PlanChangeOutcome>(rollIds.Count);
         foreach (string rollId in rollIds)
         {
-            // 改计划 = 从模板复制出一个新方案并设为当前（设计说明 4.4）；长度按中心对齐，超出容差不改。
-            string? problem = await this.plans.CheckTemplatesAsync(rollId, profileId, programId, cancellationToken).ConfigureAwait(false);
+            // 从模板建方案（多支）= 给每支各复制出一个新方案（设计说明 4.4、设计稿 v4 5.4.3）；按名义长度对齐，超出容差的不建。
+            CopyPreview preview = await this.plans
+                .PreviewCopyAsync(rollId, CopySource.FromTemplates(profileId, programId), CopyScope.All, cancellationToken).ConfigureAwait(false);
+            string? problem = preview.ProblemKey;
             if (problem is null && await HasOpenRegrindAsync(rollId, cancellationToken).ConfigureAwait(false))
             {
-                outcomes.Add(new PlanChangeOutcome(rollId, true, "PlanNotice_Regrind"));
+                outcomes.Add(new PlanChangeOutcome(rollId, true, "PlanNotice_Regrind") { Preview = preview });
                 continue;
             }
 
-            outcomes.Add(new PlanChangeOutcome(rollId, problem is null, problem));
+            outcomes.Add(new PlanChangeOutcome(rollId, problem is null, problem) { Preview = preview });
         }
 
         return outcomes;
     }
 
     public async Task<IReadOnlyList<PlanChangeOutcome>> ChangePlanAsync(
-        IReadOnlyList<string> rollIds, string? profileId, string? programId, string? reason, string changedBy, CancellationToken cancellationToken)
+        IReadOnlyList<string> rollIds, string? profileId, string? programId, string? reason, string changedBy, CancellationToken cancellationToken,
+        bool setCurrent = true)
     {
         IReadOnlyList<PlanChangeOutcome> preview = await PreviewPlanChangeAsync(rollIds, profileId, programId, cancellationToken).ConfigureAwait(false);
         var outcomes = new List<PlanChangeOutcome>(preview.Count);
@@ -273,9 +281,11 @@ public sealed class RollPlanningService : IRollPlanningService
                 continue;
             }
 
+            // 逐支对齐结果在页内看过：须确认的这里算已确认。
             PlanCreateOutcome created = await this.plans
-                .CreateFromTemplatesAsync(outcome.RollId, profileId, programId, setCurrent: false, changedBy, cancellationToken).ConfigureAwait(false);
-            if (created.Plan is { } plan)
+                .CreateFromTemplatesAsync(outcome.RollId, profileId, programId, setCurrent: false, changedBy, cancellationToken, confirmed: true)
+                .ConfigureAwait(false);
+            if (created.Plan is { } plan && setCurrent)
             {
                 // 设为当前时把原因记进改动记录。
                 await this.plans.SetCurrentAsync(plan.PlanId, reason, changedBy, cancellationToken).ConfigureAwait(false);

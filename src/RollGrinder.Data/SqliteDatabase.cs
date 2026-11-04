@@ -443,6 +443,36 @@ public sealed class SqliteDatabase
         ALTER TABLE job ADD COLUMN plan_no INTEGER NULL;
         CREATE INDEX ix_job_plan ON job (plan_id);
         """,
+
+        // 第 2 期：方案记得辊形 / 工艺各复制自哪条模板的第几版、复制后改没改过（"与模板一致 / 已改动"，必须采用按它分）；
+        // 模板的"必须采用"：哪条模板哪一版、逐支决定（同样强制 / 普通提示 / 不提示）、哪支已经换上。
+        """
+        ALTER TABLE grinding_plan ADD COLUMN tpl_profile_id      TEXT    NULL;
+        ALTER TABLE grinding_plan ADD COLUMN tpl_profile_version INTEGER NULL;
+        ALTER TABLE grinding_plan ADD COLUMN tpl_program_id      TEXT    NULL;
+        ALTER TABLE grinding_plan ADD COLUMN tpl_program_version INTEGER NULL;
+        ALTER TABLE grinding_plan ADD COLUMN profile_diverged    INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE grinding_plan ADD COLUMN program_diverged    INTEGER NOT NULL DEFAULT 0;
+        CREATE TABLE template_mandate (
+            mandate_id       TEXT    NOT NULL PRIMARY KEY,
+            kind             INTEGER NOT NULL,
+            template_id      TEXT    NOT NULL,
+            template_version INTEGER NOT NULL,
+            template_name    TEXT    NOT NULL,
+            created_at_utc   TEXT    NOT NULL,
+            created_by       TEXT    NOT NULL DEFAULT '',
+            revoked          INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE TABLE template_mandate_roll (
+            mandate_id      TEXT    NOT NULL,
+            roll_id         TEXT    NOT NULL,
+            decision        INTEGER NOT NULL,
+            applied_plan_id TEXT    NULL,
+            applied_at_utc  TEXT    NULL,
+            PRIMARY KEY (mandate_id, roll_id)
+        );
+        CREATE INDEX ix_mandate_roll ON template_mandate_roll (roll_id);
+        """,
     };
 
     private readonly string connectionString;

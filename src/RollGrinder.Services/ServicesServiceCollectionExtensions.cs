@@ -73,6 +73,7 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<Jobs.IGrindingPlanService, Jobs.GrindingPlanService>();
         services.AddSingleton<Jobs.IRollPlanningService, Jobs.RollPlanningService>();
         services.AddSingleton<Library.ILibraryService, Library.LibraryService>();
+        services.AddSingleton<Library.ITemplateService, Library.TemplateService>();
         services.AddSingleton<IReportService, ReportService>();
         services.AddSingleton<IReportPrintQueue, ReportPrintQueue>();
         services.AddSingleton<Diagnostics.IDiagnosticsExportService, Diagnostics.DiagnosticsExportService>();
