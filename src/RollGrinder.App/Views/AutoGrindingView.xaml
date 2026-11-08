@@ -563,7 +563,7 @@
                                         <Setter Property="Background" Value="{StaticResource Brush.Normal}" />
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding FinishPassedFalse}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource Brush.Alarm}" />
+                                        <Setter Property="Background" Value="{StaticResource Brush.AlarmFill}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>

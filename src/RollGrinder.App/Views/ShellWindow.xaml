@@ -150,7 +150,7 @@
                     <Setter Property="Background" Value="{StaticResource Brush.TitleRow}" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsEmergencyStop}" Value="True">
-                            <Setter Property="Background" Value="{StaticResource Brush.Alarm}" />
+                            <Setter Property="Background" Value="{StaticResource Brush.AlarmFill}" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>

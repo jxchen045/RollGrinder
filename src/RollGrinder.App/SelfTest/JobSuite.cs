@@ -483,6 +483,77 @@ internal sealed class JobSuite : ISelfTestSuite
             await h.GoToAsync(PageKey.Job, ctx);
         }, StepOptions.Shot);
 
+        await h.StepAsync("Plan", "CompareWithCurrent", async ctx =>
+        {
+            // 设计稿 v4 5.5.1 竖键"对比"：选中的方案与当前方案逐项比、辊形叠图；只看不同 / 全部；8 返回。
+            IGrindingPlanService plans = h.Services.GetRequiredService<IGrindingPlanService>();
+            if (await plans.CurrentAsync(SelfTestNames.JobRollId, default) is not { } current)
+            {
+                ctx.Skip("the self-test roll has no plan");
+                return;
+            }
+
+            GrindingPlanRecord copy = await plans.CopyAsync(current.PlanId, "selftest-compare", setCurrent: false, "selftest", default);
+            try
+            {
+                h.Services.GetRequiredService<JobDraft>().PlanRollId = SelfTestNames.JobRollId;
+                await h.GoToAsync(PageKey.Plans, ctx);
+                PlansViewModel page = h.Page<PlansViewModel>();
+                await page.Loading;
+                await h.WaitUntilAsync(() => page.Rows.Any(row => row.PlanId == copy.PlanId), TimeSpan.FromSeconds(10));
+                page.SelectedRow = page.Rows.FirstOrDefault(row => row.PlanId == copy.PlanId);
+                ctx.Check(page.SelectedRow is not null && page.CompareBaseline(page.SelectedRow)?.IsCurrent == true,
+                    "a plan that is not current compares with the current one");
+
+                await h.PressVerticalKeyAsync(ctx, "Vk_Compare");
+                bool opened = await h.WaitUntilAsync(() => page.IsCompareOpen, TimeSpan.FromSeconds(10));
+                ctx.Check(opened, "'compare' should open the comparison");
+                ctx.Check(page.Compare.OnlyDifferences && page.Compare.Rows.All(row => row.Differs), "the comparison starts with the differences only");
+                ctx.Check(page.Compare.HasCurve, "both profiles are overlaid");
+                await h.PressVerticalKeyAsync(ctx, "Vk_CompareAll");
+                ctx.Check(await h.WaitUntilAsync(() => page.Compare.Rows.Count > 0, TimeSpan.FromSeconds(5)), "'all items' lists every item");
+                h.TryScreenshot("plans-compare");
+                await h.PressVerticalKeyAsync(ctx, "Vk_Back");
+                ctx.Check(await h.WaitUntilAsync(() => !page.IsCompareOpen, TimeSpan.FromSeconds(5)), "back closes the comparison");
+            }
+            finally
+            {
+                await plans.DeleteAsync(copy.PlanId, "selftest", default);
+                await h.GoToAsync(PageKey.Job, ctx);
+            }
+        }, StepOptions.Shot);
+
+        await h.StepAsync("Template", "CompareWithPreviousVersion", async ctx =>
+        {
+            // 设计稿 v4 5.6.1 横键"对比"：模板现在这一版与上一版。
+            await h.GoToAsync(PageKey.ProfileLibrary, ctx);
+            LibraryViewModel library = h.Services.GetServices<PageViewModelBase>().OfType<LibraryViewModel>().First(page => page.IsProfiles);
+            await library.Loading;
+            LibraryEntryViewModel? withHistory = null;
+            foreach (LibraryEntryViewModel entry in library.Entries.ToArray())
+            {
+                library.SelectedEntry = entry;
+                if (await h.WaitUntilAsync(() => library.Versions.Count > 0, TimeSpan.FromSeconds(2)))
+                {
+                    withHistory = entry;
+                    break;
+                }
+            }
+
+            if (withHistory is null)
+            {
+                ctx.Skip("no profile template has an earlier version");
+                return;
+            }
+
+            await h.PressKeyAsync(ctx, "Fn_Compare");
+            bool opened = await h.WaitUntilAsync(() => library.IsCompareOpen, TimeSpan.FromSeconds(10));
+            ctx.Check(opened, "'compare' should open the comparison of the two versions");
+            h.TryScreenshot("template-compare");
+            await h.PressVerticalKeyAsync(ctx, "Vk_Back");
+            ctx.Check(await h.WaitUntilAsync(() => !library.IsCompareOpen, TimeSpan.FromSeconds(5)), "back closes the comparison");
+        }, StepOptions.Shot);
+
         await h.StepAsync("Template", "MandateViewOpensAndCancels", async ctx =>
         {
             // 设计稿 v4 5.6.2：模板库"必须采用…"——有复制自旧版的辊就列逐支决定，没有就在对话行说；取消不留东西。

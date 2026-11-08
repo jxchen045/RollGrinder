@@ -12,6 +12,7 @@
   "defaultRole": "Operator",
   "manualPulseMs": 300,
   "layout": "auto",
+  "theme": "light",
   "fullScreen": true,
   "planChangePermission": "operator",
   "passWatchdogSeconds": 10

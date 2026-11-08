@@ -43,6 +43,8 @@
   <Color x:Key="Color.HelpKeyPressed">#E0B815</Color>
   <Color x:Key="Color.HelpBorder">#EED32E</Color>
   <Color x:Key="Color.Alarm">#C4161C</Color>
+  <!-- 报警作底色（急停标题行、不合格横幅）：上面是白字。深色下与"报警红字"分开取色，红字要亮、底色要深。 -->
+  <Color x:Key="Color.AlarmFill">#C4161C</Color>
   <!-- 灯"动作中"：橙（四态灯，界面修订稿 v3 1.1）。 -->
   <Color x:Key="Color.Moving">#D9822B</Color>
   <Color x:Key="Color.PendingValue">#B3241C</Color>
@@ -153,6 +155,7 @@
   <SolidColorBrush x:Key="Brush.HelpKeyPressed" Color="{StaticResource Color.HelpKeyPressed}" />
   <SolidColorBrush x:Key="Brush.HelpBorder" Color="{StaticResource Color.HelpBorder}" />
   <SolidColorBrush x:Key="Brush.Alarm" Color="{StaticResource Color.Alarm}" />
+  <SolidColorBrush x:Key="Brush.AlarmFill" Color="{StaticResource Color.AlarmFill}" />
   <SolidColorBrush x:Key="Brush.Moving" Color="{StaticResource Color.Moving}" />
   <SolidColorBrush x:Key="Brush.PendingValue" Color="{StaticResource Color.PendingValue}" />
 

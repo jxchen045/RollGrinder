@@ -30,7 +30,7 @@
 .PARAMETER UiPasses
     要跑的界面自检轮次，默认三轮全跑：sim（仿真全流程）、offline（离线模式）、en-US（英文界面渲染巡检）。
     另有两轮只做渲染巡检加版面体检（每页 / 每组 / 每个子视图走一遍，查被裁、半遮、透底、软键不齐），一轮一分钟左右：
-    render（中文、-Layout 指定的档位）、compact（中文、紧凑档位）。只改了界面时跑 render,compact,en-US 就够了。
+    render（中文、-Layout 指定的档位）、compact（中文、紧凑档位）、dark（中文、深色配色）。只改了界面时跑 render,compact,en-US,dark 就够了。
 
 .PARAMETER UiTimeoutMinutes
     每一轮界面自检的超时（分钟）。
@@ -67,7 +67,7 @@ param(
     [switch] $SkipUnitTests,
     [switch] $SkipUi,
     [switch] $KeepStaleFiles,
-    [ValidateSet('sim', 'offline', 'en-US', 'render', 'compact')]
+    [ValidateSet('sim', 'offline', 'en-US', 'render', 'compact', 'dark')]
     [string[]] $UiPasses = @('sim', 'offline', 'en-US'),
     [int] $UiTimeoutMinutes = 25,
     [ValidateSet('key', 'fail', 'all')]
@@ -305,7 +305,7 @@ function Invoke-UiPass([string] $Pass) {
     $passShots = $Shots
     if ($Pass -eq 'offline' -and $Shots -ne 'all') { $passShots = 'fail' }
     $passMax = $MaxShots
-    if ($Pass -in 'en-US', 'render', 'compact') { $passMax = [math]::Min($MaxShots, 50) }
+    if ($Pass -in 'en-US', 'render', 'compact', 'dark') { $passMax = [math]::Min($MaxShots, 50) }
     $arguments = @('--selftest', '--selftest-label', $Pass, '--data', $data, '--config', $config, '--selftest-out', $result,
         '--selftest-shots', $passShots, '--selftest-max-shots', "$passMax")
 
@@ -315,12 +315,13 @@ function Invoke-UiPass([string] $Pass) {
     $hmi = $hmi -replace '"layout"\s*:\s*"[^"]*"', ('"layout": "' + $passLayout + '"')
     $hmi = $hmi -replace '"fullScreen"\s*:\s*(true|false)', '"fullScreen": false'
     if ($Pass -eq 'en-US') { $hmi = $hmi -replace '"culture"\s*:\s*"[^"]*"', '"culture": "en-US"' }
+    if ($Pass -eq 'dark') { $hmi = $hmi -replace '"theme"\s*:\s*"[^"]*"', '"theme": "dark"' }
     [System.IO.File]::WriteAllText((Join-Path $config 'hmi.json'), $hmi, (New-Object System.Text.UTF8Encoding $false))
 
     switch ($Pass) {
         'sim' { $arguments += @('--gateway', 'sim', '--sim-speed', "$SimSpeed", '--selftest-scope', 'full') }
         'offline' { $arguments += @('--offline', '--selftest-scope', 'full') }
-        { $_ -in 'en-US', 'render', 'compact' } { $arguments += @('--gateway', 'sim', '--sim-speed', "$SimSpeed", '--selftest-scope', 'render') }
+        { $_ -in 'en-US', 'render', 'compact', 'dark' } { $arguments += @('--gateway', 'sim', '--sim-speed', "$SimSpeed", '--selftest-scope', 'render') }
     }
 
     $quoted = $arguments | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }

@@ -21,10 +21,12 @@ public sealed class ButtonContrastTests
     private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
     private static readonly string Themes = Path.Combine(RepositoryLayout.Root, "src", "RollGrinder.App", "Themes");
 
-    [Fact]
-    public void Every_button_style_is_readable_in_every_state()
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void Every_button_style_is_readable_in_every_state(string palette)
     {
-        IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
+        IReadOnlyDictionary<string, string> brushes = LoadBrushColors(palette);
         IReadOnlyDictionary<string, XElement> keyed = LoadButtonStyles();
         var problems = new List<string>();
         int checkedVariants = 0;
@@ -49,22 +51,26 @@ public sealed class ButtonContrastTests
         problems.Should().BeEmpty();
     }
 
-    [Fact]
-    public void The_shared_disabled_look_is_readable()
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void The_shared_disabled_look_is_readable(string palette)
     {
         // 禁用态所有按钮共用一层中性灰（模板里的 DisabledLayer），核一次即可。
-        IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
+        IReadOnlyDictionary<string, string> brushes = LoadBrushColors(palette);
         ContrastMath.Ratio(brushes["Brush.DisabledText"], brushes["Brush.DisabledFill"])
             .Should().BeGreaterThanOrEqualTo(ContrastMath.LargeTextOrGraphics);
     }
 
-    [Fact]
-    public void Title_row_alarm_and_emergency_stop_are_readable()
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void Title_row_alarm_and_emergency_stop_are_readable(string palette)
     {
         // 界面最终稿 4.2：报警号与文字红字写在标题行上；急停时整条标题行变红、白字"急停"。
-        IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
+        IReadOnlyDictionary<string, string> brushes = LoadBrushColors(palette);
         ContrastMath.Ratio(brushes["Brush.Alarm"], brushes["Brush.TitleRow"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
-        ContrastMath.Ratio(brushes["Brush.OnAccent"], brushes["Brush.Alarm"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
+        ContrastMath.Ratio(brushes["Brush.OnAccent"], brushes["Brush.AlarmFill"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
 
         XDocument shell = XDocument.Load(Path.Combine(RepositoryLayout.Root, "src", "RollGrinder.App", "Views", "ShellWindow.xaml"));
         XElement alarm = shell.Descendants(Wpf + "Button").Single(b => (string?)b.Attribute(X + "Name") == "AlarmButton");
@@ -73,38 +79,54 @@ public sealed class ButtonContrastTests
             .Should().OnlyContain(f => f == "{StaticResource Brush.Alarm}", "alarm text on the title row is red");
     }
 
-    [Fact]
-    public void Soft_key_states_are_readable()
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void Soft_key_states_are_readable(string palette)
     {
         // 选中（青底 Active）、待写入（红字）、焦点格（FocusField）都要看得清。
-        IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
+        IReadOnlyDictionary<string, string> brushes = LoadBrushColors(palette);
         ContrastMath.Ratio(brushes["Brush.OnAccent"], brushes["Brush.Active"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
         ContrastMath.Ratio(brushes["Brush.PendingValue"], brushes["Brush.Surface"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
         ContrastMath.Ratio(brushes["Brush.TextPrimary"], brushes["Brush.FocusField"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
         ContrastMath.Ratio(brushes["Brush.OnAccent"], brushes["Brush.ChannelRow"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
     }
 
-    [Fact]
-    public void White_buttons_have_a_visible_edge_on_white_cards()
+    [Theory]
+    [InlineData("Light")]
+    [InlineData("Dark")]
+    public void White_buttons_have_a_visible_edge_on_white_cards(string palette)
     {
         // 按钮描边是界面元素边界，≥ 3:1——以前 1.9:1，白按钮放在白卡片上几乎看不出边。
-        IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
+        IReadOnlyDictionary<string, string> brushes = LoadBrushColors(palette);
         ContrastMath.Ratio(brushes["Brush.ButtonBorder"], brushes["Brush.Surface"])
             .Should().BeGreaterThanOrEqualTo(ContrastMath.LargeTextOrGraphics);
     }
 
     [Theory]
-    [InlineData("Brush.TextPrimary")]
-    [InlineData("Brush.TextSecondary")]
-    [InlineData("Brush.TextMuted")]
-    public void Body_text_colours_are_readable_on_every_light_fill(string text)
+    [InlineData("Brush.TextPrimary", "Light")]
+    [InlineData("Brush.TextSecondary", "Light")]
+    [InlineData("Brush.TextMuted", "Light")]
+    [InlineData("Brush.TextPrimary", "Dark")]
+    [InlineData("Brush.TextSecondary", "Dark")]
+    [InlineData("Brush.TextMuted", "Dark")]
+    public void Body_text_colours_are_readable_on_every_light_fill(string text, string palette)
     {
-        IReadOnlyDictionary<string, string> brushes = LoadBrushColors();
+        IReadOnlyDictionary<string, string> brushes = LoadBrushColors(palette);
         foreach (string fill in new[] { "Brush.Surface", "Brush.HeaderFill", "Brush.Background", "Brush.FunctionBar", "Brush.SelectionFill", "Brush.RowAlternate" })
         {
             ContrastMath.Ratio(brushes[text], brushes[fill]).Should().BeGreaterThanOrEqualTo(
                 ContrastMath.NormalText, $"{text} on {fill}");
         }
+    }
+
+    [Fact]
+    public void The_dark_palette_defines_exactly_the_same_keys_as_the_light_one()
+    {
+        // 两套配色共用同一套色位（docs/design/README.md），只换色值：少一个键，深色下那一处就取不到颜色。
+        static string[] Keys(string name) => XDocument.Load(Path.Combine(Themes, $"Palette.{name}.xaml")).Root!.Elements()
+            .Select(e => (string?)e.Attribute(X + "Key")).Where(k => k is not null).Select(k => k!).OrderBy(k => k, StringComparer.Ordinal).ToArray();
+        Keys("Dark").Should().Equal(Keys("Light"));
     }
 
     [Fact]
@@ -125,9 +147,9 @@ public sealed class ButtonContrastTests
     }
 
     /// <summary>Brush.X → #RRGGBB（经 Color.Y 解析）。</summary>
-    private static IReadOnlyDictionary<string, string> LoadBrushColors()
+    private static IReadOnlyDictionary<string, string> LoadBrushColors(string name)
     {
-        XDocument palette = XDocument.Load(Path.Combine(Themes, "Palette.Light.xaml"));
+        XDocument palette = XDocument.Load(Path.Combine(Themes, $"Palette.{name}.xaml"));
         var colors = palette.Root!.Elements(Wpf + "Color")
             .ToDictionary(e => (string)e.Attribute(X + "Key")!, e => e.Value.Trim());
         var brushes = new Dictionary<string, string>(StringComparer.Ordinal);

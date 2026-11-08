@@ -75,6 +75,10 @@
         <views:PlanPickerView Grid.RowSpan="3" DataContext="{Binding Picker}"
                               Visibility="{Binding DataContext.IsPicking, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}" />
 
+        <!-- 对比（设计稿 v4 5.5.1）：盖住整页，竖键 8 返回。 -->
+        <views:CompareView Grid.RowSpan="3" DataContext="{Binding Compare}"
+                           Visibility="{Binding DataContext.IsCompareOpen, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}" />
+
         <!-- 新方案名、改名（3 种弹出框之一）。 -->
         <views:NamePromptOverlay Grid.RowSpan="3" DataContext="{Binding NamePrompt}" />
     </Grid>

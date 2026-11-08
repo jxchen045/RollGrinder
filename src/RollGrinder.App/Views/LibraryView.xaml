@@ -157,6 +157,10 @@
             </DockPanel>
         </Border>
 
+        <!-- 对比（设计稿 v4 5.6.1）：盖住整页，竖键 8 返回。 -->
+        <views:CompareView Grid.ColumnSpan="2" DataContext="{Binding Compare}"
+                           Visibility="{Binding DataContext.IsCompareOpen, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}" />
+
         <!-- 复制、重命名、另存为新的命名框（3 种弹出框之一）。 -->
         <views:NamePromptOverlay Grid.ColumnSpan="2" DataContext="{Binding NamePrompt}" />
     </Grid>

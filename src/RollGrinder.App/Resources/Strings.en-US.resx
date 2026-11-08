@@ -5914,4 +5914,97 @@
   <data name="SubView_SaveJobAsPlan" xml:space="preserve">
     <value>Save as new plan</value>
   </data>
+  <data name="Vk_OpenPlan" xml:space="preserve">
+    <value>Open ▸</value>
+  </data>
+  <data name="Vk_Compare" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+  <data name="Fn_Compare" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+  <data name="Vk_CompareVersion" xml:space="preserve">
+    <value>Compare with current</value>
+  </data>
+  <data name="Vk_CompareDifferences" xml:space="preserve">
+    <value>Differences only</value>
+  </data>
+  <data name="Vk_CompareAll" xml:space="preserve">
+    <value>All items</value>
+  </data>
+  <data name="SubView_Compare" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+  <data name="Compare_Title" xml:space="preserve">
+    <value>Comparison</value>
+  </data>
+  <data name="Compare_ColItem" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Compare_NoCurve" xml:space="preserve">
+    <value>No profile to overlay (programs compare steps only)</value>
+  </data>
+  <data name="Compare_SummaryFormat" xml:space="preserve">
+    <value>{0} of {1} items differ</value>
+  </data>
+  <data name="Compare_NeedTwoPlans" xml:space="preserve">
+    <value>This roll has only one plan — nothing to compare with</value>
+  </data>
+  <data name="Compare_NoEarlierVersion" xml:space="preserve">
+    <value>No earlier version to compare with</value>
+  </data>
+  <data name="Compare_PlanTitleFormat" xml:space="preserve">
+    <value>Plan {0} · {1}</value>
+  </data>
+  <data name="Compare_VersionTitleFormat" xml:space="preserve">
+    <value>{0} v{1}</value>
+  </data>
+  <data name="Compare_CurrentVersionTitleFormat" xml:space="preserve">
+    <value>{0} v{1} (current)</value>
+  </data>
+  <data name="Diff_ProfileName" xml:space="preserve">
+    <value>Profile name</value>
+  </data>
+  <data name="Diff_ProgramName" xml:space="preserve">
+    <value>Program name</value>
+  </data>
+  <data name="Diff_NominalLength" xml:space="preserve">
+    <value>Nominal length (mm)</value>
+  </data>
+  <data name="Diff_Tolerance" xml:space="preserve">
+    <value>Tolerance (µm)</value>
+  </data>
+  <data name="Diff_EndZone" xml:space="preserve">
+    <value>End zone (mm)</value>
+  </data>
+  <data name="Diff_SegmentCount" xml:space="preserve">
+    <value>Segments</value>
+  </data>
+  <data name="Diff_SegmentTypeFormat" xml:space="preserve">
+    <value>Segment {0} type</value>
+  </data>
+  <data name="Diff_SegmentLengthFormat" xml:space="preserve">
+    <value>Segment {0} length (mm)</value>
+  </data>
+  <data name="Diff_SegmentParameterFormat" xml:space="preserve">
+    <value>Segment {0} {1}</value>
+  </data>
+  <data name="Diff_ApplicableKind" xml:space="preserve">
+    <value>Roll kind</value>
+  </data>
+  <data name="Diff_StandardStock" xml:space="preserve">
+    <value>Standard stock (mm)</value>
+  </data>
+  <data name="Diff_StepCount" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="Diff_StepTypeFormat" xml:space="preserve">
+    <value>Step {0} type</value>
+  </data>
+  <data name="Diff_StepParameterFormat" xml:space="preserve">
+    <value>Step {0} {1} · {2}</value>
+  </data>
+  <data name="Diff_RangeFormat" xml:space="preserve">
+    <value>Step {0} {1} adjust range</value>
+  </data>
 </root>

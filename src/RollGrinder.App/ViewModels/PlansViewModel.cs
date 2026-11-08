@@ -19,6 +19,7 @@ using RollGrinder.Data;
 using RollGrinder.Data.Model;
 using RollGrinder.Services.Alarms;
 using RollGrinder.Services.Jobs;
+using RollGrinder.Services.Library;
 using RollGrinder.Services.Session;
 
 namespace RollGrinder.App.ViewModels;
@@ -48,7 +49,7 @@ public sealed record PlanRowViewModel(
 /// <summary>
 /// 方案区入口：一支辊的磨削方案（设计稿 v4 5.5.1，设计说明第 4 节）。
 /// 只列"这支辊"的方案：★ 当前、用了几次（0 = 没用过，可改可删）、来源、名义长度。
-/// 竖键：选轧辊 · 打开辊形 · 打开工艺 · 新建方案…（复制选中的）· 命名… · 设为当前… · 删除…（只对没用过的）。
+/// 竖键：选轧辊 · 打开 ▸（辊形 / 工艺）· 新建方案…（复制选中的）· 复制来… · 对比 · 命名… · 设为当前… · 删除…（只对没用过的）。
 /// 方案用过即冻结：在辊形 / 工艺页改它，保存时自动另存为新方案。
 /// </summary>
 public sealed partial class PlansViewModel : PageViewModelBase
@@ -62,6 +63,7 @@ public sealed partial class PlansViewModel : PageViewModelBase
     private readonly HmiSettings settings;
     private readonly JobDraft draft;
     private readonly FunctionKeyViewModel listKey;
+    private readonly FunctionKeyViewModel compareKey;
     private readonly List<FunctionKeyViewModel> selectionKeys = new();
     private readonly FunctionKeyViewModel?[] rootKeys;
     private readonly FunctionKeyViewModel copyKey;
@@ -77,6 +79,7 @@ public sealed partial class PlansViewModel : PageViewModelBase
         HmiSettings settings,
         JobDraft draft,
         PlanPickerViewModel picker,
+        CompareViewModel compare,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator,
@@ -92,6 +95,7 @@ public sealed partial class PlansViewModel : PageViewModelBase
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.draft = draft ?? throw new ArgumentNullException(nameof(draft));
         Picker = picker ?? throw new ArgumentNullException(nameof(picker));
+        Compare = compare ?? throw new ArgumentNullException(nameof(compare));
         Picker.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(PlanPickerViewModel.CanCopy) && IsPicking)
@@ -108,8 +112,12 @@ public sealed partial class PlansViewModel : PageViewModelBase
         NamePrompt = new NamePromptViewModel(localizer);
         AttachPrompt(NamePrompt);
 
-        // 横键（设计稿 v4 方案区）：方案列表 · 辊形 · 工艺。
-        this.listKey = FunctionKeyViewModel.ForAction("Fn_PlanList", localizer, () => { });
+        // 横键（设计稿 v4 方案区）：方案列表 · 辊形 · 工艺 · 对比。
+        this.listKey = FunctionKeyViewModel.ForAction("Fn_PlanList", localizer, () => Navigator.CloseSubView());
+        this.compareKey = new FunctionKeyViewModel("Fn_Compare", new AsyncRelayCommand(OpenCompareAsync, HasSelection), localizer)
+        {
+            PreconditionResourceKey = "Plan_NothingSelected",
+        };
         FunctionKeyViewModel?[] horizontal =
         {
             this.listKey,
@@ -121,6 +129,7 @@ public sealed partial class PlansViewModel : PageViewModelBase
             {
                 PreconditionResourceKey = "Plan_NothingSelected",
             },
+            this.compareKey,
         };
         SetFunctionKeys(horizontal);
         MarkActiveFunctionKey(this.listKey);
@@ -128,11 +137,7 @@ public sealed partial class PlansViewModel : PageViewModelBase
         FunctionKeyViewModel?[] vertical =
         {
             FunctionKeyViewModel.ForAction("Vk_PickRoll", localizer, () => Navigator.GoTo(PageKey.Rolls)),
-            new FunctionKeyViewModel("Vk_OpenPlanProfile", new RelayCommand(() => OpenEditor(PageKey.Profile), HasSelection), localizer)
-            {
-                PreconditionResourceKey = "Plan_NothingSelected",
-            },
-            new FunctionKeyViewModel("Vk_OpenPlanProgram", new RelayCommand(() => OpenEditor(PageKey.Steps), HasSelection), localizer)
+            new FunctionKeyViewModel("Vk_OpenPlan", new RelayCommand(OpenEditorMenu, HasSelection), localizer)
             {
                 PreconditionResourceKey = "Plan_NothingSelected",
             },
@@ -144,6 +149,10 @@ public sealed partial class PlansViewModel : PageViewModelBase
                 requiresEditable: true)
             {
                 PreconditionResourceKey = "Plan_PickRollHint",
+            },
+            new FunctionKeyViewModel("Vk_Compare", new AsyncRelayCommand(OpenCompareAsync, HasSelection), localizer)
+            {
+                PreconditionResourceKey = "Plan_NothingSelected",
             },
             new FunctionKeyViewModel("Vk_RenamePlan", new RelayCommand(AskRename, HasSelection), localizer, requiresEditable: true)
             {
@@ -162,6 +171,127 @@ public sealed partial class PlansViewModel : PageViewModelBase
         this.rootKeys = vertical;
         SetVerticalKeys(vertical);
         this.selectionKeys.AddRange(vertical.Skip(1).Concat(horizontal.Skip(1)).OfType<FunctionKeyViewModel>());
+
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ActiveSubViewKey))
+            {
+                OnPropertyChanged(nameof(IsCompareOpen));
+                ApplySubViewKeys();
+            }
+        };
+    }
+
+    // ───────────── 对比（设计稿 v4 5.5.1 竖键"对比"） ─────────────
+
+    /// <summary>对比子视图：选中的方案与当前方案（选中的就是当前时，与最近用过 / 建的另一个）逐项比、辊形叠图。</summary>
+    public const string CompareSubView = "SubView_Compare";
+
+    public bool IsCompareOpen => ActiveSubViewKey == CompareSubView;
+
+    public CompareViewModel Compare { get; }
+
+    /// <summary>打开 ▸：辊形 / 工艺。</summary>
+    private void OpenEditorMenu() => OpenVerticalMenu("Vk_OpenPlan", new FunctionKeyViewModel?[]
+    {
+        MenuChoice("Vk_OpenPlanProfile", () => OpenEditor(PageKey.Profile), requiresEditable: false, canChoose: HasSelection),
+        MenuChoice("Vk_OpenPlanProgram", () => OpenEditor(PageKey.Steps), requiresEditable: false, canChoose: HasSelection),
+    });
+
+    /// <summary>选中的方案和谁比：不是当前的就和当前比；是当前的（或这支辊没有当前）就和最近用过 / 建的另一个比。</summary>
+    public PlanRowViewModel? CompareBaseline(PlanRowViewModel selected)
+    {
+        ArgumentNullException.ThrowIfNull(selected);
+        return (selected.IsCurrent ? null : Rows.FirstOrDefault(row => row.IsCurrent))
+            ?? Rows.Where(row => row.PlanId != selected.PlanId)
+                .OrderByDescending(row => row.Overview.Usage.LastUsedUtc ?? row.Overview.Plan.CreatedAtUtc)
+                .FirstOrDefault();
+    }
+
+    private async Task OpenCompareAsync()
+    {
+        if (SelectedRow is not { } selected)
+        {
+            Interaction.Refuse(Localizer["Plan_NothingSelected"]);
+            return;
+        }
+
+        if (CompareBaseline(selected) is not { } baseline)
+        {
+            Interaction.Refuse(Localizer["Compare_NeedTwoPlans"]);
+            return;
+        }
+
+        await RunGuardedAsync(
+            async token =>
+            {
+                CompareSide? a = await SideAsync(baseline, token).ConfigureAwait(true);
+                CompareSide? b = await SideAsync(selected, token).ConfigureAwait(true);
+                if (a is null || b is null)
+                {
+                    Interaction.Refuse(Localizer["PlanProblem_Missing"]);
+                    return;
+                }
+
+                Compare.Load(a, b);
+                Navigator.OpenSubView(CompareSubView);
+                Interaction.Hint(Compare.Summary);
+            },
+            CancellationToken.None).ConfigureAwait(true);
+    }
+
+    private async Task<CompareSide?> SideAsync(PlanRowViewModel row, CancellationToken token)
+    {
+        if (await this.plans.GetContentAsync(row.PlanId, token).ConfigureAwait(true) is not { } content)
+        {
+            return null;
+        }
+
+        IReadOnlyList<PlanParamRange> ranges = await this.plans.GetRangesAsync(row.PlanId, token).ConfigureAwait(true);
+        return new CompareSide(
+            Localizer.Format("Compare_PlanTitleFormat", row.NoText, content.Plan.Name),
+            content.Profile,
+            content.Program,
+            ranges,
+            content.Plan.EndZoneMm);
+    }
+
+    /// <summary>对比开着：1 只看不同 · 2 全部 · 8 返回；收起换回根层。</summary>
+    private void ApplySubViewKeys()
+    {
+        if (!IsCompareOpen)
+        {
+            SetVerticalKeys(this.rootKeys);
+            RefreshKeyStates();
+            MarkActiveFunctionKey(this.listKey);
+            return;
+        }
+
+        SetVerticalKeys(CompareKeys(Compare, Localizer, Navigator.CloseSubView));
+        MarkActiveFunctionKey(this.compareKey);
+    }
+
+    /// <summary>对比子视图的竖键（方案区、模板区共用）：1 只看不同 · 2 全部 · 8 返回。</summary>
+    internal static FunctionKeyViewModel?[] CompareKeys(CompareViewModel compare, IStringLocalizer localizer, Action back)
+    {
+        FunctionKeyViewModel? differences = null;
+        FunctionKeyViewModel? all = null;
+        void Show(bool only)
+        {
+            compare.OnlyDifferences = only;
+            differences!.IsActive = only;
+            all!.IsActive = !only;
+        }
+
+        differences = FunctionKeyViewModel.ForAction("Vk_CompareDifferences", localizer, () => Show(true));
+        all = FunctionKeyViewModel.ForAction("Vk_CompareAll", localizer, () => Show(false));
+        differences.IsActive = compare.OnlyDifferences;
+        all.IsActive = !compare.OnlyDifferences;
+        return new[]
+        {
+            differences, all, null, null, null, null, null,
+            new FunctionKeyViewModel("Vk_Back", new RelayCommand(back), localizer, FunctionKeyKind.Navigation),
+        };
     }
 
     public override PageKey Key => PageKey.Plans;

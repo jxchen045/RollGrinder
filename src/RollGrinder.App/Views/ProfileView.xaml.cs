@@ -121,7 +121,7 @@ public partial class ProfileView : UserControl
         var composed = PreviewPlot.Plot.Add.Scatter(composedX, composedY);
         composed.LineWidth = 3f;
         composed.MarkerSize = 0;
-        composed.Color = Color.FromHex("#15507F");
+        composed.Color = PlotTheme.Curve(PreviewPlot, "Color.CurveTarget");
 
         // 段界画虚线：顺接辊形一眼看出每段从哪到哪。
         foreach (double boundary in this.viewModel.BoundaryZs)
@@ -129,7 +129,7 @@ public partial class ProfileView : UserControl
             var line = PreviewPlot.Plot.Add.VerticalLine(boundary - offset);
             line.LineWidth = 1f;
             line.LinePattern = LinePattern.Dashed;
-            line.Color = Color.FromHex("#8D97A3");
+            line.Color = PlotTheme.Curve(PreviewPlot, "Color.CurveSegmentBoundary");
         }
 
         // 按方案编辑：端部非工作区边界画点线（截取 / 延伸只许发生在线外，设计说明 4.5）。
@@ -138,7 +138,7 @@ public partial class ProfileView : UserControl
             var zone = PreviewPlot.Plot.Add.VerticalLine(mark - offset);
             zone.LineWidth = 1.5f;
             zone.LinePattern = LinePattern.Dotted;
-            zone.Color = Color.FromHex("#8A5A00");
+            zone.Color = PlotTheme.Curve(PreviewPlot, "Color.CurveReference");
         }
 
         // 当前段加粗、换色。
@@ -149,7 +149,7 @@ public partial class ProfileView : UserControl
                 this.viewModel.SelectedSegmentPoints.Select(point => point.DiameterMm * 1000.0).ToArray());
             selected.LineWidth = 6f;
             selected.MarkerSize = 0;
-            selected.Color = Color.FromHex("#B3241C").WithAlpha(0.55);
+            selected.Color = PlotTheme.Curve(PreviewPlot, "Color.CurveMeasured").WithAlpha(0.55);
         }
 
         // 点表段：原始点和插值曲线画在一起，看得出插值有没有在点之间鼓出来。
@@ -160,7 +160,7 @@ public partial class ProfileView : UserControl
                 this.viewModel.TablePoints.Select(point => point.DiameterMm * 1000.0).ToArray());
             table.LineWidth = 0f;
             table.MarkerSize = 8f;
-            table.Color = Color.FromHex("#B3241C");
+            table.Color = PlotTheme.Curve(PreviewPlot, "Color.CurveMeasured");
         }
 
         // 导进来的对照线：虚线、另一个颜色，一眼看出哪条是设计、哪条是拿来比的。
@@ -172,7 +172,7 @@ public partial class ProfileView : UserControl
             reference.LineWidth = 2f;
             reference.MarkerSize = 0;
             reference.LinePattern = LinePattern.Dotted;
-            reference.Color = Color.FromHex("#8A5A00");
+            reference.Color = PlotTheme.Curve(PreviewPlot, "Color.CurveReference");
         }
 
         // 辊形图规范：直径量 µm，Y 由合成辊形定，绘图区 4 : 1（和库、作业、记录里同一条辊形一个样）。

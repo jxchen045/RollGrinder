@@ -108,6 +108,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
     private readonly JobDraft jobDraft;
     private readonly ITemplateService templates;
     private readonly FunctionKeyViewModel libraryKey;
+    private readonly FunctionKeyViewModel compareKey;
     private readonly FunctionKeyViewModel mandateConfirmKey;
     private int legacyUsers;
     private readonly FunctionKeyViewModel disableKey;
@@ -127,6 +128,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         HmiSettings settings,
         JobDraft jobDraft,
         ITemplateService templates,
+        CompareViewModel compare,
         IStringLocalizer localizer,
         IAlarmSink alarms,
         INavigator navigator,
@@ -143,6 +145,7 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         this.jobDraft = jobDraft ?? throw new ArgumentNullException(nameof(jobDraft));
         this.templates = templates ?? throw new ArgumentNullException(nameof(templates));
+        Compare = compare ?? throw new ArgumentNullException(nameof(compare));
         this.mandateConfirmKey = new FunctionKeyViewModel(
             "Vk_MandateConfirm", new AsyncRelayCommand(ConfirmMandateAsync, () => MandateRows.Any(row => row.Decision == MandateDecision.Force)),
             localizer, FunctionKeyKind.Confirm, requiresEditable: true)
@@ -153,13 +156,19 @@ public sealed partial class LibraryViewModel : PageViewModelBase
         AttachPrompt(NamePrompt);
 
         bool isProfiles = kind == LibraryKind.Profiles;
-        this.libraryKey = FunctionKeyViewModel.ForAction(isProfiles ? "Fn_ProfileLibrary" : "Fn_ProgramLibrary", localizer, () => { });
+        this.libraryKey = FunctionKeyViewModel.ForAction(isProfiles ? "Fn_ProfileLibrary" : "Fn_ProgramLibrary", localizer, () => Navigator.CloseSubView());
+
+        // 对比（设计稿 v4 5.6.1）：选中的模板现在这一版与上一版。
+        this.compareKey = new FunctionKeyViewModel("Fn_Compare", new AsyncRelayCommand(() => CompareVersionAsync(null), HasSelection), localizer)
+        {
+            PreconditionResourceKey = "Lib_NothingSelected",
+        };
         SetFunctionKeys(new FunctionKeyViewModel?[]
         {
             this.libraryKey,
             FunctionKeyViewModel.ForAction(isProfiles ? "Fn_ProfileEditor" : "Fn_ProgramEditor", localizer,
                 () => Navigator.GoTo(isProfiles ? PageKey.Profile : PageKey.Steps)),
-            null,
+            this.compareKey,
             new FunctionKeyViewModel("Fn_ImportFile", new AsyncRelayCommand(ImportAsync), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Fn_ExportFile", new AsyncRelayCommand(ExportSelectedAsync, HasSelection), localizer)
             {
@@ -199,8 +208,100 @@ public sealed partial class LibraryViewModel : PageViewModelBase
                 PreconditionResourceKey = "Mandate_NoneActive",
             },
         };
-        this.versionKeys = new FunctionKeyViewModel?[] { this.saveAsFromVersionKey, null, null, null, null, this.versionsKey };
+        this.compareVersionKey = new FunctionKeyViewModel(
+            "Vk_CompareVersion", new AsyncRelayCommand(() => CompareVersionAsync(SelectedVersion), () => SelectedVersion is not null), localizer)
+        {
+            PreconditionResourceKey = "Lib_NoVersionSelected",
+        };
+        this.versionKeys = new FunctionKeyViewModel?[] { this.saveAsFromVersionKey, this.compareVersionKey, null, null, null, this.versionsKey };
         SetVerticalKeys(this.entryKeys);
+
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ActiveSubViewKey))
+            {
+                OnPropertyChanged(nameof(IsCompareOpen));
+                if (IsCompareOpen)
+                {
+                    SetVerticalKeys(PlansViewModel.CompareKeys(Compare, Localizer, Navigator.CloseSubView));
+                    MarkActiveFunctionKey(this.compareKey);
+                }
+                else
+                {
+                    SetVerticalKeys(ShowingVersions ? this.versionKeys : this.entryKeys);
+                    MarkActiveFunctionKey(this.libraryKey);
+                }
+            }
+        };
+    }
+
+    private readonly FunctionKeyViewModel compareVersionKey;
+
+    // ───────────── 对比（设计稿 v4 5.6.1） ─────────────
+
+    /// <summary>对比子视图：模板的两版逐项比（辊形库另有叠图）。</summary>
+    public const string CompareSubView = "SubView_Compare";
+
+    public bool IsCompareOpen => ActiveSubViewKey == CompareSubView;
+
+    public CompareViewModel Compare { get; }
+
+    /// <summary>
+    /// 对比：<paramref name="version"/> 为 null 时比现在这一版与上一版（横键"对比"）；
+    /// 否则比留档的这一版与现在这一版（版本记录里的"与当前对比"）。
+    /// </summary>
+    private async Task CompareVersionAsync(LibraryVersionRowViewModel? version)
+    {
+        if (SelectedEntry is not { } entry)
+        {
+            Interaction.Refuse(Localizer["Lib_NothingSelected"]);
+            return;
+        }
+
+        LibraryVersionRowViewModel? older = version ?? Versions.OrderByDescending(row => row.Version).FirstOrDefault();
+        if (older is null)
+        {
+            Interaction.Refuse(Localizer["Compare_NoEarlierVersion"]);
+            return;
+        }
+
+        await RunGuardedAsync(
+            async token =>
+            {
+                CompareSide a;
+                CompareSide b;
+                if (IsProfiles)
+                {
+                    RollProfileDefinition? current = await this.profiles.GetAsync(entry.Id, token).ConfigureAwait(true);
+                    RollProfileDefinition? old = LibrarySnapshotJson.ReadProfile(older.Payload);
+                    if (current is null || old is null)
+                    {
+                        Interaction.Refuse(Localizer["Compare_NoEarlierVersion"]);
+                        return;
+                    }
+
+                    a = new CompareSide(Localizer.Format("Compare_VersionTitleFormat", entry.Name, older.Version), old, null);
+                    b = new CompareSide(Localizer.Format("Compare_CurrentVersionTitleFormat", entry.Name, current.Version), current, null);
+                }
+                else
+                {
+                    GrindingProgram? current = await this.programs.GetAsync(entry.Id, token).ConfigureAwait(true);
+                    GrindingProgram? old = LibrarySnapshotJson.ReadProgram(older.Payload);
+                    if (current is null || old is null)
+                    {
+                        Interaction.Refuse(Localizer["Compare_NoEarlierVersion"]);
+                        return;
+                    }
+
+                    a = new CompareSide(Localizer.Format("Compare_VersionTitleFormat", entry.Name, older.Version), null, old);
+                    b = new CompareSide(Localizer.Format("Compare_CurrentVersionTitleFormat", entry.Name, current.Version), null, current);
+                }
+
+                Compare.Load(a, b);
+                Navigator.OpenSubView(CompareSubView);
+                Interaction.Hint(Compare.Summary);
+            },
+            CancellationToken.None).ConfigureAwait(true);
     }
 
     public LibraryKind Kind { get; }
@@ -464,12 +565,17 @@ public sealed partial class LibraryViewModel : PageViewModelBase
             (key?.Command as IRelayCommand)?.NotifyCanExecuteChanged();
         }
 
+        (this.compareKey.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+
         this.disableKey.LabelResourceKey = value?.IsDisabled == true ? "Vk_Enable" : "Vk_Disable";
         _ = RunRefreshAsync(LoadPreviewAsync, CancellationToken.None);
     }
 
-    partial void OnSelectedVersionChanged(LibraryVersionRowViewModel? value) =>
+    partial void OnSelectedVersionChanged(LibraryVersionRowViewModel? value)
+    {
         (this.saveAsFromVersionKey.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+        (this.compareVersionKey.Command as IRelayCommand)?.NotifyCanExecuteChanged();
+    }
 
     partial void OnShowingVersionsChanged(bool value)
     {

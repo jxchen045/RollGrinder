@@ -120,6 +120,7 @@ public static class Program
 
             var application = new App(host, selfTestRunner is null ? null : selfTestRunner.RunAsync);
             application.InitializeComponent();
+            RollGrinder.App.Controls.ThemeProfile.Apply(application, hmiSettings.Theme);
             RollGrinder.App.Controls.LayoutProfile.Apply(application, hmiSettings.Layout, hmiSettings.FullScreen);
             int exitCode = application.Run();
 
@@ -237,6 +238,7 @@ public static class Program
 
         // 选辊形 / 选程序子视图：作业页与轧辊区各有一份（各自的选中与过滤互不干扰）。
         builder.Services.AddTransient<PlanPickerViewModel>();
+        builder.Services.AddTransient<CompareViewModel>();
 
         builder.Services.AddSingleton<ShellViewModel>();
         builder.Services.AddSingleton<ShellWindow>();

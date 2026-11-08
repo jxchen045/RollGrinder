@@ -5914,4 +5914,97 @@
   <data name="SubView_SaveJobAsPlan" xml:space="preserve">
     <value>存为新方案</value>
   </data>
+  <data name="Vk_OpenPlan" xml:space="preserve">
+    <value>打开 ▸</value>
+  </data>
+  <data name="Vk_Compare" xml:space="preserve">
+    <value>对比</value>
+  </data>
+  <data name="Fn_Compare" xml:space="preserve">
+    <value>对比</value>
+  </data>
+  <data name="Vk_CompareVersion" xml:space="preserve">
+    <value>与现在这版对比</value>
+  </data>
+  <data name="Vk_CompareDifferences" xml:space="preserve">
+    <value>只看不同</value>
+  </data>
+  <data name="Vk_CompareAll" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="SubView_Compare" xml:space="preserve">
+    <value>对比</value>
+  </data>
+  <data name="Compare_Title" xml:space="preserve">
+    <value>对比</value>
+  </data>
+  <data name="Compare_ColItem" xml:space="preserve">
+    <value>项目</value>
+  </data>
+  <data name="Compare_NoCurve" xml:space="preserve">
+    <value>没有辊形可叠（程序只比工艺）</value>
+  </data>
+  <data name="Compare_SummaryFormat" xml:space="preserve">
+    <value>{0} 项不同 / 共 {1} 项</value>
+  </data>
+  <data name="Compare_NeedTwoPlans" xml:space="preserve">
+    <value>这支辊只有一个方案，没有可对比的</value>
+  </data>
+  <data name="Compare_NoEarlierVersion" xml:space="preserve">
+    <value>还没有更早的版本可对比</value>
+  </data>
+  <data name="Compare_PlanTitleFormat" xml:space="preserve">
+    <value>方案 {0} · {1}</value>
+  </data>
+  <data name="Compare_VersionTitleFormat" xml:space="preserve">
+    <value>{0} v{1}</value>
+  </data>
+  <data name="Compare_CurrentVersionTitleFormat" xml:space="preserve">
+    <value>{0} v{1}（现在）</value>
+  </data>
+  <data name="Diff_ProfileName" xml:space="preserve">
+    <value>辊形名称</value>
+  </data>
+  <data name="Diff_ProgramName" xml:space="preserve">
+    <value>工艺名称</value>
+  </data>
+  <data name="Diff_NominalLength" xml:space="preserve">
+    <value>名义长度 (mm)</value>
+  </data>
+  <data name="Diff_Tolerance" xml:space="preserve">
+    <value>公差 (µm)</value>
+  </data>
+  <data name="Diff_EndZone" xml:space="preserve">
+    <value>端部区 (mm)</value>
+  </data>
+  <data name="Diff_SegmentCount" xml:space="preserve">
+    <value>段数</value>
+  </data>
+  <data name="Diff_SegmentTypeFormat" xml:space="preserve">
+    <value>第 {0} 段 类型</value>
+  </data>
+  <data name="Diff_SegmentLengthFormat" xml:space="preserve">
+    <value>第 {0} 段 长度 (mm)</value>
+  </data>
+  <data name="Diff_SegmentParameterFormat" xml:space="preserve">
+    <value>第 {0} 段 {1}</value>
+  </data>
+  <data name="Diff_ApplicableKind" xml:space="preserve">
+    <value>适用辊类</value>
+  </data>
+  <data name="Diff_StandardStock" xml:space="preserve">
+    <value>标准余量 (mm)</value>
+  </data>
+  <data name="Diff_StepCount" xml:space="preserve">
+    <value>工序数</value>
+  </data>
+  <data name="Diff_StepTypeFormat" xml:space="preserve">
+    <value>第 {0} 道 工序</value>
+  </data>
+  <data name="Diff_StepParameterFormat" xml:space="preserve">
+    <value>第 {0} 道 {1} · {2}</value>
+  </data>
+  <data name="Diff_RangeFormat" xml:space="preserve">
+    <value>第 {0} 道 {1} 可调范围</value>
+  </data>
 </root>

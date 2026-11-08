@@ -88,6 +88,7 @@ public static class JsonHmiSettingsProvider
         Require(settings.AlarmHistoryLimit is >= 10 and <= 10000, path, nameof(settings.AlarmHistoryLimit));
         Require(!string.IsNullOrWhiteSpace(settings.Culture), path, nameof(settings.Culture));
         Require(settings.Layout is "auto" or "standard" or "compact", path, nameof(settings.Layout));
+        Require(settings.Theme is "light" or "dark", path, nameof(settings.Theme));
         Require(Enum.IsDefined(settings.DefaultRole), path, nameof(settings.DefaultRole));
         Require(settings.CompensationGain is > 0.0 and <= 1.0, path, nameof(settings.CompensationGain));
         Require(settings.PassWatchdogSeconds is >= 2 and <= 600, path, nameof(settings.PassWatchdogSeconds));

@@ -13,6 +13,7 @@ namespace RollGrinder.Contracts.Dtos;
 /// <param name="UiRefreshHz">界面刷新频率（Hz，5–10）。</param>
 /// <param name="ProfileSampleCount">辊形曲线的采样点数。</param>
 /// <param name="ChartHistorySeconds">趋势图保留的时长（s）。</param>
+/// <param name="Theme">配色：light（浅色高对比，默认，车间强光）/ dark（深色工业，夜班或暗处）。改了重启生效。</param>
 /// <param name="PassWatchdogSeconds">道次数据看门狗（s，设计说明第 6 节）：加工中超过这么久没有新数据就提示并记事件。</param>
 /// <param name="RecordRetentionDays">磨削记录保留天数。</param>
 /// <param name="AlarmHistoryLimit">报警条目上限。</param>
@@ -41,7 +42,8 @@ public sealed record HmiSettings(
     string Layout = "auto",
     bool FullScreen = true,
     string PlanChangePermission = "operator",
-    int PassWatchdogSeconds = 10)
+    int PassWatchdogSeconds = 10,
+    string Theme = "light")
 {
     /// <summary>变更计划只许管理员及以上。</summary>
     public bool PlanChangeNeedsAdministrator =>
