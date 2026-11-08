@@ -261,6 +261,119 @@
                 </Border>
         </Grid>
 
+        <!-- 统计（关系设计 M1、设计稿 v4 5.8）：查询日期范围内的例外与变更（按原因、按人）、本次调整按参数、每支辊去除量。 -->
+        <Grid Grid.ColumnSpan="3" Background="{StaticResource Brush.Background}"
+              Visibility="{Binding IsStatisticsOpen, Converter={StaticResource BoolToVisibility}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Grid.ColumnSpan="2" Style="{StaticResource ActiveCardHeader}" Margin="0,0,6,6">
+                <TextBlock Text="{Binding StatsTitle}" Style="{StaticResource Text.CardTitle}" />
+            </Border>
+            <Border Grid.Column="0" Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,6,6">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Stats_ByReason}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding StatsReasonRows}" Margin="14,8">
+                        <ItemsControl.Template>
+                            <ControlTemplate TargetType="ItemsControl">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                                    <ItemsPresenter />
+                                </ScrollViewer>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" TextWrapping="Wrap" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+            <Border Grid.Column="1" Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,6,6">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Stats_ByPerson}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding StatsPeopleRows}" Margin="14,8">
+                        <ItemsControl.Template>
+                            <ControlTemplate TargetType="ItemsControl">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                                    <ItemsPresenter />
+                                </ScrollViewer>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" TextWrapping="Wrap" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+            <Border Grid.Column="0" Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,6,6">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Stats_ByParameter}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding StatsParameterRows}" Margin="14,8">
+                        <ItemsControl.Template>
+                            <ControlTemplate TargetType="ItemsControl">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                                    <ItemsPresenter />
+                                </ScrollViewer>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" TextWrapping="Wrap" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+            <Border Grid.Column="1" Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,6,6">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Stats_Removal}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding StatsRemovalRows}" Margin="14,8">
+                        <ItemsControl.Template>
+                            <ControlTemplate TargetType="ItemsControl">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                                    <ItemsPresenter />
+                                </ScrollViewer>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" TextWrapping="Wrap" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+        </Grid>
+
         <!-- 道次表（设计稿 v4 5.8.2）：存下来的逐道次、倍率摘要、事件、逐工序摘要（含有效值）。 -->
         <views:PassTableView Grid.ColumnSpan="3" DataContext="{Binding PassTable}"
                              Visibility="{Binding DataContext.IsPassTableOpen, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}" />

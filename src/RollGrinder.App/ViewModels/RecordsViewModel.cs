@@ -135,6 +135,8 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     private readonly IGrindingPlanService plans;
     private readonly IUserSession session;
     private readonly IRunLogService runLogService;
+    private readonly IStatisticsService statistics;
+    private readonly FunctionKeyViewModel statisticsKey;
     private GrindingJob? snapshotJob;
     private readonly FunctionKeyViewModel overviewKey;
     private readonly Dictionary<RecordCurveKind, FunctionKeyViewModel> curveKeys = new();
@@ -150,6 +152,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         IGrindingPlanService plans,
         IUserSession session,
         IRunLogService runLogService,
+        IStatisticsService statistics,
         JobDraft jobDraft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
@@ -165,6 +168,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.session = session ?? throw new ArgumentNullException(nameof(session));
         this.runLogService = runLogService ?? throw new ArgumentNullException(nameof(runLogService));
+        this.statistics = statistics ?? throw new ArgumentNullException(nameof(statistics));
         PassTable = new PassTableViewModel(localizer);
 
         this.toDate = DateTime.Today;
@@ -181,6 +185,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             new FunctionKeyViewModel("Fn_ExportExcel", RequestExportCommand, localizer),
             new FunctionKeyViewModel("Fn_DailyReport", ShowDailySummaryCommand, localizer),
             new FunctionKeyViewModel("Fn_MonthlyReport", ShowMonthlySummaryCommand, localizer),
+            this.statisticsKey = FunctionKeyViewModel.ForAction("Fn_Statistics", localizer, () => _ = OpenStatisticsAsync()),
         });
         MarkActiveFunctionKey(this.recordsKey);
 
@@ -190,6 +195,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             (RecordCurveKind.Deviation, "Curve_Error"),
             (RecordCurveKind.Roundness, "Curve_Roundness"),
             (RecordCurveKind.CompensationConvergence, "Curve_Convergence"),
+            (RecordCurveKind.Process, "Curve_Process"),
         })
         {
             RecordCurveKind chosen = kind;
@@ -218,6 +224,70 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     public bool IsOverviewOpen => ActiveSubViewKey == OverviewSubView;
 
     public bool IsSnapshotOpen => ActiveSubViewKey == SnapshotSubView;
+
+    /// <summary>统计（关系设计 M1、设计稿 v4 5.8）：查询日期范围内的例外与变更，按原因、按人；本次调整按人、按参数；每支辊去除量。</summary>
+    public const string StatisticsSubView = "SubView_Statistics";
+
+    public bool IsStatisticsOpen => ActiveSubViewKey == StatisticsSubView;
+
+    public ObservableCollection<LabelValueViewModel> StatsReasonRows { get; } = new();
+
+    public ObservableCollection<LabelValueViewModel> StatsPeopleRows { get; } = new();
+
+    public ObservableCollection<LabelValueViewModel> StatsParameterRows { get; } = new();
+
+    public ObservableCollection<LabelValueViewModel> StatsRemovalRows { get; } = new();
+
+    [ObservableProperty]
+    private string statsTitle = string.Empty;
+
+    private async Task OpenStatisticsAsync()
+    {
+        await RunGuardedAsync(
+            async token =>
+            {
+                (DateTimeOffset fromUtc, DateTimeOffset toUtc) = LocalDays.Range(FromDate, ToDate, TimeZoneInfo.Local);
+                ShopStatistics stats = await this.statistics.ComputeAsync(fromUtc, toUtc, token).ConfigureAwait(true);
+                StatsTitle = Localizer.Format(
+                    "Stats_TitleFormat", FromDate.ToString("yyyy-MM-dd", CultureInfo.CurrentCulture), ToDate.ToString("yyyy-MM-dd", CultureInfo.CurrentCulture),
+                    stats.RecordCount);
+                StatsReasonRows.Clear();
+                foreach (CountRow row in stats.ExceptionsByReason)
+                {
+                    StatsReasonRows.Add(LabelValueViewModel.Raw(
+                        row.Key.StartsWith("Reason_", StringComparison.Ordinal) ? Localizer[row.Key] : row.Key, row.Count.ToString(CultureInfo.CurrentCulture)));
+                }
+
+                // 按人：仅本次例外 · 改计划 · 本次调整，一人一行。
+                StatsPeopleRows.Clear();
+                foreach (string person in stats.ExceptionsByPerson.Select(r => r.Key)
+                             .Concat(stats.PlanChangesByPerson.Select(r => r.Key))
+                             .Concat(stats.AdjustmentsByPerson.Select(r => r.Key))
+                             .Distinct(StringComparer.Ordinal))
+                {
+                    int Count(IReadOnlyList<CountRow> rows) => rows.FirstOrDefault(r => r.Key == person)?.Count ?? 0;
+                    StatsPeopleRows.Add(LabelValueViewModel.Raw(
+                        person,
+                        Localizer.Format("Stats_PersonFormat", Count(stats.ExceptionsByPerson), Count(stats.PlanChangesByPerson), Count(stats.AdjustmentsByPerson))));
+                }
+
+                StatsParameterRows.Clear();
+                foreach (CountRow row in stats.AdjustmentsByParameter)
+                {
+                    StatsParameterRows.Add(LabelValueViewModel.Raw(AdjustText.Parameter(Localizer, row.Key), row.Count.ToString(CultureInfo.CurrentCulture)));
+                }
+
+                StatsRemovalRows.Clear();
+                foreach (RollRemovalRow row in stats.Removal.Take(200))
+                {
+                    StatsRemovalRows.Add(LabelValueViewModel.Raw(
+                        row.RollId, Localizer.Format("Stats_RemovalFormat", row.Grinds, row.RemovedMm.ToString("F3", CultureInfo.CurrentCulture))));
+                }
+
+                Navigator.OpenSubView(StatisticsSubView);
+            },
+            CancellationToken.None).ConfigureAwait(true);
+    }
 
     /// <summary>道次表（设计稿 v4 5.8.2 第 3 格）：选中这一条存下来的道次表、倍率摘要、事件、逐工序摘要。</summary>
     public const string PassTableSubView = "SubView_PassTable";
@@ -565,8 +635,10 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         OnPropertyChanged(nameof(IsSnapshotOpen));
         OnPropertyChanged(nameof(IsSaveAsPlanOpen));
         OnPropertyChanged(nameof(IsPassTableOpen));
+        OnPropertyChanged(nameof(IsStatisticsOpen));
         this.overviewKey.IsActive = IsOverviewOpen;
-        this.recordsKey.IsActive = !IsOverviewOpen;
+        this.statisticsKey.IsActive = IsStatisticsOpen;
+        this.recordsKey.IsActive = !IsOverviewOpen && !IsStatisticsOpen;
         if (IsSaveAsPlanOpen)
         {
             // 第 8 格稳妥的一边：另存（不设当前）；第 6 格另存并设为当前…（问一句）；第 7 格取消。名字重复第 8 / 6 格灰。
@@ -614,7 +686,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             return;
         }
 
-        if (IsOverviewOpen || IsSnapshotOpen)
+        if (IsOverviewOpen || IsSnapshotOpen || IsStatisticsOpen)
         {
             SetCommitPair(null, null);
             SetVerticalKeys(new FunctionKeyViewModel?[]
@@ -653,6 +725,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             },
             new FunctionKeyViewModel("Vk_Print", PreviewPostGrindReportCommand, Localizer),
             this.curveKeys[RecordCurveKind.Roundness],
+            this.curveKeys[RecordCurveKind.Process],
             FunctionKeyViewModel.ForAction("Vk_QueryAsk", Localizer, () => Navigator.OpenSubView(QuerySubView)),
             new FunctionKeyViewModel("Vk_MarkFinished", new RelayCommand(AskFinish), Localizer) { PreconditionResourceKey = "Records_NoSelection" },
         });

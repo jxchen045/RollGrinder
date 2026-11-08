@@ -142,6 +142,7 @@ public sealed class RecordService : IRecordService
     private readonly HmiSettings settings;
     private readonly TimeProvider timeProvider;
     private readonly IRollProfileRepository profiles;
+    private readonly IRunLogRepository? runLog;
 
     public RecordService(
         IGrindingRecordRepository records,
@@ -159,8 +160,10 @@ public sealed class RecordService : IRecordService
         IAlarmSink alarmSink,
         HmiSettings settings,
         TimeProvider timeProvider,
-        IRollProfileRepository profiles)
+        IRollProfileRepository profiles,
+        IRunLogRepository? runLog = null)
     {
+        this.runLog = runLog;
         this.profiles = profiles ?? throw new ArgumentNullException(nameof(profiles));
         this.records = records ?? throw new ArgumentNullException(nameof(records));
         this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
@@ -304,8 +307,31 @@ public sealed class RecordService : IRecordService
                 await RoundnessCurveAsync(record.JobId, cancellationToken).ConfigureAwait(false),
             RecordCurveKind.CompensationConvergence =>
                 await ConvergenceCurveAsync(record.JobId, cancellationToken).ConfigureAwait(false),
+            RecordCurveKind.Process =>
+                await ProcessCurveAsync(record.RecordId, cancellationToken).ConfigureAwait(false),
             _ => RecordCurve.Empty(kind),
         };
+    }
+
+    /// <summary>过程曲线：磨削电流（A）随下发后的时间（min）。</summary>
+    private async Task<RecordCurve> ProcessCurveAsync(string recordId, CancellationToken cancellationToken)
+    {
+        if (this.runLog is null)
+        {
+            return RecordCurve.Empty(RecordCurveKind.Process);
+        }
+
+        IReadOnlyList<TracePoint> current = await this.runLog.ListTraceAsync(recordId, TraceKinds.Current, cancellationToken).ConfigureAwait(false);
+        if (current.Count < 2)
+        {
+            return RecordCurve.Empty(RecordCurveKind.Process);
+        }
+
+        return new RecordCurve(
+            RecordCurveKind.Process,
+            new[] { new RecordCurveSeries("Curve_ProcessCurrent", current.Select(point => (point.Seconds / 60.0, point.Value)).ToArray()) },
+            "Unit_Minute",
+            "Unit_Ampere");
     }
 
     /// <summary>

@@ -37,7 +37,7 @@ public static class LayoutProfile
     public static GridLength AxisNameColumn => new(Math.Round(48 * Scale));
 
     /// <summary>上排主轴块的倍率列。</summary>
-    public static GridLength OverrideColumn => new(Math.Round(64 * Scale));
+    public static GridLength OverrideColumn => new(Math.Round(78 * Scale)); // "100 %" 加左右留白，紧凑档也不截断
 
     /// <summary>上排辅助功能块的组名宽。</summary>
     public static double StatusGroupColumnWidth => Math.Round(56 * Scale);

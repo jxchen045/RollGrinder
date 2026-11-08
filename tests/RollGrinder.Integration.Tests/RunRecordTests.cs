@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -50,7 +51,7 @@ public sealed class RunRecordTests : IDisposable
         var jobs = new SqliteJobRepository(database);
         var records = new SqliteGrindingRecordRepository(database);
         var collector = new PassDataCollector(gateway, null, clock, TimeSpan.FromSeconds(10));
-        var recorder = new RunRecorder(null, collector, runLog, jobs, records, clock);
+        var recorder = new RunRecorder(null, collector, runLog, jobs, records, clock, machine);
 
         GrindingJob job = GrindingJob.Create(
             "J-1", "R-1", RollGeometry.FromDiameter(100.0, 600.0), ProfileTypeKeys.Cylindrical,
@@ -137,6 +138,12 @@ public sealed class RunRecordTests : IDisposable
         summary.EffectiveFeedMmPerMin.Should().BeApproximately(summary.JobFeedMmPerMin!.Value * summary.MeanFeedOverridePercent!.Value / 100.0, 1e-6);
         summary.PlanFeedMmPerMin.Should().Be(2000.0, "设定值取调整记录里的方案值");
         view.Passes.Should().Contain(row => row.LeftOverridePercent < 100.0 || row.RightOverridePercent < 100.0, "折返时的倍率也锁存了");
+
+        // 过程曲线降采样后存（每 2 s 一点，不是每拍）。
+        IReadOnlyList<TracePoint> z = await rig.RunLog.ListTraceAsync("REC-1", TraceKinds.CarriageZ, CancellationToken.None);
+        z.Should().NotBeEmpty();
+        z.Count.Should().BeLessThan(40, "33 s 的加工按 2 s 降采样");
+        (await rig.RunLog.ListTraceAsync("REC-1", TraceKinds.Current, CancellationToken.None)).Should().NotBeEmpty();
     }
 
     [Fact]

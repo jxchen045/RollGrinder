@@ -1274,6 +1274,17 @@ internal sealed class RecordsSuite : ISelfTestSuite
         RecordsViewModel page = h.Page<RecordsViewModel>();
         await h.GoToAsync(PageKey.Records);
 
+        await h.StepAsync("Statistics", "OpensForTheQueryRange", async ctx =>
+        {
+            // 关系设计 M1：例外与变更统计（按原因、按人）、本次调整按参数、每支辊去除量。
+            await h.PressKeyAsync(ctx, "Fn_Statistics");
+            ctx.Check(page.IsStatisticsOpen, "'statistics' should open");
+            ctx.Note(page.StatsTitle);
+            h.TryScreenshot("records-statistics");
+            await h.BackAsync();
+            ctx.Check(!page.IsStatisticsOpen, "back should close it");
+        });
+
         await h.StepAsync("Query", "LastThirtyDays", async ctx =>
         {
             await h.PressVerticalKeyAsync(ctx, "Vk_QueryAsk");

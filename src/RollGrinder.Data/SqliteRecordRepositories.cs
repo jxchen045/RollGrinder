@@ -181,6 +181,7 @@ public sealed class SqliteGrindingRecordRepository : IGrindingRecordRepository
             DELETE FROM record_override WHERE record_id IN (SELECT record_id FROM grinding_record WHERE started_at_utc < $threshold);
             DELETE FROM record_event WHERE record_id IN (SELECT record_id FROM grinding_record WHERE started_at_utc < $threshold);
             DELETE FROM record_nc WHERE record_id IN (SELECT record_id FROM grinding_record WHERE started_at_utc < $threshold);
+            DELETE FROM record_trace WHERE record_id IN (SELECT record_id FROM grinding_record WHERE started_at_utc < $threshold);
             DELETE FROM grinding_record WHERE started_at_utc < $threshold;
             """;
         SqlMapping.AddParameter(command, "$threshold", SqlMapping.ToText(thresholdUtc));

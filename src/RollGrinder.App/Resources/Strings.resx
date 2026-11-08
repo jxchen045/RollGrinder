@@ -5866,4 +5866,52 @@
   <data name="RunEvent_EditApplied" xml:space="preserve">
     <value>改参数生效</value>
   </data>
+  <data name="Curve_Process" xml:space="preserve">
+    <value>过程曲线</value>
+  </data>
+  <data name="Curve_ProcessCurrent" xml:space="preserve">
+    <value>磨削电流</value>
+  </data>
+  <data name="Chart_AxisX_Process" xml:space="preserve">
+    <value>下发后时间 (min)</value>
+  </data>
+  <data name="Chart_AxisY_Process" xml:space="preserve">
+    <value>电流 (A)</value>
+  </data>
+  <data name="Unit_Minute" xml:space="preserve">
+    <value>min</value>
+  </data>
+  <data name="Fn_Statistics" xml:space="preserve">
+    <value>统计</value>
+  </data>
+  <data name="Stats_TitleFormat" xml:space="preserve">
+    <value>统计 · {0} … {1} · {2} 次磨削</value>
+  </data>
+  <data name="Stats_ByReason" xml:space="preserve">
+    <value>仅本次例外（按原因）</value>
+  </data>
+  <data name="Stats_ByPerson" xml:space="preserve">
+    <value>按人：例外 · 改计划 · 本次调整</value>
+  </data>
+  <data name="Stats_ByParameter" xml:space="preserve">
+    <value>本次调整（按参数）</value>
+  </data>
+  <data name="Stats_Removal" xml:space="preserve">
+    <value>每支辊去除量</value>
+  </data>
+  <data name="Stats_PersonFormat" xml:space="preserve">
+    <value>例外 {0} · 改计划 {1} · 调整 {2}</value>
+  </data>
+  <data name="Stats_RemovalFormat" xml:space="preserve">
+    <value>{0} 次 · 去除 {1} mm（直径）</value>
+  </data>
+  <data name="SubView_Statistics" xml:space="preserve">
+    <value>统计</value>
+  </data>
+  <data name="SubView_PassTable" xml:space="preserve">
+    <value>道次表</value>
+  </data>
+  <data name="SubView_SaveJobAsPlan" xml:space="preserve">
+    <value>存为新方案</value>
+  </data>
 </root>

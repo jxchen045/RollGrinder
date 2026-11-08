@@ -73,6 +73,7 @@ public static class ServicesServiceCollectionExtensions
             TimeSpan.FromSeconds(settings.PassWatchdogSeconds)));
         services.AddSingleton<Records.IRunRecorder, Records.RunRecorder>();
         services.AddSingleton<Records.IRunLogService, Records.RunLogService>();
+        services.AddSingleton<Records.IStatisticsService, Records.StatisticsService>();
         services.AddSingleton<Audit.IChangeLog, Audit.ChangeLog>();
         services.AddSingleton<IRecordService, RecordService>();
         services.AddSingleton<IRollLedgerService, RollLedgerService>();

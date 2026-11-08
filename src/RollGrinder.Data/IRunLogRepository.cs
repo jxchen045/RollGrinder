@@ -26,6 +26,12 @@ public interface IRunLogRepository
     /// <summary>若干条记录的事件计数（越界、缺道）。没有事件的不在字典里。</summary>
     Task<IReadOnlyDictionary<string, RunEventCounts>> CountEventsAsync(IReadOnlyList<string> recordIds, CancellationToken cancellationToken);
 
+    /// <summary>追加过程曲线点（降采样后的）。</summary>
+    Task AppendTraceAsync(string recordId, IReadOnlyList<TracePoint> points, CancellationToken cancellationToken);
+
+    /// <summary>一条记录的某条过程曲线，按时间。</summary>
+    Task<IReadOnlyList<TracePoint>> ListTraceAsync(string recordId, string kind, CancellationToken cancellationToken);
+
     Task SetNcInfoAsync(string recordId, RecordNcInfo info, CancellationToken cancellationToken);
 
     Task<RecordNcInfo?> GetNcInfoAsync(string recordId, CancellationToken cancellationToken);

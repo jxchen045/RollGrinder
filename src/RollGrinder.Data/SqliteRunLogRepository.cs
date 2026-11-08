@@ -231,6 +231,51 @@ public sealed class SqliteRunLogRepository : IRunLogRepository
         return result;
     }
 
+    public async Task AppendTraceAsync(string recordId, IReadOnlyList<TracePoint> points, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
+        ArgumentNullException.ThrowIfNull(points);
+        if (points.Count == 0)
+        {
+            return;
+        }
+
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteTransaction transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        foreach (TracePoint point in points)
+        {
+            await using SqliteCommand command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "INSERT OR REPLACE INTO record_trace (record_id, kind, t_seconds, value) VALUES ($r, $kind, $t, $v);";
+            SqlMapping.AddParameter(command, "$r", recordId);
+            SqlMapping.AddParameter(command, "$kind", point.Kind);
+            SqlMapping.AddParameter(command, "$t", point.Seconds);
+            SqlMapping.AddParameter(command, "$v", point.Value);
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<TracePoint>> ListTraceAsync(string recordId, string kind, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT t_seconds, value FROM record_trace WHERE record_id = $r AND kind = $kind ORDER BY t_seconds;";
+        SqlMapping.AddParameter(command, "$r", recordId);
+        SqlMapping.AddParameter(command, "$kind", kind);
+        var list = new List<TracePoint>();
+        await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            list.Add(new TracePoint(kind, reader.GetDouble(0), reader.GetDouble(1)));
+        }
+
+        return list;
+    }
+
     public async Task SetNcInfoAsync(string recordId, RecordNcInfo info, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(recordId);

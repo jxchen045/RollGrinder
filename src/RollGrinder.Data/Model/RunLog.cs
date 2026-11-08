@@ -47,6 +47,22 @@ public sealed record OverrideSummaryRow(
     double OffNominalShare,
     double Seconds);
 
+/// <summary>过程曲线是哪一条。</summary>
+public static class TraceKinds
+{
+    /// <summary>磨削电流（A）。</summary>
+    public const string Current = "current";
+
+    /// <summary>在线测量直径（mm）。</summary>
+    public const string Diameter = "diameter";
+
+    /// <summary>拖板位置 Z（mm）。</summary>
+    public const string CarriageZ = "carriageZ";
+}
+
+/// <summary>过程曲线的一个点（降采样后）：从下发起第几秒、值。</summary>
+public sealed record TracePoint(string Kind, double Seconds, double Value);
+
 /// <summary>记录事件的种类（资源键 "RunEvent_" + 名字）。</summary>
 public static class RunEventKinds
 {

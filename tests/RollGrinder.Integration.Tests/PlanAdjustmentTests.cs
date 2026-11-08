@@ -303,5 +303,13 @@ public sealed class PlanAdjustmentTests : IDisposable
         repeated.ParameterKey.Should().Be(StepParameterKeys.FeedMmPerMin);
         repeated.Times.Should().Be(3);
         repeated.LastValue.Should().BeApproximately(feed * 0.95, 1e-9);
+
+        // 统计（关系设计 M1）：本次调整按人、按参数；每支辊去除量。
+        RollGrinder.Services.Records.ShopStatistics stats = await services.GetRequiredService<RollGrinder.Services.Records.IStatisticsService>()
+            .ComputeAsync(DateTimeOffset.UnixEpoch, DateTimeOffset.UtcNow.AddDays(1), CancellationToken.None);
+        stats.RecordCount.Should().Be(3);
+        stats.AdjustmentsByPerson.Should().ContainSingle().Which.Should().Be(new RollGrinder.Services.Records.CountRow("操作工", 3));
+        stats.AdjustmentsByParameter.Should().ContainSingle().Which.Key.Should().Be(StepParameterKeys.FeedMmPerMin);
+        stats.Removal.Should().ContainSingle().Which.Should().Be(new RollGrinder.Services.Records.RollRemovalRow("R-300", 3, 3 * 0.35));
     }
 }

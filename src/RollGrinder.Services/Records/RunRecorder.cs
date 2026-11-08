@@ -50,6 +50,9 @@ public sealed class RunRecorder : IRunRecorder
     /// <summary>两拍之间超过这么久不算进倍率时间（断线、暂停监视）。</summary>
     private static readonly TimeSpan MaxGap = TimeSpan.FromSeconds(2);
 
+    /// <summary>过程曲线降采样间隔（设计说明第 6 节：曲线降采样后存，运行时的高频采样不进记录）。</summary>
+    public static readonly TimeSpan TraceInterval = TimeSpan.FromSeconds(2);
+
     /// <summary>倍率摘要多久写一次库（道次结束时也写）。</summary>
     private static readonly TimeSpan FlushEvery = TimeSpan.FromSeconds(5);
 
@@ -84,6 +87,9 @@ public sealed class RunRecorder : IRunRecorder
     private readonly Dictionary<(int Step, int Pass, string Kind), Accumulator> accumulators = new();
     private readonly HashSet<(int Step, int Pass, string Kind)> dirty = new();
     private readonly Dictionary<string, string?> excursion = new(StringComparer.Ordinal);
+    private readonly List<TracePoint> pendingTrace = new();
+    private readonly string? carriageZKey;
+    private DateTimeOffset? lastTraceUtc;
 
     public RunRecorder(
         IMachineMonitor? monitor,
@@ -91,8 +97,12 @@ public sealed class RunRecorder : IRunRecorder
         IRunLogRepository runLog,
         IJobRepository jobs,
         IGrindingRecordRepository records,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        MachineDescription? machine = null)
     {
+        this.carriageZKey = machine?.Axes.FirstOrDefault(axis => axis.IsPresent && axis.Role == MachineAxisRoles.Carriage) is { } carriage
+            ? MachineTagKeys.AxisActualPositionMm(carriage.Name)
+            : null;
         this.collector = collector ?? throw new ArgumentNullException(nameof(collector));
         this.runLog = runLog ?? throw new ArgumentNullException(nameof(runLog));
         this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
@@ -193,6 +203,8 @@ public sealed class RunRecorder : IRunRecorder
             this.accumulators.Clear();
             this.dirty.Clear();
             this.excursion.Clear();
+            this.pendingTrace.Clear();
+            this.lastTraceUtc = null;
         }
     }
 
@@ -259,6 +271,7 @@ public sealed class RunRecorder : IRunRecorder
         int pass = (int)(snapshot.GetNumberOrNull(MachineTagKeys.JobCurrentPass) ?? 0.0) + 1;
 
         await SampleOverridesAsync(record, snapshot, running, step, pass, now, cancellationToken).ConfigureAwait(false);
+        SampleTrace(snapshot, running, now);
         await TrackEditsAsync(record, job, snapshot, step, pass, now, cancellationToken).ConfigureAwait(false);
         await SavePassRowsAsync(record, job, now, cancellationToken).ConfigureAwait(false);
         await WatchdogAsync(record, cancellationToken).ConfigureAwait(false);
@@ -374,6 +387,33 @@ public sealed class RunRecorder : IRunRecorder
         await FlushCoreAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>过程曲线：加工中每 <see cref="TraceInterval"/> 取一点（电流、在线直径、拖板 Z）。</summary>
+    private void SampleTrace(MachineStateSnapshot snapshot, bool running, DateTimeOffset now)
+    {
+        if (!running || (this.lastTraceUtc is DateTimeOffset last && now - last < TraceInterval))
+        {
+            return;
+        }
+
+        this.lastTraceUtc = now;
+        double seconds = Math.Round((now - this.beginAtUtc).TotalSeconds, 1);
+        foreach ((string kind, string? key) in new[]
+        {
+            (TraceKinds.Current, MachineTagKeys.GrindingCurrentA),
+            (TraceKinds.Diameter, MachineTagKeys.MeasuredDiameterMm),
+            (TraceKinds.CarriageZ, this.carriageZKey),
+        })
+        {
+            if (key is not null && snapshot.GetNumberOrNull(key) is double value && double.IsFinite(value))
+            {
+                lock (this.stateGate)
+                {
+                    this.pendingTrace.Add(new TracePoint(kind, seconds, value));
+                }
+            }
+        }
+    }
+
     /// <summary>已采用的改参数序号追上了：运行中调整记下从第几道起生效（接口约定第 3 节"记录写入生效道次"）。</summary>
     private async Task TrackEditsAsync(
         string record, string job, MachineStateSnapshot snapshot, int step, int pass, DateTimeOffset now, CancellationToken cancellationToken)
@@ -452,6 +492,7 @@ public sealed class RunRecorder : IRunRecorder
     {
         string? record;
         OverrideSummaryRow[] rows;
+        TracePoint[] trace;
         lock (this.stateGate)
         {
             record = this.recordId;
@@ -461,11 +502,18 @@ public sealed class RunRecorder : IRunRecorder
                 .Where(row => row.Seconds > 0.0)
                 .ToArray();
             this.dirty.Clear();
+            trace = this.pendingTrace.ToArray();
+            this.pendingTrace.Clear();
         }
 
         if (record is not null && rows.Length > 0)
         {
             await this.runLog.SaveOverridesAsync(record, rows, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (record is not null && trace.Length > 0)
+        {
+            await this.runLog.AppendTraceAsync(record, trace, cancellationToken).ConfigureAwait(false);
         }
     }
 

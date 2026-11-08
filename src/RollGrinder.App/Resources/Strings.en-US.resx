@@ -5866,4 +5866,52 @@
   <data name="RunEvent_EditApplied" xml:space="preserve">
     <value>Edit applied</value>
   </data>
+  <data name="Curve_Process" xml:space="preserve">
+    <value>Process</value>
+  </data>
+  <data name="Curve_ProcessCurrent" xml:space="preserve">
+    <value>Grinding current</value>
+  </data>
+  <data name="Chart_AxisX_Process" xml:space="preserve">
+    <value>Time after download (min)</value>
+  </data>
+  <data name="Chart_AxisY_Process" xml:space="preserve">
+    <value>Current (A)</value>
+  </data>
+  <data name="Unit_Minute" xml:space="preserve">
+    <value>min</value>
+  </data>
+  <data name="Fn_Statistics" xml:space="preserve">
+    <value>Statistics</value>
+  </data>
+  <data name="Stats_TitleFormat" xml:space="preserve">
+    <value>Statistics · {0} … {1} · {2} grinds</value>
+  </data>
+  <data name="Stats_ByReason" xml:space="preserve">
+    <value>This-time exceptions (by reason)</value>
+  </data>
+  <data name="Stats_ByPerson" xml:space="preserve">
+    <value>By person: exceptions · plan changes · adjustments</value>
+  </data>
+  <data name="Stats_ByParameter" xml:space="preserve">
+    <value>Adjustments (by parameter)</value>
+  </data>
+  <data name="Stats_Removal" xml:space="preserve">
+    <value>Removal per roll</value>
+  </data>
+  <data name="Stats_PersonFormat" xml:space="preserve">
+    <value>exceptions {0} · plan changes {1} · adjustments {2}</value>
+  </data>
+  <data name="Stats_RemovalFormat" xml:space="preserve">
+    <value>{0} grinds · {1} mm removed (diameter)</value>
+  </data>
+  <data name="SubView_Statistics" xml:space="preserve">
+    <value>Statistics</value>
+  </data>
+  <data name="SubView_PassTable" xml:space="preserve">
+    <value>Pass table</value>
+  </data>
+  <data name="SubView_SaveJobAsPlan" xml:space="preserve">
+    <value>Save as new plan</value>
+  </data>
 </root>

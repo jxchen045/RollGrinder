@@ -24,6 +24,9 @@ public enum RecordCurveKind
 
     /// <summary>补偿收敛过程：每一次迭代的最差偏差，看它有没有在往下走。</summary>
     CompensationConvergence = 3,
+
+    /// <summary>过程曲线：磨削电流随时间（降采样后存的，设计说明第 6 节）。</summary>
+    Process = 4,
 }
 
 /// <summary>

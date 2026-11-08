@@ -556,6 +556,17 @@ public sealed class SqliteDatabase
             PRIMARY KEY (plan_id, kind, template_id, version)
         );
         """,
+
+        // 第 4 期补充：过程曲线（电流、直径、拖板位置）降采样后随记录保存（设计说明第 6 节"过程数据"）。
+        """
+        CREATE TABLE record_trace (
+            record_id TEXT    NOT NULL,
+            kind      TEXT    NOT NULL,
+            t_seconds REAL    NOT NULL,
+            value     REAL    NOT NULL,
+            PRIMARY KEY (record_id, kind, t_seconds)
+        );
+        """,
     };
 
     private readonly string connectionString;
