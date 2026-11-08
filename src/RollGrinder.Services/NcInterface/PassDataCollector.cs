@@ -37,7 +37,11 @@ public sealed record PassRowRecord(
     int? StrokeVersion,
     double? DrfOffsetMm,
     double? MeanCurrentA,
-    DateTimeOffset ReadAtUtc);
+    DateTimeOffset ReadAtUtc)
+{
+    /// <summary>这一道开始时 NC 已采用的改参数序号（第 15 格）；NC 不写为 null。</summary>
+    public int? EditAppliedSeq { get; init; }
+}
 
 /// <summary>道次缓冲两边的进度。</summary>
 /// <param name="IsMapped">tagmap 有没有映射道次缓冲。</param>
@@ -303,6 +307,9 @@ public sealed class PassDataCollector : IPassDataCollector
             Field(12) is double version ? (int)version : null,
             Field(13),
             Field(14),
-            this.timeProvider.GetUtcNow());
+            this.timeProvider.GetUtcNow())
+        {
+            EditAppliedSeq = Field(15) is double applied && applied > 0 ? (int)applied : null,
+        };
     }
 }

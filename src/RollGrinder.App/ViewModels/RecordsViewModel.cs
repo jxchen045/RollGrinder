@@ -94,10 +94,15 @@ public sealed partial class SaveAdjustRowViewModel : ObservableObject
         Adjustment = adjustment;
         Text = text;
         Note = note;
+        // 核对时的默认勾；运行中的默认不勾；没生效的勾不上（那个值从没磨过）。
         this.isTicked = !adjustment.Running;
+        CanTick = !adjustment.IsPending;
     }
 
     public JobAdjustment Adjustment { get; }
+
+    /// <summary>运行中改了但 NC 没采用（未生效）的不能带进新方案。</summary>
+    public bool CanTick { get; }
 
     public string Text { get; }
 
@@ -244,10 +249,29 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         }
     }
 
-    private string AdjustNote(JobAdjustment item) => Localizer.Format(
-        item.Running ? "Records_AdjustRunningFormat" : "Records_AdjustReviewFormat",
-        string.IsNullOrEmpty(item.ChangedBy) ? "--" : item.ChangedBy,
-        item.ChangedAtUtc.ToLocalTime().ToString("MM-dd HH:mm", CultureInfo.CurrentCulture));
+    /// <summary>"核对时 · 张三 08:12" / "运行中 · 李四 09:40 · 精磨第 4 道起" / "运行中 · … · 未生效（作废）"。</summary>
+    private string AdjustNote(JobAdjustment item, GrindingJob? job = null)
+    {
+        string who = string.IsNullOrEmpty(item.ChangedBy) ? "--" : item.ChangedBy;
+        string when = item.ChangedAtUtc.ToLocalTime().ToString("MM-dd HH:mm", CultureInfo.CurrentCulture);
+        if (!item.Running)
+        {
+            return Localizer.Format("Records_AdjustReviewFormat", who, when);
+        }
+
+        if (item.IsPending)
+        {
+            return Localizer.Format("Records_AdjustNotAppliedFormat", who, when);
+        }
+
+        if (item.EffectivePass is int pass && item.EffectiveStepOrder is int step)
+        {
+            string? type = (job ?? this.snapshotJob)?.Steps.FirstOrDefault(s => s.Order == step)?.StepTypeKey;
+            return Localizer.Format("Records_AdjustRunningFromFormat", who, when, type is null ? step.ToString(CultureInfo.CurrentCulture) : Localizer["StepType_" + type], pass);
+        }
+
+        return Localizer.Format("Records_AdjustRunningFormat", who, when);
+    }
 
     private string AdjustLine(GrindingJob job, JobAdjustment item) =>
         AdjustText.Change(Localizer, item, job.Steps.FirstOrDefault(step => step.Order == item.StepOrder)?.StepTypeKey);
@@ -255,15 +279,28 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     /// <summary>存为新方案…：勾要带进新方案的调整（核对时的默认勾、运行中的默认不勾），起名，另存（不设当前）或另存并设为当前。</summary>
     private async Task OpenSaveAsPlanAsync()
     {
-        if (this.snapshotJob is not { PlanId: { } planId } job)
+        if (SelectedRecord is not { } selected)
         {
-            Interaction.Refuse(Localizer["Records_NoPlanToSave"]);
+            Interaction.Refuse(Localizer["Records_NoSelection"]);
             return;
         }
 
         await RunGuardedAsync(
             async token =>
             {
+                this.snapshotJob = (await this.jobs.GetAsync(selected.View.JobId, token).ConfigureAwait(true))?.Job;
+                if (this.snapshotJob is not { PlanId: { } planId } job)
+                {
+                    Interaction.Refuse(Localizer["Records_NoPlanToSave"]);
+                    return;
+                }
+
+                if (job.Adjustments.Count == 0)
+                {
+                    Interaction.Refuse(Localizer["Records_NoAdjustToSave"]);
+                    return;
+                }
+
                 PlanContent? content = await this.plans.GetContentAsync(planId, token).ConfigureAwait(true);
                 GrindingPlanRecord? current = await this.plans.CurrentAsync(job.RollId, token).ConfigureAwait(true);
                 if (content is null)
@@ -298,7 +335,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
             PlanFromJobOutcome outcome = await this.plans.CreateFromJobAsync(
                 job.JobId,
-                SaveAdjustRows.Where(row => row.IsTicked).Select(row => row.Adjustment).ToArray(),
+                SaveAdjustRows.Where(row => row.IsTicked && row.CanTick).Select(row => row.Adjustment).ToArray(),
                 SavePlanName,
                 setCurrent,
                 this.session.CurrentUser?.UserName ?? string.Empty,
@@ -484,24 +521,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             return;
         }
 
-        if (IsSnapshotOpen)
-        {
-            SetCommitPair(null, null);
-            SetVerticalKeys(new FunctionKeyViewModel?[]
-            {
-                null, null, null, null, null,
-                new FunctionKeyViewModel("Vk_SaveJobAsPlan", new AsyncRelayCommand(OpenSaveAsPlanAsync, () => this.snapshotJob?.PlanId is not null), Localizer)
-                {
-                    RequiredPermission = Permission.EditRollPlans,
-                    PreconditionResourceKey = "Records_NoPlanToSave",
-                },
-                null,
-                new FunctionKeyViewModel("Vk_Back", new RelayCommand(Navigator.CloseSubView), Localizer, FunctionKeyKind.Navigation),
-            });
-            return;
-        }
-
-        if (IsOverviewOpen)
+        if (IsOverviewOpen || IsSnapshotOpen)
         {
             SetCommitPair(null, null);
             SetVerticalKeys(new FunctionKeyViewModel?[]
@@ -524,16 +544,23 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             return;
         }
 
+        // 设计稿 v4 5.8.2：第 1 页 1 磨前/磨后 · 2 误差 · 3 圆度 · 4 补偿收敛 · 5 下发参数 ▸ · 6 存为新方案… · 7 打印…，
+        // 第 8 格翻页；第 2 页 查询… · 标记完成…。
         SetVerticalKeys(new FunctionKeyViewModel?[]
         {
             this.curveKeys[RecordCurveKind.BeforeAfterProfile],
             this.curveKeys[RecordCurveKind.Deviation],
             this.curveKeys[RecordCurveKind.Roundness],
             this.curveKeys[RecordCurveKind.CompensationConvergence],
+            new FunctionKeyViewModel("Vk_DownloadSnapshot", new AsyncRelayCommand(OpenSnapshotAsync), Localizer) { PreconditionResourceKey = "Records_NoSelection" },
+            new FunctionKeyViewModel("Vk_SaveJobAsPlan", new AsyncRelayCommand(OpenSaveAsPlanAsync), Localizer)
+            {
+                RequiredPermission = Permission.EditRollPlans,
+                PreconditionResourceKey = "Records_NoSelection",
+            },
+            new FunctionKeyViewModel("Vk_Print", PreviewPostGrindReportCommand, Localizer),
             FunctionKeyViewModel.ForAction("Vk_QueryAsk", Localizer, () => Navigator.OpenSubView(QuerySubView)),
             new FunctionKeyViewModel("Vk_MarkFinished", new RelayCommand(AskFinish), Localizer) { PreconditionResourceKey = "Records_NoSelection" },
-            new FunctionKeyViewModel("Vk_DownloadSnapshot", new AsyncRelayCommand(OpenSnapshotAsync), Localizer) { PreconditionResourceKey = "Records_NoSelection" },
-            new FunctionKeyViewModel("Vk_Print", PreviewPostGrindReportCommand, Localizer),
         });
         MarkCurve();
         SetCommitPair(IsQueryOpen ? this.cancelQueryKey : null, IsQueryOpen ? this.confirmQueryKey : null);

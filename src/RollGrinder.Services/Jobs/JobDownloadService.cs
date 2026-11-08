@@ -78,6 +78,7 @@ public sealed class JobDownloadService : IJobDownloadService
     private readonly TimeProvider timeProvider;
     private readonly Records.CyclePlausibilityMonitor plausibility;
     private readonly IJobAdjustmentService? adjustments;
+    private readonly Records.IRunRecorder? recorder;
 
     public JobDownloadService(
         IMachineGateway gateway,
@@ -94,8 +95,10 @@ public sealed class JobDownloadService : IJobDownloadService
         IAlarmSink alarms,
         TimeProvider timeProvider,
         Records.CyclePlausibilityMonitor plausibility,
-        IJobAdjustmentService? adjustments = null)
+        IJobAdjustmentService? adjustments = null,
+        Records.IRunRecorder? recorder = null)
     {
+        this.recorder = recorder;
         this.gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
         this.validator = validator ?? throw new ArgumentNullException(nameof(validator));
         this.translator = translator ?? throw new ArgumentNullException(nameof(translator));
@@ -194,6 +197,19 @@ public sealed class JobDownloadService : IJobDownloadService
             this.alarms.Raise(AlarmSeverity.Error, HandoverNotArchivedResourceKey, ex.Message, AlarmCodes.HandoverNotArchived);
             return new JobDownloadResult(
                 true, Array.Empty<ParameterViolation>(), Array.Empty<string>(), null, writeCount, sequence);
+        }
+
+        // 过程记录（设计说明第 6 节）从这一份起：道次表、倍率摘要、事件、NC 确认都挂在这条记录下。
+        if (this.recorder is not null)
+        {
+            try
+            {
+                await this.recorder.BeginAsync(recordId, job.JobId, sequence, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is DataStoreException or Microsoft.Data.Sqlite.SqliteException)
+            {
+                this.alarms.Raise(AlarmSeverity.Warning, HandoverNotArchivedResourceKey, ex.Message, AlarmCodes.HandoverNotArchived);
+            }
         }
 
         this.alarms.Raise(AlarmSeverity.Information, HandoverCompletedResourceKey, job.JobId, AlarmCodes.HandoverCompleted);

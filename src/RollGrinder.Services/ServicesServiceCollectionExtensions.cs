@@ -66,7 +66,13 @@ public static class ServicesServiceCollectionExtensions
         services.AddSingleton<ICompensationService, CompensationService>();
         services.AddSingleton<ICompensationTuningService, CompensationTuningService>();
         services.AddSingleton<IStrokeCompensationLog, StrokeCompensationLog>();
-        services.AddSingleton<NcInterface.IPassDataCollector, NcInterface.PassDataCollector>();
+        services.AddSingleton<NcInterface.IPassDataCollector>(provider => new NcInterface.PassDataCollector(
+            provider.GetRequiredService<IMachineGateway>(),
+            provider.GetRequiredService<IMachineMonitor>(),
+            provider.GetRequiredService<TimeProvider>(),
+            TimeSpan.FromSeconds(settings.PassWatchdogSeconds)));
+        services.AddSingleton<Records.IRunRecorder, Records.RunRecorder>();
+        services.AddSingleton<Records.IRunLogService, Records.RunLogService>();
         services.AddSingleton<Audit.IChangeLog, Audit.ChangeLog>();
         services.AddSingleton<IRecordService, RecordService>();
         services.AddSingleton<IRollLedgerService, RollLedgerService>();

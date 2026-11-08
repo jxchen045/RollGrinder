@@ -5612,16 +5612,13 @@
     <value>Saved as plan {0} · {1} (not current)</value>
   </data>
   <data name="Vk_AdjustThisTime" xml:space="preserve">
-    <value>Adjust…</value>
+    <value>Adjust ▸</value>
   </data>
   <data name="Vk_AdjustThisTimeChanged" xml:space="preserve">
-    <value>Adjust… Δ</value>
+    <value>Adjust ▸ Δ</value>
   </data>
   <data name="Vk_ChangeRange" xml:space="preserve">
-    <value>Change range</value>
-  </data>
-  <data name="Vk_EditPlan" xml:space="preserve">
-    <value>Edit plan…</value>
+    <value>Change range…</value>
   </data>
   <data name="Vk_LoadLastAdjust" xml:space="preserve">
     <value>Load last</value>
@@ -5643,5 +5640,41 @@
   </data>
   <data name="Vk_UseThisTime" xml:space="preserve">
     <value>✓ Use this time</value>
+  </data>
+  <data name="Vk_PlanMenu" xml:space="preserve">
+    <value>Plan ▸</value>
+  </data>
+  <data name="Vk_TeachGrindStart" xml:space="preserve">
+    <value>Teach start Z</value>
+  </data>
+  <data name="Vk_More" xml:space="preserve">
+    <value>More ▸</value>
+  </data>
+  <data name="Steps_RangeNeedsNumber" xml:space="preserve">
+    <value>Ranges can be changed only when editing a plan, on a numeric parameter</value>
+  </data>
+  <data name="Adjust_MachineLimitFormat" xml:space="preserve">
+    <value>machine {0}–{1}</value>
+  </data>
+  <data name="Adjust_MenuBetween" xml:space="preserve">
+    <value>Lower..upper…</value>
+  </data>
+  <data name="Adjust_BetweenTitleFormat" xml:space="preserve">
+    <value>Limits for {0} (write "lower..upper", e.g. 4..8; empty = locked)</value>
+  </data>
+  <data name="Adjust_BetweenInvalid" xml:space="preserve">
+    <value>Not readable: write "lower..upper" with lower ≤ upper</value>
+  </data>
+  <data name="Auto_LockedCellFormat" xml:space="preserve">
+    <value>Not adjustable (set {0}): ask the process engineer to change the plan</value>
+  </data>
+  <data name="Records_NoAdjustToSave" xml:space="preserve">
+    <value>This job has no adjustments to save</value>
+  </data>
+  <data name="Records_AdjustRunningFromFormat" xml:space="preserve">
+    <value>While running · {0} {1} · from {2} pass {3}</value>
+  </data>
+  <data name="Records_AdjustNotAppliedFormat" xml:space="preserve">
+    <value>While running · {0} {1} · never applied (void)</value>
   </data>
 </root>

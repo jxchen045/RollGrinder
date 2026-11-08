@@ -13,5 +13,6 @@
   "manualPulseMs": 300,
   "layout": "auto",
   "fullScreen": true,
-  "planChangePermission": "operator"
+  "planChangePermission": "operator",
+  "passWatchdogSeconds": 10
 }

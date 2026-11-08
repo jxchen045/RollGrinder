@@ -10,6 +10,10 @@
         <!-- 对照表的一格：改不动的只读文字；改得动的就地改，改过标蓝加粗（待下发）。同一个格子对象也在总表里。 -->
         <DataTemplate x:Key="CompareValueTemplate" DataType="{x:Type vm:MatrixCellViewModel}">
             <Grid ToolTip="{Binding RangeHint}">
+                <Grid.InputBindings>
+                    <MouseBinding Gesture="LeftClick" CommandParameter="{Binding}"
+                                  Command="{Binding DataContext.ExplainCellCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                </Grid.InputBindings>
                 <TextBlock Text="{Binding BadgeText}" Margin="3,1,0,0" FontSize="{StaticResource Size.Label}"
                            HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False"
                            Foreground="{StaticResource Brush.PendingValue}" />
@@ -363,6 +367,10 @@
                                                                     BorderThickness="0,0,1,1"
                                                                     Background="{Binding State, Converter={StaticResource StepStateToBackground}}">
                                                                 <Grid ToolTip="{Binding RangeHint}">
+                                                                    <Grid.InputBindings>
+                                                                        <MouseBinding Gesture="LeftClick" CommandParameter="{Binding}"
+                                                                                      Command="{Binding DataContext.ExplainCellCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                                                    </Grid.InputBindings>
                                                                     <!-- 按方案磨的：Δ 方案值→（本次调整）/ 🔒 不可调（设计稿 v4 5.3.1） -->
                                                                     <TextBlock Text="{Binding BadgeText}" Margin="3,1,0,0" FontSize="{StaticResource Size.Label}"
                                                                                HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False"

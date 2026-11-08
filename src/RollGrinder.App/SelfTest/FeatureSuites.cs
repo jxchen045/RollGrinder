@@ -677,6 +677,7 @@ internal sealed class StepsSuite : ISelfTestSuite
             ctx.Check(page.SelectedStep == page.Steps[2], "the new step should be selected");
             ctx.Check(h.IndexOfVerticalKey("Vk_InsertStep") == 0, "choosing a step should return to the root keys");
 
+            await h.PressVerticalKeyAsync(ctx, "Vk_More");
             await h.PressVerticalKeyAsync(ctx, "Vk_CopyStep");
             ctx.Check(page.Steps.Count == count + 2 && page.Steps[3].StepTypeKey == StepTypeKeys.Finish, "copy should add the same step after it");
             await h.PressVerticalKeyAsync(ctx, "Vk_DeleteStep");
@@ -727,6 +728,7 @@ internal sealed class StepsSuite : ISelfTestSuite
             ctx.Check(page.ProgramHints.Count > 0, "a total that does not match the steps should give a hint");
             ctx.Note(string.Join(" | ", page.ProgramHints));
 
+            await h.PressVerticalKeyAsync(ctx, "Vk_More");
             await h.PressVerticalKeyAsync(ctx, "Vk_AllocateStock");
             double sum = page.Steps
                 .SelectMany(step => step.Parameters.Where(row => row.Key == StepParameterKeys.StockDiameterMicrometer).Select(row => (step, row)))
@@ -742,6 +744,7 @@ internal sealed class StepsSuite : ISelfTestSuite
             page.SelectedStep = grinding;
             ParameterRowViewModel stock = grinding!.Parameters.First(row => row.Key == StepParameterKeys.StockDiameterMicrometer);
             string defaultStock = grinding.StepType.Schema.Get(StepParameterKeys.StockDiameterMicrometer).DefaultValue.ToInvariantString();
+            await h.PressVerticalKeyAsync(ctx, "Vk_More");
             await h.PressVerticalKeyAsync(ctx, "Vk_StepDefaults");
             ctx.Check(h.HasPendingConfirmation, "'defaults' should ask first");
             await h.ConfirmAsync(ctx);

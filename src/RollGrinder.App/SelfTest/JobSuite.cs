@@ -235,6 +235,7 @@ internal sealed class JobSuite : ISelfTestSuite
                 await plans.CopyAsync(current.PlanId, null, setCurrent: false, "selftest", default);
             }
 
+            await h.PressVerticalKeyAsync(ctx, "Vk_PlanMenu");
             await h.PressVerticalKeyAsync(ctx, "Vk_SwitchPlan");
             await h.WaitUntilAsync(() => job.IsPicking, TimeSpan.FromSeconds(10));
             PlanPickItemViewModel? other = job.Picker.Items.FirstOrDefault(i => !i.VersionText.StartsWith("★", StringComparison.Ordinal));
@@ -255,6 +256,7 @@ internal sealed class JobSuite : ISelfTestSuite
             ctx.Check(!job.CanDownload, "this time only without a reason blocks the download");
             if (h.IndexOfVerticalKey("Reason_Trial") < 0)
             {
+                await h.PressVerticalKeyAsync(ctx, "Vk_PlanMenu");
                 await h.PressVerticalKeyAsync(ctx, "Vk_Reason");
             }
 
@@ -271,6 +273,7 @@ internal sealed class JobSuite : ISelfTestSuite
                 ctx.Skip("nothing to restore");
             }
 
+            await h.PressVerticalKeyAsync(ctx, "Vk_PlanMenu");
             await h.PressVerticalKeyAsync(ctx, "Vk_RestorePlan");
             bool restored = await h.WaitUntilAsync(() => job.Deviation == JobDeviation.None, TimeSpan.FromSeconds(5));
             ctx.Check(restored, "'back to current plan' should go back to the roll's current plan");
@@ -336,6 +339,7 @@ internal sealed class JobSuite : ISelfTestSuite
             }
 
             // 核对页"方案列表"：方案区列这支辊的方案（★ 当前在前），返回回到核对。
+            await h.PressVerticalKeyAsync(ctx, "Vk_PlanMenu");
             await h.PressVerticalKeyAsync(ctx, "Vk_PlanList");
             PlansViewModel plans = h.Page<PlansViewModel>();
             bool shown = await h.WaitUntilAsync(

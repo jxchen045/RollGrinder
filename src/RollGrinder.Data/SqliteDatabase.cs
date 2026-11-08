@@ -497,6 +497,65 @@ public sealed class SqliteDatabase
             PRIMARY KEY (job_id, seq)
         );
         """,
+
+        // 第 4 期：记录补充（设计说明第 6 节）。道次表随记录保存；倍率按道次摘要（不记逐条变化）；越界等事件逐条记；
+        // 下发 NC 确认；运行中改参数从第几道起生效；"标准已更新"每支辊每个版本只提示一次。
+        """
+        ALTER TABLE job_adjustment ADD COLUMN edit_seq INTEGER;
+        ALTER TABLE job_adjustment ADD COLUMN effective_step INTEGER;
+        ALTER TABLE job_adjustment ADD COLUMN effective_pass INTEGER;
+        CREATE TABLE record_pass (
+            record_id      TEXT    NOT NULL,
+            seq            INTEGER NOT NULL,
+            step_order     INTEGER NOT NULL,
+            pass           INTEGER NOT NULL,
+            left_z         REAL, left_dwell  REAL, left_override  REAL, left_x  REAL,
+            right_z        REAL, right_dwell REAL, right_override REAL, right_x REAL,
+            compensation   REAL,
+            stroke_version INTEGER,
+            drf            REAL,
+            mean_current   REAL,
+            edit_applied   INTEGER,
+            read_at_utc    TEXT    NOT NULL,
+            PRIMARY KEY (record_id, seq)
+        );
+        CREATE TABLE record_override (
+            record_id  TEXT    NOT NULL,
+            step_order INTEGER NOT NULL,
+            pass       INTEGER NOT NULL,
+            kind       TEXT    NOT NULL,
+            mean       REAL    NOT NULL,
+            min        REAL    NOT NULL,
+            max        REAL    NOT NULL,
+            off_share  REAL    NOT NULL,
+            seconds    REAL    NOT NULL,
+            PRIMARY KEY (record_id, step_order, pass, kind)
+        );
+        CREATE TABLE record_event (
+            record_id  TEXT    NOT NULL,
+            seq        INTEGER NOT NULL,
+            at_utc     TEXT    NOT NULL,
+            kind       TEXT    NOT NULL,
+            step_order INTEGER,
+            pass       INTEGER,
+            value      REAL,
+            detail     TEXT,
+            PRIMARY KEY (record_id, seq)
+        );
+        CREATE TABLE record_nc (
+            record_id       TEXT PRIMARY KEY,
+            download_seq    INTEGER,
+            accepted_at_utc TEXT
+        );
+        CREATE TABLE plan_template_decline (
+            plan_id         TEXT    NOT NULL,
+            kind            INTEGER NOT NULL,
+            template_id     TEXT    NOT NULL,
+            version         INTEGER NOT NULL,
+            declined_at_utc TEXT    NOT NULL,
+            PRIMARY KEY (plan_id, kind, template_id, version)
+        );
+        """,
     };
 
     private readonly string connectionString;

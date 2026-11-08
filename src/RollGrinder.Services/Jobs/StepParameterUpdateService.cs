@@ -265,6 +265,17 @@ public sealed class StepParameterUpdateService : IStepParameterUpdateService
             }
         }
 
+        // 运行中调整记下这次的改参数序号：NC 采用后再记从第几道起生效（设计稿 v4 5.8.3"精磨第 4 道起"）。
+        if (editSequence is int stamped && edited.Adjustments.Count > original.Adjustments.Count)
+        {
+            edited = edited with
+            {
+                Adjustments = edited.Adjustments
+                    .Select((item, index) => index >= original.Adjustments.Count ? item with { EditSeq = stamped } : item)
+                    .ToArray(),
+            };
+        }
+
         // 先写机床：写不进去就不该在库里留下改过的样子。
         await this.gateway.WriteTagsAsync(writes, cancellationToken).ConfigureAwait(false);
 

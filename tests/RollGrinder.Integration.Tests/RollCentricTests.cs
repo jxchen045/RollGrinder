@@ -274,8 +274,8 @@ public sealed class RollCentricTests : IDisposable
     public async Task Upgrading_infers_each_rolls_plan_from_its_latest_job_and_flags_it()
     {
         var database = new SqliteDatabase(Path.Combine(this.workspace.Root, "data", SqliteDatabase.FileName));
-        // 停在"以轧辊为中心"那条迁移之前（其后还有参数归属、磨削方案、方案来源与必须采用、两层参数四条）。
-        await database.MigrateToAsync(SqliteDatabase.ExpectedSchemaVersion - 5, CancellationToken.None);
+        // 停在"以轧辊为中心"那条迁移之前（其后还有参数归属、磨削方案、方案来源与必须采用、两层参数、记录补充五条）。
+        await database.MigrateToAsync(SqliteDatabase.ExpectedSchemaVersion - 6, CancellationToken.None);
         await using (SqliteConnection connection = await database.OpenAsync(CancellationToken.None))
         {
             await using SqliteCommand command = connection.CreateCommand();

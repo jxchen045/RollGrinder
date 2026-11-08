@@ -224,4 +224,17 @@ public sealed record JobAdjustment(
     double JobValue,
     bool Running,
     string ChangedBy,
-    DateTimeOffset ChangedAtUtc);
+    DateTimeOffset ChangedAtUtc)
+{
+    /// <summary>运行中改的：这次改参数的序号（接口约定第 3 节）；核对时改的为 null。</summary>
+    public int? EditSeq { get; init; }
+
+    /// <summary>NC 从哪一道工序起采用（已采用序号追上 <see cref="EditSeq"/> 时记下）；还没采用为 null。</summary>
+    public int? EffectiveStepOrder { get; init; }
+
+    /// <summary>NC 从那道工序的第几道次起采用（从 1 起）；还没采用为 null。</summary>
+    public int? EffectivePass { get; init; }
+
+    /// <summary>运行中改的、NC 还没采用（作业结束时仍是这样就是"未生效"）。</summary>
+    public bool IsPending => Running && EditSeq is not null && EffectivePass is null;
+}

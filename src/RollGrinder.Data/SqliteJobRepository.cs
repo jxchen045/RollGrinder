@@ -115,8 +115,9 @@ public sealed class SqliteJobRepository : IJobRepository
                 connection,
                 transaction,
                 """
-                INSERT INTO job_adjustment (job_id, seq, step_order, parameter_key, plan_value, job_value, running, changed_by, changed_at_utc)
-                VALUES ($job, $seq, $step, $key, $plan, $value, $running, $by, $at);
+                INSERT INTO job_adjustment
+                    (job_id, seq, step_order, parameter_key, plan_value, job_value, running, changed_by, changed_at_utc, edit_seq, effective_step, effective_pass)
+                VALUES ($job, $seq, $step, $key, $plan, $value, $running, $by, $at, $edit, $estep, $epass);
                 """,
                 cancellationToken,
                 command =>
@@ -130,6 +131,9 @@ public sealed class SqliteJobRepository : IJobRepository
                     SqlMapping.AddParameter(command, "$running", adjustment.Running ? 1 : 0);
                     SqlMapping.AddParameter(command, "$by", adjustment.ChangedBy);
                     SqlMapping.AddParameter(command, "$at", SqlMapping.ToText(adjustment.ChangedAtUtc));
+                    SqlMapping.AddParameter(command, "$edit", adjustment.EditSeq);
+                    SqlMapping.AddParameter(command, "$estep", adjustment.EffectiveStepOrder);
+                    SqlMapping.AddParameter(command, "$epass", adjustment.EffectivePass);
                 }).ConfigureAwait(false);
         }
 
@@ -338,13 +342,35 @@ public sealed class SqliteJobRepository : IJobRepository
         return jobs;
     }
 
+    public async Task<int> MarkAdjustmentsEffectiveAsync(
+        string jobId, int appliedSeq, int currentStepOrder, int currentPass, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(jobId);
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+
+        // 改的是正在跑的那一道：从这一道次起；改的是后面的工序：从那道工序第 1 道次起。
+        command.CommandText =
+            """
+            UPDATE job_adjustment
+            SET effective_step = step_order,
+                effective_pass = CASE WHEN step_order = $step THEN $pass ELSE 1 END
+            WHERE job_id = $job AND edit_seq IS NOT NULL AND edit_seq <= $applied AND effective_pass IS NULL;
+            """;
+        SqlMapping.AddParameter(command, "$job", jobId);
+        SqlMapping.AddParameter(command, "$applied", appliedSeq);
+        SqlMapping.AddParameter(command, "$step", currentStepOrder);
+        SqlMapping.AddParameter(command, "$pass", Math.Max(1, currentPass));
+        return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     private static async Task<IReadOnlyList<JobAdjustment>> ReadAdjustmentsAsync(
         SqliteConnection connection, string jobId, CancellationToken cancellationToken)
     {
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT step_order, parameter_key, plan_value, job_value, running, changed_by, changed_at_utc
+            SELECT step_order, parameter_key, plan_value, job_value, running, changed_by, changed_at_utc, edit_seq, effective_step, effective_pass
             FROM job_adjustment WHERE job_id = $job ORDER BY seq;
             """;
         SqlMapping.AddParameter(command, "$job", jobId);
@@ -354,7 +380,12 @@ public sealed class SqliteJobRepository : IJobRepository
         {
             list.Add(new JobAdjustment(
                 reader.GetInt32(0), reader.GetString(1), reader.GetDouble(2), reader.GetDouble(3), reader.GetInt32(4) != 0,
-                reader.GetString(5), SqlMapping.ToTimestamp(reader.GetString(6))));
+                reader.GetString(5), SqlMapping.ToTimestamp(reader.GetString(6)))
+            {
+                EditSeq = reader.IsDBNull(7) ? null : reader.GetInt32(7),
+                EffectiveStepOrder = reader.IsDBNull(8) ? null : reader.GetInt32(8),
+                EffectivePass = reader.IsDBNull(9) ? null : reader.GetInt32(9),
+            });
         }
 
         return list;

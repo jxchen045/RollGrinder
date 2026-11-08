@@ -823,6 +823,16 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         MatrixMessage = Localizer.Format("Auto_MatrixApplied", waiting, pass + 1);
     }
 
+    /// <summary>点一下 🔒 的格子：在对话行说为什么改不了（触摸屏上没有悬停提示）。</summary>
+    [RelayCommand]
+    private void ExplainCell(MatrixCellViewModel? cell)
+    {
+        if (cell is { IsRangeLocked: true, RangeHint.Length: > 0 })
+        {
+            Interaction.Hint(cell.RangeHint);
+        }
+    }
+
     /// <summary>丢掉没下发的改动，回到机床里那一份。</summary>
     [RelayCommand]
     private void DiscardMatrixEdits()
@@ -1522,6 +1532,12 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                             item => item.StepOrder == cell.StepOrder && item.ParameterKey == row.Descriptor.Key);
                         bool adjusted = range is not null && cell.Value is { Kind: Core.Parameters.ParameterValueKind.Number } number
                             && Math.Abs(number.Number - range.PlanValue) > 1e-9;
+
+                        // 按方案磨的作业（看作业有没有方案，不看范围读没读到——读不到时宁可锁住，与服务一致）：
+                        // 范围表外的一律 🔒，要改请工艺员改方案；开始 / 结束两道只读，不标 🔒。
+                        bool planJob = job.PlanId is not null;
+                        bool fixedStep = ProgramFrame.IsFixed(job.Steps.FirstOrDefault(step => step.Order == cell.StepOrder)?.StepTypeKey ?? string.Empty);
+                        bool locked = planJob && cell.IsApplicable && range is not { Adjustable: true };
                         var vm = new MatrixCellViewModel(
                             cell.StepOrder,
                             row.Descriptor.Key,
@@ -1529,15 +1545,14 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                             cell.IsApplicable,
                             row.Descriptor.IsLiveEditable)
                         {
-                            // 按方案磨的才分 🔒 / Δ；旧作业（没有方案）照旧。
-                            IsRangeLocked = cell.IsApplicable && this.rangeRows.Count > 0 && range is not { Adjustable: true },
+                            IsRangeLocked = locked,
                             IsAdjusted = adjusted,
-                            BadgeText = !cell.IsApplicable || this.rangeRows.Count == 0 ? string.Empty
-                                : range is not { Adjustable: true } ? Localizer["Adjust_ModeLocked"]
-                                : adjusted ? Localizer.Format("Auto_AdjustedBadgeFormat", AdjustText.Number(range.PlanValue))
+                            BadgeText = locked && !fixedStep ? Localizer["Adjust_ModeLocked"]
+                                : adjusted ? Localizer.Format("Auto_AdjustedBadgeFormat", AdjustText.Number(range!.PlanValue))
                                 : string.Empty,
                             RangeHint = range is { Adjustable: true }
                                 ? Localizer.Format("Auto_RangeHintFormat", AdjustText.Number(range.PlanValue), AdjustText.Bounds(Localizer, range.Bounds))
+                                : locked && !fixedStep ? Localizer.Format("Auto_LockedCellFormat", Format(row.Descriptor, cell.Value))
                                 : string.Empty,
                         };
                         vm.PropertyChanged += (_, e) =>

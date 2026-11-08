@@ -90,6 +90,7 @@ public static class JsonHmiSettingsProvider
         Require(settings.Layout is "auto" or "standard" or "compact", path, nameof(settings.Layout));
         Require(Enum.IsDefined(settings.DefaultRole), path, nameof(settings.DefaultRole));
         Require(settings.CompensationGain is > 0.0 and <= 1.0, path, nameof(settings.CompensationGain));
+        Require(settings.PassWatchdogSeconds is >= 2 and <= 600, path, nameof(settings.PassWatchdogSeconds));
         Require(
             settings.CompensationSmoothingPoints >= 1 && settings.CompensationSmoothingPoints % 2 == 1,
             path,

@@ -351,7 +351,7 @@
                     <ItemsControl ItemsSource="{Binding SaveAdjustRows}" Margin="14,0,14,10">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsTicked}" Margin="0,4" VerticalContentAlignment="Center">
+                                <CheckBox IsChecked="{Binding IsTicked}" IsEnabled="{Binding CanTick}" Margin="0,4" VerticalContentAlignment="Center">
                                     <StackPanel Margin="8,0,0,0">
                                         <TextBlock Text="{Binding Text}" Style="{StaticResource Text.Body}" />
                                         <TextBlock Text="{Binding Note}" Style="{StaticResource Text.Label}" />

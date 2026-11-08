@@ -139,7 +139,7 @@ public sealed partial class ParameterRowViewModel : ObservableObject
 
     /// <summary>默认范围表里的规则；不是按方案编辑（或不是数值参数）为 null，范围一栏不显示。</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsRange), nameof(RangeModeText), nameof(RangeBoundsText), nameof(RangeSourceText))]
+    [NotifyPropertyChangedFor(nameof(ShowsRange), nameof(RangeModeText), nameof(RangeBoundsText), nameof(RangeSourceText), nameof(MachineLimitText))]
     private AdjustRule? rangeDefault;
 
     /// <summary>本方案单独设的规则；没设为 null（按默认表）。</summary>
@@ -162,6 +162,11 @@ public sealed partial class ParameterRowViewModel : ObservableObject
         ShowsRange && ToParameterValue() is { Kind: ParameterValueKind.Number } value
             ? AdjustText.Bounds(this.localizer, AdjustRanges.Resolve(EffectiveRule, value.Number, this.descriptor))
             : string.Empty;
+
+    /// <summary>机床限（参数自身的上下限，制造商硬上限）：作业取值永远在这以内。</summary>
+    public string MachineLimitText => ShowsRange && this.descriptor is { MinValue: double min, MaxValue: double max }
+        ? this.localizer.Format("Adjust_MachineLimitFormat", AdjustText.Number(min), AdjustText.Number(max))
+        : string.Empty;
 
     /// <summary>来源：本方案 / 默认。</summary>
     public string RangeSourceText => !ShowsRange ? string.Empty

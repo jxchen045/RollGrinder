@@ -351,6 +351,14 @@ internal sealed partial class SelfTestHarness
     public async Task PressVerticalKeyAsync(StepContext context, string labelResourceKey, TimeSpan? timeout = null)
     {
         int index = IndexOfVerticalKey(labelResourceKey);
+
+        // 根层多于 8 个键时分页（第 8 格"≡▸"翻页）：不在这一页就翻，最多翻一圈。
+        for (int turn = 0; index < 0 && turn < 4 && IndexOfVerticalKey("Vk_NextPage") is int next and >= 0; turn++)
+        {
+            await PressAsync(Shell.VerticalKeys[next], timeout).ConfigureAwait(true);
+            index = IndexOfVerticalKey(labelResourceKey);
+        }
+
         context.Check(index >= 0, "vertical key " + labelResourceKey + " is not on the bar");
         context.Check(IsVerticalKeyUsable(index), "vertical key " + labelResourceKey + " is unavailable: " + Shell.VerticalKeys[index].ReasonText);
         await PressAsync(Shell.VerticalKeys[index], timeout).ConfigureAwait(true);

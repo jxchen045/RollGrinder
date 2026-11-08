@@ -17,6 +17,13 @@ public interface IJobRepository
 
     Task<IReadOnlyList<string>> ListJobIdsByRollAsync(string rollId, int limit, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// NC 采用了改参数序号 <paramref name="appliedSeq"/>（接口约定第 3 节）：序号不大于它、还没记生效的运行中调整
+    /// 记下从第几道起生效。返回记了几项。
+    /// </summary>
+    Task<int> MarkAdjustmentsEffectiveAsync(
+        string jobId, int appliedSeq, int currentStepOrder, int currentPass, CancellationToken cancellationToken);
+
     /// <summary>某个状态的作业（待磨清单用：中断的、待返磨的），最近的在前。</summary>
     Task<IReadOnlyList<JobListEntry>> ListByStateAsync(JobState state, int limit, CancellationToken cancellationToken);
 }

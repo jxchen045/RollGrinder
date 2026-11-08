@@ -424,6 +424,7 @@
             <Run Text="{Binding RangeModeText, Mode=OneWay}" FontWeight="SemiBold" />
             <Run Text="{Binding RangeBoundsText, Mode=OneWay}" FontFamily="{StaticResource Font.Mono}" />
             <Run Text="{Binding RangeSourceText, Mode=OneWay}" Foreground="{StaticResource Brush.TextSecondary}" />
+            <Run Text="{Binding MachineLimitText, Mode=OneWay}" Foreground="{StaticResource Brush.TextSecondary}" />
           </TextBlock>
         </Button>
 

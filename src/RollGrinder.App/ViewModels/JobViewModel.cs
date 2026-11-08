@@ -1363,12 +1363,32 @@ public sealed partial class JobViewModel : PageViewModelBase
         Navigator.StartTask(PageKey.Steps, PageKey.Job);
     }
 
-    /// <summary>改方案…：辊形或工艺（方案区，用过的保存时另存为新方案）。</summary>
-    private void OpenEditPlanMenu() => OpenVerticalMenu("Vk_EditPlan", new FunctionKeyViewModel?[]
+    /// <summary>
+    /// 方案 ▸（设计稿 v4 I7）：换方案… · 原因 ▸ · 回到当前方案 · 辊形 · 工艺 · 方案列表。
+    /// 原因是下一层子菜单，不走 <see cref="PageViewModelBase.MenuChoice"/>（那个选完就收回根层）。
+    /// </summary>
+    private void OpenPlanMenu() => OpenVerticalMenu("Vk_PlanMenu", new FunctionKeyViewModel?[]
     {
-        MenuChoice("Vk_OpenProfile", OpenProfile, requiresEditable: false),
-        MenuChoice("Vk_OpenProgram", OpenProgram, requiresEditable: false),
+        MenuChoice("Vk_SwitchPlan", () => _ = OpenPickerAsync()),
+        new FunctionKeyViewModel("Vk_Reason", new RelayCommand(OpenReasonMenu, () => Deviation == JobDeviation.ThisTimeOnly), Localizer, requiresEditable: true)
+        {
+            PreconditionResourceKey = "Job_ReasonOnlyThisTime",
+        },
+        PlanMenuChoice("Vk_RestorePlan", RestorePlan, () => Deviation != JobDeviation.None, "Job_AlreadyPlan", requiresEditable: true),
+        PlanMenuChoice("Vk_OpenProfile", OpenProfile, () => this.plan is not null, "Job_NothingSelected", requiresEditable: false),
+        PlanMenuChoice("Vk_OpenProgram", OpenProgram, () => this.plan is not null, "Job_NothingSelected", requiresEditable: false),
+        MenuChoice("Vk_PlanList", OpenPlans, requiresEditable: false),
     });
+
+    /// <summary>子菜单里一项带灰键原因的：按下去做事，然后收回根层。</summary>
+    private FunctionKeyViewModel PlanMenuChoice(string labelKey, Action action, Func<bool> canChoose, string precondition, bool requiresEditable) =>
+        new(labelKey, new RelayCommand(() => { action(); ResetVerticalMenu(); }, canChoose), Localizer, requiresEditable: requiresEditable)
+        {
+            PreconditionResourceKey = precondition,
+        };
+
+    /// <summary>第 6 格"改用新模板…"：这支辊的方案有新版模板（标准已更新）时才有；第 4 期接上。</summary>
+    private FunctionKeyViewModel? UseNewTemplateKey() => null;
 
     /// <summary>第 6 格"全部恢复设定值…"：问一句（不超时）。</summary>
     private void AskRestoreAll() => Ask(
@@ -1438,27 +1458,21 @@ public sealed partial class JobViewModel : PageViewModelBase
 
         if (IsReview)
         {
+            // 设计稿 v4 I7 / 5.2.2：1 方案 ▸ · 2 本次调整 ▸ · 5 示教起点 Z · 6 改用新模板…（有更新时才亮）· 7 取消 · 8 确认下发。
             SetVerticalKeys(new FunctionKeyViewModel?[]
             {
-                new FunctionKeyViewModel("Vk_SwitchPlan", new RelayCommand(() => _ = OpenPickerAsync()), Localizer, requiresEditable: true),
-                new FunctionKeyViewModel("Vk_Reason", new RelayCommand(OpenReasonMenu, () => Deviation == JobDeviation.ThisTimeOnly), Localizer, requiresEditable: true)
-                {
-                    PreconditionResourceKey = "Job_ReasonOnlyThisTime",
-                },
-                new FunctionKeyViewModel("Vk_RestorePlan", new RelayCommand(RestorePlan, () => Deviation != JobDeviation.None), Localizer, requiresEditable: true)
-                {
-                    PreconditionResourceKey = "Job_AlreadyPlan",
-                },
+                new FunctionKeyViewModel("Vk_PlanMenu", new RelayCommand(OpenPlanMenu), Localizer),
                 new FunctionKeyViewModel("Vk_AdjustThisTime", new RelayCommand(OpenAdjust, () => this.plan is not null && this.adjustable.Any(row => row.Adjustable)), Localizer, requiresEditable: true)
                 {
                     PreconditionResourceKey = "Job_NothingSelected",
                     LabelResourceKey = this.adjustments.Count > 0 ? "Vk_AdjustThisTimeChanged" : "Vk_AdjustThisTime",
                 },
-                new FunctionKeyViewModel("Vk_EditPlan", new RelayCommand(OpenEditPlanMenu, () => this.plan is not null), Localizer)
-                {
-                    PreconditionResourceKey = "Job_NothingSelected",
-                },
-                FunctionKeyViewModel.ForAction("Vk_PlanList", Localizer, OpenPlans),
+                null,
+                null,
+                UsesGrindStart
+                    ? new FunctionKeyViewModel("Vk_TeachGrindStart", TeachGrindStartCommand, Localizer, requiresEditable: true)
+                    : null,
+                UseNewTemplateKey(),
             });
             // 第 7 / 8 格一直是"✕ 返回清单 / ✓ 确认下发"：核对有拦的时 ✓ 灰着，按了在对话行说哪一项没过。
             SetCommitPair(this.cancelReviewKey, this.confirmDownloadKey);

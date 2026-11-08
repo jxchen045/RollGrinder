@@ -5612,16 +5612,13 @@
     <value>已存为方案 {0} · {1}（没设当前）</value>
   </data>
   <data name="Vk_AdjustThisTime" xml:space="preserve">
-    <value>本次调整…</value>
+    <value>本次调整 ▸</value>
   </data>
   <data name="Vk_AdjustThisTimeChanged" xml:space="preserve">
-    <value>本次调整… Δ</value>
+    <value>本次调整 ▸ Δ</value>
   </data>
   <data name="Vk_ChangeRange" xml:space="preserve">
-    <value>改范围</value>
-  </data>
-  <data name="Vk_EditPlan" xml:space="preserve">
-    <value>改方案…</value>
+    <value>改范围…</value>
   </data>
   <data name="Vk_LoadLastAdjust" xml:space="preserve">
     <value>载入上次</value>
@@ -5643,5 +5640,41 @@
   </data>
   <data name="Vk_UseThisTime" xml:space="preserve">
     <value>✓ 用于本次</value>
+  </data>
+  <data name="Vk_PlanMenu" xml:space="preserve">
+    <value>方案 ▸</value>
+  </data>
+  <data name="Vk_TeachGrindStart" xml:space="preserve">
+    <value>示教起点 Z</value>
+  </data>
+  <data name="Vk_More" xml:space="preserve">
+    <value>更多 ▸</value>
+  </data>
+  <data name="Steps_RangeNeedsNumber" xml:space="preserve">
+    <value>按方案编辑、光标在数值参数上时才能改范围</value>
+  </data>
+  <data name="Adjust_MachineLimitFormat" xml:space="preserve">
+    <value>机床限 {0}–{1}</value>
+  </data>
+  <data name="Adjust_MenuBetween" xml:space="preserve">
+    <value>上下限…</value>
+  </data>
+  <data name="Adjust_BetweenTitleFormat" xml:space="preserve">
+    <value>{0} 的上下限（写"下限..上限"，例如 4..8；清空为不可调）</value>
+  </data>
+  <data name="Adjust_BetweenInvalid" xml:space="preserve">
+    <value>读不懂，写成"下限..上限"，下限不大于上限</value>
+  </data>
+  <data name="Auto_LockedCellFormat" xml:space="preserve">
+    <value>不可调（设定 {0}）：要改请工艺员改方案</value>
+  </data>
+  <data name="Records_NoAdjustToSave" xml:space="preserve">
+    <value>这次作业没有调整，不用另存</value>
+  </data>
+  <data name="Records_AdjustRunningFromFormat" xml:space="preserve">
+    <value>运行中 · {0} {1} · {2}第 {3} 道起</value>
+  </data>
+  <data name="Records_AdjustNotAppliedFormat" xml:space="preserve">
+    <value>运行中 · {0} {1} · 未生效（作废）</value>
   </data>
 </root>

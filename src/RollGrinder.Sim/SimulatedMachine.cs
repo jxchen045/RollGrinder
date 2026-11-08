@@ -356,7 +356,7 @@ public sealed class SimulatedMachine
         }
 
         // 纵向拖板在辊身两端之间往复，速度按当前这道工序自己的进给。
-        double travelMm = feedMmPerMin * minutes;
+        double travelMm = feedMmPerMin * Override(MachineTagKeys.OverrideFeedPercent) * minutes;
         this.carriagePositionMm += travelMm * this.carriageDirection;
         if (this.carriagePositionMm >= this.bodyLengthMm)
         {
@@ -427,10 +427,15 @@ public sealed class SimulatedMachine
             return (int)ChannelState;
         }
 
-        // 倍率：仿真按 100 %。
-        if (logicalName is MachineTagKeys.FeedOverridePercent or MachineTagKeys.SpindleOverridePercent or MachineTagKeys.WheelOverridePercent)
+        // 倍率：仿真里面板旋钮就是手动页的倍率（override.*Percent）——拧它就是"拧倍率"，自动磨削照它走（设计说明第 6 节验收）。
+        switch (logicalName)
         {
-            return 100.0;
+            case MachineTagKeys.FeedOverridePercent:
+                return Override(MachineTagKeys.OverrideFeedPercent) * 100.0;
+            case MachineTagKeys.SpindleOverridePercent:
+                return Override(MachineTagKeys.OverrideHeadstockPercent) * 100.0;
+            case MachineTagKeys.WheelOverridePercent:
+                return Override(MachineTagKeys.OverrideWheelPercent) * 100.0;
         }
 
         // 程序段：运行时给一行像样的段文字（真机由 NC 的当前段变量来）。
@@ -803,13 +808,15 @@ public sealed class SimulatedMachine
             0.0,
             this.currentStepOrder,
             this.currentPass + 1,
-            this.lastLeftReversalMm, dwell, 100.0, this.currentRadiusMm,
-            this.lastRightReversalMm, dwell, 100.0, this.currentRadiusMm,
+            this.lastLeftReversalMm, dwell, Override(MachineTagKeys.OverrideFeedPercent) * 100.0, this.currentRadiusMm,
+            this.lastRightReversalMm, dwell, Override(MachineTagKeys.OverrideFeedPercent) * 100.0, this.currentRadiusMm,
             Noise() * 6.0 * 1000.0,
             this.strokeVersion,
             0.0,
             this.surface.GrindingCurrentA(RemovalRateMmPerMinute, this.carriagePositionMm, true),
-            0.0,
+
+            // 第 15 格：这一道开始时已采用的改参数序号（接口约定 4.2），断线后也能补出"第 n 道起生效"。
+            this.editAppliedSeq,
         };
 
         int baseIndex = slot * MachineTagKeys.PassRowFieldCount;

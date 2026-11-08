@@ -30,6 +30,7 @@ public static class DataServiceCollectionExtensions
         services.AddSingleton<IAlarmRepository, SqliteAlarmRepository>();
         services.AddSingleton<ILibraryVersionRepository, SqliteLibraryVersionRepository>();
         services.AddSingleton<IGrindingPlanRepository, SqliteGrindingPlanRepository>();
+        services.AddSingleton<IRunLogRepository, SqliteRunLogRepository>();
         services.AddSingleton<ITemplateMandateRepository, SqliteTemplateMandateRepository>();
 
         return services;

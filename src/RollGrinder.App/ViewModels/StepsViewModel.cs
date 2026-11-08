@@ -253,6 +253,7 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
     private IReadOnlyList<PlanParamRange> planRanges = Array.Empty<PlanParamRange>();
 
     private readonly IJobAdjustmentService adjust;
+    private readonly RelayCommand changeRangeCommand;
 
     public StepsViewModel(
         GrindingStepTypeRegistry stepTypes,
@@ -309,17 +310,21 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
             ?? StepTypeOptions.FirstOrDefault();
 
         // 竖向软键：对选中的工序操作。插入工序 ▸ 先选类别、再选工序，插在选中工序之后（修改稿 5.3）。
+        this.changeRangeCommand = new RelayCommand(() => OpenRangeMenu(FocusedParameter!), () => IsPlanMode && FocusedParameter is { IsNumber: true });
         this.stepKeys = new FunctionKeyViewModel?[]
         {
             new FunctionKeyViewModel("Vk_InsertStep", new RelayCommand(OpenInsertStepMenu), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_DeleteStep", new RelayCommand(() => RemoveStep(SelectedStep)), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_MoveUp", new RelayCommand(() => MoveStepUp(SelectedStep)), localizer, requiresEditable: true),
             new FunctionKeyViewModel("Vk_MoveDown", new RelayCommand(() => MoveStepDown(SelectedStep)), localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_CopyStep", new RelayCommand(() => CopyStep(SelectedStep)), localizer, requiresEditable: true),
 
-            // 阶段 2 线框上的另外两个键（修改稿 5.3）：余量分配、默认值。程序步骤开关不在这里——那是每一支辊开磨前的取舍，在作业核对页。
-            new FunctionKeyViewModel("Vk_AllocateStock", new RelayCommand(AllocateStock), localizer, requiresEditable: true),
-            new FunctionKeyViewModel("Vk_StepDefaults", new RelayCommand(() => Ask("Steps_AskDefaults", () => ResetStepToDefaults(SelectedStep))), localizer, requiresEditable: true),
+            // 设计稿 v4 5.5.3：第 5 格"改范围…"对光标所在的参数（按方案编辑、数值参数时才亮）；复制、余量分配、默认值收进第 6 格"更多 ▸"。
+            // 程序步骤开关不在这里——那是每一支辊开磨前的取舍，在作业核对页。
+            new FunctionKeyViewModel("Vk_ChangeRange", this.changeRangeCommand, localizer, requiresEditable: true)
+            {
+                PreconditionResourceKey = "Steps_RangeNeedsNumber",
+            },
+            new FunctionKeyViewModel("Vk_More", new RelayCommand(OpenMoreMenu), localizer),
         };
         SetVerticalKeys(this.stepKeys);
 
@@ -426,6 +431,8 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
     [NotifyPropertyChangedFor(nameof(FocusedParameterKey))]
     [NotifyPropertyChangedFor(nameof(ParameterHelpText))]
     private ParameterRowViewModel? focusedParameter;
+
+    partial void OnFocusedParameterChanged(ParameterRowViewModel? value) => this.changeRangeCommand.NotifyCanExecuteChanged();
 
     /// <summary>简图要亮的参数键。</summary>
     public string FocusedParameterKey => FocusedParameter?.Key ?? string.Empty;
@@ -1385,6 +1392,7 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
         this.listKey.LabelResourceKey = IsPlanMode ? "Fn_PlanList" : "Fn_ProgramLibrary";
         SaveProgramAsCommand.NotifyCanExecuteChanged();
         NewProgramCommand.NotifyCanExecuteChanged();
+        this.changeRangeCommand.NotifyCanExecuteChanged();
     }
 
     private void RefreshPlanBanner()
@@ -1559,7 +1567,15 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
         }
     }
 
-    /// <summary>改范围…：默认 / ±5% / ±10% / ±20% / 只减 / 只加 / 不可调。改了算方案改动（用过的另存为新方案）。</summary>
+    /// <summary>更多 ▸：复制工序 · 余量分配 · 默认值…。</summary>
+    private void OpenMoreMenu() => OpenVerticalMenu("Vk_More", new FunctionKeyViewModel?[]
+    {
+        MenuChoice("Vk_CopyStep", () => CopyStep(SelectedStep)),
+        MenuChoice("Vk_AllocateStock", AllocateStock),
+        MenuChoice("Vk_StepDefaults", () => Ask("Steps_AskDefaults", () => ResetStepToDefaults(SelectedStep))),
+    });
+
+    /// <summary>改范围…：默认 / ±10% / ±50% / 只减 / 只加 / 上下限… / 不可调。改了算方案改动（用过的另存为新方案）。</summary>
     private void OpenRangeMenu(ParameterRowViewModel row)
     {
         if (IsReadOnly || !IsPlanMode)
@@ -1577,13 +1593,42 @@ public sealed partial class StepsViewModel : PageViewModelBase, IPlanDraftPart
         OpenVerticalMenu("Vk_ChangeRange", new FunctionKeyViewModel?[]
         {
             MenuChoice("Adjust_MenuDefault", () => Set(null), labelArgument: row.RangeDefault is { } fallback ? AdjustText.Mode(Localizer, fallback) : null),
-            MenuChoice("Adjust_MenuPercentFormat", () => Set(AdjustRule.PlusMinus(5.0)), labelArgument: "5"),
             MenuChoice("Adjust_MenuPercentFormat", () => Set(AdjustRule.PlusMinus(10.0)), labelArgument: "10"),
-            MenuChoice("Adjust_MenuPercentFormat", () => Set(AdjustRule.PlusMinus(20.0)), labelArgument: "20"),
+            MenuChoice("Adjust_MenuPercentFormat", () => Set(AdjustRule.PlusMinus(50.0)), labelArgument: "50"),
             MenuChoice("Adjust_ModeDecrease", () => Set(AdjustRule.DecreaseOnly)),
             MenuChoice("Adjust_ModeIncrease", () => Set(AdjustRule.IncreaseOnly)),
+            MenuChoice("Adjust_MenuBetween", () => AskBetween(row)),
             MenuChoice("Adjust_MenuLocked", () => Set(AdjustRule.Locked)),
         });
+
+        // 上下限…（绝对值，例如道次 4..8）：命名框里写"下限..上限"；清空等于不可调。
+        void AskBetween(ParameterRowViewModel target)
+        {
+            AdjustRule current = target.EffectiveRule;
+            string initial = current.Mode == AdjustMode.Absolute
+                ? current.ToText()
+                : target.RangeBoundsText.Replace(" – ", "..", StringComparison.Ordinal);
+            NamePrompt.Open(
+                Localizer.Format("Adjust_BetweenTitleFormat", target.Label),
+                initial,
+                (text, _, _) =>
+                {
+                    string trimmed = (text ?? string.Empty).Trim();
+                    if (trimmed.Length == 0)
+                    {
+                        Set(AdjustRule.Locked);
+                        return Task.FromResult(NamePromptOutcome.Done);
+                    }
+
+                    if (AdjustRule.Parse(trimmed.Replace(',', '.')) is { Mode: AdjustMode.Absolute } between)
+                    {
+                        Set(between);
+                        return Task.FromResult(NamePromptOutcome.Done);
+                    }
+
+                    return Task.FromResult(NamePromptOutcome.Refused(Localizer["Adjust_BetweenInvalid"]));
+                });
+        }
     }
 
     /// <summary>程序被改动：打脏标记，并把"已下发"状态清掉——界面与机床已经不一致了。</summary>

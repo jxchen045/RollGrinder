@@ -1136,6 +1136,30 @@
       "description": "砂轮倍率 %（新增，地址待 PLC 编程确认）"
     },
     {
+      "key": "machine.feedOverridePercent",
+      "address": "ns=2;s=/Channel/State/feedRateIpoOvr",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "%",
+      "description": "面板进给倍率实际值（道次倍率摘要与越界事件用；地址待与 NC 确认）"
+    },
+    {
+      "key": "machine.spindleOverridePercent",
+      "address": "ns=2;s=/Channel/Spindle/speedOvr[u1,1]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "%",
+      "description": "头架（工件主轴）倍率实际值（地址待与 NC 确认）"
+    },
+    {
+      "key": "machine.wheelOverridePercent",
+      "address": "ns=2;s=/Channel/Spindle/speedOvr[u1,2]",
+      "dataType": "Double",
+      "access": "Read",
+      "unit": "%",
+      "description": "砂轮主轴倍率实际值（地址待与 NC 确认）"
+    },
+    {
       "key": "panel.cycleStart",
       "address": "ns=3;s=\"HMI_State\".\"panelCycleStart\"",
       "dataType": "Boolean",
