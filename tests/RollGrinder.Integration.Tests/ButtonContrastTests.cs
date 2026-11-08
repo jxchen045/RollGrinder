@@ -90,6 +90,7 @@ public sealed class ButtonContrastTests
         ContrastMath.Ratio(brushes["Brush.PendingValue"], brushes["Brush.Surface"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
         ContrastMath.Ratio(brushes["Brush.TextPrimary"], brushes["Brush.FocusField"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
         ContrastMath.Ratio(brushes["Brush.OnAccent"], brushes["Brush.ChannelRow"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
+        ContrastMath.Ratio(brushes["Brush.OnAccentMuted"], brushes["Brush.Accent"]).Should().BeGreaterThanOrEqualTo(ContrastMath.NormalText);
     }
 
     [Theory]

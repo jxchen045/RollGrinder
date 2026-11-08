@@ -64,7 +64,7 @@
   <Color x:Key="Color.TextSecondary">#C2CCD6</Color>
   <Color x:Key="Color.TextMuted">#B3BEC9</Color>
   <Color x:Key="Color.OnAccent">#FFFFFF</Color>
-  <Color x:Key="Color.OnAccentMuted">#B9D4EA</Color>
+  <Color x:Key="Color.OnAccentMuted">#DCEAF5</Color>
   <Color x:Key="Color.ButtonBorder">#7A8794</Color>
   <Color x:Key="Color.FunctionBar">#222B35</Color>
   <Color x:Key="Color.NormalFill">#173A28</Color>
