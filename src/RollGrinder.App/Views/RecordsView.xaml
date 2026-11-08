@@ -42,7 +42,7 @@
                                         <TextBlock Text="{Binding StartedText}" FontFamily="{StaticResource Font.Mono}" Style="{StaticResource Text.Label}"
                                                    HorizontalAlignment="Right" />
                                         <TextBlock Text="{Binding StateText}" FontSize="{StaticResource Size.Caption}" HorizontalAlignment="Right"
-                                                   Foreground="{StaticResource Brush.Normal}" />
+                                                   Foreground="{StaticResource Brush.NormalText}" />
                                     </StackPanel>
                                     <TextBlock x:Name="MarkCell" DockPanel.Dock="Right" Text="{Binding MarkText}" FontSize="{StaticResource Size.Caption}"
                                                VerticalAlignment="Center" Margin="8,0,12,0" />

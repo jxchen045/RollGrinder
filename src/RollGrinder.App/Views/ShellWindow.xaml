@@ -7,6 +7,7 @@
         xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
         xmlns:ia="clr-namespace:RollGrinder.App.Interaction"
         x:Name="Root"
+        Foreground="{StaticResource Brush.TextPrimary}"
         Title="{loc:Loc App_Title}"
         Width="1920"
         Height="1080"

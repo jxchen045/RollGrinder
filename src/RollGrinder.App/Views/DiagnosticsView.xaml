@@ -99,11 +99,11 @@
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock" BasedOn="{StaticResource Text.DataRow}">
                                                     <Setter Property="Text" Value="{loc:Loc Diag_TagQualityBad}" />
-                                                    <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                    <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStepText}" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsGood}" Value="True">
                                                             <Setter Property="Text" Value="{loc:Loc Diag_TagQualityGood}" />
-                                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                                            <Setter Property="Foreground" Value="{StaticResource Brush.NormalText}" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -180,10 +180,10 @@
                                                         <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsGood}" Value="True">
-                                                                <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                                                <Setter Property="Foreground" Value="{StaticResource Brush.NormalText}" />
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding IsBad}" Value="True">
-                                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStepText}" />
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -216,10 +216,10 @@
                                                         <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}" />
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsGood}" Value="True">
-                                                                <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                                                <Setter Property="Foreground" Value="{StaticResource Brush.NormalText}" />
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding IsBad}" Value="True">
-                                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStepText}" />
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -263,10 +263,10 @@
                             <TextBlock Text="{Binding TagMapCheckText}" FontSize="{StaticResource Size.Body}" Margin="0,0,0,8">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                        <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStepText}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding TagMapIsValid}" Value="True">
-                                                <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                                <Setter Property="Foreground" Value="{StaticResource Brush.NormalText}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -276,7 +276,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding}" FontFamily="{StaticResource Font.Mono}" FontSize="{StaticResource Size.Caption}"
-                                                   Foreground="{StaticResource Brush.CurrentStep}" Margin="0,0,0,4" />
+                                                   Foreground="{StaticResource Brush.CurrentStepText}" Margin="0,0,0,4" />
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -345,7 +345,7 @@
                                                     <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsConfigured}" Value="True">
-                                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                                            <Setter Property="Foreground" Value="{StaticResource Brush.NormalText}" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>

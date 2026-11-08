@@ -447,7 +447,7 @@
 
         <TextBlock Text="{Binding ErrorText}"
                    FontSize="{StaticResource Size.Caption}"
-                   Foreground="{StaticResource Brush.CurrentStep}"
+                   Foreground="{StaticResource Brush.CurrentStepText}"
                    TextWrapping="Wrap"
                    Margin="0,4,0,0" />
       </StackPanel>

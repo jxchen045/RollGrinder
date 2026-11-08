@@ -29,7 +29,7 @@
                     </TextBox.InputBindings>
                 </TextBox>
                 <TextBlock Text="{Binding ErrorText}" FontSize="{StaticResource Size.Body}" TextWrapping="Wrap" Margin="0,10,0,0"
-                           Foreground="{StaticResource Brush.CurrentStep}">
+                           Foreground="{StaticResource Brush.CurrentStepText}">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Style.Triggers>

@@ -39,7 +39,7 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock Text="{Binding IssueText}" Foreground="{StaticResource Brush.CurrentStep}" TextWrapping="Wrap"
+                        <TextBlock Text="{Binding IssueText}" Foreground="{StaticResource Brush.CurrentStepText}" TextWrapping="Wrap"
                                    FontSize="{StaticResource Size.Caption}" Margin="0,4,0,0"
                                    Visibility="{Binding HasIssue, Converter={StaticResource BoolToVisibility}}" />
                     </StackPanel>
@@ -62,7 +62,7 @@
                     <ItemsControl ItemsSource="{Binding ConfigIssues}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding}" Foreground="{StaticResource Brush.CurrentStep}" TextWrapping="Wrap" FontSize="{StaticResource Size.Caption}" />
+                                <TextBlock Text="{Binding}" Foreground="{StaticResource Brush.CurrentStepText}" TextWrapping="Wrap" FontSize="{StaticResource Size.Caption}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -118,7 +118,7 @@
                             <TextBlock Text="{loc:Loc Cfg_TagAddress}" Style="{StaticResource Text.Label}" Margin="0,6,0,0" />
                             <TextBox Text="{Binding SelectedTag.Address, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ValueTextBox}" ctl:TouchInput.IsNumeric="False"
                                      IsEnabled="{Binding SelectedTag.IsMissing, Converter={StaticResource InverseBool}}" />
-                            <TextBlock Text="{Binding SelectedTag.IssueText}" Foreground="{StaticResource Brush.CurrentStep}" FontSize="{StaticResource Size.Caption}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding SelectedTag.IssueText}" Foreground="{StaticResource Brush.CurrentStepText}" FontSize="{StaticResource Size.Caption}" TextWrapping="Wrap" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Margin="0,0,12,0">
                             <TextBlock Text="{loc:Loc Cfg_TagDataType}" Style="{StaticResource Text.Label}" />

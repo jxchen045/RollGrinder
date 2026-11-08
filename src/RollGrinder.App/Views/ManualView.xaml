@@ -122,7 +122,7 @@
                         <TextBlock Text="{loc:Loc Centring_Difference}" Style="{StaticResource Text.Label}" />
                         <TextBlock Text="{Binding CentringDifferenceText}" Style="{StaticResource Text.Measurement}" />
                         <TextBlock Text="{Binding AlignmentHintText}" Style="{StaticResource Text.Body}" FontWeight="Bold" TextWrapping="Wrap"
-                                   Foreground="{StaticResource Brush.CurrentStep}"
+                                   Foreground="{StaticResource Brush.CurrentStepText}"
                                    Visibility="{Binding HasAlignmentProblem, Converter={StaticResource BoolToVisibility}}" />
                         <TextBlock Text="{loc:Loc Manual_CentringRule}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,6,0,0" />
                     </StackPanel>
@@ -136,7 +136,7 @@
                                     <Style TargetType="DataGridCell" BasedOn="{StaticResource DataTableCell}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsOutOfTolerance}" Value="True">
-                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStepText}" />
                                                 <Setter Property="FontWeight" Value="Bold" />
                                             </DataTrigger>
                                         </Style.Triggers>

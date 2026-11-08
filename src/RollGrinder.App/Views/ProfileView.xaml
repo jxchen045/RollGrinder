@@ -126,7 +126,7 @@
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="{loc:Loc Profile_MaxChordError}" FontSize="16" />
                                 <TextBlock Text="{Binding MaxChordErrorText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                           HorizontalAlignment="Right" Foreground="{StaticResource Brush.Normal}" />
+                                           HorizontalAlignment="Right" Foreground="{StaticResource Brush.NormalText}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="{loc:Loc Profile_SegmentCount}" FontSize="16" />
@@ -239,10 +239,10 @@
                                 <TextBlock Text="{Binding IssueSummaryText}" FontSize="17" FontWeight="SemiBold">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="{StaticResource Brush.Normal}" />
+                                            <Setter Property="Foreground" Value="{StaticResource Brush.NormalText}" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                                                    <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                    <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStepText}" />
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -259,7 +259,7 @@
                                                         <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}" />
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsError}" Value="True">
-                                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStep}" />
+                                                                <Setter Property="Foreground" Value="{StaticResource Brush.CurrentStepText}" />
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -302,7 +302,7 @@
                                         Style="{StaticResource SecondaryButton}" Height="44" Width="96" />
                             </StackPanel>
                             <TextBlock DockPanel.Dock="Bottom" Text="{Binding PointTableErrorText}" FontSize="{StaticResource Size.Caption}"
-                                       Foreground="{StaticResource Brush.CurrentStep}" TextWrapping="Wrap" />
+                                       Foreground="{StaticResource Brush.CurrentStepText}" TextWrapping="Wrap" />
                             <DataGrid ItemsSource="{Binding PointRows}" SelectedItem="{Binding SelectedPoint}"
                                       Style="{StaticResource DataTable}" AutoGenerateColumns="False"
                                       CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="False">

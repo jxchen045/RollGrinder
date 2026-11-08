@@ -646,7 +646,7 @@
                                     </DockPanel>
                                     <DockPanel Margin="0,0,0,18">
                                         <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Text="{Binding RealtimeOffsetText}" FontFamily="{StaticResource Font.Mono}" FontSize="16"
-                                                   HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
+                                                   HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStepText}" />
                                         <TextBlock Text="{loc:Loc Auto_RealtimeCompensation}" FontSize="16" Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" />
                                     </DockPanel>
 
@@ -667,7 +667,7 @@
                                     <TextBlock Text="{loc:Loc Comp_ManufacturerOnly}" Style="{StaticResource Text.Label}" TextWrapping="Wrap" Margin="0,10,0,0"
                                                Visibility="{Binding CanEditCompensation, Converter={StaticResource InverseBoolVisibility}}" />
                                     <TextBlock Text="{Binding TuningStatusText}" FontSize="16" TextWrapping="Wrap" Margin="0,10,0,0"
-                                               Foreground="{StaticResource Brush.CurrentStep}" />
+                                               Foreground="{StaticResource Brush.CurrentStepText}" />
                                 </StackPanel>
                             </ScrollViewer>
                         </DockPanel>

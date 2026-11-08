@@ -82,7 +82,7 @@
                             <DockPanel>
                                 <TextBlock Text="{loc:Loc Program_Header}" Style="{StaticResource Text.CardTitle}" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text.CardTitle}"
-                                           HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStep}" />
+                                           HorizontalAlignment="Right" Foreground="{StaticResource Brush.CurrentStepText}" />
                             </DockPanel>
                         </Border>
                         <ItemsControl Background="{StaticResource Brush.GridLine}">
@@ -150,9 +150,9 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" Margin="4,0,0,6">
                                 <TextBlock Text="{Binding ParameterText}" Width="{ctl:Px 260}" FontSize="17"
-                                           Foreground="{StaticResource Brush.CurrentStep}" />
+                                           Foreground="{StaticResource Brush.CurrentStepText}" />
                                 <TextBlock Text="{Binding ReasonText}" FontSize="17"
-                                           Foreground="{StaticResource Brush.CurrentStep}" />
+                                           Foreground="{StaticResource Brush.CurrentStepText}" />
                             </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

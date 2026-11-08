@@ -120,6 +120,23 @@ public sealed class ButtonContrastTests
         }
     }
 
+    [Theory]
+    [InlineData("Brush.NormalText", "Light")]
+    [InlineData("Brush.CurrentStepText", "Light")]
+    [InlineData("Brush.Alarm", "Light")]
+    [InlineData("Brush.NormalText", "Dark")]
+    [InlineData("Brush.CurrentStepText", "Dark")]
+    [InlineData("Brush.Alarm", "Dark")]
+    public void Status_text_colours_are_readable_on_page_and_card_fills(string text, string palette)
+    {
+        IReadOnlyDictionary<string, string> brushes = LoadBrushColors(palette);
+        foreach (string fill in new[] { "Brush.Surface", "Brush.Background", "Brush.RowAlternate", "Brush.NormalFill", "Brush.WarningRowFill" })
+        {
+            ContrastMath.Ratio(brushes[text], brushes[fill]).Should().BeGreaterThanOrEqualTo(
+                ContrastMath.NormalText, $"{text} on {fill}");
+        }
+    }
+
     [Fact]
     public void The_dark_palette_defines_exactly_the_same_keys_as_the_light_one()
     {

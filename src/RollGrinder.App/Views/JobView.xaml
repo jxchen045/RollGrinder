@@ -116,7 +116,7 @@
                                 <Border x:Name="CheckRow" Padding="8,6" BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="0,0,0,1">
                                     <DockPanel>
                                         <TextBlock x:Name="Glyph" DockPanel.Dock="Left" Text="{Binding Glyph}" Width="28" FontWeight="Bold"
-                                                   Style="{StaticResource Text.Body}" Foreground="{StaticResource Brush.Normal}" />
+                                                   Style="{StaticResource Text.Body}" Foreground="{StaticResource Brush.NormalText}" />
                                         <TextBlock DockPanel.Dock="Left" Text="{Binding ItemText}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}"
                                                    Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
                                         <TextBlock Text="{Binding MessageText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />

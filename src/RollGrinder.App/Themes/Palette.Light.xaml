@@ -101,6 +101,9 @@
   <SolidColorBrush x:Key="Brush.CurrentStep" Color="{StaticResource Color.CurrentStep}" />
   <SolidColorBrush x:Key="Brush.NextStep" Color="{StaticResource Color.NextStep}" />
   <SolidColorBrush x:Key="Brush.Normal" Color="{StaticResource Color.Normal}" />
+  <!-- 状态字色：绿 / 红当字用（"正常""已连接"、错误提示）。浅色与底色同值或略深（绿字也要压得住琥珀底）；深色板要亮一档才读得清，底色仍用上面两个。 -->
+  <SolidColorBrush x:Key="Brush.NormalText" Color="#1A6B43" />
+  <SolidColorBrush x:Key="Brush.CurrentStepText" Color="#B3241C" />
   <SolidColorBrush x:Key="Brush.HeaderFill" Color="{StaticResource Color.HeaderFill}" />
   <SolidColorBrush x:Key="Brush.GridLine" Color="{StaticResource Color.GridLine}" />
   <SolidColorBrush x:Key="Brush.TextPrimary" Color="{StaticResource Color.TextPrimary}" />
