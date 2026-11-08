@@ -46,7 +46,16 @@ public sealed record QueueEntry(RollRecord Roll, QueueMark Mark, string? JobId, 
 public sealed record RollOverview(
     IReadOnlyList<(string RollId, double RemainingMm)> NearScrap,
     IReadOnlyList<ChangeLogEntry> PlanChanges,
-    IReadOnlyList<(string RollId, string? JobId, bool RegrindCreated)> Failed);
+    IReadOnlyList<(string RollId, string? JobId, bool RegrindCreated)> Failed)
+{
+    /// <summary>
+    /// 待处理（设计稿 v4 5.8.1）：同一方案连续几次都调了同一个参数——建议工艺员"存为新方案"。
+    /// </summary>
+    public IReadOnlyList<RepeatedAdjustment> Repeated { get; init; } = Array.Empty<RepeatedAdjustment>();
+}
+
+/// <summary>一支辊按同一方案连续 <paramref name="Times"/> 次调了同一个参数（最近一次的本次值）。</summary>
+public sealed record RepeatedAdjustment(string RollId, int PlanNo, int StepOrder, string ParameterKey, int Times, double PlanValue, double LastValue, string LastJobId);
 
 /// <summary>改计划时一支辊的结论。</summary>
 /// <param name="RollId">辊号。</param>
@@ -232,7 +241,54 @@ public sealed class RollPlanningService : IRollPlanningService
             .Select(entry => (entry.Roll.RollId, entry.JobId, entry.Mark == QueueMark.Regrind))
             .ToArray();
 
-        return new RollOverview(nearScrap.OrderBy(item => item.Item2).ToArray(), changes, failed);
+        return new RollOverview(nearScrap.OrderBy(item => item.Item2).ToArray(), changes, failed)
+        {
+            Repeated = await RepeatedAdjustmentsAsync(queue.Select(entry => entry.Roll.RollId), cancellationToken).ConfigureAwait(false),
+        };
+    }
+
+    /// <summary>连续这么多次按同一方案调了同一个参数，就建议存为新方案。</summary>
+    public const int RepeatedAdjustmentThreshold = 3;
+
+    private async Task<IReadOnlyList<RepeatedAdjustment>> RepeatedAdjustmentsAsync(IEnumerable<string> rollIds, CancellationToken cancellationToken)
+    {
+        var list = new List<RepeatedAdjustment>();
+        foreach (string rollId in rollIds.Distinct(StringComparer.Ordinal))
+        {
+            IReadOnlyList<string> ids = await this.jobs.ListJobIdsByRollAsync(rollId, RepeatedAdjustmentThreshold, cancellationToken).ConfigureAwait(false);
+            if (ids.Count < RepeatedAdjustmentThreshold)
+            {
+                continue;
+            }
+
+            var recent = new List<GrindingJob>();
+            foreach (string id in ids)
+            {
+                if ((await this.jobs.GetAsync(id, cancellationToken).ConfigureAwait(false))?.Job is { } job)
+                {
+                    recent.Add(job);
+                }
+            }
+
+            if (recent.Count < RepeatedAdjustmentThreshold || recent.Select(job => job.PlanId).Distinct().Count() != 1 || recent[0].PlanId is null)
+            {
+                continue;
+            }
+
+            // 三次里每次都调过（生效了的）同一工序的同一参数。
+            IEnumerable<(int StepOrder, string ParameterKey)> common = recent[0].Adjustments
+                .Where(item => !item.IsPending)
+                .Select(item => (item.StepOrder, item.ParameterKey))
+                .Distinct()
+                .Where(key => recent.All(job => job.Adjustments.Any(item => !item.IsPending && item.StepOrder == key.StepOrder && item.ParameterKey == key.ParameterKey)));
+            foreach ((int step, string key) in common)
+            {
+                JobAdjustment last = recent[0].Adjustments.Last(item => item.StepOrder == step && item.ParameterKey == key);
+                list.Add(new RepeatedAdjustment(rollId, recent[0].PlanNo ?? 0, step, key, recent.Count, last.PlanValue, last.JobValue, recent[0].JobId));
+            }
+        }
+
+        return list;
     }
 
     public async Task<IReadOnlyList<string>> PurposesAsync(CancellationToken cancellationToken) =>

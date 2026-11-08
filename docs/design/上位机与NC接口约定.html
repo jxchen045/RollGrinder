@@ -385,14 +385,14 @@
         <tbody>
           <tr><td class="num">0</td><td>行序号 seq（<b>NC 最后写</b>）</td><td>—</td><td>计数器</td></tr>
           <tr><td class="num">1</td><td>工序序号</td><td>—</td><td>即 <code>job.currentStepOrder</code></td></tr>
-          <tr><td class="num">2</td><td>道次号</td><td>—</td><td>即 <code>job.currentPass</code></td></tr>
+          <tr><td class="num">2</td><td>道次号</td><td>—</td><td>工序内第几道，从 1 起。注意 <code>job.currentPass</code> 是这一道工序<b>已走完</b>的道次数（从 0 起），正在磨的是它 + 1，与本字段一致</td></tr>
           <tr><td class="num">3–6</td><td>左折返：实际 Z、实际停留时间、折返时进给倍率、折返时实际 X</td><td>mm、s、%、mm</td><td>折返瞬间同步动作锁存：Z / X 实际位置、倍率、停留计时</td></tr>
           <tr><td class="num">7–10</td><td>右折返：同上</td><td>mm、s、%、mm</td><td>同上</td></tr>
           <tr><td class="num">11</td><td>本道次行程间补偿量</td><td>mm（半径）</td><td>NC 补偿程序</td></tr>
           <tr><td class="num">12</td><td>补偿版本号</td><td>—</td><td>即 <code>compensation.strokeVersion</code></td></tr>
           <tr><td class="num">13</td><td>DRF 偏置（X）</td><td>mm</td><td>DRF 偏置系统变量；自动时禁用则恒 0</td></tr>
           <tr><td class="num">14</td><td>本道次平均磨削电流（可选）</td><td>A</td><td>NC 累加平均</td></tr>
-          <tr><td class="num">15</td><td>备用</td><td>—</td><td>—</td></tr>
+          <tr><td class="num">15</td><td>本道开始时已采用的改参数序号</td><td>—</td><td>即这一道开始时的 <code>job.edit.appliedSeq</code>；上位机断线后据此补记"第 n 道起生效"（第 4 期提议，待 NC 侧确认）</td></tr>
         </tbody>
       </table></div>
       <p>"折返瞬间"怎么界定、用哪些系统变量，由 NC 程序员按现有折返程序定（候选：Z 轴到达折返位置的程序段结束、或停留开始时，用同步动作把值写入 GUD）。字段顺序可调整，调整后同步改 tagmap 与本表。</p>

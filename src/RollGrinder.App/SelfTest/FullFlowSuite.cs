@@ -258,6 +258,26 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             ctx.Check(shown, "the RMS should appear by itself once the post-grind measurement is stored");
         });
 
+        await h.StepAsync("After", "PassTableRecorded", async ctx =>
+        {
+            // 第 4 期（设计说明第 6 节）：道次表随记录保存；自动页"道次表"列出逐道次与逐工序摘要（有效值）。
+            await h.GoToAsync(PageKey.AutoGrinding, ctx);
+            if (auto.ActiveSubViewKey is not null)
+            {
+                await h.BackAsync();
+            }
+
+            await h.PressKeyAsync(ctx, "Fn_PassTable");
+            ctx.Check(auto.IsPassTableOpen, "the pass table should open");
+            await h.PressVerticalKeyAsync(ctx, "Vk_PassAll");
+            bool rows = await h.WaitUntilAsync(() => auto.PassTable.Rows.Count > 0, TimeSpan.FromSeconds(10));
+            ctx.Check(rows, "the finished grind should have pass rows: " + auto.PassTable.StatusText);
+            ctx.Check(auto.PassTable.Summaries.Count > 0, "a per-step summary should be listed");
+            ctx.Note(auto.PassTable.Title + " · " + auto.PassTable.StatusText);
+            h.TryScreenshot("auto-pass-table");
+            await h.BackAsync();
+        }, new StepOptions(Tolerant: true));
+
         // 阶段 3：顶上的状态带有数；补偿子视图里有 NC 的行程修正与这支辊的各次测量。
         await h.StepAsync("After", "StatusBandAndCompensationView", async ctx =>
         {
@@ -394,6 +414,13 @@ internal sealed class FullFlowSuite : ISelfTestSuite
             }
 
             ctx.Check(empty.Count == 0, "a job with pre/post measurement and roundness should fill these curves: " + string.Join(", ", empty));
+
+            // 记录页"道次表"（设计稿 v4 5.8.2 第 3 格）：存下来的那一份。
+            await h.PressVerticalKeyAsync(ctx, "Vk_PassTable");
+            bool passes = await h.WaitUntilAsync(() => records.IsPassTableOpen && records.PassTable.Rows.Count > 0, TimeSpan.FromSeconds(10));
+            ctx.Check(passes, "the record should keep its pass table");
+            h.TryScreenshot("records-pass-table");
+            await h.BackAsync();
         });
     }
 

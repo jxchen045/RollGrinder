@@ -272,6 +272,13 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     private readonly IManualCommandService manualCommands;
     private readonly IUserSession userSession;
     private readonly IMeasurementNotifications measurementNotifications;
+    private readonly IRunRecorder recorder;
+    private readonly IRunLogService runLogService;
+    private readonly IRunLogRepository runLog;
+    private readonly RollGrinder.Services.NcInterface.IPassDataCollector passCollector;
+    private readonly FunctionKeyViewModel passTableKey;
+    private DateTimeOffset lastPassRefreshUtc;
+    private int passRefreshBusy;
 
     /// <summary>上一次按哪个测量计数刷新的误差曲线与 RMS；计数变了说明后台又存下了一次测量。</summary>
     private long seenMeasurementVersion;
@@ -329,6 +336,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         IStrokeCompensationLog strokeCompensationLog,
         IRecordService recordService,
         IRollPlanningService planning,
+        IRunRecorder recorder,
+        IRunLogService runLogService,
+        IRunLogRepository runLog,
+        RollGrinder.Services.NcInterface.IPassDataCollector passCollector,
         JobDraft jobDraft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
@@ -344,6 +355,11 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         this.calibration = calibration ?? throw new ArgumentNullException(nameof(calibration));
         this.stepUpdates = stepUpdates ?? throw new ArgumentNullException(nameof(stepUpdates));
         this.adjust = adjust ?? throw new ArgumentNullException(nameof(adjust));
+        this.recorder = recorder ?? throw new ArgumentNullException(nameof(recorder));
+        this.runLogService = runLogService ?? throw new ArgumentNullException(nameof(runLogService));
+        this.runLog = runLog ?? throw new ArgumentNullException(nameof(runLog));
+        this.passCollector = passCollector ?? throw new ArgumentNullException(nameof(passCollector));
+        PassTable = new PassTableViewModel(localizer);
         this.stepFlow = stepFlow ?? throw new ArgumentNullException(nameof(stepFlow));
         this.traces = traces ?? throw new ArgumentNullException(nameof(traces));
         this.manualCommands = manualCommands ?? throw new ArgumentNullException(nameof(manualCommands));
@@ -399,6 +415,9 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         // 横键（界面修订稿 v3 5.1）：补偿 · 程序段 · 工序跳转… · 提前结束… · 磨削记录 · 作业；
         // 按钮板上没有的循环启动 / 暂停补在后面。冷却挪到竖键 6（运行中随手开关，不占横键）。
         this.parameterTableKey = FunctionKeyViewModel.ForAction("Fn_ParameterTable", localizer, () => IsMatrixOverview = !IsMatrixOverview);
+
+        // 道次表（设计稿 v4 5.3.4）：正在磨的这一支逐道次的折返实际值、倍率摘要、越界事件、逐工序摘要（含有效值）。
+        this.passTableKey = FunctionKeyViewModel.ForAction("Fn_PassTable", localizer, TogglePassTable);
         var functionKeys = new List<FunctionKeyViewModel?>
         {
             this.compensationKey,
@@ -408,6 +427,7 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
             FunctionKeyViewModel.ForAction("Fn_GrindingRecords", localizer, OpenRecordsOfThisRoll),
             FunctionKeyViewModel.ForAction("Fn_Job", localizer, () => Navigator.GoTo(PageKey.Job)),
             this.parameterTableKey,
+            this.passTableKey,
         };
         if (!machine.IsOnPanel(MachineDescription.PanelCycleStart))
         {
@@ -470,6 +490,9 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
 
     public ObservableCollection<VerdictRowViewModel> FinishRows { get; } = new();
 
+    /// <summary>"这次怎么磨的"（设计稿 v4 5.3.5）：方案、本次调整（核对 / 运行中）、道次表完整性、下发序号与 NC 确认、越界次数。</summary>
+    public ObservableCollection<LabelValueViewModel> FinishFacts { get; } = new();
+
     /// <summary>NC 报"循环正常结束"的那一拍：等记录收尾（合格判定写进去）再打开横幅。</summary>
     private async Task ShowFinishAsync(string jobId, CancellationToken cancellationToken)
     {
@@ -507,7 +530,49 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
                 item.Passed == false));
         }
 
+        await FillFinishFactsAsync(record, cancellationToken).ConfigureAwait(true);
         Navigator.OpenSubView(FinishSubView);
+    }
+
+    private async Task FillFinishFactsAsync(GrindingRecord record, CancellationToken cancellationToken)
+    {
+        FinishFacts.Clear();
+        GrindingJob? job = (await this.jobs.GetAsync(record.JobId, cancellationToken).ConfigureAwait(true))?.Job ?? this.activeJob;
+        RunLogView log = await this.runLogService.LoadAsync(record.RecordId, cancellationToken).ConfigureAwait(true);
+        if (job is not null)
+        {
+            FinishFacts.Add(new LabelValueViewModel(
+                "Finish_Plan",
+                job.PlanNo is int planNo
+                    ? Localizer.Format("Finish_PlanFormat", planNo, job.ProfileName ?? "--", job.ProgramName ?? "--")
+                    : (job.ProfileName ?? "--") + " · " + (job.ProgramName ?? "--"),
+                Localizer));
+            int review = job.Adjustments.Count(item => !item.Running);
+            int running = job.Adjustments.Count(item => item.Running && !item.IsPending);
+            int voided = job.Adjustments.Count(item => item.IsPending);
+            FinishFacts.Add(new LabelValueViewModel(
+                "Finish_Adjustments",
+                job.Adjustments.Count == 0
+                    ? Localizer["Job_AdjustNone"]
+                    : Localizer.Format("Finish_AdjustmentsFormat", review, running) + (voided > 0 ? " · " + Localizer.Format("Finish_VoidedFormat", voided) : string.Empty),
+                Localizer));
+        }
+
+        FinishFacts.Add(new LabelValueViewModel(
+            "Finish_PassTable",
+            log.Passes.Count == 0 ? Localizer["Finish_NoPassTable"]
+                : string.IsNullOrEmpty(log.MissingRanges) ? Localizer.Format("Finish_PassCompleteFormat", log.Passes.Count)
+                : Localizer.Format("Finish_PassMissingFormat", log.Passes.Count, log.MissingRanges),
+            Localizer));
+        FinishFacts.Add(new LabelValueViewModel(
+            "Finish_Download",
+            log.Nc?.DownloadSequence is int sequence
+                ? log.Nc.AcceptedAtUtc is { } at
+                    ? Localizer.Format("Finish_DownloadAcceptedFormat", sequence, at.ToLocalTime().ToString("HH:mm:ss", CultureInfo.CurrentCulture))
+                    : Localizer.Format("Finish_DownloadNotAcceptedFormat", sequence)
+                : "--",
+            Localizer));
+        FinishFacts.Add(new LabelValueViewModel("Finish_OutOfBound", log.OutOfBoundCount.ToString(CultureInfo.CurrentCulture), Localizer));
     }
 
     /// <summary>返磨…：问一句，建一份返磨草稿（同计划、标"返磨"），到作业页它排在待磨清单最前。</summary>
@@ -536,6 +601,79 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         this.jobDraft.RecordsJobId = this.finishJobId;
         Navigator.CloseSubView();
         Navigator.StartTask(PageKey.Records, PageKey.AutoGrinding);
+    }
+
+    // ───────────── 道次表（设计稿 v4 5.3.4） ─────────────
+
+    public const string PassTableSubView = "SubView_PassTable";
+
+    public bool IsPassTableOpen => ActiveSubViewKey == PassTableSubView;
+
+    public PassTableViewModel PassTable { get; }
+
+    private void TogglePassTable()
+    {
+        if (IsPassTableOpen)
+        {
+            Navigator.CloseSubView();
+            return;
+        }
+
+        Navigator.OpenSubView(PassTableSubView);
+        _ = RefreshPassTableAsync(this.monitor.Current);
+    }
+
+    /// <summary>道次表开着时每秒刷一次：库里已存的道次行 + 正在累计的倍率摘要 + 事件。</summary>
+    private async Task RefreshPassTableAsync(MachineStateSnapshot snapshot)
+    {
+        if (!IsPassTableOpen || Interlocked.Exchange(ref this.passRefreshBusy, 1) == 1)
+        {
+            return;
+        }
+
+        try
+        {
+            this.lastPassRefreshUtc = DateTimeOffset.UtcNow;
+            int step = (int)(snapshot.GetNumberOrNull(MachineTagKeys.JobCurrentStepOrder) ?? 0.0);
+            int pass = (int)(snapshot.GetNumberOrNull(MachineTagKeys.JobCurrentPass) ?? 0.0) + 1;
+            RollGrinder.Services.NcInterface.PassBufferStatus status = this.passCollector.Status;
+            string statusText = status.IsMapped
+                ? Localizer.Format("Pass_BufferFormat", status.WriteSeq, status.ReadSeq, status.SlotCount, status.OverflowCount)
+                : Localizer["Pass_BufferNotMapped"];
+            if (this.recorder.ActiveRecordId is not { } recordId)
+            {
+                PassTable.Load(this.activeJob, Array.Empty<RecordPassRow>(), Array.Empty<OverrideSummaryRow>(), Array.Empty<RunEvent>(),
+                    Array.Empty<StepRunSummary>(), string.Empty, statusText);
+                return;
+            }
+
+            IReadOnlyList<RecordPassRow> passes = await this.runLog.ListPassesAsync(recordId, CancellationToken.None).ConfigureAwait(true);
+            IReadOnlyList<OverrideSummaryRow> overrides = this.recorder.LiveOverrides();
+            IReadOnlyList<RunEvent> events = await this.runLog.ListEventsAsync(recordId, CancellationToken.None).ConfigureAwait(true);
+            string missing = string.Join(", ", events.Where(e => e.Kind == RunEventKinds.PassMissing && e.Detail is not null).Select(e => e.Detail));
+            if (this.passCollector.IsStale(DateTimeOffset.UtcNow))
+            {
+                statusText = Localizer["Pass_Stale"] + " · " + statusText;
+            }
+
+            PassTable.Load(
+                this.activeJob, passes, overrides, events, this.runLogService.Summarize(this.activeJob, passes, overrides, events),
+                missing, statusText, step, pass);
+        }
+        catch (Exception ex) when (ex is DataStoreException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            Alarms.RaiseException(ex);
+        }
+        finally
+        {
+            Volatile.Write(ref this.passRefreshBusy, 0);
+        }
+    }
+
+    private void SetPassFilter(PassFilter filter)
+    {
+        PassTable.Filter = filter;
+        ApplyVerticalKeys();
     }
 
     /// <summary>程序段子功能（界面修订稿 v3：取代"状态总览"，机构灯已在上排）：NC 当前 / 下一程序段、工序与道次。</summary>
@@ -581,7 +719,9 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
     {
         this.compensationKey.IsActive = IsCompensationOpen;
         this.overviewKey.IsActive = IsStatusOverviewOpen;
+        this.passTableKey.IsActive = IsPassTableOpen;
         OnPropertyChanged(nameof(IsStatusOverviewOpen));
+        OnPropertyChanged(nameof(IsPassTableOpen));
         OnPropertyChanged(nameof(IsFinishOpen));
 
         if (IsCompensationOpen)
@@ -606,6 +746,21 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         if (IsStatusOverviewOpen)
         {
             SetVerticalKeys(new FunctionKeyViewModel?[] { null, null, null, null, null, this.coolantKey, null, BackKey() });
+            return;
+        }
+
+        if (IsPassTableOpen)
+        {
+            // 竖键 1–3 筛选：本工序 / 全部 / 只看越界（设计稿 v4 5.3.4）。
+            FunctionKeyViewModel Filter(string label, PassFilter filter) =>
+                new(label, new RelayCommand(() => SetPassFilter(filter)), Localizer) { IsActive = PassTable.Filter == filter };
+            SetVerticalKeys(new FunctionKeyViewModel?[]
+            {
+                Filter("Vk_PassThisStep", PassFilter.CurrentStep),
+                Filter("Vk_PassAll", PassFilter.All),
+                Filter("Vk_PassOutOfBound", PassFilter.OutOfBound),
+                null, null, this.coolantKey, null, BackKey(),
+            });
             return;
         }
 
@@ -1052,6 +1207,10 @@ public sealed partial class AutoGrindingViewModel : PageViewModelBase
         UpdateSequence(snapshot);
         UpdateBlocks(snapshot);
         UpdateEditHandshake(snapshot);
+        if (IsPassTableOpen && DateTimeOffset.UtcNow - this.lastPassRefreshUtc >= TimeSpan.FromSeconds(1))
+        {
+            _ = RefreshPassTableAsync(snapshot);
+        }
 
         // 循环正常结束的上升沿：等收尾写完，弹结果横幅。
         bool complete = snapshot.GetNumberOrNull(MachineTagKeys.JobCycleComplete) is double flag && flag > 0.5;

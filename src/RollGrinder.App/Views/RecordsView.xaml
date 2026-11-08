@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:RollGrinder.App.Localization"
+             xmlns:views="clr-namespace:RollGrinder.App.Views"
              xmlns:ctl="clr-namespace:RollGrinder.App.Controls"
              xmlns:plot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
     <!--
@@ -232,6 +233,20 @@
                         <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
                             <TextBlock Text="{Binding FailedTitle}" Style="{StaticResource Text.CardTitle}" />
                         </Border>
+                        <!-- 待处理（设计稿 v4 5.8.1）：同一参数连续调了几次的，建议工艺员存为新方案。 -->
+                        <StackPanel DockPanel.Dock="Bottom" Margin="14,4,14,10">
+                            <TextBlock Text="{Binding PendingTitle}" Style="{StaticResource Text.CardTitle}" Margin="0,0,0,4" />
+                            <ItemsControl ItemsSource="{Binding PendingRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" Width="{x:Static ctl:LayoutProfile.LabelColumnWidth}" />
+                                            <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                         <ItemsControl ItemsSource="{Binding FailedRows}" Margin="14,8">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -245,6 +260,10 @@
                     </DockPanel>
                 </Border>
         </Grid>
+
+        <!-- 道次表（设计稿 v4 5.8.2）：存下来的逐道次、倍率摘要、事件、逐工序摘要（含有效值）。 -->
+        <views:PassTableView Grid.ColumnSpan="3" DataContext="{Binding PassTable}"
+                             Visibility="{Binding DataContext.IsPassTableOpen, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}" />
 
         <!-- 下发参数：这份作业下发时留的快照（辊形 / 程序版本、磨前直径、磨削量、工序、核对结论）。 -->
         <Grid Grid.ColumnSpan="3" Background="{StaticResource Brush.Background}"

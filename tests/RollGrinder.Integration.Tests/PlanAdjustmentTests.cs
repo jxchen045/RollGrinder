@@ -282,4 +282,26 @@ public sealed class PlanAdjustmentTests : IDisposable
         recorded.JobValue.Should().BeApproximately(feed * 1.08, 1e-9);
         recorded.ChangedBy.Should().Be("班长");
     }
+
+    [Fact]
+    public async Task The_same_adjustment_three_times_in_a_row_is_suggested_for_a_new_plan()
+    {
+        await using ServiceProvider services = await BuildAsync();
+        double feed = await PlanFeedAsync(services, 2);
+        for (int i = 1; i <= 3; i++)
+        {
+            (_, JobDownloadResult ok) = await GrindAsync(services, "J-R" + i, (2, StepParameterKeys.FeedMmPerMin, feed * 0.95, false));
+            ok.Succeeded.Should().BeTrue();
+            await Task.Delay(5); // 建立时间排序用
+        }
+
+        RollOverview overview = await services.GetRequiredService<IRollPlanningService>()
+            .OverviewAsync(DateTimeOffset.UnixEpoch, CancellationToken.None);
+        RepeatedAdjustment repeated = overview.Repeated.Should().ContainSingle().Subject;
+        repeated.RollId.Should().Be("R-300");
+        repeated.StepOrder.Should().Be(2);
+        repeated.ParameterKey.Should().Be(StepParameterKeys.FeedMmPerMin);
+        repeated.Times.Should().Be(3);
+        repeated.LastValue.Should().BeApproximately(feed * 0.95, 1e-9);
+    }
 }

@@ -5396,7 +5396,7 @@
     <value>标准模板"{0}"要求改用新版，但 {1}：请工艺员处理（本次仍按原方案）</value>
   </data>
   <data name="Check_Template_UpdatedFormat" xml:space="preserve">
-    <value>复制自"{0}"，标准已更新：要改用新的请在方案区复制（本次按原方案）</value>
+    <value>复制自"{0}"，标准已更新：要改用新的按第 6 格"改用新模板…"（这次不改用，同一版下次不再提示）</value>
   </data>
   <data name="PlanProblem_NeedsConfirm" xml:space="preserve">
     <value>长度不同，须看过叠图确认</value>
@@ -5676,5 +5676,194 @@
   </data>
   <data name="Records_AdjustNotAppliedFormat" xml:space="preserve">
     <value>运行中 · {0} {1} · 未生效（作废）</value>
+  </data>
+  <data name="Vk_UseNewTemplate" xml:space="preserve">
+    <value>改用新模板…</value>
+  </data>
+  <data name="Job_AskUseNewTemplateFormat" xml:space="preserve">
+    <value>从新版"{0}"复制出新方案，设为这支辊的当前方案（原方案留作历史）？</value>
+  </data>
+  <data name="Job_UsedNewTemplateFormat" xml:space="preserve">
+    <value>已改用新模板：方案 {0} · {1}，已重新核对</value>
+  </data>
+  <data name="Finish_Plan" xml:space="preserve">
+    <value>磨法</value>
+  </data>
+  <data name="Finish_PlanFormat" xml:space="preserve">
+    <value>方案 {0} · {1} · {2}</value>
+  </data>
+  <data name="Finish_Adjustments" xml:space="preserve">
+    <value>本次调整</value>
+  </data>
+  <data name="Finish_AdjustmentsFormat" xml:space="preserve">
+    <value>核对时 {0} 项 · 运行中 {1} 项</value>
+  </data>
+  <data name="Finish_VoidedFormat" xml:space="preserve">
+    <value>{0} 项未生效（作废）</value>
+  </data>
+  <data name="Finish_PassTable" xml:space="preserve">
+    <value>道次表</value>
+  </data>
+  <data name="Finish_NoPassTable" xml:space="preserve">
+    <value>没有道次数据（NC 没映射道次缓冲）</value>
+  </data>
+  <data name="Finish_PassCompleteFormat" xml:space="preserve">
+    <value>共 {0} 道，完整</value>
+  </data>
+  <data name="Finish_PassMissingFormat" xml:space="preserve">
+    <value>共 {0} 道，记录缺第 {1} 道（不影响合格判定）</value>
+  </data>
+  <data name="Finish_Download" xml:space="preserve">
+    <value>下发</value>
+  </data>
+  <data name="Finish_DownloadAcceptedFormat" xml:space="preserve">
+    <value>序号 {0} · NC {1} 确认</value>
+  </data>
+  <data name="Finish_DownloadNotAcceptedFormat" xml:space="preserve">
+    <value>序号 {0} · NC 未确认</value>
+  </data>
+  <data name="Finish_OutOfBound" xml:space="preserve">
+    <value>越界</value>
+  </data>
+  <data name="Fn_PassTable" xml:space="preserve">
+    <value>道次表</value>
+  </data>
+  <data name="Vk_PassTable" xml:space="preserve">
+    <value>道次表</value>
+  </data>
+  <data name="Vk_PassThisStep" xml:space="preserve">
+    <value>本工序</value>
+  </data>
+  <data name="Vk_PassAll" xml:space="preserve">
+    <value>全部</value>
+  </data>
+  <data name="Vk_PassOutOfBound" xml:space="preserve">
+    <value>只看越界</value>
+  </data>
+  <data name="Mark_MissingPassesFormat" xml:space="preserve">
+    <value>▲缺{0}道</value>
+  </data>
+  <data name="Mark_OutOfBoundFormat" xml:space="preserve">
+    <value>✕越界{0}</value>
+  </data>
+  <data name="Overview_PendingFormat" xml:space="preserve">
+    <value>待处理（{0}）</value>
+  </data>
+  <data name="Overview_RepeatedFormat" xml:space="preserve">
+    <value>方案 {0} 第 {1} 道 {2} 连续 {3} 次调整（{4} → {5}）：建议存为新方案</value>
+  </data>
+  <data name="Pass_BufferFormat" xml:space="preserve">
+    <value>NC 已写 {0} · 已读 {1} · {2} 槽 · 溢出 {3}</value>
+  </data>
+  <data name="Pass_BufferNotMapped" xml:space="preserve">
+    <value>道次缓冲未映射</value>
+  </data>
+  <data name="Pass_Stale" xml:space="preserve">
+    <value>道次数据未更新（机床照常磨）</value>
+  </data>
+  <data name="Pass_ColStep" xml:space="preserve">
+    <value>工序</value>
+  </data>
+  <data name="Pass_ColPass" xml:space="preserve">
+    <value>道</value>
+  </data>
+  <data name="Pass_ColLeftZ" xml:space="preserve">
+    <value>左折返 Z</value>
+  </data>
+  <data name="Pass_ColRightZ" xml:space="preserve">
+    <value>右折返 Z</value>
+  </data>
+  <data name="Pass_ColDwell" xml:space="preserve">
+    <value>停留 s</value>
+  </data>
+  <data name="Pass_ColOverride" xml:space="preserve">
+    <value>进给倍率</value>
+  </data>
+  <data name="Pass_ColCompensation" xml:space="preserve">
+    <value>补偿 µm</value>
+  </data>
+  <data name="Pass_ColCurrent" xml:space="preserve">
+    <value>电流 A</value>
+  </data>
+  <data name="Pass_Empty" xml:space="preserve">
+    <value>还没有道次数据</value>
+  </data>
+  <data name="Pass_TitleFormat" xml:space="preserve">
+    <value>道次表 · {0} 道 · 越界 {1}</value>
+  </data>
+  <data name="Pass_MissingFormat" xml:space="preserve">
+    <value>道次表不完整，缺第 {0} 道</value>
+  </data>
+  <data name="Pass_OverrideRangeFormat" xml:space="preserve">
+    <value>{0} %（{1}–{2}）</value>
+  </data>
+  <data name="Pass_SummaryTitle" xml:space="preserve">
+    <value>逐工序摘要</value>
+  </data>
+  <data name="Pass_EventsTitle" xml:space="preserve">
+    <value>事件</value>
+  </data>
+  <data name="Pass_SumFeed" xml:space="preserve">
+    <value>拖板</value>
+  </data>
+  <data name="Pass_SumOverride" xml:space="preserve">
+    <value>倍率</value>
+  </data>
+  <data name="Pass_SumReversal" xml:space="preserve">
+    <value>折返散布 mm</value>
+  </data>
+  <data name="Pass_SumCompensation" xml:space="preserve">
+    <value>补偿</value>
+  </data>
+  <data name="Pass_SumOutOfBound" xml:space="preserve">
+    <value>越界</value>
+  </data>
+  <data name="Pass_FeedChangedFormat" xml:space="preserve">
+    <value>设定 {0} → 本次 {1}</value>
+  </data>
+  <data name="Pass_MeanOverrideFormat" xml:space="preserve">
+    <value>平均 {0} %（最低 {1} %）</value>
+  </data>
+  <data name="Pass_EffectiveFormat" xml:space="preserve">
+    <value>有效值：拖板 {0} × 平均倍率 {1} % ≈ {2} mm/min</value>
+  </data>
+  <data name="Pass_EventWhereFormat" xml:space="preserve">
+    <value>{0} 第 {1} 道</value>
+  </data>
+  <data name="Records_PassTableStatusFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Snapshot_NcAccepted" xml:space="preserve">
+    <value>NC 确认</value>
+  </data>
+  <data name="Override_feed" xml:space="preserve">
+    <value>进给倍率</value>
+  </data>
+  <data name="Override_spindle" xml:space="preserve">
+    <value>头架倍率</value>
+  </data>
+  <data name="Override_wheel" xml:space="preserve">
+    <value>砂轮倍率</value>
+  </data>
+  <data name="RunEvent_OverrideLow" xml:space="preserve">
+    <value>倍率低于 50 %</value>
+  </data>
+  <data name="RunEvent_OverrideHigh" xml:space="preserve">
+    <value>倍率高于 110 %</value>
+  </data>
+  <data name="RunEvent_OverrideWholePass" xml:space="preserve">
+    <value>整道不在 100 %</value>
+  </data>
+  <data name="RunEvent_PassMissing" xml:space="preserve">
+    <value>道次缺行</value>
+  </data>
+  <data name="RunEvent_PassDataStale" xml:space="preserve">
+    <value>道次数据未更新</value>
+  </data>
+  <data name="RunEvent_NcAccepted" xml:space="preserve">
+    <value>NC 确认下发</value>
+  </data>
+  <data name="RunEvent_EditApplied" xml:space="preserve">
+    <value>改参数生效</value>
   </data>
 </root>

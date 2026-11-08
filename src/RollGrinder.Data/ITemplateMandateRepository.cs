@@ -55,4 +55,10 @@ public interface ITemplateMandateRepository
 
     /// <summary>撤回：还没换上的辊不再强制（已换上的不动）。</summary>
     Task RevokeAsync(string mandateId, CancellationToken cancellationToken);
+
+    /// <summary>"标准已更新"提示过、这支辊没改用（设计说明 4.6：同一版只提示一次）。</summary>
+    Task DeclineAsync(string planId, TemplateKind kind, string templateId, int version, DateTimeOffset atUtc, CancellationToken cancellationToken);
+
+    /// <summary>这个方案对这条模板的这一版提示过、没改用。</summary>
+    Task<bool> IsDeclinedAsync(string planId, TemplateKind kind, string templateId, int version, CancellationToken cancellationToken);
 }

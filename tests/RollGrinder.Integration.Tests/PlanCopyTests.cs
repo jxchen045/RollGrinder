@@ -251,7 +251,45 @@ public sealed class PlanCopyTests : IDisposable
 
         await templates.RevokeMandateAsync(mandate.MandateId, CancellationToken.None);
 
-        (await templates.ApplyForJobAsync("R-1", "操作工", CancellationToken.None)).Should().BeEmpty();
+        // 撤回以后不再强制，只剩普通的"标准已更新"提示。
+        (await templates.ApplyForJobAsync("R-1", "操作工", CancellationToken.None)).Should().ContainSingle()
+            .Which.Should().Match<TemplateUpdateNotice>(n => !n.Forced && n.CanAdopt);
         (await plans.CurrentAsync("R-1", CancellationToken.None))!.PlanNo.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task An_updated_template_is_offered_once_and_one_key_adopts_it()
+    {
+        await using ServiceProvider services = await BuildAsync();
+        await AddRollAsync(services, "R-1");
+        await AddRollAsync(services, "R-2");
+        var plans = services.GetRequiredService<IGrindingPlanService>();
+        var templates = services.GetRequiredService<ITemplateService>();
+        GrindingPlanRecord before = (await plans.CurrentAsync("R-1", CancellationToken.None))!;
+        await plans.CurrentAsync("R-2", CancellationToken.None);
+        (await templates.ApplyForJobAsync("R-1", "操作工", CancellationToken.None)).Should().BeEmpty("模板没改过");
+
+        // 工艺员只是保存了模板（没下"必须采用"）：来磨时核对页提示"标准已更新"（设计说明 4.6）。
+        RollProfileDefinition template = (await services.GetRequiredService<IRollProfileRepository>().GetAsync("T-CROWN", CancellationToken.None))!;
+        await services.GetRequiredService<ILibraryService>().SaveProfileAsync(template with { Profile = Crown(280.0) }, "工艺员", CancellationToken.None);
+        TemplateUpdateNotice notice = (await templates.ApplyForJobAsync("R-1", "操作工", CancellationToken.None)).Single();
+        notice.Forced.Should().BeFalse();
+        notice.CanAdopt.Should().BeTrue();
+        notice.TemplateVersion.Should().Be(2);
+        notice.PlanId.Should().Be(before.PlanId);
+
+        // 第 6 格"改用新模板…"：从新模板复制出新方案设为当前，原方案留作历史。
+        PlanCreateOutcome adopted = await templates.AdoptAsync("R-1", new[] { notice }, "操作工", CancellationToken.None);
+        adopted.Plan!.PlanNo.Should().Be(before.PlanNo + 1);
+        GrindingPlanRecord now = (await plans.CurrentAsync("R-1", CancellationToken.None))!;
+        now.PlanId.Should().Be(adopted.Plan.PlanId);
+        now.TemplateProfileVersion.Should().Be(2);
+        (await templates.ApplyForJobAsync("R-1", "操作工", CancellationToken.None)).Should().BeEmpty("已经是新版");
+
+        // R-2 这次没改用：同一版只提示一次。
+        IReadOnlyList<TemplateUpdateNotice> offered = await templates.ApplyForJobAsync("R-2", "操作工", CancellationToken.None);
+        offered.Should().ContainSingle();
+        await templates.DeclineAsync(offered, CancellationToken.None);
+        (await templates.ApplyForJobAsync("R-2", "操作工", CancellationToken.None)).Should().BeEmpty("提示过一次，这支辊没改用");
     }
 }

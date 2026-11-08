@@ -146,6 +146,37 @@ public sealed class SqliteTemplateMandateRepository : ITemplateMandateRepository
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task DeclineAsync(
+        string planId, TemplateKind kind, string templateId, int version, DateTimeOffset atUtc, CancellationToken cancellationToken)
+    {
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT OR IGNORE INTO plan_template_decline (plan_id, kind, template_id, version, declined_at_utc)
+            VALUES ($plan, $kind, $template, $version, $at);
+            """;
+        SqlMapping.AddParameter(command, "$plan", planId);
+        SqlMapping.AddParameter(command, "$kind", (int)kind);
+        SqlMapping.AddParameter(command, "$template", templateId);
+        SqlMapping.AddParameter(command, "$version", version);
+        SqlMapping.AddParameter(command, "$at", SqlMapping.ToText(atUtc));
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<bool> IsDeclinedAsync(string planId, TemplateKind kind, string templateId, int version, CancellationToken cancellationToken)
+    {
+        await using SqliteConnection connection = await this.database.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await using SqliteCommand command = connection.CreateCommand();
+        command.CommandText =
+            "SELECT 1 FROM plan_template_decline WHERE plan_id = $plan AND kind = $kind AND template_id = $template AND version >= $version LIMIT 1;";
+        SqlMapping.AddParameter(command, "$plan", planId);
+        SqlMapping.AddParameter(command, "$kind", (int)kind);
+        SqlMapping.AddParameter(command, "$template", templateId);
+        SqlMapping.AddParameter(command, "$version", version);
+        return await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) is not null;
+    }
+
     private static TemplateMandate MapMandate(SqliteDataReader reader, int at) => new(
         reader.GetString(at),
         (TemplateKind)reader.GetInt32(at + 1),

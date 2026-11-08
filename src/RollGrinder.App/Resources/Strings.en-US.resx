@@ -5396,7 +5396,7 @@
     <value>Standard template "{0}" must be adopted, but {1}: ask the process engineer (this job keeps the old plan)</value>
   </data>
   <data name="Check_Template_UpdatedFormat" xml:space="preserve">
-    <value>Copied from "{0}", which was updated: copy it in the Plans area to use it (this job keeps the plan)</value>
+    <value>Copied from "{0}", which has been updated: press key 6 "Use new template…" to switch (if not, this version is not offered again)</value>
   </data>
   <data name="PlanProblem_NeedsConfirm" xml:space="preserve">
     <value>Lengths differ: confirm after checking the overlay</value>
@@ -5676,5 +5676,194 @@
   </data>
   <data name="Records_AdjustNotAppliedFormat" xml:space="preserve">
     <value>While running · {0} {1} · never applied (void)</value>
+  </data>
+  <data name="Vk_UseNewTemplate" xml:space="preserve">
+    <value>Use new template…</value>
+  </data>
+  <data name="Job_AskUseNewTemplateFormat" xml:space="preserve">
+    <value>Copy a new plan from the updated "{0}" and make it this roll's current plan (the old plan is kept)?</value>
+  </data>
+  <data name="Job_UsedNewTemplateFormat" xml:space="preserve">
+    <value>Switched to the new template: plan {0} · {1}; checks re-run</value>
+  </data>
+  <data name="Finish_Plan" xml:space="preserve">
+    <value>Plan</value>
+  </data>
+  <data name="Finish_PlanFormat" xml:space="preserve">
+    <value>Plan {0} · {1} · {2}</value>
+  </data>
+  <data name="Finish_Adjustments" xml:space="preserve">
+    <value>Adjustments</value>
+  </data>
+  <data name="Finish_AdjustmentsFormat" xml:space="preserve">
+    <value>{0} at review · {1} while running</value>
+  </data>
+  <data name="Finish_VoidedFormat" xml:space="preserve">
+    <value>{0} never applied (void)</value>
+  </data>
+  <data name="Finish_PassTable" xml:space="preserve">
+    <value>Pass table</value>
+  </data>
+  <data name="Finish_NoPassTable" xml:space="preserve">
+    <value>No pass data (the NC pass buffer is not mapped)</value>
+  </data>
+  <data name="Finish_PassCompleteFormat" xml:space="preserve">
+    <value>{0} passes, complete</value>
+  </data>
+  <data name="Finish_PassMissingFormat" xml:space="preserve">
+    <value>{0} passes; the record misses passes {1} (does not affect the verdict)</value>
+  </data>
+  <data name="Finish_Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="Finish_DownloadAcceptedFormat" xml:space="preserve">
+    <value>Sequence {0} · NC accepted at {1}</value>
+  </data>
+  <data name="Finish_DownloadNotAcceptedFormat" xml:space="preserve">
+    <value>Sequence {0} · not accepted by the NC</value>
+  </data>
+  <data name="Finish_OutOfBound" xml:space="preserve">
+    <value>Out of bound</value>
+  </data>
+  <data name="Fn_PassTable" xml:space="preserve">
+    <value>Pass table</value>
+  </data>
+  <data name="Vk_PassTable" xml:space="preserve">
+    <value>Pass table</value>
+  </data>
+  <data name="Vk_PassThisStep" xml:space="preserve">
+    <value>This step</value>
+  </data>
+  <data name="Vk_PassAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Vk_PassOutOfBound" xml:space="preserve">
+    <value>Out of bound only</value>
+  </data>
+  <data name="Mark_MissingPassesFormat" xml:space="preserve">
+    <value>▲{0} missing</value>
+  </data>
+  <data name="Mark_OutOfBoundFormat" xml:space="preserve">
+    <value>✕{0} out of bound</value>
+  </data>
+  <data name="Overview_PendingFormat" xml:space="preserve">
+    <value>To review ({0})</value>
+  </data>
+  <data name="Overview_RepeatedFormat" xml:space="preserve">
+    <value>Plan {0} step {1} {2} adjusted {3} times in a row ({4} → {5}): consider saving a new plan</value>
+  </data>
+  <data name="Pass_BufferFormat" xml:space="preserve">
+    <value>NC wrote {0} · read {1} · {2} slots · overflow {3}</value>
+  </data>
+  <data name="Pass_BufferNotMapped" xml:space="preserve">
+    <value>Pass buffer not mapped</value>
+  </data>
+  <data name="Pass_Stale" xml:space="preserve">
+    <value>Pass data not updating (the machine keeps grinding)</value>
+  </data>
+  <data name="Pass_ColStep" xml:space="preserve">
+    <value>Step</value>
+  </data>
+  <data name="Pass_ColPass" xml:space="preserve">
+    <value>Pass</value>
+  </data>
+  <data name="Pass_ColLeftZ" xml:space="preserve">
+    <value>Left Z</value>
+  </data>
+  <data name="Pass_ColRightZ" xml:space="preserve">
+    <value>Right Z</value>
+  </data>
+  <data name="Pass_ColDwell" xml:space="preserve">
+    <value>Dwell s</value>
+  </data>
+  <data name="Pass_ColOverride" xml:space="preserve">
+    <value>Feed override</value>
+  </data>
+  <data name="Pass_ColCompensation" xml:space="preserve">
+    <value>Comp. µm</value>
+  </data>
+  <data name="Pass_ColCurrent" xml:space="preserve">
+    <value>Current A</value>
+  </data>
+  <data name="Pass_Empty" xml:space="preserve">
+    <value>No pass data yet</value>
+  </data>
+  <data name="Pass_TitleFormat" xml:space="preserve">
+    <value>Pass table · {0} passes · {1} out of bound</value>
+  </data>
+  <data name="Pass_MissingFormat" xml:space="preserve">
+    <value>Pass table incomplete: passes {0} missing</value>
+  </data>
+  <data name="Pass_OverrideRangeFormat" xml:space="preserve">
+    <value>{0} % ({1}–{2})</value>
+  </data>
+  <data name="Pass_SummaryTitle" xml:space="preserve">
+    <value>Per-step summary</value>
+  </data>
+  <data name="Pass_EventsTitle" xml:space="preserve">
+    <value>Events</value>
+  </data>
+  <data name="Pass_SumFeed" xml:space="preserve">
+    <value>Feed</value>
+  </data>
+  <data name="Pass_SumOverride" xml:space="preserve">
+    <value>Override</value>
+  </data>
+  <data name="Pass_SumReversal" xml:space="preserve">
+    <value>Reversal spread mm</value>
+  </data>
+  <data name="Pass_SumCompensation" xml:space="preserve">
+    <value>Comp.</value>
+  </data>
+  <data name="Pass_SumOutOfBound" xml:space="preserve">
+    <value>Out of bound</value>
+  </data>
+  <data name="Pass_FeedChangedFormat" xml:space="preserve">
+    <value>set {0} → this job {1}</value>
+  </data>
+  <data name="Pass_MeanOverrideFormat" xml:space="preserve">
+    <value>mean {0} % (min {1} %)</value>
+  </data>
+  <data name="Pass_EffectiveFormat" xml:space="preserve">
+    <value>Effective: feed {0} × mean override {1} % ≈ {2} mm/min</value>
+  </data>
+  <data name="Pass_EventWhereFormat" xml:space="preserve">
+    <value>{0} pass {1}</value>
+  </data>
+  <data name="Records_PassTableStatusFormat" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Snapshot_NcAccepted" xml:space="preserve">
+    <value>NC accepted</value>
+  </data>
+  <data name="Override_feed" xml:space="preserve">
+    <value>Feed override</value>
+  </data>
+  <data name="Override_spindle" xml:space="preserve">
+    <value>Headstock override</value>
+  </data>
+  <data name="Override_wheel" xml:space="preserve">
+    <value>Wheel override</value>
+  </data>
+  <data name="RunEvent_OverrideLow" xml:space="preserve">
+    <value>Override below 50 %</value>
+  </data>
+  <data name="RunEvent_OverrideHigh" xml:space="preserve">
+    <value>Override above 110 %</value>
+  </data>
+  <data name="RunEvent_OverrideWholePass" xml:space="preserve">
+    <value>Whole pass off 100 %</value>
+  </data>
+  <data name="RunEvent_PassMissing" xml:space="preserve">
+    <value>Missing passes</value>
+  </data>
+  <data name="RunEvent_PassDataStale" xml:space="preserve">
+    <value>Pass data stale</value>
+  </data>
+  <data name="RunEvent_NcAccepted" xml:space="preserve">
+    <value>NC accepted the download</value>
+  </data>
+  <data name="RunEvent_EditApplied" xml:space="preserve">
+    <value>Edit applied</value>
   </data>
 </root>

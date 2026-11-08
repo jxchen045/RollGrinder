@@ -24,7 +24,7 @@ namespace RollGrinder.App.ViewModels;
 /// <summary>记录列表里的一行。</summary>
 public sealed class RecordRowViewModel
 {
-    public RecordRowViewModel(GrindingRecordView view, IStringLocalizer localizer)
+    public RecordRowViewModel(GrindingRecordView view, IStringLocalizer localizer, RunEventCounts? counts = null)
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(localizer);
@@ -54,6 +54,17 @@ public sealed class RecordRowViewModel
         else if (view.Deviation == RollGrinder.Core.Steps.JobDeviation.PlanChanged)
         {
             marks.Add(localizer["Mark_PlanChanged"]);
+        }
+
+        // 过程记录（设计稿 v4 5.8.2）：▲ 道次表缺道、✕ 越界几次。缺道不影响合格判定。
+        if (counts is { MissingPasses: > 0 } missing)
+        {
+            marks.Add(localizer.Format("Mark_MissingPassesFormat", missing.MissingPasses));
+        }
+
+        if (counts is { OutOfBound: > 0 } outOfBound)
+        {
+            marks.Add(localizer.Format("Mark_OutOfBoundFormat", outOfBound.OutOfBound));
         }
 
         MarkText = string.Join(" ", marks);
@@ -123,6 +134,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     private readonly IJobRepository jobs;
     private readonly IGrindingPlanService plans;
     private readonly IUserSession session;
+    private readonly IRunLogService runLogService;
     private GrindingJob? snapshotJob;
     private readonly FunctionKeyViewModel overviewKey;
     private readonly Dictionary<RecordCurveKind, FunctionKeyViewModel> curveKeys = new();
@@ -137,6 +149,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         IJobRepository jobs,
         IGrindingPlanService plans,
         IUserSession session,
+        IRunLogService runLogService,
         JobDraft jobDraft,
         IStringLocalizer localizer,
         IAlarmSink alarms,
@@ -151,6 +164,8 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         this.jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
         this.plans = plans ?? throw new ArgumentNullException(nameof(plans));
         this.session = session ?? throw new ArgumentNullException(nameof(session));
+        this.runLogService = runLogService ?? throw new ArgumentNullException(nameof(runLogService));
+        PassTable = new PassTableViewModel(localizer);
 
         this.toDate = DateTime.Today;
         this.fromDate = DateTime.Today.AddDays(-7);
@@ -203,6 +218,35 @@ public sealed partial class RecordsViewModel : PageViewModelBase
     public bool IsOverviewOpen => ActiveSubViewKey == OverviewSubView;
 
     public bool IsSnapshotOpen => ActiveSubViewKey == SnapshotSubView;
+
+    /// <summary>道次表（设计稿 v4 5.8.2 第 3 格）：选中这一条存下来的道次表、倍率摘要、事件、逐工序摘要。</summary>
+    public const string PassTableSubView = "SubView_PassTable";
+
+    public bool IsPassTableOpen => ActiveSubViewKey == PassTableSubView;
+
+    public PassTableViewModel PassTable { get; }
+
+    private async Task OpenPassTableAsync()
+    {
+        if (SelectedRecord is not { } row)
+        {
+            Interaction.Refuse(Localizer["Records_NoSelection"]);
+            return;
+        }
+
+        await RunGuardedAsync(
+            async token =>
+            {
+                RunLogView log = await this.runLogService.LoadAsync(row.RecordId, token).ConfigureAwait(true);
+                GrindingJob? job = (await this.jobs.GetAsync(row.View.JobId, token).ConfigureAwait(true))?.Job;
+                PassTable.Filter = PassFilter.All;
+                PassTable.Load(
+                    job, log.Passes, log.Overrides, log.Events, log.Steps, log.MissingRanges,
+                    Localizer.Format("Records_PassTableStatusFormat", row.RollCode, row.View.JobId));
+                Navigator.OpenSubView(PassTableSubView);
+            },
+            CancellationToken.None).ConfigureAwait(true);
+    }
 
     /// <summary>存为新方案（设计稿 v4 5.8.4）。</summary>
     public const string SaveAsPlanSubView = "SubView_SaveJobAsPlan";
@@ -356,6 +400,12 @@ public sealed partial class RecordsViewModel : PageViewModelBase
 
     public ObservableCollection<LabelValueViewModel> FailedRows { get; } = new();
 
+    /// <summary>待处理（设计稿 v4 5.8.1）：同一参数连续调了几次的，建议存为新方案。</summary>
+    public ObservableCollection<LabelValueViewModel> PendingRows { get; } = new();
+
+    [ObservableProperty]
+    private string pendingTitle = string.Empty;
+
     [ObservableProperty]
     private string nearScrapTitle = string.Empty;
 
@@ -403,6 +453,17 @@ public sealed partial class RecordsViewModel : PageViewModelBase
                     FailedRows.Add(LabelValueViewModel.Raw(rollId, Localizer[created ? "Overview_RegrindCreated" : "Overview_RegrindPending"]));
                 }
 
+                PendingRows.Clear();
+                foreach (RepeatedAdjustment repeated in overview.Repeated)
+                {
+                    PendingRows.Add(LabelValueViewModel.Raw(
+                        repeated.RollId,
+                        Localizer.Format(
+                            "Overview_RepeatedFormat", repeated.PlanNo, repeated.StepOrder, AdjustText.Parameter(Localizer, repeated.ParameterKey),
+                            repeated.Times, AdjustText.Number(repeated.PlanValue), AdjustText.Number(repeated.LastValue))));
+                }
+
+                PendingTitle = Localizer.Format("Overview_PendingFormat", PendingRows.Count);
                 NearScrapTitle = Localizer.Format("Overview_NearScrapFormat", NearScrapRows.Count);
                 PlanChangeTitle = Localizer.Format("Overview_PlanChangesFormat", PlanChangeRows.Count);
                 FailedTitle = Localizer.Format("Overview_FailedFormat", FailedRows.Count);
@@ -439,6 +500,17 @@ public sealed partial class RecordsViewModel : PageViewModelBase
                 SnapshotRows.Add(new LabelValueViewModel("Job_StartDiameter", snapshot.StartDiameterMm?.ToString("F3", CultureInfo.CurrentCulture) ?? "--", Localizer));
                 SnapshotRows.Add(new LabelValueViewModel("Job_StockMm", snapshot.StockMicrometer is double um ? (um / 1000.0).ToString("F3", CultureInfo.CurrentCulture) : "--", Localizer));
                 SnapshotRows.Add(new LabelValueViewModel("Snapshot_Points", snapshot.Points.Count.ToString(CultureInfo.CurrentCulture), Localizer));
+
+                // 下发序号与 NC 确认（接口约定第 2 节）：NC 循环启动时锁存了这一份才算确认。
+                RunLogView log = await this.runLogService.LoadAsync(row.RecordId, token).ConfigureAwait(true);
+                SnapshotRows.Add(new LabelValueViewModel(
+                    "Snapshot_NcAccepted",
+                    log.Nc?.DownloadSequence is int sequence
+                        ? log.Nc.AcceptedAtUtc is { } at
+                            ? Localizer.Format("Finish_DownloadAcceptedFormat", sequence, at.ToLocalTime().ToString("HH:mm:ss", CultureInfo.CurrentCulture))
+                            : Localizer.Format("Finish_DownloadNotAcceptedFormat", sequence)
+                        : "--",
+                    Localizer));
 
                 SnapshotSteps.Clear();
                 foreach (RollGrinder.Core.Steps.GrindingJobStep step in snapshot.Steps)
@@ -492,6 +564,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
         OnPropertyChanged(nameof(IsOverviewOpen));
         OnPropertyChanged(nameof(IsSnapshotOpen));
         OnPropertyChanged(nameof(IsSaveAsPlanOpen));
+        OnPropertyChanged(nameof(IsPassTableOpen));
         this.overviewKey.IsActive = IsOverviewOpen;
         this.recordsKey.IsActive = !IsOverviewOpen;
         if (IsSaveAsPlanOpen)
@@ -521,6 +594,26 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             return;
         }
 
+        if (IsPassTableOpen)
+        {
+            FunctionKeyViewModel Filter(string label, PassFilter filter) =>
+                new(label, new RelayCommand(() =>
+                {
+                    PassTable.Filter = filter;
+                    ApplyVerticalKeys();
+                }), Localizer) { IsActive = PassTable.Filter == filter };
+            SetCommitPair(null, null);
+            SetVerticalKeys(new FunctionKeyViewModel?[]
+            {
+                Filter("Vk_PassThisStep", PassFilter.CurrentStep),
+                Filter("Vk_PassAll", PassFilter.All),
+                Filter("Vk_PassOutOfBound", PassFilter.OutOfBound),
+                null, null, null, null,
+                new FunctionKeyViewModel("Vk_Back", new RelayCommand(Navigator.CloseSubView), Localizer, FunctionKeyKind.Navigation),
+            });
+            return;
+        }
+
         if (IsOverviewOpen || IsSnapshotOpen)
         {
             SetCommitPair(null, null);
@@ -544,13 +637,13 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             return;
         }
 
-        // 设计稿 v4 5.8.2：第 1 页 1 磨前/磨后 · 2 误差 · 3 圆度 · 4 补偿收敛 · 5 下发参数 ▸ · 6 存为新方案… · 7 打印…，
-        // 第 8 格翻页；第 2 页 查询… · 标记完成…。
+        // 设计稿 v4 5.8.2：第 1 页 1 磨前/磨后 · 2 误差 · 3 道次表 · 4 补偿收敛 · 5 下发参数 ▸ · 6 存为新方案… · 7 打印…，
+        // 第 8 格翻页；第 2 页 圆度 · 查询… · 标记完成…。
         SetVerticalKeys(new FunctionKeyViewModel?[]
         {
             this.curveKeys[RecordCurveKind.BeforeAfterProfile],
             this.curveKeys[RecordCurveKind.Deviation],
-            this.curveKeys[RecordCurveKind.Roundness],
+            new FunctionKeyViewModel("Vk_PassTable", new AsyncRelayCommand(OpenPassTableAsync), Localizer) { PreconditionResourceKey = "Records_NoSelection" },
             this.curveKeys[RecordCurveKind.CompensationConvergence],
             new FunctionKeyViewModel("Vk_DownloadSnapshot", new AsyncRelayCommand(OpenSnapshotAsync), Localizer) { PreconditionResourceKey = "Records_NoSelection" },
             new FunctionKeyViewModel("Vk_SaveJobAsPlan", new AsyncRelayCommand(OpenSaveAsPlanAsync), Localizer)
@@ -559,6 +652,7 @@ public sealed partial class RecordsViewModel : PageViewModelBase
                 PreconditionResourceKey = "Records_NoSelection",
             },
             new FunctionKeyViewModel("Vk_Print", PreviewPostGrindReportCommand, Localizer),
+            this.curveKeys[RecordCurveKind.Roundness],
             FunctionKeyViewModel.ForAction("Vk_QueryAsk", Localizer, () => Navigator.OpenSubView(QuerySubView)),
             new FunctionKeyViewModel("Vk_MarkFinished", new RelayCommand(AskFinish), Localizer) { PreconditionResourceKey = "Records_NoSelection" },
         });
@@ -798,10 +892,12 @@ public sealed partial class RecordsViewModel : PageViewModelBase
             (DateTimeOffset fromUtc, DateTimeOffset toUtc) = LocalDays.Range(FromDate, ToDate, TimeZoneInfo.Local);
 
             Records.Clear();
-            foreach (GrindingRecordView view in await this.recordService
-                .QueryAsync(fromUtc, toUtc, 500, token).ConfigureAwait(true))
+            IReadOnlyList<GrindingRecordView> views = await this.recordService.QueryAsync(fromUtc, toUtc, 500, token).ConfigureAwait(true);
+            IReadOnlyDictionary<string, RunEventCounts> counts = await this.runLogService
+                .CountEventsAsync(views.Select(view => view.RecordId).ToArray(), token).ConfigureAwait(true);
+            foreach (GrindingRecordView view in views)
             {
-                Records.Add(new RecordRowViewModel(view, Localizer));
+                Records.Add(new RecordRowViewModel(view, Localizer, counts.TryGetValue(view.RecordId, out RunEventCounts? found) ? found : null));
             }
 
             StatusResourceKey = Records.Count == 0 ? "Records_Empty" : "Records_Loaded";

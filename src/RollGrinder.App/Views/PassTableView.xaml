@@ -1,0 +1,156 @@
+<UserControl x:Class="RollGrinder.App.Views.PassTableView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:RollGrinder.App.Localization"
+             xmlns:ctl="clr-namespace:RollGrinder.App.Controls">
+    <!--
+        道次表（设计说明第 6 节、设计稿 v4 5.3.4 / 5.8.2）。DataContext 是 PassTableViewModel。
+        左：逐道次（▶ 正在磨，倍率不在 100 % 加粗，低于 50 % 标 ✕ 深红）；右：逐工序摘要（含有效值）与事件。
+        筛选（本工序 / 全部 / 只看越界）在宿主页的竖键上。
+    -->
+    <Grid Background="{StaticResource Brush.Background}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1.5*" />
+            <ColumnDefinition Width="6" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Border Style="{StaticResource Card}">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Style="{StaticResource ActiveCardHeader}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding StatusText}" Style="{StaticResource Text.CardTitle}" />
+                        <TextBlock Text="{Binding Title}" Style="{StaticResource Text.CardTitle}" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                </Border>
+                <Border DockPanel.Dock="Top" Background="{StaticResource Brush.WarningRowFill}" Padding="12,4"
+                        Visibility="{Binding MissingText, Converter={StaticResource TextToVisibility}}">
+                    <TextBlock Text="{Binding MissingText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                </Border>
+                <Grid DockPanel.Dock="Top" Margin="12,6,12,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="28" />
+                        <ColumnDefinition Width="1.4*" />
+                        <ColumnDefinition Width="0.6*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1.3*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1" Text="{loc:Loc Pass_ColStep}" Style="{StaticResource Text.Label}" />
+                    <TextBlock Grid.Column="2" Text="{loc:Loc Pass_ColPass}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="3" Text="{loc:Loc Pass_ColLeftZ}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="4" Text="{loc:Loc Pass_ColRightZ}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="5" Text="{loc:Loc Pass_ColDwell}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="6" Text="{loc:Loc Pass_ColOverride}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="7" Text="{loc:Loc Pass_ColCompensation}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="8" Text="{loc:Loc Pass_ColCurrent}" Style="{StaticResource Text.Label}" HorizontalAlignment="Right" />
+                </Grid>
+                <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Pass_Empty}" Style="{StaticResource Text.Label}" Margin="14,8"
+                           Visibility="{Binding HasRows, Converter={StaticResource InverseBoolVisibility}}" />
+                <ListBox ItemsSource="{Binding Rows}" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch"
+                         ScrollViewer.PanningMode="VerticalOnly" VirtualizingPanel.IsVirtualizing="True">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border x:Name="Row" Height="40" Padding="12,0" BorderBrush="{StaticResource Brush.GridLine}" BorderThickness="0,0,0,1" Background="Transparent">
+                                <Grid VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28" />
+                                        <ColumnDefinition Width="1.4*" />
+                                        <ColumnDefinition Width="0.6*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="1.3*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="MarkerText" Text="{Binding Marker}" Style="{StaticResource Text.Body}" FontWeight="Bold" />
+                                    <TextBlock Grid.Column="1" Text="{Binding StepText}" Style="{StaticResource Text.Body}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{Binding PassText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" HorizontalAlignment="Right" />
+                                    <TextBlock Grid.Column="3" Text="{Binding LeftZText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" HorizontalAlignment="Right" />
+                                    <TextBlock Grid.Column="4" Text="{Binding RightZText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" HorizontalAlignment="Right" />
+                                    <TextBlock Grid.Column="5" Text="{Binding DwellText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" HorizontalAlignment="Right" />
+                                    <TextBlock x:Name="OverrideCell" Grid.Column="6" Text="{Binding OverrideText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" HorizontalAlignment="Right" />
+                                    <TextBlock Grid.Column="7" Text="{Binding CompensationText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" HorizontalAlignment="Right" />
+                                    <TextBlock Grid.Column="8" Text="{Binding CurrentText}" Style="{StaticResource Text.Body}" FontFamily="{StaticResource Font.Mono}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                    <Setter TargetName="Row" Property="Background" Value="{StaticResource Brush.WarningRowFill}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsOffNominal}" Value="True">
+                                    <Setter TargetName="OverrideCell" Property="FontWeight" Value="Bold" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsOutOfBound}" Value="True">
+                                    <Setter TargetName="OverrideCell" Property="Foreground" Value="{StaticResource Brush.Alarm}" />
+                                    <Setter TargetName="MarkerText" Property="Foreground" Value="{StaticResource Brush.Alarm}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="6" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Border Style="{StaticResource Card}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Pass_SummaryTitle}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding Summaries}" Margin="12,6">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="{Binding StepText}" Style="{StaticResource Text.Body}" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Text.Label}" TextWrapping="Wrap">
+                                        <Run Text="{loc:Loc Pass_SumFeed}" /><Run Text=" " /><Run Text="{Binding FeedText, Mode=OneWay}" FontFamily="{StaticResource Font.Mono}" />
+                                        <Run Text="  " /><Run Text="{loc:Loc Pass_SumOverride}" /><Run Text=" " /><Run Text="{Binding OverrideText, Mode=OneWay}" FontFamily="{StaticResource Font.Mono}" />
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding EffectiveText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                                    <TextBlock Style="{StaticResource Text.Label}" TextWrapping="Wrap">
+                                        <Run Text="{loc:Loc Pass_SumReversal}" /><Run Text=" " /><Run Text="{Binding ReversalText, Mode=OneWay}" FontFamily="{StaticResource Font.Mono}" />
+                                        <Run Text="  " /><Run Text="{loc:Loc Pass_SumCompensation}" /><Run Text=" " /><Run Text="{Binding CompensationText, Mode=OneWay}" FontFamily="{StaticResource Font.Mono}" />
+                                        <Run Text="  " /><Run Text="{loc:Loc Pass_SumOutOfBound}" /><Run Text=" " /><Run Text="{Binding OutOfBoundText, Mode=OneWay}" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+            <Border Grid.Row="2" Style="{StaticResource Card}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Style="{StaticResource CardHeader}">
+                        <TextBlock Text="{loc:Loc Pass_EventsTitle}" Style="{StaticResource Text.CardTitle}" />
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding Events}" Margin="12,6">
+                        <ItemsControl.Template>
+                            <ControlTemplate TargetType="ItemsControl">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                                    <ItemsPresenter />
+                                </ScrollViewer>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,4">
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Label}" FontFamily="{StaticResource Font.Mono}" Width="{ctl:Px 100}" />
+                                    <TextBlock Text="{Binding ValueText}" Style="{StaticResource Text.Body}" TextWrapping="Wrap" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

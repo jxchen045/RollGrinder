@@ -1387,8 +1387,53 @@ public sealed partial class JobViewModel : PageViewModelBase
             PreconditionResourceKey = precondition,
         };
 
-    /// <summary>第 6 格"改用新模板…"：这支辊的方案有新版模板（标准已更新）时才有；第 4 期接上。</summary>
-    private FunctionKeyViewModel? UseNewTemplateKey() => null;
+    /// <summary>
+    /// 第 6 格"改用新模板…"（设计稿 v4 I7）：这支辊的当前方案复制自的模板出了新版（标准已更新）时才有；
+    /// 问一句后从新模板复制出新方案设为当前（原方案留作历史），重新核对。仅本次用别的方案时不出。
+    /// </summary>
+    private FunctionKeyViewModel? UseNewTemplateKey() =>
+        this.planDeviation == JobDeviation.None && this.templateNotices.Any(notice => notice.CanAdopt && notice.PlanId == this.plan?.PlanId)
+            ? new FunctionKeyViewModel("Vk_UseNewTemplate", new RelayCommand(AskUseNewTemplate), Localizer, requiresEditable: true)
+            {
+                RequiredPermission = this.settings.PlanChangeNeedsAdministrator ? Permission.EditRollPlans : null,
+            }
+            : null;
+
+    private void AskUseNewTemplate()
+    {
+        TemplateUpdateNotice[] adoptable = this.templateNotices.Where(notice => notice.CanAdopt).ToArray();
+        if (this.roll is null || adoptable.Length == 0)
+        {
+            return;
+        }
+
+        string rollId = this.roll.RollId;
+        Ask(
+            "Job_AskUseNewTemplateFormat",
+            () => RunGuardedAsync(
+                async token =>
+                {
+                    PlanCreateOutcome outcome = await this.templates
+                        .AdoptAsync(rollId, adoptable, this.session.CurrentUser?.UserName ?? string.Empty, token).ConfigureAwait(true);
+                    if (outcome.Plan is not { } created)
+                    {
+                        Interaction.Fail(Localizer[outcome.ProblemKey ?? "PlanProblem_Missing"]);
+                        return;
+                    }
+
+                    this.roll = await this.ledger.GetAsync(rollId, token).ConfigureAwait(true) ?? this.roll;
+                    this.templateNotices = this.templateNotices.Where(notice => !notice.CanAdopt).ToArray();
+                    await LoadPlanAsync(created.PlanId, token).ConfigureAwait(true);
+                    ResetOptions();
+                    this.suppressEvaluate = true;
+                    StockText = DefaultStockMm().ToString("F3", CultureInfo.CurrentCulture);
+                    this.suppressEvaluate = false;
+                    Evaluate();
+                    Say("Job_UsedNewTemplateFormat", created.PlanNo, created.Name);
+                },
+                CancellationToken.None),
+            string.Join("、", adoptable.Select(notice => notice.TemplateName)));
+    }
 
     /// <summary>第 6 格"全部恢复设定值…"：问一句（不超时）。</summary>
     private void AskRestoreAll() => Ask(
@@ -1527,6 +1572,9 @@ public sealed partial class JobViewModel : PageViewModelBase
 
             // 计划改了写回台账；推断来的计划经人确认。
             await this.planning.AfterDownloadAsync(job, user, token).ConfigureAwait(true);
+
+            // "标准已更新"提示过、这次没改用：同一版不再提示（设计说明 4.6）。
+            await this.templates.DeclineAsync(this.templateNotices, token).ConfigureAwait(true);
             Say("Job_HandedOver");
 
             // Q3 / M7：下发成功就请 NC 切 AUTO、画面转到自动磨削，操作员在按钮板上按循环启动。

@@ -46,7 +46,20 @@ public sealed record TemplateUsage(int Consistent, int Diverged, TemplateMandate
 /// <param name="OldPlanNo">原当前方案号。</param>
 /// <param name="NewPlanNo">换上的新方案号；只提示或换不了为 null。</param>
 /// <param name="ProblemKey">要换但换不了的原因（如长度超出容差）；为 null 表示没问题。</param>
-public sealed record TemplateUpdateNotice(TemplateKind Kind, string TemplateName, bool Forced, int OldPlanNo, int? NewPlanNo, string? ProblemKey);
+public sealed record TemplateUpdateNotice(TemplateKind Kind, string TemplateName, bool Forced, int OldPlanNo, int? NewPlanNo, string? ProblemKey)
+{
+    /// <summary>模板标识（"改用新的"按它复制）。</summary>
+    public string? TemplateId { get; init; }
+
+    /// <summary>模板现在是第几版。</summary>
+    public int? TemplateVersion { get; init; }
+
+    /// <summary>提示的是哪个方案（这支辊的当前方案）。</summary>
+    public string? PlanId { get; init; }
+
+    /// <summary>可以一键"改用新的"（只提示的那种；强制的已经换了）。</summary>
+    public bool CanAdopt => !Forced && TemplateId is not null;
+}
 
 /// <summary>
 /// 标准模板（设计说明 4.6）：模板只作复制起点，不被轧辊引用；改了不批量改任何辊。
@@ -74,6 +87,15 @@ public interface ITemplateService
     /// 这支辊来磨（打开作业核对）时：要强制的从新模板复制出新方案并设为当前（原方案留作历史），要提示的列出来。
     /// </summary>
     Task<IReadOnlyList<TemplateUpdateNotice>> ApplyForJobAsync(string rollId, string user, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 核对页第 6 格"改用新模板…"（设计稿 v4 I7）：从提示里的新模板复制出新方案设为当前（原方案留作历史，记改动）。
+    /// 辊形、工艺各有提示的各换各的。
+    /// </summary>
+    Task<PlanCreateOutcome> AdoptAsync(string rollId, IReadOnlyList<TemplateUpdateNotice> notices, string user, CancellationToken cancellationToken);
+
+    /// <summary>这支辊这次没改用：同一版不再提示（设计说明 4.6"提示一次"）。</summary>
+    Task DeclineAsync(IReadOnlyList<TemplateUpdateNotice> notices, CancellationToken cancellationToken);
 }
 
 /// <inheritdoc cref="ITemplateService"/>
@@ -235,9 +257,15 @@ public sealed class TemplateService : ITemplateService
     public async Task<IReadOnlyList<TemplateUpdateNotice>> ApplyForJobAsync(string rollId, string user, CancellationToken cancellationToken)
     {
         var notices = new List<TemplateUpdateNotice>();
+        var silenced = new HashSet<(TemplateKind, string)>();
         foreach ((TemplateMandate mandate, TemplateMandateRoll entry) in
                  await this.mandates.ListActiveForRollAsync(rollId, cancellationToken).ConfigureAwait(false))
         {
+            if (entry.Decision == MandateDecision.None)
+            {
+                silenced.Add((mandate.Kind, mandate.TemplateId)); // 工艺员对这支辊选了"不提示"：普通提示也不出。
+            }
+
             if (entry.AppliedPlanId is not null || entry.Decision == MandateDecision.None)
             {
                 continue;
@@ -259,7 +287,12 @@ public sealed class TemplateService : ITemplateService
 
             if (entry.Decision == MandateDecision.Notice)
             {
-                notices.Add(new TemplateUpdateNotice(mandate.Kind, mandate.TemplateName, false, current.PlanNo, null, null));
+                notices.Add(new TemplateUpdateNotice(mandate.Kind, mandate.TemplateName, false, current.PlanNo, null, null)
+                {
+                    TemplateId = mandate.TemplateId,
+                    TemplateVersion = mandate.TemplateVersion,
+                    PlanId = current.PlanId,
+                });
                 continue;
             }
 
@@ -277,6 +310,83 @@ public sealed class TemplateService : ITemplateService
             notices.Add(new TemplateUpdateNotice(mandate.Kind, mandate.TemplateName, true, current.PlanNo, created.Plan?.PlanNo, created.ProblemKey));
         }
 
+        // 普通"标准已更新"（设计说明 4.6 第一段）：当前方案复制自的模板出了新版，没下"必须采用"，也提示一次。
+        GrindingPlanRecord? now = await this.plans.CurrentAsync(rollId, cancellationToken).ConfigureAwait(false);
+        if (now is not null)
+        {
+            foreach ((TemplateKind kind, string? templateId, int? copied) in new[]
+            {
+                (TemplateKind.Profile, now.TemplateProfileId, now.TemplateProfileVersion),
+                (TemplateKind.Program, now.TemplateProgramId, now.TemplateProgramVersion),
+            })
+            {
+                if (templateId is null || notices.Any(notice => notice.Kind == kind) || silenced.Contains((kind, templateId)))
+                {
+                    continue;
+                }
+
+                (string? name, int? version, bool disabled) = await TemplateStateAsync(kind, templateId, cancellationToken).ConfigureAwait(false);
+                if (disabled || name is null || version is not int latest || latest <= (copied ?? latest)
+                    || await this.mandates.IsDeclinedAsync(now.PlanId, kind, templateId, latest, cancellationToken).ConfigureAwait(false))
+                {
+                    continue;
+                }
+
+                notices.Add(new TemplateUpdateNotice(kind, name, false, now.PlanNo, null, null)
+                {
+                    TemplateId = templateId,
+                    TemplateVersion = latest,
+                    PlanId = now.PlanId,
+                });
+            }
+        }
+
         return notices;
+    }
+
+    private async Task<(string? Name, int? Version, bool Disabled)> TemplateStateAsync(
+        TemplateKind kind, string templateId, CancellationToken cancellationToken)
+    {
+        if (kind == TemplateKind.Profile)
+        {
+            return await this.profiles.GetAsync(templateId, cancellationToken).ConfigureAwait(false) is { } profile
+                ? (profile.Name, profile.Version, profile.Disabled)
+                : (null, null, true);
+        }
+
+        return await this.programs.GetAsync(templateId, cancellationToken).ConfigureAwait(false) is { } program
+            ? (program.Name, program.Version, program.Disabled)
+            : (null, null, true);
+    }
+
+    public async Task<PlanCreateOutcome> AdoptAsync(
+        string rollId, IReadOnlyList<TemplateUpdateNotice> notices, string user, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rollId);
+        ArgumentNullException.ThrowIfNull(notices);
+        string? profileTemplate = notices.FirstOrDefault(n => n.CanAdopt && n.Kind == TemplateKind.Profile)?.TemplateId;
+        string? programTemplate = notices.FirstOrDefault(n => n.CanAdopt && n.Kind == TemplateKind.Program)?.TemplateId;
+        if (profileTemplate is null && programTemplate is null)
+        {
+            return new PlanCreateOutcome(null, "PlanProblem_Missing", null);
+        }
+
+        // 只换有新版的那一样；另一样照当前方案（复制范围按给了哪样模板定）。
+        return await this.plans.CopyToRollAsync(
+            rollId, CopySource.FromTemplates(profileTemplate, programTemplate), CopyScope.All, confirmed: true, setCurrent: true, user, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task DeclineAsync(IReadOnlyList<TemplateUpdateNotice> notices, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(notices);
+        foreach (TemplateUpdateNotice notice in notices)
+        {
+            if (notice is { CanAdopt: true, PlanId: { } planId, TemplateId: { } templateId, TemplateVersion: int version })
+            {
+                await this.mandates.DeclineAsync(planId, notice.Kind, templateId, version, this.timeProvider.GetUtcNow(), cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
     }
 }
