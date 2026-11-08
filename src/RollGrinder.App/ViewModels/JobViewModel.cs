@@ -149,6 +149,9 @@ public sealed partial class JobViewModel : PageViewModelBase
     private bool suppressEvaluate;
     private bool choosing;
     private bool makePlanChosen;
+
+    /// <summary>从核对页派出去的任务（方案列表、辊形、工艺）：回来时重新打开这一份核对（外壳换页会收掉子视图）。</summary>
+    private bool resumeReview;
     private string? regrindOf;
 
     public JobViewModel(
@@ -319,6 +322,15 @@ public sealed partial class JobViewModel : PageViewModelBase
             return;
         }
 
+        if (this.resumeReview && this.roll is not null && !IsReview)
+        {
+            this.resumeReview = false;
+            Navigator.OpenSubView(ReviewSubView);
+            Loading = RunGuardedAsync(ReloadChoicesAsync, CancellationToken.None);
+            return;
+        }
+
+        this.resumeReview = false;
         Loading = IsReview
             ? RunGuardedAsync(ReloadChoicesAsync, CancellationToken.None)
             : RunGuardedAsync(LoadQueueAsync, CancellationToken.None);
@@ -1353,6 +1365,7 @@ public sealed partial class JobViewModel : PageViewModelBase
     private void OpenProfile()
     {
         this.draft.PlanToEdit = this.plan?.PlanId;
+        this.resumeReview = true;
         Navigator.StartTask(PageKey.Profile, PageKey.Job);
     }
 
@@ -1360,6 +1373,7 @@ public sealed partial class JobViewModel : PageViewModelBase
     private void OpenProgram()
     {
         this.draft.PlanToEdit = this.plan?.PlanId;
+        this.resumeReview = true;
         Navigator.StartTask(PageKey.Steps, PageKey.Job);
     }
 
@@ -1377,12 +1391,12 @@ public sealed partial class JobViewModel : PageViewModelBase
         PlanMenuChoice("Vk_RestorePlan", RestorePlan, () => Deviation != JobDeviation.None, "Job_AlreadyPlan", requiresEditable: true),
         PlanMenuChoice("Vk_OpenProfile", OpenProfile, () => this.plan is not null, "Job_NothingSelected", requiresEditable: false),
         PlanMenuChoice("Vk_OpenProgram", OpenProgram, () => this.plan is not null, "Job_NothingSelected", requiresEditable: false),
-        MenuChoice("Vk_PlanList", OpenPlans, requiresEditable: false),
+        PlanMenuChoice("Vk_PlanList", OpenPlans, () => true, "Job_NothingSelected", requiresEditable: false),
     });
 
     /// <summary>子菜单里一项带灰键原因的：按下去做事，然后收回根层。</summary>
     private FunctionKeyViewModel PlanMenuChoice(string labelKey, Action action, Func<bool> canChoose, string precondition, bool requiresEditable) =>
-        new(labelKey, new RelayCommand(() => { action(); ResetVerticalMenu(); }, canChoose), Localizer, requiresEditable: requiresEditable)
+        new(labelKey, new RelayCommand(() => { ResetVerticalMenu(); action(); }, canChoose), Localizer, requiresEditable: requiresEditable)
         {
             PreconditionResourceKey = precondition,
         };
@@ -1451,6 +1465,7 @@ public sealed partial class JobViewModel : PageViewModelBase
     private void OpenPlans()
     {
         this.draft.PlanRollId = this.roll?.RollId;
+        this.resumeReview = true;
         Navigator.StartTask(PageKey.Plans, PageKey.Job);
     }
 

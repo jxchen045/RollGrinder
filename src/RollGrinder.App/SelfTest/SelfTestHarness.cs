@@ -348,12 +348,16 @@ internal sealed partial class SelfTestHarness
     }
 
     /// <summary>按标签资源键找到竖键并按下（等同 Shift+F(n+1)）；找不到或是灰的就断言失败。异步命令会等它跑完。</summary>
+    /// <summary>翻页键（"≡▸"下一页，最后一页是回第一页）的位置；没有返回 -1。</summary>
+    private int PageKeyIndex() =>
+        IndexOfVerticalKey("Vk_NextPage") is int next and >= 0 ? next : IndexOfVerticalKey("Vk_FirstPage");
+
     public async Task PressVerticalKeyAsync(StepContext context, string labelResourceKey, TimeSpan? timeout = null)
     {
         int index = IndexOfVerticalKey(labelResourceKey);
 
         // 根层多于 8 个键时分页（第 8 格"≡▸"翻页）：不在这一页就翻，最多翻一圈。
-        for (int turn = 0; index < 0 && turn < 4 && IndexOfVerticalKey("Vk_NextPage") is int next and >= 0; turn++)
+        for (int turn = 0; index < 0 && turn < 4 && PageKeyIndex() is int next and >= 0; turn++)
         {
             await PressAsync(Shell.VerticalKeys[next], timeout).ConfigureAwait(true);
             index = IndexOfVerticalKey(labelResourceKey);
